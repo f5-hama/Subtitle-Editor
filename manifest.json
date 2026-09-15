@@ -1,0 +1,16 @@
+{
+  "name": "Subtitle Edit",
+  "short_name": "SubEdit",
+  "description": "Web-based Subtitle Editor",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#181a1b",
+  "theme_color": "#181a1b",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

@@ -9303,7 +9303,7 @@ function applySmartZwjAroundTags(text) {
             if (btn) btn.remove();
         });
         
-        // ====== سیستەمی هاردسەب لەناو وێبگەڕ ======
+// ====== سیستەمی پێشکەوتووی هاردسەب بە شریتی داگرتنی بزوێنەر و کاتی ڕاستەقینە ======
 let ffmpegInstance = null;
 let hardsubStartTime = null;
 let hardsubTimerInterval = null;
@@ -9356,7 +9356,10 @@ function openHardsubModal() {
 
 function cancelHardsubProcess() {
     isHardsubCancelled = true;
-    if (hardsubTimerInterval) clearInterval(hardsubTimerInterval);
+    if (hardsubTimerInterval) {
+        clearInterval(hardsubTimerInterval);
+        hardsubTimerInterval = null;
+    }
     showToast("پڕۆسەی هاردسەب ڕاگیرا!", "warning");
     if (ffmpegInstance) {
         try { ffmpegInstance.terminate(); } catch(e){}
@@ -9366,6 +9369,40 @@ function cancelHardsubProcess() {
     document.getElementById('btnCancelHardsub').style.display = 'none';
     document.getElementById('btnCloseHardsub').style.display = 'block';
     document.getElementById('hardsubStatusText').innerText = "پڕۆسەکە ڕاگیرا.";
+}
+
+// فەنکشنی زیرەک بۆ داگرتنی بزوێنەری ٣١ مێگابایتی بە پیشاندانی ڕێژەی سەدی و قەبارەی دابەزیو
+async function fetchBlobWithProgress(url, mimeType, onProgress) {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("نەتوانرا فایلی بزوێنەر لە سێرڤەر دابەزێنرێت، تکایە ئینتەرنێت بپشکنە!");
+    
+    const contentLength = response.headers.get('content-length');
+    const total = contentLength ? parseInt(contentLength, 10) : 0;
+
+    if (!response.body || !total) {
+        const blob = await response.blob();
+        return URL.createObjectURL(blob);
+    }
+
+    const reader = response.body.getReader();
+    let received = 0;
+    const chunks = [];
+
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        received += value.length;
+        if (onProgress && total) {
+            const pct = Math.min(100, Math.round((received / total) * 100));
+            const mbRec = (received / (1024 * 1024)).toFixed(1);
+            const mbTot = (total / (1024 * 1024)).toFixed(1);
+            onProgress(pct, mbRec, mbTot);
+        }
+    }
+
+    const blob = new Blob(chunks, { type: mimeType });
+    return URL.createObjectURL(blob);
 }
 
 async function startHardsubProcess() {
@@ -9397,26 +9434,18 @@ async function startHardsubProcess() {
     percentText.innerText = '0%';
     timerText.innerText = '00:00';
     videoTimeText.innerText = '00:00:00';
-    statusText.innerText = "خەریکی بارکردنی بزوێنەری FFmpeg (تکایە ئینتەرنێت پشکنە)...";
-
+    
     isHardsubCancelled = false;
-    hardsubStartTime = Date.now();
     if (hardsubTimerInterval) clearInterval(hardsubTimerInterval);
-    hardsubTimerInterval = setInterval(() => {
-        const elapsedSec = Math.floor((Date.now() - hardsubStartTime) / 1000);
-        const m = String(Math.floor(elapsedSec / 60)).padStart(2, '0');
-        const s = String(elapsedSec % 60).padStart(2, '0');
-        timerText.innerText = `${m}:${s}`;
-    }, 1000);
 
     try {
         const { FFmpeg } = window.FFmpegWASM;
-        const { fetchFile, toBlobURL } = window.FFmpegUtil;
+        const { fetchFile } = window.FFmpegUtil;
 
+        // ١. داگرتن و ئامادەکردنی بزوێنەری FFmpeg (بە پیشاندانی پرۆگرێسی داگرتنی ٣١ مێگابایتەکە)
         if (!ffmpegInstance) {
             ffmpegInstance = new FFmpeg();
             
-            // خوێندنەوەی کاتی ڕاستەوخۆی ڤیدیۆ لە لۆگی FFmpeg
             ffmpegInstance.on('log', ({ message }) => {
                 const timeMatch = message.match(/time=(\d{2}:\d{2}:\d{2}\.\d{2})/i);
                 if (timeMatch) {
@@ -9433,19 +9462,41 @@ async function startHardsubProcess() {
                 }
             });
 
-            // بارکردنی فایلی وەسەم بە بەستەری فەرمی بێ کێشەی Localhost
-            const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+            statusText.innerText = "داگرتنی بزوێنەری FFmpeg (٣١ مێگابایت)...";
+
+            // بەستەری زۆر خێرا لە jsdelivr بە پیشاندانی مێگابایتە دابەزیوەکان
+            const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd';
+            
+            const coreBlobURL = await fetchBlobWithProgress(
+                `${baseURL}/ffmpeg-core.js`,
+                'text/javascript',
+                null
+            );
+
+            const wasmBlobURL = await fetchBlobWithProgress(
+                `${baseURL}/ffmpeg-core.wasm`,
+                'application/wasm',
+                (pct, recMB, totMB) => {
+                    statusText.innerText = `داگرتنی بزوێنەر: ${recMB}MB لە ${totMB}MB`;
+                    percentText.innerText = `${pct}%`;
+                    fillBar.style.width = `${pct}%`;
+                }
+            );
+
+            statusText.innerText = "خەریکی دامەزراندنی بزوێنەر لە وێبگەڕ...";
             await ffmpegInstance.load({
-                coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-                wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm')
+                coreURL: coreBlobURL,
+                wasmURL: wasmBlobURL
             });
         }
 
         if (isHardsubCancelled) return;
 
-        statusText.innerText = "خەریکی ئامادەکردنی فایلەکان و فۆنت...";
+        // ٢. بارکردنی ڤیدیۆ و ژێرنووس و فۆنتەکان لەناو یادگە
+        statusText.innerText = "خەریکی بارکردنی فایلەکان و فۆنتەکان...";
+        percentText.innerText = "0%";
+        fillBar.style.width = "0%";
 
-        // دیاریکردنی جۆری ڤیدیۆ بە دروستی (MP4 یان MKV)
         const vExt = vFile.name.toLowerCase().endsWith('.mkv') ? 'input.mkv' : 'input.mp4';
         const subExt = sFile.name.toLowerCase().endsWith('.ass') ? 'sub.ass' : 'sub.srt';
 
@@ -9467,35 +9518,55 @@ async function startHardsubProcess() {
 
         if (isHardsubCancelled) return;
 
-        statusText.innerText = "خەریکی لکاندنی ژێرنووسەکەیە...";
+        // ٣. دەستپێکردنی ژماردنی کات (تەنها لە کاتی دەستپێکردنی ڕاستەقینەی هاردسەب)
+        hardsubStartTime = Date.now();
+        hardsubTimerInterval = setInterval(() => {
+            const elapsedSec = Math.floor((Date.now() - hardsubStartTime) / 1000);
+            const m = String(Math.floor(elapsedSec / 60)).padStart(2, '0');
+            const s = String(elapsedSec % 60).padStart(2, '0');
+            timerText.innerText = `${m}:${s}`;
+        }, 1000);
+
+        statusText.innerText = "خەریکی هاردسەبکردنی ڤیدیۆکەیە...";
 
         const vfFilter = subExt.endsWith('.ass') 
             ? 'ass=sub.ass:fontsdir=/fonts' 
             : 'subtitles=sub.srt:fontsdir=/fonts';
 
         const chosenCrf = document.getElementById('hardsubQualitySelect') ? document.getElementById('hardsubQualitySelect').value : '22';
+        const isTestSample = document.getElementById('hardsubTestSample') && document.getElementById('hardsubTestSample').checked;
 
-        // فەرمانی لکاندن لەگەڵ ڕێکخستنی خێرا بۆ ئەوەی لەسەر مۆبایلیش کار بکات
-        await ffmpegInstance.exec([
-            '-i', vExt,
+        const ffmpegArgs = ['-i', vExt];
+        if (isTestSample) {
+            ffmpegArgs.push('-t', '60');
+        }
+
+        ffmpegArgs.push(
             '-vf', vfFilter,
             '-c:v', 'libx264',
             '-crf', chosenCrf,
             '-preset', 'ultrafast',
             '-c:a', 'copy',
             'output.mp4'
-        ]);
+        );
+
+        await ffmpegInstance.exec(ffmpegArgs);
 
         if (isHardsubCancelled) return;
 
-        statusText.innerText = "کارەکە تەواو بوو! خەریکی داگرتنی خۆکار...";
+        // ٤. تەواوبوون و داگرتن
+        if (hardsubTimerInterval) clearInterval(hardsubTimerInterval);
+
+        statusText.innerText = "کارەکە تەواو بوو! خەریکی داگرتن...";
         const data = await ffmpegInstance.readFile('output.mp4');
 
         const outBlob = new Blob([data.buffer], { type: 'video/mp4' });
         const outUrl = URL.createObjectURL(outBlob);
         const a = document.createElement('a');
         a.href = outUrl;
-        a.download = vFile.name.replace(/\.[^/.]+$/, "") + "_Hardsubbed.mp4";
+
+        const baseName = vFile.name.replace(/\.[^/.]+$/, "");
+        a.download = baseName + (isTestSample ? "_sample_hardsub.mp4" : "_hardsub.mp4");
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

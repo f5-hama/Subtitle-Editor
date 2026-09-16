@@ -1987,29 +1987,17 @@ input[type="checkbox"], input[type="radio"] {
 
         <div id="video-container" style="display: block; width: 100%; margin-bottom: 14px; background: #050709; border-radius: 14px; border: 1.5px solid var(--border-color); overflow: hidden; position: relative;">
             
-            <!-- بۆکسی هەڵبژاردنی ڤیدیۆ لە ئامێر یان لینک -->
-            <div id="video-source-selector" style="padding: 18px 14px; text-align: center; display: flex; flex-direction: column; gap: 10px; align-items: center; justify-content: center; min-height: 140px; background: rgba(18, 23, 29, 0.6);">
-                <div style="display: flex; gap: 8px; width: 100%; max-width: 380px;">
-                    <button type="button" class="btn" style="flex: 1; padding: 10px 8px; font-size: 12px;" onclick="document.getElementById('nativeVideoFileInput').click()">
-                        <svg class="icon" style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                        <span>فایل لە ئامێرەکەت</span>
+            <!-- تەنها دوگمەی هەڵبژاردنی فایلی ڤیدیۆ لە ئامێرەکەت -->
+            <div id="video-source-selector" style="padding: 18px 14px; text-align: center; display: flex; flex-direction: column; gap: 10px; align-items: center; justify-content: center; min-height: 120px; background: rgba(18, 23, 29, 0.6);">
+                <div style="width: 100%; max-width: 320px;">
+                    <button type="button" class="btn" style="width: 100%; padding: 12px 14px; font-size: 13px;" onclick="document.getElementById('nativeVideoFileInput').click()">
+                        <svg class="icon" style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                        <span>فایل لە ئامێرەکەت هەڵبژێرە</span>
                     </button>
                     <input type="file" id="nativeVideoFileInput" accept=".mp4,.mkv,.webm,.avi,.mov,.flv,.ts,.m4v" style="display: none;" onchange="handleNativeVideoUpload(this)">
-
-                    
-                    <button type="button" class="btn btn-outline" style="flex: 1; padding: 10px 8px; font-size: 12px;" onclick="toggleVideoUrlInput()">
-                        <svg class="icon" style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
-                        <span>لینکی ڕاستەوخۆ</span>
-                    </button>
-                </div>
-
-                <div id="video-url-box" style="display: none; width: 100%; max-width: 380px; gap: 6px; flex-direction: column; margin-top: 4px;">
-                    <div style="display: flex; gap: 6px;">
-                        <input type="text" id="videoDirectUrlInput" placeholder="لینکی ڤیدیۆ یان Google Drive..." class="input-field" style="padding: 8px; font-size: 12px; direction: ltr; text-align: left;">
-                        <button type="button" class="btn" style="width: auto; padding: 8px 12px; font-size: 12px;" onclick="loadVideoFromUrl()">کردنەوە</button>
-                    </div>
                 </div>
             </div>
+                    
 
             <!-- پلەیەری تایبەت و پێشکەوتووی ماڵپەڕ بەبێ پلەیەری کۆنی وێبگەڕ -->
             <div id="video-player-wrapper" class="custom-player-container" style="display: none;" onclick="togglePlayerControls()">
@@ -6685,26 +6673,10 @@ function confirmVideoCanvasColor() {
     }
 }
 
-        function toggleVideoUrlInput() {
-            const box = document.getElementById('video-url-box');
-            box.style.display = (box.style.display === 'none' || box.style.display === '') ? 'flex' : 'none';
-        }
-
         function handleNativeVideoUpload(input) {
             if (input.files && input.files[0]) {
                 playVideoSource(URL.createObjectURL(input.files[0]));
             }
-        }
-
-        function loadVideoFromUrl() {
-            let url = document.getElementById('videoDirectUrlInput').value.trim();
-            if (!url) return showToast("تکایە سەرەتا لینکێک بنووسە!", "error");
-
-            if (url.includes('drive.google.com')) {
-                let fileId = (url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/) || [])[1];
-                if (fileId) url = `https://drive.google.com/uc?export=download&id=${fileId}`;
-            }
-            playVideoSource(url);
         }
 
         function togglePlayerControls() {
@@ -6821,7 +6793,6 @@ function resetVideoPlayer() {
     document.getElementById('video-player-wrapper').style.display = 'none';
     document.getElementById('video-source-selector').style.display = 'flex';
     document.getElementById('nativeVideoFileInput').value = '';
-    document.getElementById('videoDirectUrlInput').value = '';
     
     // شاردنەوەی دوگمەی لابردنی ڤیدیۆ
     const topCloseBtn = document.getElementById('btn-remove-video-top');

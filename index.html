@@ -25,58 +25,69 @@
     <script>
     
     function deleteSubtitleLine(index) {
-        // ١. وەرگرتنی هەموو دەقەکانی وەرگێڕان پێش سڕینەوە
+        // ١. وەرگرتنی دەقەکان پێش سڕینەوە
         let currentTexts = Array.from(document.querySelectorAll('.subtitle-kurd textarea')).map(t => t.value);
 
         // ٢. سڕینەوە لە دەقی سەرەکی و وەرگێڕان
         originalData.splice(index, 1);
         currentTexts.splice(index, 1);
+        if (typeof subtitleNotes !== 'undefined' && subtitleNotes.length) {
+            subtitleNotes.splice(index, 1);
+        }
 
-        // ٣. دروستکردنەوەی کارتەکان
-        buildEditorUI(currentTexts, false);
-
-        // ٤. تۆمارکردنی ئەم دۆخە نوێیە لە مێژوو
+        // ٣. تۆمارکردنی دەستبەجێی دۆخەکە پێش و پاش لە مێژوودا
         historyStack.push(getCurrentSnapshot());
         if (historyStack.length > 40) historyStack.shift();
         redoStack = [];
         saveSession();
+
+        // ٤. دروستکردنەوەی کارتەکان لەسەر شاشە
+        buildEditorUI(currentTexts, false);
+
+        // ٥. ڕووناککردنەوە و چالاککردنی یەکسەری دوگمەی Undo تەنانەت بۆ یەکەم دێڕیش
+        if (typeof updateUndoRedoButtons === 'function') {
+            updateUndoRedoButtons();
+        }
     }
     // فەنکشنی سڕینەوەی یەکجارەکی هەموو دێڕە بەتاڵەکان بە یەک کلیک
 function deleteEmptySubtitleLines() {
-    if (!isEditing || originalData.length === 0) return;
+        if (!isEditing || originalData.length === 0) return;
 
-    let currentTexts = Array.from(document.querySelectorAll('.subtitle-kurd textarea')).map(t => t.value);
-    let newOriginalData = [];
-    let newTexts = [];
+        let currentTexts = Array.from(document.querySelectorAll('.subtitle-kurd textarea')).map(t => t.value);
+        let newOriginalData = [];
+        let newTexts = [];
 
-    for (let i = 0; i < originalData.length; i++) {
-        let userText = currentTexts[i] ? currentTexts[i].trim() : '';
-        let origText = originalData[i].text ? originalData[i].text.trim() : '';
-        let rawCheck = (originalData[i].rawText || '').replace(/\{[^}]*\}/g, '').trim();
+        for (let i = 0; i < originalData.length; i++) {
+            let userText = currentTexts[i] ? currentTexts[i].trim() : '';
+            let rawCheck = (originalData[i].rawText || '').replace(/\{[^}]*\}/g, '').trim();
 
-        // ئەگەر یەکێک لە دوو بۆکسەکە بەتاڵ بێت (وەرگێڕان یان ئەسڵی) ئەوا دەسڕدرێتەوە
-        if (userText !== '' && rawCheck !== '') {
-            newOriginalData.push(originalData[i]);
-            newTexts.push(currentTexts[i]);
+            if (userText !== '' && rawCheck !== '') {
+                newOriginalData.push(originalData[i]);
+                newTexts.push(currentTexts[i]);
+            }
         }
+
+        let removedCount = originalData.length - newOriginalData.length;
+        if (removedCount === 0) {
+            showToast("هیچ دێڕێکی بەتاڵ لە فایلەکەدا نییە!", "info");
+            return;
+        }
+
+        originalData = newOriginalData;
+
+        historyStack.push(getCurrentSnapshot());
+        if (historyStack.length > 40) historyStack.shift();
+        redoStack = [];
+        saveSession();
+
+        buildEditorUI(newTexts, false);
+
+        if (typeof updateUndoRedoButtons === 'function') {
+            updateUndoRedoButtons();
+        }
+
+        showToast(`${removedCount} دێڕی بەتاڵ بە سەرکەوتوویی سڕدرانەوە!`, "success");
     }
-
-    let removedCount = originalData.length - newOriginalData.length;
-    if (removedCount === 0) {
-        showToast("هیچ دێڕێکی بەتاڵ لە فایلەکەدا نییە!", "info");
-        return;
-    }
-
-    originalData = newOriginalData;
-    buildEditorUI(newTexts, false);
-
-    historyStack.push(getCurrentSnapshot());
-    if (historyStack.length > 40) historyStack.shift();
-    redoStack = [];
-    saveSession();
-
-    showToast(`${removedCount} دێڕی بەتاڵ بە سەرکەوتوویی سڕدرانەوە!`, "success");
-}
     
         (function() {
             const palettes = {
@@ -3025,7 +3036,10 @@ window.onload = () => {
                     ta.value = ta.value.substring(0, matchIndex) + replaceTerm + ta.value.substring(matchIndex + searchTerm.length);
                     ta.style.height = 'auto'; 
                     ta.style.height = ta.scrollHeight + 'px';
-                    historyStack.push(getCurrentState()); 
+                    historyStack.push(getCurrentSnapshot());
+if (historyStack.length > 40) historyStack.shift();
+redoStack = [];
+updateUndoRedoButtons();
                     saveSession();
                 }
             }
@@ -3048,7 +3062,10 @@ window.onload = () => {
                 }
             });
             if (replacedCount > 0) { 
-                historyStack.push(getCurrentState()); 
+                historyStack.push(getCurrentSnapshot());
+if (historyStack.length > 40) historyStack.shift();
+redoStack = [];
+updateUndoRedoButtons();
                 saveSession();
                 showToast(i18n[currentLang]['msgDone'], 'success'); 
             } else { 
@@ -5124,6 +5141,7 @@ function buildEditorUI(kurdishState = [], resetHistory = true) {
     }
     updateProgress();
     saveSession(); 
+    updateUndoRedoButtons();
 }
 
 let typingTimer = null;
@@ -5135,7 +5153,60 @@ function onUserType() {
         redoStack = [];
         saveSession();
         updateProgress();
+        updateUndoRedoButtons();
     }, 400);
+}
+
+        // وەرگرتنی وێنەیەکی تەواو لە فایلی سەرەکی و وەرگێڕان پێکەوە
+function getCurrentSnapshot() {
+    return {
+        originalData: JSON.parse(JSON.stringify(originalData)),
+        kurdishState: Array.from(document.querySelectorAll('.subtitle-kurd textarea')).map(t => t.value)
+    };
+}
+
+function getCurrentState() { 
+    return Array.from(document.querySelectorAll('.subtitle-kurd textarea')).map(t => t.value); 
+}
+
+// نوێکردنەوەی ڕەنگ و دۆخی دوگمەکانی Undo و Redo
+function updateUndoRedoButtons() {
+    const btnUndo = document.getElementById('btn-undo');
+    const btnRedo = document.getElementById('btn-redo');
+    
+    if (btnUndo) {
+        const canUndo = historyStack.length > 1;
+        btnUndo.style.opacity = canUndo ? '1' : '0.35';
+        btnUndo.style.pointerEvents = canUndo ? 'auto' : 'none';
+    }
+    if (btnRedo) {
+        const canRedo = redoStack.length > 0;
+        btnRedo.style.opacity = canRedo ? '1' : '0.35';
+        btnRedo.style.pointerEvents = canRedo ? 'auto' : 'none';
+    }
+}
+
+// سیستەمی زیرەکی گەڕاندنەوە: بەبێ بازدانی سکرۆڵ و بێ تێکدانی کارتەکان
+function restoreSnapshot(snapshot) { 
+    if (!snapshot || !snapshot.originalData) return;
+    
+    const countChanged = originalData.length !== snapshot.originalData.length;
+    originalData = JSON.parse(JSON.stringify(snapshot.originalData));
+    
+    // ئەگەر دێڕ سڕابێتەوە یان زیاد بووبێت، کارتەکان نوێ دەکاتەوە
+    if (countChanged) {
+        buildEditorUI(snapshot.kurdishState, false);
+    } else {
+        // ئەگەر تەنها دەق گۆڕابێت، تەنها ناو بۆکسەکان دەگۆڕێت بەبێ ئەوەی سکرۆڵ بجوڵێت!
+        const tas = document.querySelectorAll('.subtitle-kurd textarea');
+        tas.forEach((ta, idx) => {
+            if (snapshot.kurdishState[idx] !== undefined && ta.value !== snapshot.kurdishState[idx]) {
+                ta.value = snapshot.kurdishState[idx];
+            }
+        });
+        updateProgress();
+    }
+    updateUndoRedoButtons();
 }
 
 function undo() { 
@@ -5154,24 +5225,6 @@ function redo() {
         restoreSnapshot(next); 
         saveSession(); 
     } 
-}
-
-        // وەرگرتنی وێنەیەکی تەواو لە فایلی سەرەکی و وەرگێڕان پێکەوە
-function getCurrentSnapshot() {
-    return {
-        originalData: JSON.parse(JSON.stringify(originalData)),
-        kurdishState: Array.from(document.querySelectorAll('.subtitle-kurd textarea')).map(t => t.value)
-    };
-}
-
-function getCurrentState() { 
-    return Array.from(document.querySelectorAll('.subtitle-kurd textarea')).map(t => t.value); 
-}
-
-function restoreSnapshot(snapshot) { 
-    if (!snapshot) return;
-    originalData = JSON.parse(JSON.stringify(snapshot.originalData));
-    buildEditorUI(snapshot.kurdishState, false);
 }
 
         function updateProgress() {

@@ -1,12 +1,15 @@
 @font-face {
     font-family: 'KurdForest';
-    src: local('KurdForest'), url('KurdForest.ttf') format('truetype');
+    src: local('ant;
+}
+est'), url('KurdForest.ttf') format('truetype');
     font-weight: normal;
     font-style: normal;
     font-display: swap;
 }
 
 /* شێوازی بەکارهێنانەکەی لەناو CSS بۆ ئەوەی دڵنیا بیت کاری پێ دەکات */
-body, * {
-    font-family: 'KurdForest', sans-serif !important;
+body {
+    font-family: 'KurdForest', sans-serif;
 }
+

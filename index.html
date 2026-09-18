@@ -4519,7 +4519,7 @@ function processRtlSegment(segment) {
 // ====================================================================
 let pendingRtlAction = null; // 'merge' | 'rtlfix'
 
-function openRtlOptionsModal(action) {
+async function openRtlOptionsModal(action) {
     if (action === 'merge') {
         const baseF = document.getElementById('mergeBaseFile').files[0];
         if (!baseF) { showToast("تکایە سەرەتا فایلی سەرەکی هەڵبژێرە!", "error"); return; }
@@ -4530,7 +4530,12 @@ function openRtlOptionsModal(action) {
             RTL_ENGINE_OPTIONS.unicodeEmbedding = true;
             RTL_ENGINE_OPTIONS.reverseStartEnd = false;
             RTL_ENGINE_OPTIONS.cleanSpaces = true;
-            executeMergeAss();
+            try {
+                await executeMergeAss();
+            } catch (err) {
+                console.error('openRtlOptionsModal merge error:', err);
+                showToast('هەڵەیەک ڕوویدا: ' + (err && err.message ? err.message : err), 'error');
+            }
             return;
         }
     } else if (action === 'rtlfix') {
@@ -4549,16 +4554,11 @@ function openRtlOptionsModal(action) {
     document.getElementById('rtl-options-modal').style.display = 'flex';
 }
 
-function confirmRtlOptionsAndProceed() {
+async function confirmRtlOptionsAndProceed() {
     const stdCb = document.getElementById('rtlOptStandardFix');
     const revCb = document.getElementById('rtlOptReverseHardsub');
     const doStandard = stdCb ? stdCb.checked : true;
     const doReverse = revCb ? revCb.checked : false;
-
-    if (!doStandard && !doReverse) {
-        showToast('تکایە لانی کەم یەک شێواز هەڵبژێرە!', 'error');
-        return;
-    }
 
     RTL_ENGINE_OPTIONS.unicodeEmbedding = doStandard;
     RTL_ENGINE_OPTIONS.reverseStartEnd = doReverse;
@@ -4568,10 +4568,15 @@ function confirmRtlOptionsAndProceed() {
     const action = pendingRtlAction;
     pendingRtlAction = null;
 
-    if (action === 'merge') {
-        executeMergeAss();
-    } else if (action === 'rtlfix') {
-        executeRtlFix();
+    try {
+        if (action === 'merge') {
+            await executeMergeAss();
+        } else if (action === 'rtlfix') {
+            await executeRtlFix();
+        }
+    } catch (err) {
+        console.error('confirmRtlOptionsAndProceed error:', err);
+        showToast('هەڵەیەک ڕوویدا: ' + (err && err.message ? err.message : err), 'error');
     }
 }
 
@@ -8958,7 +8963,7 @@ function buildKurdForestLogo(dialogues, res, count, styleKind, existingStyleName
         ',&H00FFFFFF,&H000000FF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,' +
         outline + ',' + shadow + ',7,' + marginLR + ',' + marginLR + ',' + marginV + ',1';
 
-    return { styleName: LOGO_STYLE, styleLine: styleLine };
+    return { styleName: LOGO_STYLE, styleLine: styleLine, lines: lines };
 }
 
 async function executeMergeAss() {
@@ -8973,7 +8978,7 @@ async function executeMergeAss() {
     // تەنها ستایلە سڕدراوەکان لادەبرێن و هیچ شتێکی تر (سایز، سترۆک، شادۆ، بەرزی) نەگۆڕدرێت
     const stylesOnlyMode = !srcF && !fontPlan.any && !newFont;
     const baseText = mergeBaseRawText || await baseF.text();
-    const srcText = srcF ? buildEditedMergeSourceText() : '';
+    const srcText = srcF ? (buildEditedMergeSourceText() || await srcF.text()) : '';
 
     function getResolution(text) {
         let yM = text.match(/PlayResY:\s*(\d+)/i);

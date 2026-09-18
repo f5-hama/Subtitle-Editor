@@ -2379,8 +2379,8 @@ input[type="checkbox"], input[type="radio"] {
             <!-- هێڵی مەگنەتیکی ئاسۆیی ناوەڕاست -->
             <div id="vSnapGuideH" style="display: none; position: absolute; left: 0; right: 0; top: 50%; height: 1.5px; background: var(--primary); box-shadow: 0 0 8px var(--primary); z-index: 15; pointer-events: none;"></div>
 
-            <!-- دەقی ڕاکێشراو -->
-            <div id="vDraggableSubText" style="position: absolute; font-family: 'KurdForest', Tahoma, sans-serif; white-space: nowrap !important; width: max-content !important; max-width: 95% !important; word-break: keep-all !important; direction: rtl; cursor: grab; padding: 2px 6px; border: 1.5px dashed var(--primary); border-radius: 4px; background: rgba(0,0,0,0.18); transform: translate(-50%, -50%); z-index: 25; box-sizing: border-box;">دەق</div>
+           <!-- دەقی ڕاکێشراو بە ئەندازەی تەواو بێ پادینگی زیادە -->
+<div id="vDraggableSubText" style="position: absolute; font-family: 'KurdForest', Tahoma, sans-serif; white-space: nowrap !important; width: max-content !important; max-width: 100% !important; word-break: keep-all !important; direction: rtl; cursor: grab; padding: 0 !important; margin: 0 !important; border: none !important; outline: 1.5px dashed var(--primary); outline-offset: 1px; background: transparent !important; line-height: 1 !important; z-index: 25; box-sizing: content-box !important;">دەق</div>
         </div>
 
         <!-- کۆنترۆڵی جوڵاندن و ڕێکخستن -->
@@ -6027,61 +6027,59 @@ let currentDragRawText = '';
 let currentDragAlign = '2';
 
 
-// دەرهێنانی ١٠٠٪ ڕاستی ڕێزۆلوشنی فایلی ژێرنووسەکە
+// دەرهێنانی تەواو و دەقیقی ڕێزۆلوشنی فایلی ژێرنووسەکە بەبێ تێکچوون
 function getActiveScriptResolution() {
     let resX = 0, resY = 0;
     
-    // ١. لە سەردێڕی فایلی ژێرنووس دەگەڕێت
-    if (typeof assHeaderLines !== 'undefined' && assHeaderLines.length > 0) {
+    // ١. دەرهێنانی ڕێزۆلوشن لە خودی سەردێڕی فایلی ASS
+    if (typeof assHeaderLines !== 'undefined' && assHeaderLines && assHeaderLines.length > 0) {
         let text = assHeaderLines.join('\n');
-        let yM = text.match(/PlayResY:\s*(\d+)/i);
-        let xM = text.match(/PlayResX:\s*(\d+)/i);
+        let yM = text.match(/PlayResY\s*:\s*(\d+)/i);
+        let xM = text.match(/PlayResX\s*:\s*(\d+)/i);
         if (yM) resY = parseInt(yM[1], 10);
         if (xM) resX = parseInt(xM[1], 10);
     }
 
-    // ٢. ئەگەر لە ژێرنووس نەبوو، لە ڕێزۆلوشنی خودی ڤیدیۆکە وەری دەگرێت
-    const video = document.getElementById('preview-video');
-    if ((!resX || !resY) && video && video.videoWidth && video.videoHeight) {
-        resX = video.videoWidth;
-        resY = video.videoHeight;
+    // ٢. ئەگەر تەنها یەکێکیان هەبوو، ئەوی تریان بەپێی ڕێژەی ڤیدیۆ حیساب دەکرێت بەبێ سڕینەوەی ژمارەی فایلەکە!
+    if (resY > 0 && (!resX || resX === 0)) {
+        const video = document.getElementById('preview-video');
+        const vRatio = (video && video.videoWidth && video.videoHeight) ? (video.videoWidth / video.videoHeight) : (16 / 9);
+        resX = Math.round(resY * vRatio);
+    } else if (resX > 0 && (!resY || resY === 0)) {
+        const video = document.getElementById('preview-video');
+        const vRatio = (video && video.videoWidth && video.videoHeight) ? (video.videoWidth / video.videoHeight) : (16 / 9);
+        resY = Math.round(resX / vRatio);
     }
 
-    // ٣. دۆخی بنەڕەتی
-    if (!resY && !resX) { resX = 1920; resY = 1080; }
-    else if (!resX && resY) { resX = Math.round(resY * (16 / 9)); }
-    else if (!resY && resX) { resY = Math.round(resX * (9 / 16)); }
+    // ٣. تەنها ئەگەر لە فایلەکە هیچ ڕێزۆلوشنێک نەبوو، ڕێزۆلوشنی ڤیدیۆکە وەردەگیرێت
+    if (!resX && !resY) {
+        const video = document.getElementById('preview-video');
+        if (video && video.videoWidth && video.videoHeight) {
+            resX = video.videoWidth;
+            resY = video.videoHeight;
+        } else {
+            resX = 1920;
+            resY = 1080;
+        }
+    }
     
     return { resX, resY };
 }
 
-// دۆزینەوەی قەبارەی ڕاستەقینەی فایلی ئەسڵی بۆ هەر دێڕێک
+// وەرگرتنی قەبارەی دەقیقی فۆنت لەسەر بنەمای ستایلی ناو فایلی ASS
 function getSubtitleLineFontSize(index, rawText) {
-    // ١. ئەگەر لەناو خودی دێڕەکە تاگی \fs هەبوو
-    let fsM = rawText ? rawText.match(/\\fs(\d+(?:\.\d+)?)/) : null;
+    let fsM = rawText ? rawText.match(/\\fs(\d+(?:\.\d+)?)/i) : null;
     if (fsM) return parseFloat(fsM[1]);
-
-    // ٢. ئەگەر لە ستایلی فایلی ئەسڵی دیاری کرابوو
+    
     if (typeof originalData !== 'undefined' && originalData[index] && originalData[index].assMeta) {
-        let styleName = (originalData[index].assMeta.style || '').trim().toLowerCase();
-        if (typeof assHeaderLines !== 'undefined') {
-            for (let line of assHeaderLines) {
-                let tr = line.trim();
-                if (tr.startsWith('Style:')) {
-                    let parts = tr.split(',');
-                    let sName = parts[0].replace('Style:', '').trim().toLowerCase();
-                    if (sName === styleName && parts.length >= 3) {
-                        let styleFs = parseInt(parts[2].trim(), 10);
-                        if (styleFs > 0) return styleFs;
-                    }
-                }
-            }
+        let sName = (originalData[index].assMeta.style || '').replace(/^\*/, '').trim().toLowerCase();
+        let stylesMap = (typeof getAssStylesDictionary === 'function') ? getAssStylesDictionary() : {};
+        if (stylesMap[sName] && stylesMap[sName].fontsize > 0) {
+            return stylesMap[sName].fontsize;
         }
     }
-
-    // ٣. ئەگەر نەدۆزرایەوە بەپێی ڕێزۆلوشن قەبارەی ئەسڵی دیاری دەکات
     const res = getActiveScriptResolution();
-    return res.resY <= 400 ? 22 : (res.resY <= 720 ? 45 : 67);
+    return Math.round((res.resY || 1080) * 0.05);
 }
 
 let currentDragFrz = 0;
@@ -6179,16 +6177,17 @@ function openGrid40Modal() {
     }, 50);
 }
 
-// ستایلی ئەم دێڕە لە فایلەکە
+// وەرگرتنی ستایلی تایبەتی ئەو دێڕە بۆ ناو شاشەی ڕاکێشان
 function getDragLineStyle() {
     var stylesMap = (typeof getAssStylesDictionary === 'function') ? getAssStylesDictionary() : {};
     var sName = 'default';
-    if (typeof originalData !== 'undefined' && originalData[currentStylingIndex] && originalData[currentStylingIndex].assMeta && originalData[currentStylingIndex].assMeta.style) {
+    if (typeof originalData !== 'undefined' && typeof currentStylingIndex !== 'undefined' && originalData[currentStylingIndex] && originalData[currentStylingIndex].assMeta && originalData[currentStylingIndex].assMeta.style) {
         sName = originalData[currentStylingIndex].assMeta.style.replace(/^\*/, '').trim().toLowerCase();
     }
     return stylesMap[sName] || stylesMap['default'] || {
         fontname: 'KurdForest', fontsize: 45, primaryColor: '#FFFFFF', outlineColor: '#000000', shadowColor: '#000000',
-        bold: false, italic: false, outline: 1.5, shadow: 1.0, alignment: '2', marginL: 10, marginR: 10, marginV: 18
+        bold: false, italic: false, outline: 1.5, shadow: 1.0, alignment: '2', marginL: 10, marginR: 10, marginV: 18,
+        scaleX: 100, scaleY: 100, spacing: 0
     };
 }
 
@@ -6208,14 +6207,16 @@ function renderDragPreviewStyled() {
     if (!dragText || !canvas) return;
 
     var raw = currentDragRawText || '';
-    var scaleRatio = (canvas.clientHeight || 1) / (currentDragResY || 1080);
+    var m = getDragFrameMetrics();
+    var frameHeight = m ? m.height : (canvas.clientHeight || 230);
+    var scaleRatio = frameHeight / (currentDragResY || 360);
 
+    // ستایلی تایبەتی ئەو دێڕە لە ناو فایلەکە
     var baseStyle = getDragLineStyle();
     var fsVal = fsInput ? parseFloat(fsInput.value) : 0;
     var styleForPreview = Object.assign({}, baseStyle);
     if (fsVal && fsVal > 0) styleForPreview.fontsize = fsVal;
 
-    // تاگی \fs لادەبرێت تاکو قەبارەی خانەکە کاربکات
     var textForPreview = raw.replace(/\\fs\d+(?:\.\d+)?/gi, '');
     textForPreview = textForPreview.replace(/[♪\|]/g, '');
 
@@ -6225,7 +6226,8 @@ function renderDragPreviewStyled() {
     }
     var plain = textForPreview.replace(/\{[^}]*\}/g, '').trim();
     if (!plain) html = '<span style="color:' + (baseStyle.primaryColor || '#fff') + ';">دەقی ژێرنووس</span>';
-    dragText.innerHTML = html;
+    
+    dragText.innerHTML = html.replace(/\\N/gi, '<br>');
 }
 
 // نوێکردنەوەی ڕاستەوخۆی دەقەکە بەبێ ڕیسێت بوون
@@ -6265,18 +6267,21 @@ function setDragElementPosition(assX, assY) {
 
     var align = currentDragAlign || '2';
     var tX = '-50%', tY = '-50%';
+    
+    // ئاڕاستەی ئاسۆیی (X)
     if (['1','4','7'].indexOf(align) !== -1) tX = '0%';
+    if (['2','5','8'].indexOf(align) !== -1) tX = '-50%';
     if (['3','6','9'].indexOf(align) !== -1) tX = '-100%';
+    
+    // ئاڕاستەی ستوونی (Y) بەپێی هێڵی بنچینەی پیتەکان (Baseline)
     if (['7','8','9'].indexOf(align) !== -1) tY = '0%';
-    if (['1','2','3'].indexOf(align) !== -1) tY = '-100%';
+    if (['4','5','6'].indexOf(align) !== -1) tY = '-50%';
+    if (['1','2','3'].indexOf(align) !== -1) tY = '-82%';
 
-    // پاراستنی هەموو سووڕانەوە و قەبارەکان لەکاتی ڕاکێشان بە پەنجە
     let skewDeg = -Math.atan(currentDragFax || 0) * (180 / Math.PI);
     dragText.style.transform = `translate(${tX}, ${tY}) rotate(${-(currentDragFrz || 0)}deg) scale(${(currentDragFscx || 100) / 100}, ${(currentDragFscy || 100) / 100}) skewX(${skewDeg}deg)`;
 
     if (display) display.innerText = `X: ${assX}, Y: ${assY} [${currentDragResX}×${currentDragResY}]`;
-
-    clampDragTextIntoBox();
 }
 
 // چوارچێوەی ڕاستەقینەی ڤیدیۆ (canvas) لە ناو بۆکسەکەدا
@@ -6299,34 +6304,8 @@ function getDragFrameMetrics() {
 
 // ڕێگرتن لەوەی دەقەکە بچێتە دەرەوەی چوارچێوەی ڤیدیۆکە
 function clampDragTextIntoBox() {
-    const el = document.getElementById('vDraggableSubText');
-    const m = getDragFrameMetrics();
-    if (!el || !m) return;
-
-    const fR = m.rect;
-    const eR = el.getBoundingClientRect();
-
-    let dx = 0, dy = 0;
-    if (eR.width >= fR.width) dx = (fR.left + (fR.width - eR.width) / 2) - eR.left;
-    else if (eR.left < fR.left) dx = fR.left - eR.left;
-    else if (eR.right > fR.right) dx = fR.right - eR.right;
-
-    if (eR.height >= fR.height) dy = (fR.top + (fR.height - eR.height) / 2) - eR.top;
-    else if (eR.top < fR.top) dy = fR.top - eR.top;
-    else if (eR.bottom > fR.bottom) dy = fR.bottom - eR.bottom;
-
-    if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return;
-
-    const sx = currentDragResX / m.width;
-    const sy = currentDragResY / m.height;
-    currentDragAssX = Math.round(Math.max(0, Math.min(currentDragResX, currentDragAssX + dx * sx)));
-    currentDragAssY = Math.round(Math.max(0, Math.min(currentDragResY, currentDragAssY + dy * sy)));
-
-    el.style.left = (m.offsetLeft + (currentDragAssX / currentDragResX) * m.width).toFixed(2) + 'px';
-    el.style.top = (m.offsetTop + (currentDragAssY / currentDragResY) * m.height).toFixed(2) + 'px';
-
-    const display = document.getElementById('vDragCoordDisplay');
-    if (display) display.innerText = `X: ${currentDragAssX}, Y: ${currentDragAssY} [${currentDragResX}×${currentDragResY}]`;
+    currentDragAssX = Math.round(Math.max(0, Math.min(currentDragResX, currentDragAssX)));
+    currentDragAssY = Math.round(Math.max(0, Math.min(currentDragResY, currentDragAssY)));
 }
 
 // ڕێژەی دوورییەکان بۆ دوگمەکانی جوڵاندن
@@ -6363,67 +6342,80 @@ function setupDragTouchEngine(box, textEl) {
     const guideV = document.getElementById('vSnapGuideV');
     const guideH = document.getElementById('vSnapGuideH');
 
-    function handleMove(e) {
+    let startX = 0, startY = 0;
+    let initialAssX = 0, initialAssY = 0;
+    let isDragging = false;
+
+    function onPointerDown(e) {
         e.preventDefault();
-        // چوارچێوەی ڕاستەقینەی ڤیدیۆ (canvas) بەکاردەهێنرێت نەک بۆکسی دەرەوە
+        isDragging = true;
+        const clientX = (e.touches && e.touches.length > 0) ? e.touches[0].clientX : e.clientX;
+        const clientY = (e.touches && e.touches.length > 0) ? e.touches[0].clientY : e.clientY;
+        startX = clientX;
+        startY = clientY;
+        initialAssX = currentDragAssX;
+        initialAssY = currentDragAssY;
+
+        window.addEventListener('mousemove', onPointerMove, { passive: false });
+        window.addEventListener('mouseup', onPointerUp);
+        window.addEventListener('touchmove', onPointerMove, { passive: false });
+        window.addEventListener('touchend', onPointerUp);
+    }
+
+    function onPointerMove(e) {
+        if (!isDragging) return;
+        e.preventDefault();
         const m = getDragFrameMetrics();
-        const rect = m ? m.rect : box.getBoundingClientRect();
+        if (!m) return;
+
         const clientX = (e.touches && e.touches.length > 0) ? e.touches[0].clientX : e.clientX;
         const clientY = (e.touches && e.touches.length > 0) ? e.touches[0].clientY : e.clientY;
 
-        let relX = clientX - rect.left;
-        let relY = clientY - rect.top;
+        const deltaX = clientX - startX;
+        const deltaY = clientY - startY;
 
-        let halfW = textEl.offsetWidth / 2;
-        let halfH = textEl.offsetHeight / 2;
+        const scaleX = currentDragResX / m.width;
+        const scaleY = currentDragResY / m.height;
 
-        let clampedX = Math.max(halfW, Math.min(rect.width - halfW, relX));
-        let clampedY = Math.max(halfH, Math.min(rect.height - halfH, relY));
+        let newAssX = Math.round(initialAssX + deltaX * scaleX);
+        let newAssY = Math.round(initialAssY + deltaY * scaleY);
 
-        const snapThreshold = 12;
-        const midX = rect.width / 2;
-        const midY = rect.height / 2;
+        const midX = Math.round(currentDragResX / 2);
+        const midY = Math.round(currentDragResY / 2);
+        const threshold = Math.round(12 * scaleX);
 
-        if (Math.abs(clampedX - midX) < snapThreshold) {
-            clampedX = midX;
+        if (Math.abs(newAssX - midX) < threshold) {
+            newAssX = midX;
             if (guideV) guideV.style.display = 'block';
         } else {
             if (guideV) guideV.style.display = 'none';
         }
 
-        if (Math.abs(clampedY - midY) < snapThreshold) {
-            clampedY = midY;
+        if (Math.abs(newAssY - midY) < threshold) {
+            newAssY = midY;
             if (guideH) guideH.style.display = 'block';
         } else {
             if (guideH) guideH.style.display = 'none';
         }
 
-        currentDragAssX = Math.round((clampedX / rect.width) * currentDragResX);
-        currentDragAssY = Math.round((clampedY / rect.height) * currentDragResY);
+        currentDragAssX = Math.max(0, Math.min(currentDragResX, newAssX));
+        currentDragAssY = Math.max(0, Math.min(currentDragResY, newAssY));
 
         setDragElementPosition(currentDragAssX, currentDragAssY);
     }
 
-    function handleEnd() {
+    function onPointerUp() {
+        isDragging = false;
         if (guideV) guideV.style.display = 'none';
         if (guideH) guideH.style.display = 'none';
-        box.onmousemove = null;
-        window.onmouseup = null;
+        window.removeEventListener('mousemove', onPointerMove);
+        window.removeEventListener('mouseup', onPointerUp);
+        window.removeEventListener('touchmove', onPointerMove);
+        window.removeEventListener('touchend', onPointerUp);
     }
 
-    box.onmousedown = (e) => {
-        handleMove(e);
-        box.onmousemove = handleMove;
-        window.onmouseup = handleEnd;
-    };
-
-    box.ontouchstart = (e) => {
-        handleMove(e);
-        box.ontouchmove = handleMove;
-    };
-
-    box.ontouchend = handleEnd;
-    box.ontouchcancel = handleEnd;
+    box.onmousedown = onPointerDown;
+    box.ontouchstart = onPointerDown;
 }
 
 // لابردنی تاگەکانی \pos و \an و \fs بەبێ زیانگەیاندن بە تاگەکانی تر (تەنها بۆ ئەم دێڕە)
@@ -6450,14 +6442,15 @@ function confirmDraggablePosition() {
     currentDragFscy = parseFloat(document.getElementById('vDragScaleY').value) || 100;
     currentDragFax = parseFloat(document.getElementById('vDragShearX').value) || 0;
 
-    // دروستکردنی تاگەکان
-    let newAdvTags = `\\pos(${currentDragAssX},${currentDragAssY})`;
+    // لێرەدا \an بە تەواوی لەگەڵ \pos قوفڵ دەکرێت
+    let alignTag = currentDragAlign ? `\\an${currentDragAlign}` : '\\an2';
+    let newAdvTags = `${alignTag}\\pos(${currentDragAssX},${currentDragAssY})`;
+    
     if (currentDragFrz !== 0) newAdvTags += `\\frz${currentDragFrz}`;
     if (currentDragFscx !== 100) newAdvTags += `\\fscx${currentDragFscx}`;
     if (currentDragFscy !== 100) newAdvTags += `\\fscy${currentDragFscy}`;
     if (currentDragFax !== 0) newAdvTags += `\\fax${currentDragFax}`;
 
-    // پاراستن لە بۆکسی تایبەت تا ون نەبێت
     if (extraIn) {
         extraIn.value = newAdvTags;
     }
@@ -6467,11 +6460,11 @@ function confirmDraggablePosition() {
         fsInput.value = chosenFs;
     }
 
-    // پاککردنەوەی بۆکسی دەقی سەرەکی
     if (modalTa) {
         modalTa.value = modalTa.value
             .replace(/\\pos\([^)]*\)/gi, '')
             .replace(/\\move\([^)]*\)/gi, '')
+            .replace(/\\an\d/gi, '')
             .replace(/\\fs\d+(?:\.\d+)?/gi, '')
             .replace(/\\frz-?[\d\.]+/gi, '')
             .replace(/\\fscx[\d\.]+/gi, '')
@@ -6481,7 +6474,6 @@ function confirmDraggablePosition() {
             .trim();
     }
 
-    // سەیڤکردنی ڕاستەوخۆ بۆ ناو کارتی دێڕەکە
     if (currentStylingIndex !== -1) {
         const card = document.querySelector(`.subtitle-card[data-index="${currentStylingIndex}"]`);
         if (card) {
@@ -6491,6 +6483,7 @@ function confirmDraggablePosition() {
                 baseTxt = baseTxt
                     .replace(/\\pos\([^)]*\)/gi, '')
                     .replace(/\\move\([^)]*\)/gi, '')
+                    .replace(/\\an\d/gi, '')
                     .replace(/\\fs\d+(?:\.\d+)?/gi, '')
                     .replace(/\\frz-?[\d\.]+/gi, '')
                     .replace(/\\fscx[\d\.]+/gi, '')
@@ -6749,31 +6742,27 @@ function resetVideoPlayer() {
     clearTimeout(playerControlsTimer);
 }
 
-// وەرگێڕی فەرمیی و بێ کێشەی ڕەنگەکانی ASS
+// وەرگێڕانی دروستی هەموو جۆرە ڕەنگەکانی فایلی ASS (Hex, BGR, Decimal)
 function parseAssColor(str, defaultHex) {
-    if (!str) return defaultHex || '#FFFFFF';
+    if (!str && str !== 0) return defaultHex || '#FFFFFF';
     try {
         var s = str.toString().trim();
-        // ئەگەر ژمارەی دەیی (Decimal) بوو
-        if (/^-?\d+$/.test(s) && !/[&#hH]/.test(str.toString())) {
+        // ئەگەر ڕەنگەکە بە ژمارەی Decimal نوسرابێت
+        if (/^-?\d+$/.test(s) && !/[&hH#]/.test(s)) {
             var num = (parseInt(s, 10) >>> 0).toString(16);
             s = num;
         }
         var clean = s.replace(/&H/gi, '').replace(/&/g, '').replace(/#/g, '').trim();
         if (!clean) return defaultHex || '#FFFFFF';
-        
-        // پڕکردنەوەی ژمارە کورتەکان بۆ لانیکەم ٦ پیت
         while (clean.length < 6) clean = '0' + clean;
         
         var r, g, b;
-        // ئەگەر ٨ پیت بوو (AABBGGRR)
         if (clean.length >= 8) {
-            clean = clean.slice(-8); // دوایین ٨ پیت وەردەگرێت
+            clean = clean.slice(-8);
             b = clean.substring(2, 4);
             g = clean.substring(4, 6);
             r = clean.substring(6, 8);
         } else {
-            // ئەگەر ٦ پیت بوو (BBGGRR)
             clean = clean.slice(-6);
             b = clean.substring(0, 2);
             g = clean.substring(2, 4);
@@ -6785,30 +6774,33 @@ function parseAssColor(str, defaultHex) {
     }
 }
 
-// دروستکردنی ستڕۆک و شادۆی ورد
+// دروستکردنی ستڕۆک و شادۆی فوق-لووس و بێ کەلێن بە ۲٤ بۆ ۳۲ خاڵی بازنەیی
 function buildAssShadowCss(bordW, strokeColor, shadW, shadowColor, blurW) {
     var shadows = [];
-    var b = bordW > 0 ? bordW.toFixed(1) : 0;
-    var d = (bordW * 0.707).toFixed(1);
-    var bl = (blurW && blurW > 0) ? blurW.toFixed(1) : '0';
+    var b = (bordW && bordW > 0) ? parseFloat(bordW) : 0;
+    var s = (shadW && shadW > 0) ? parseFloat(shadW) : 0;
+    var bl = (blurW && blurW > 0) ? parseFloat(blurW).toFixed(1) : '0';
     
-    if (bordW > 0) {
-        shadows.push(b + 'px 0px ' + bl + 'px ' + strokeColor);
-        shadows.push('-' + b + 'px 0px ' + bl + 'px ' + strokeColor);
-        shadows.push('0px ' + b + 'px ' + bl + 'px ' + strokeColor);
-        shadows.push('0px -' + b + 'px ' + bl + 'px ' + strokeColor);
-        shadows.push(d + 'px ' + d + 'px ' + bl + 'px ' + strokeColor);
-        shadows.push('-' + d + 'px -' + d + 'px ' + bl + 'px ' + strokeColor);
-        shadows.push(d + 'px -' + d + 'px ' + bl + 'px ' + strokeColor);
-        shadows.push('-' + d + 'px ' + d + 'px ' + bl + 'px ' + strokeColor);
+    var validStroke = strokeColor && strokeColor !== 'NONE' && strokeColor !== 'transparent';
+    var validShadow = shadowColor && shadowColor !== 'NONE' && shadowColor !== 'transparent';
+
+    if (b > 0 && validStroke) {
+        // ئەگەر لێوارەکە ئەستوور بوو ۳۲ خاڵ دادەنێت، ئەگەر ئاسایی بوو ۲٤ خاڵ
+        var points = b > 2 ? 32 : 24;
+        var step = (Math.PI * 2) / points;
+        
+        for (var angle = 0; angle < Math.PI * 2; angle += step) {
+            var x = (Math.cos(angle) * b).toFixed(2);
+            var y = (Math.sin(angle) * b).toFixed(2);
+            shadows.push(x + 'px ' + y + 'px ' + bl + 'px ' + strokeColor);
+        }
     }
-    
-    if (shadW > 0) {
-        var s = shadW.toFixed(1);
-        var sOffset = (parseFloat(s) + parseFloat(b)).toFixed(1);
+
+    if (s > 0 && validShadow) {
+        var sOffset = (s + (b > 0 ? b * 0.4 : 0)).toFixed(2);
         shadows.push(sOffset + 'px ' + sOffset + 'px ' + bl + 'px ' + shadowColor);
     }
-    
+
     return shadows.length > 0 ? 'text-shadow: ' + shadows.join(', ') + ';' : 'text-shadow: none;';
 }
 
@@ -6888,7 +6880,9 @@ function parseAssLineToStyledHtml(rawText, style, scaleY) {
             var cleanChunk = part.replace(/\\N/gi, '<br>').replace(/\\n/gi, '<br>').replace(/\\h/gi, '&nbsp;');
             var shadowCss = buildAssShadowCss(curBord, curOutline, curShad, curShadow, curBlur);
             var fsCss = 'font-size: ' + Math.max(0.5, curFs).toFixed(2) + 'px !important;';
-            var fnCss = 'font-family: \'KurdForest\', \'' + curFn + '\', Tahoma, sans-serif !important;';
+            
+            // دانانی ناوی فۆنتی ستایلەکە وەک فۆنتی سەرەکی
+            var fnCss = 'font-family: \'' + curFn + '\', \'KurdForest\', Tahoma, Arial, sans-serif !important;';
 
             var w = curBold ? 'font-weight:bold;' : 'font-weight:normal;';
             var f = curItalic ? 'font-style:italic;' : 'font-style:normal;';
@@ -6928,18 +6922,16 @@ function getVideoRenderBox(video, container) {
     return { width: Math.max(50, rW), height: Math.max(50, rH), left: Math.max(0, oX), top: Math.max(0, oY) };
 }
 
-// کۆکردنەوە و شی کردنەوەی تەواوی ستایلەکانی سەرەتای فایلی ASS
+// خوێندنەوەی تەواوی ستایلەکانی ناو فایلی ASS وەک خۆیان بەبێ هیچ دەستکارییەک
 function getAssStylesDictionary() {
     var stylesMap = {};
     if (typeof assHeaderLines === 'undefined' || !assHeaderLines || assHeaderLines.length === 0) return stylesMap;
     
-    // ڕیزبەندی بنەڕەتی ستایلەکانی V4+
     var formatKeys = ["name","fontname","fontsize","primarycolour","secondarycolour","outlinecolour","backcolour","bold","italic","underline","strikeout","scalex","scaley","spacing","angle","borderstyle","outline","shadow","alignment","marginl","marginr","marginv","encoding"];
 
     for (var i = 0; i < assHeaderLines.length; i++) {
         var tr = assHeaderLines[i].trim();
         
-        // دەرهێنانی ناوی ستوونەکان بەپێی Formatـی ناو فایلەکە
         if (/^Format\s*:/i.test(tr) && /primarycolour/i.test(tr)) {
             formatKeys = tr.replace(/^Format\s*:\s*/i, '').split(',').map(function(k){ return k.trim().toLowerCase(); });
         } else if (/^Style\s*:/i.test(tr)) {
@@ -6951,13 +6943,13 @@ function getAssStylesDictionary() {
             }
             
             var sName = (sObj.name || 'default').replace(/^\*/, '').trim().toLowerCase();
-            
-            // وەرگرتنی ڕەنگی Outline چ لە فۆرماتی نوێ (outlinecolour) یان فۆرماتی کۆن (tertiarycolour)
-            var rawOutlineColor = sObj.outlinecolour || sObj.tertiarycolour || '&H00000000';
             var rawPrimaryColor = sObj.primarycolour || '&H00FFFFFF';
+            var rawOutlineColor = sObj.outlinecolour || sObj.tertiarycolour || '&H00000000';
             var rawShadowColor = sObj.backcolour || '&H00000000';
 
+            // وەرگرتنی تەواوی تایبەتمەندییەکان لەسەر بنەمای ستایلی ناو فایلەکە
             stylesMap[sName] = {
+                name: sObj.name || 'Default',
                 fontname: sObj.fontname || 'KurdForest',
                 fontsize: parseFloat(sObj.fontsize) || 45,
                 primaryColor: parseAssColor(rawPrimaryColor, '#FFFFFF'),
@@ -6970,7 +6962,10 @@ function getAssStylesDictionary() {
                 alignment: sObj.alignment || '2',
                 marginL: parseFloat(sObj.marginl) || 10,
                 marginR: parseFloat(sObj.marginr) || 10,
-                marginV: parseFloat(sObj.marginv) || 18
+                marginV: parseFloat(sObj.marginv) || 18,
+                scaleX: parseFloat(sObj.scalex) || 100,
+                scaleY: parseFloat(sObj.scaley) || 100,
+                spacing: parseFloat(sObj.spacing) || 0
             };
         }
     }
@@ -6996,7 +6991,6 @@ function renderSubtitlesNow() {
                 var userText = card ? card.querySelector('textarea').value : '';
                 var finalText = '';
 
-                // پاراستنی تاگەکانی شوێن و ڕەنگ کاتێک تەنها دەقی سادە لە خانەکەدا دەنووسرێت
                 if (userText && userText.trim() !== '') {
                     var origRaw = originalData[i].rawText || '';
                     var origTagsMatch = origRaw.match(/^(\{[^}]+\})+/);
@@ -7020,35 +7014,26 @@ function renderSubtitlesNow() {
             }
         }
 
-        // دیاریکردنی کارتی چالاک
         document.querySelectorAll('.active-sub').forEach(function(el) { el.classList.remove('active-sub'); });
         activeSubs.forEach(function(s) {
             var c = document.querySelector('.subtitle-card[data-index="' + s.index + '"]');
             if (c) c.classList.add('active-sub');
         });
 
-        // ئەگەر ڕەندەری libass چالاک بێت، ئەو خۆی هەموو شت دەخوێنێتەوە (وەکو FFmpeg)
+        // ئەگەر کتێبخانەی jassub چالاک بوو خۆی دەیخوێنێتەوە
         if (typeof LibassRenderer !== 'undefined' && LibassRenderer.isActive()) {
             overlay.innerHTML = '';
             LibassRenderer.sync();
-            if (video.duration) {
-                var lPct = (video.currentTime / video.duration) * 100;
-                var lFill = document.getElementById('customProgressFill');
-                if (lFill) lFill.style.width = lPct + '%';
-                var lTime = document.getElementById('customTimeText');
-                if (lTime) lTime.innerText = formatPlayerTime(video.currentTime) + ' / ' + formatPlayerTime(video.duration);
-            }
             return;
         }
 
-
-
         var stylesMap = (typeof getAssStylesDictionary === 'function') ? getAssStylesDictionary() : {};
-        var res = (typeof getActiveScriptResolution === 'function') ? getActiveScriptResolution() : { resX: 1920, resY: 1080 };
+        var res = getActiveScriptResolution();
         var fileResX = res.resX || 1920;
         var fileResY = res.resY || 1080;
         var vBox = getVideoRenderBox(video, playerWrapper);
         
+        // پێوانەی ڕێژەی زەربکردنی پیکسڵەکان بەپێی ڕێزۆلوشنی فایلەکە
         var scaleX = vBox.width / fileResX;
         var scaleY = vBox.height / fileResY;
 
@@ -7061,27 +7046,21 @@ function renderSubtitlesNow() {
                 bold: false, italic: false, outline: 1.5, shadow: 1.0, alignment: '2', marginL: 10, marginR: 10, marginV: 18
             };
 
-            // ١. ئاڕاستە (Alignment)
             var align = style.alignment || '2';
             var anM = str.match(/\\an(\d)/i);
             if (anM) align = anM[1];
 
-            // ٢. فەیدی زۆر نەرم بە 60 FPS
             var opacityVal = 1;
             var fadM = str.match(/\\fad\((\d+),\s*(\d+)\)/i);
             if (fadM) {
                 var fIn = parseFloat(fadM[1]) / 1000;
                 var fOut = parseFloat(fadM[2]) / 1000;
                 var remaining = sub.endSec - ct;
-                if (fIn > 0 && elapsed < fIn) {
-                    opacityVal = elapsed / fIn;
-                } else if (fOut > 0 && remaining < fOut) {
-                    opacityVal = remaining / fOut;
-                }
+                if (fIn > 0 && elapsed < fIn) opacityVal = elapsed / fIn;
+                else if (fOut > 0 && remaining < fOut) opacityVal = remaining / fOut;
             }
             var opacityCss = 'opacity: ' + Math.max(0, Math.min(1, opacityVal)).toFixed(3) + ';';
 
-            // ٣. سوڕانەوە و گەورەکردن
             var rotM = str.match(/\\(?:frz|fr)(-?[\d\.]+)/i);
             var rotDeg = rotM ? parseFloat(rotM[1]) : 0;
             var rotTransform = rotDeg !== 0 ? ' rotate(' + (-rotDeg) + 'deg)' : '';
@@ -7092,10 +7071,9 @@ function renderSubtitlesNow() {
             var scY = fscyM ? parseFloat(fscyM[1]) / 100 : 1;
             var scaleTransform = (scX !== 1 || scY !== 1) ? ' scale(' + scX + ',' + scY + ')' : '';
 
-            // ٤. شوێنی ڕاستەقینەی دەق لەسەر شاشە (\pos و \move)
             var posX = 0, posY = 0, isPos = false;
-            var moveM = str.match(/\\move\(\s*(-?[\d\.]+)\s*,\s*(-?[\d\.]+)\s*,\s*(-?[\d\.]+)\s*,\s*(-?[\d\.]+)(?:,\s*(\d+)\s*,\s*(\d+))?\s*\)/i);
             var posM = str.match(/\\pos\(\s*(-?[\d\.]+)\s*,\s*(-?[\d\.]+)\s*\)/i);
+            var moveM = str.match(/\\move\(\s*(-?[\d\.]+)\s*,\s*(-?[\d\.]+)\s*,\s*(-?[\d\.]+)\s*,\s*(-?[\d\.]+)(?:,\s*(\d+)\s*,\s*(\d+))?\s*\)/i);
 
             if (moveM) {
                 isPos = true;
@@ -7108,6 +7086,7 @@ function renderSubtitlesNow() {
                 posY = vBox.top + ((y1 + (y2 - y1) * progress) * scaleY);
             } else if (posM) {
                 isPos = true;
+                // ڕێکخستنی شوێن بەپێی ڕێزۆلوشنی فایلەکە
                 posX = vBox.left + (parseFloat(posM[1]) * scaleX);
                 posY = vBox.top + (parseFloat(posM[2]) * scaleY);
             }
@@ -7116,67 +7095,42 @@ function renderSubtitlesNow() {
             var mR = (style.marginR || 10) * scaleX;
             var mV = (style.marginV || 18) * scaleY;
 
-            var posCss = '';
-            if (isPos) {
-                var transX = '-50%', transY = '-100%';
-                if (['1','4','7'].includes(align)) transX = '0%';
-                if (['2','5','8'].includes(align)) transX = '-50%';
-                if (['3','6','9'].includes(align)) transX = '-100%';
-                if (['7','8','9'].includes(align)) transY = '0%';
-                if (['4','5','6'].includes(align)) transY = '-50%';
-                if (['1','2','3'].includes(align)) transY = '-100%';
-                
-                posCss = 'position: absolute; left: ' + posX.toFixed(1) + 'px; top: ' + posY.toFixed(1) + 'px; transform: translate(' + transX + ', ' + transY + ')' + rotTransform + scaleTransform + ';';
+            var transX = '-50%', transY = '-82%';
+            if (['1','4','7'].indexOf(align) !== -1) transX = '0%';
+            if (['2','5','8'].indexOf(align) !== -1) transX = '-50%';
+            if (['3','6','9'].indexOf(align) !== -1) transX = '-100%';
 
+            if (['7','8','9'].indexOf(align) !== -1) transY = '0%';
+            if (['4','5','6'].indexOf(align) !== -1) transY = '-50%';
+            if (['1','2','3'].indexOf(align) !== -1) transY = '-82%';
+
+            var posCss = '';
+            var textAlignCss = 'text-align: center;';
+            if (['1','4','7'].indexOf(align) !== -1) textAlignCss = 'text-align: left;';
+            if (['3','6','9'].indexOf(align) !== -1) textAlignCss = 'text-align: right;';
+
+            if (isPos) {
+                posCss = 'position: absolute; left: ' + posX.toFixed(1) + 'px; top: ' + posY.toFixed(1) + 'px; transform: translate(' + transX + ', ' + transY + ')' + rotTransform + scaleTransform + ';';
             } else {
                 var finalX = vBox.left + (vBox.width / 2);
                 var finalY = vBox.top + vBox.height - mV;
-                var transX = '-50%', transY = '-100%';
+                if (['7','8','9'].indexOf(align) !== -1) finalY = vBox.top + mV;
+                else if (['4','5','6'].indexOf(align) !== -1) finalY = vBox.top + (vBox.height / 2);
 
-                if (['7','8','9'].includes(align)) {
-                    finalY = vBox.top + mV;
-                    transY = '0%';
-                } else if (['4','5','6'].includes(align)) {
-                    finalY = vBox.top + (vBox.height / 2);
-                    transY = '-50%';
-                }
+                if (['1','4','7'].indexOf(align) !== -1) finalX = vBox.left + mL;
+                else if (['3','6','9'].indexOf(align) !== -1) finalX = vBox.left + vBox.width - mR;
 
-                if (['1','4','7'].includes(align)) {
-                    finalX = vBox.left + mL;
-                    transX = '0%';
-                } else if (['3','6','9'].includes(align)) {
-                    finalX = vBox.left + vBox.width - mR;
-                    transX = '-100%';
-                }
-
-                posCss = 'position: absolute; left: ' + finalX.toFixed(1) + 'px; top: ' + finalY.toFixed(1) + 'px; transform: translate(' + transX + ', ' + transY + ')' + rotTransform + scaleTransform + '; text-align: center;';
+                posCss = 'position: absolute; left: ' + finalX.toFixed(1) + 'px; top: ' + finalY.toFixed(1) + 'px; transform: translate(' + transX + ', ' + transY + ')' + rotTransform + scaleTransform + ';';
             }
 
             var formattedHtml = parseAssLineToStyledHtml(str, style, scaleY);
-            // تەنها ئەگەر دەقەکە لە پانی شاشەکە زیاتر بوو ئەوا دەبێتە دوو ڕیز (بینین تەنها، فایل دەستکاری نەکراوە)
             var maxW = Math.max(80, vBox.width - 8);
-            var wrapCss = 'unicode-bidi: plaintext; white-space: normal; width: max-content; word-break: normal; overflow-wrap: break-word; line-height: 1.24; text-align: center; max-width: ' + maxW.toFixed(0) + 'px;';
+            var wrapCss = 'unicode-bidi: plaintext; white-space: pre-line; width: max-content; word-break: normal; overflow-wrap: break-word; line-height: 1.25; ' + textAlignCss + ' max-width: ' + maxW.toFixed(0) + 'px;';
+            
             renderedElementsHtml += '<div class="sub-rendered-line" dir="auto"' + (isPos ? ' data-pos="1"' : '') + ' style="' + posCss + ' ' + opacityCss + ' ' + wrapCss + ' pointer-events: none; z-index: 20;">' + formattedHtml + '</div>';
-
-
         });
 
         overlay.innerHTML = renderedElementsHtml;
-
-        // ڕێگرتن لەوەی هیچ دێڕێک بچێتە دەرەوەی چوارچێوەی ڤیدیۆکە
-        var oRect = overlay.getBoundingClientRect();
-        var minL = oRect.left + vBox.left, maxR = minL + vBox.width;
-        var minT = oRect.top + vBox.top, maxB = minT + vBox.height;
-        Array.prototype.forEach.call(overlay.querySelectorAll('.sub-rendered-line:not([data-pos])'), function(el) {
-            var r = el.getBoundingClientRect();
-            var dx = 0, dy = 0;
-            if (r.width >= vBox.width || r.left < minL) dx = minL - r.left;
-            else if (r.right > maxR) dx = maxR - r.right;
-            if (r.height >= vBox.height || r.top < minT) dy = minT - r.top;
-            else if (r.bottom > maxB) dy = maxB - r.bottom;
-            if (dx) el.style.marginLeft = dx.toFixed(1) + 'px';
-            if (dy) el.style.marginTop = dy.toFixed(1) + 'px';
-        });
 
         if (video.duration) {
             var pct = (video.currentTime / video.duration) * 100;
@@ -8779,263 +8733,188 @@ async function executeMergeAss() {
     showToast(`${successWord}${purgeNotice}${logoNotice}!`, "success");
 }
     </script>
-<!-- ================= چاککردنی شوێن و جوڵەی ژێرنووس بە libass (وەک پلەیەری ڕاستەقینە) ================= -->
-<script src="/jassub/jassub.umd.js"></script>
+<!-- ================= بزوێنەری ژێرنووس بە سەلامەتی تەواو و بێ ونبوون ================= -->
+<script src="https://cdn.jsdelivr.net/npm/jassub@1.6.4/dist/jassub.umd.js"></script>
 <script>
 (function () {
-    var CDN = '/jassub/';
-    var FONT_AR = '/fonts/NotoNaskhArabic.ttf';
-    var jassub = null, workerUrl = null, lastContent = '', booting = false;
-    var legacyRender = null;
+    const CDN = 'https://cdn.jsdelivr.net/npm/jassub@1.6.4/dist/';
+    let jassubInstance = null;
+    let workerBlobUrl = null;
+    let isBooting = false;
 
-    function libassSupported() {
-        return typeof window.JASSUB !== 'undefined' && typeof WebAssembly !== 'undefined';
-    }
-
-    function getWorkerUrl() {
-        if (workerUrl) return Promise.resolve(workerUrl);
-        return fetch(CDN + 'jassub-worker.js')
-            .then(function (r) { return r.text(); })
-            .then(function (code) {
-                workerUrl = URL.createObjectURL(new Blob([code], { type: 'application/javascript' }));
-                return workerUrl;
-            });
-    }
-
-    function assTime(sec) {
-        if (typeof formatTimeASS === 'function') return formatTimeASS(sec);
-        sec = Math.max(0, sec || 0);
-        var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
-        return h + ':' + String(m).padStart(2, '0') + ':' + s.toFixed(2).padStart(5, '0');
-    }
-
-    // دەقی ئێستای هەر دێڕێک (دەستکاریی بەکارهێنەر) لەگەڵ پاراستنی تاگەکانی ئەسڵی
-    function currentTextFor(i) {
-        var item = originalData[i];
-        var card = document.querySelector('.subtitle-card[data-index="' + i + '"]');
-        var ta = card ? card.querySelector('textarea') : null;
-        var userText = ta ? ta.value : '';
-        var out;
-        if (userText && userText.trim() !== '') {
-            var origRaw = item.rawText || '';
-            var tags = origRaw.match(/^(\{[^}]+\})+/);
-            out = (tags && userText.indexOf('{') === -1) ? (tags[0] + userText) : userText;
-        } else {
-            out = item.rawText || item.text || '';
+    // وەرگێڕانی فایلی Worker بۆ Blob تا وێبگەڕ بلۆکی نەکات لەسەر localhost
+    async function getSafeWorkerUrl() {
+        if (workerBlobUrl) return workerBlobUrl;
+        try {
+            const res = await fetch(CDN + 'jassub-worker.js');
+            const code = await res.text();
+            workerBlobUrl = URL.createObjectURL(new Blob([code], { type: 'application/javascript' }));
+            return workerBlobUrl;
+        } catch (e) {
+            return null;
         }
-        return String(out)
-            .replace(/<i>/gi, '{\\i1}').replace(/<\/i>/gi, '{\\i0}')
-            .replace(/<b>/gi, '{\\b1}').replace(/<\/b>/gi, '{\\b0}')
-            .replace(/<u>/gi, '{\\u1}').replace(/<\/u>/gi, '{\\u0}')
-            .replace(/\r?\n/g, '\\N');
     }
 
-    function defaultHeader() {
-        var res = (typeof getActiveScriptResolution === 'function')
-            ? getActiveScriptResolution() : { resX: 1920, resY: 1080 };
-        var fs = Math.round(res.resY / 20);
-        return '[Script Info]\nScriptType: v4.00+\nWrapStyle: 0\nScaledBorderAndShadow: yes\n' +
-            'PlayResX: ' + res.resX + '\nPlayResY: ' + res.resY + '\nYCbCr Matrix: None\n\n' +
-            '[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n' +
-            'Style: Default,KurdForest,' + fs + ',&H00FFFFFF,&H000000FF,&H00000000,&H64000000,0,0,0,0,100,100,0,0,1,' +
-            (fs / 16).toFixed(1) + ',0,2,20,20,' + Math.round(res.resY / 22) + ',1\n';
-    }
-
-    // دروستکردنی فایلێکی تەواوی ASS لە دۆخی ئێستای دەستکاریکەر
-    function buildLiveAssContent() {
+    // دەرهێنانی دەقی ئێستای ژێرنووس بە فۆرماتی تەواوی ASS
+    function getCompleteAssScript() {
         if (!window.originalData || originalData.length === 0) return '';
-        var header;
-        var isAss = (typeof isAssFormat !== 'undefined' && isAssFormat) &&
-            (typeof assHeaderLines !== 'undefined' && assHeaderLines.length > 0);
-
-        if (isAss) {
-            header = assHeaderLines.join('\n').replace(/\s+$/, '') + '\n';
-            // هەموو ستایلەکان بۆ فۆنتی KurdForest دەگۆڕدرێن (تەنها لە پێشبینین)
-            header = header.replace(/^(\s*Style:\s*[^,\n]+,)[^,\n]*/gim, '$1KurdForest');
-            // دڵنیابوون لەوەی PlayRes هەیە (بەبێ ئەوە شوێنەکان هەڵە دەبن)
-            if (!/PlayResX\s*:/i.test(header) || !/PlayResY\s*:/i.test(header)) {
-                var r = (typeof getActiveScriptResolution === 'function')
-                    ? getActiveScriptResolution() : { resX: 1920, resY: 1080 };
-                header = header.replace(/(\[Script Info\][^\n]*\n)/i,
-                    '$1PlayResX: ' + r.resX + '\nPlayResY: ' + r.resY + '\n');
-            }
-            header += '\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n';
+        let res = (typeof getActiveScriptResolution === 'function')
+            ? getActiveScriptResolution() : { resX: 1920, resY: 1080 };
+            
+        let header = '';
+        if (typeof assHeaderLines !== 'undefined' && assHeaderLines && assHeaderLines.length > 0) {
+            header = assHeaderLines.join('\n').replace(/\s+$/, '');
+            if (!/PlayResX\s*:/i.test(header)) header += `\nPlayResX: ${res.resX}`;
+            if (!/PlayResY\s*:/i.test(header)) header += `\nPlayResY: ${res.resY}`;
+            if (!/\[Events\]/i.test(header)) header += '\n\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n';
+            else header += '\n';
         } else {
-            header = defaultHeader() +
-                '\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n';
+            header = `[Script Info]
+ScriptType: v4.00+
+WrapStyle: 0
+ScaledBorderAndShadow: yes
+PlayResX: ${res.resX}
+PlayResY: ${res.resY}
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,KurdForest,${Math.round(res.resY * 0.05)},&H00FFFFFF,&H000000FF,&H00000000,&H80000000,0,0,0,0,100,100,0,0,1,2,1,2,20,20,40,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+`;
         }
 
-        var body = '';
-        for (var i = 0; i < originalData.length; i++) {
-            var it = originalData[i];
-            var m = it.assMeta || {};
-            body += 'Dialogue: ' + (m.layer || '0') + ',' +
-                assTime(it.startSec) + ',' + assTime(it.endSec) + ',' +
-                (m.style || 'Default') + ',' + (m.name || '') + ',' +
-                (m.marginL || '0') + ',' + (m.marginR || '0') + ',' + (m.marginV || '0') + ',' +
-                (m.effect || '') + ',' + String(currentTextFor(i) || '').replace(/\\fn[^\\}]*/gi, '') + '\n';
+        let body = '';
+        const tas = document.querySelectorAll('.subtitle-kurd textarea');
+        for (let i = 0; i < originalData.length; i++) {
+            let it = originalData[i];
+            let m = it.assMeta || {};
+            let userText = tas[i] ? tas[i].value : '';
+            let lineText = '';
+
+            if (userText && userText.trim() !== '') {
+                lineText = userText.replace(/\r?\n/g, '\\N');
+            } else {
+                lineText = (it.rawText || it.text || '').replace(/\r?\n/g, '\\N');
+            }
+
+            body += `Dialogue: ${m.layer || '0'},${formatTimeASS(it.startSec)},${formatTimeASS(it.endSec)},${m.style || 'Default'},${m.name || ''},${m.marginL || '0'},${m.marginR || '0'},${m.marginV || '0'},${m.effect || ''},${lineText}\n`;
         }
+
         return header + body;
     }
-    window.buildLiveAssContent = buildLiveAssContent;
 
-    function styleCanvas(cv) {
-        if (!cv) return;
-        cv.style.position = 'absolute';
-        cv.style.top = '0';
-        cv.style.left = '0';
-        cv.style.width = '100%';
-        cv.style.height = '100%';
-        cv.style.pointerEvents = 'none';
-        cv.style.zIndex = '15';
-    }
+    async function initLibass() {
+        const video = document.getElementById('preview-video');
+        const overlay = document.getElementById('video-subtitle-overlay');
+        
+        if (!video || !video.src || isBooting || jassubInstance || typeof window.JASSUB === 'undefined') {
+            // هەمیشە دڵنیادەبێتەوە ژێرنووسە ئاساییەکە دیارە و ناشاردرێتەوە
+            if (overlay) overlay.style.display = 'block';
+            return;
+        }
 
-    function bootLibass() {
-        var video = document.getElementById('preview-video');
-        var overlay = document.getElementById('video-subtitle-overlay');
-        if (!video || !video.src || booting || jassub || !libassSupported()) return;
-        var content = buildLiveAssContent();
-        if (!content) return;
-        booting = true;
-        getWorkerUrl().then(function (wUrl) {
-            try {
-                jassub = new window.JASSUB({
-                    video: video,
-                    subContent: content,
-                    workerUrl: wUrl,
-                    wasmUrl: CDN + 'jassub-worker.wasm',
-                    legacyWasmUrl: CDN + 'jassub-worker.wasm.js',
-                    fonts: ['/jassub/default.woff2', FONT_AR, '/fonts/DejaVuSans.ttf', '/assets/KurdForest.ttf'],
-                    availableFonts: {
-                        'noto naskh arabic': FONT_AR,
-                        'kurdforest': '/assets/KurdForest.ttf',
-                        'dejavu sans': '/fonts/DejaVuSans.ttf',
-                        'arial': '/fonts/DejaVuSans.ttf'
-                    },
-                    fallbackFont: 'kurdforest',
-                    dropAllBlur: false,
-                    prescaleFactor: 1,
-                    targetFps: 60
-                });
-                lastContent = content;
-                if (overlay) overlay.innerHTML = '';
-                setTimeout(function () { styleCanvas(jassub && jassub._canvas); }, 60);
-            } catch (e) {
-                console.error('libass boot failed, using fallback renderer', e);
-                jassub = null;
-            }
-            booting = false;
-        }).catch(function (e) {
-            console.error('libass worker load failed, using fallback renderer', e);
-            booting = false;
-        });
-    }
-    window.bootLibass = bootLibass;
+        isBooting = true;
+        const wUrl = await getSafeWorkerUrl();
+        
+        if (!wUrl) {
+            isBooting = false;
+            if (overlay) overlay.style.display = 'block';
+            return;
+        }
 
-    function destroyLibass() {
-        if (jassub) { try { jassub.destroy(); } catch (e) {} }
-        jassub = null; lastContent = '';
-    }
-    window.destroyLibass = destroyLibass;
+        const scriptContent = getCompleteAssScript();
+        if (!scriptContent) { isBooting = false; return; }
 
-    var refreshTimer = null;
-    function refreshLiveSubs() {
-        if (!jassub) { bootLibass(); return; }
-        clearTimeout(refreshTimer);
-        refreshTimer = setTimeout(function () {
-            var c = buildLiveAssContent();
-            if (c && c !== lastContent) {
-                lastContent = c;
-                try { jassub.setTrack(c); } catch (e) { console.error(e); }
-            }
-        }, 250);
-    }
-    window.refreshLiveSubs = refreshLiveSubs;
+        try {
+            jassubInstance = new window.JASSUB({
+                video: video,
+                subContent: scriptContent,
+                workerUrl: wUrl,
+                wasmUrl: CDN + 'jassub-worker.wasm',
+                legacyWasmUrl: CDN + 'jassub-worker.wasm.js',
+                dropAllBlur: false,
+                dropAllAnimations: false,
+                targetFps: 60,
+                prescaleFactor: 1
+            });
 
-    // ١. لەبری ڕەندەری کۆن، libass بەکاردەهێنین بۆ شوێن و جوڵەی ١٠٠٪ ڕاست
-    function installOverride() {
-        if (typeof window.renderSubtitlesNow !== 'function') return false;
-        if (legacyRender) return true;
-        legacyRender = window.renderSubtitlesNow;
-        window.renderSubtitlesNow = function () {
-            var video = document.getElementById('preview-video');
-            if (!jassub && video && video.src && libassSupported()) bootLibass();
-            if (jassub) {
-                // تەنها دیاریکردنی کارتی چالاک و شریتی کات (نیشاندان لەلایەن libassـەوەیە)
-                try {
-                    var ct = video.currentTime;
-                    document.querySelectorAll('.active-sub').forEach(function (el) { el.classList.remove('active-sub'); });
-                    for (var i = 0; i < originalData.length; i++) {
-                        if (ct >= originalData[i].startSec && ct <= originalData[i].endSec) {
-                            var c = document.querySelector('.subtitle-card[data-index="' + i + '"]');
-                            if (c) c.classList.add('active-sub');
-                        }
-                    }
-                    var ov = document.getElementById('video-subtitle-overlay');
-                    if (ov && ov.innerHTML) ov.innerHTML = '';
-                    if (video.duration) {
-                        var fill = document.getElementById('customProgressFill');
-                        if (fill) fill.style.width = ((video.currentTime / video.duration) * 100) + '%';
-                        var tt = document.getElementById('customTimeText');
-                        if (tt && typeof formatPlayerTime === 'function') {
-                            tt.innerText = formatPlayerTime(video.currentTime) + ' / ' + formatPlayerTime(video.duration);
-                        }
-                    }
-                } catch (e) {}
-                return;
-            }
-            return legacyRender.apply(this, arguments);
-        };
-        return true;
-    }
+            // تەنها کاتێک بزوێنەرەکە بە سەرکەوتوویی لەسەر کەناڤاس کێشرا، ڕەندەری کۆن لادەبرێت
+            if (overlay) overlay.style.display = 'none';
 
-    // ٢. گرێدانی گۆڕانکاریی دەق و لابردن/گۆڕینی ڤیدیۆ
-    function wireUp() {
-        installOverride();
-
-        var origPlay = window.playVideoSource;
-        if (typeof origPlay === 'function' && !origPlay.__libassWrapped) {
-            window.playVideoSource = function (src) {
-                destroyLibass();
-                var r = origPlay.apply(this, arguments);
-                var v = document.getElementById('preview-video');
-                if (v) {
-                    var once = function () { bootLibass(); };
-                    v.addEventListener('loadedmetadata', once, { once: true });
+            setTimeout(() => {
+                if (jassubInstance && jassubInstance._canvas) {
+                    jassubInstance._canvas.style.position = 'absolute';
+                    jassubInstance._canvas.style.top = '0';
+                    jassubInstance._canvas.style.left = '0';
+                    jassubInstance._canvas.style.width = '100%';
+                    jassubInstance._canvas.style.height = '100%';
+                    jassubInstance._canvas.style.pointerEvents = 'none';
+                    jassubInstance._canvas.style.zIndex = '16';
                 }
-                return r;
-            };
-            window.playVideoSource.__libassWrapped = true;
+            }, 80);
+
+        } catch (e) {
+            console.warn('JASSUB fallback activated:', e);
+            if (overlay) overlay.style.display = 'block';
+            jassubInstance = null;
+        } finally {
+            isBooting = false;
         }
-
-        var origReset = window.resetVideoPlayer;
-        if (typeof origReset === 'function' && !origReset.__libassWrapped) {
-            window.resetVideoPlayer = function () {
-                destroyLibass();
-                return origReset.apply(this, arguments);
-            };
-            window.resetVideoPlayer.__libassWrapped = true;
-        }
-
-        document.addEventListener('input', function (e) {
-            if (e.target && e.target.tagName === 'TEXTAREA') refreshLiveSubs();
-        }, true);
-        document.addEventListener('change', function (e) {
-            if (e.target && e.target.tagName === 'TEXTAREA') refreshLiveSubs();
-        }, true);
-
-        window.addEventListener('resize', function () {
-            if (jassub) { try { jassub.resize(); } catch (e) {} }
-        });
     }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', wireUp);
-    } else {
-        wireUp();
+    let syncTimer = null;
+    function syncLive() {
+        if (!jassubInstance) {
+            initLibass();
+            if (typeof renderSubtitlesNow === 'function') renderSubtitlesNow();
+            return;
+        }
+        clearTimeout(syncTimer);
+        syncTimer = setTimeout(() => {
+            const currentScript = getCompleteAssScript();
+            if (currentScript && jassubInstance) {
+                try { jassubInstance.setTrack(currentScript); } catch (e) {}
+            }
+        }, 120);
     }
-    // دووبارە هەوڵدان بۆ دڵنیابوون لەوەی فەنکشنە سەرەکییەکان بارکراون
-    setTimeout(wireUp, 800);
+
+    window.refreshLiveSubs = syncLive;
+
+    document.addEventListener('input', (e) => {
+        if (e.target && e.target.tagName === 'TEXTAREA') syncLive();
+    }, true);
+
+    const origPlay = window.playVideoSource;
+    if (typeof origPlay === 'function') {
+        window.playVideoSource = function(src) {
+            if (jassubInstance) {
+                try { jassubInstance.destroy(); } catch(e){}
+                jassubInstance = null;
+            }
+            const overlay = document.getElementById('video-subtitle-overlay');
+            if (overlay) overlay.style.display = 'block';
+            origPlay.apply(this, arguments);
+            const v = document.getElementById('preview-video');
+            if (v) {
+                v.addEventListener('loadedmetadata', () => { initLibass(); }, { once: true });
+            }
+        };
+    }
+
+    const origReset = window.resetVideoPlayer;
+    if (typeof origReset === 'function') {
+        window.resetVideoPlayer = function() {
+            if (jassubInstance) {
+                try { jassubInstance.destroy(); } catch(e){}
+                jassubInstance = null;
+            }
+            const overlay = document.getElementById('video-subtitle-overlay');
+            if (overlay) overlay.style.display = 'block';
+            origReset.apply(this, arguments);
+        };
+    }
 })();
 </script>
 

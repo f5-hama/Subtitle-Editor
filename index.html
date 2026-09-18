@@ -8203,6 +8203,11 @@ function renderMergeFonts() {
     list.innerHTML = mergeFonts.map(f => {
         let factor = getMergeFontFactor(f);
         let known = f.factorAuto !== null;
+
+        // پشکنینی ئەوەی ئایا هەموو ستایلەکان دیاریکراون
+        let allKeys = mergeAllStylesCache.map(n => n.toLowerCase());
+        let isAllStylesSelected = allKeys.length > 0 && allKeys.every(k => f.styles.has(k));
+
         let styleChips = mergeAllStylesCache.map(n => {
             let key = n.toLowerCase();
             let mine = f.styles.has(key);
@@ -8227,9 +8232,17 @@ function renderMergeFonts() {
             <div style="display:flex; align-items:center; gap:6px; padding:6px 8px;">
                 <button type="button" class="btn btn-outline" style="flex-shrink:0; width:auto; margin:0; padding:3px 7px; font-size:10px; color:#ef4444; border-color:rgba(239,68,68,0.4);" onclick="removeMergeFont(${f.id})">سڕینەوە</button>
                 <span id="mfFactor_${f.id}" title="ڕێژەی گونجاندنی قەبارە" style="flex-shrink:0; font-size:10px; font-weight:bold; color:${known || !f.useAuto ? 'var(--primary)' : '#f59e0b'}; background:rgba(142,182,155,0.12); padding:2px 6px; border-radius:4px; border:1px solid rgba(142,182,155,0.25);">×${factor.toFixed(2)}</span>
+                
+                <!-- ناوی فۆنت -->
                 <div onclick="toggleMergeFontOpen(${f.id})" style="flex:1; cursor:pointer; text-align:end; direction:ltr; overflow:hidden; white-space:nowrap;">
                     <span style="font-weight:bold; font-size:11.5px; color:var(--text-main);">${esc(f.name)}</span>
                 </div>
+
+                <!-- دوگمەی هەڵبژاردنی هەموو ستایلەکان (ڕێک لە شوێنی بازنە پرتەقاڵییەکە) -->
+                <button type="button" class="btn btn-outline" style="flex-shrink:0; width:auto; margin:0; padding:2px 6px; font-size:9.5px; font-weight:bold; color:${isAllStylesSelected ? '#ffffff' : 'var(--primary)'}; background:${isAllStylesSelected ? 'var(--primary)' : 'rgba(142,182,155,0.1)'}; border-color:var(--primary);" onclick="toggleSelectAllStylesForFont(${f.id})" title="دیاریکردنی هەموو ستایلەکان بۆ ئەم فۆنتە">
+                    ${isAllStylesSelected ? 'لابردنی هەمووی' : 'هەموو ستایلەکان'}
+                </button>
+
                 <span onclick="toggleMergeFontOpen(${f.id})" style="cursor:pointer; font-size:11px; color:var(--text-muted);">${f.open ? SVG_ICONS.up : SVG_ICONS.down}</span>
             </div>
 
@@ -8450,6 +8463,34 @@ function processRtlDialogueText(text) {
 // چارەسەری فەنکشنی ونبووی پشکنینی تاگەکان بۆ پێداچوونەوە
 function hasInlineTagChunks(text) {
     return /\{[^}]*\}/.test(text || '');
+}
+
+function toggleSelectAllStylesForFont(id) {
+    let target = mergeFonts.find(x => x.id === id);
+    if (!target) return;
+    
+    let allAvailable = mergeAllStylesCache.map(n => n.toLowerCase());
+    if (!allAvailable.length) {
+        showToast("هیچ ستایلێک لەم فایلەدا نییە!", "warning");
+        return;
+    }
+    
+    // ئایا هەموو ستایلەکان پێشتر هەڵبژێردراون؟
+    let isAllSelected = allAvailable.every(key => target.styles.has(key));
+    
+    if (isAllSelected) {
+        // ئەگەر هەمووی هەڵبژێردرابوو، لایاندەبات
+        allAvailable.forEach(key => target.styles.delete(key));
+        showToast("هەموو ستایلەکان لادران", "info");
+    } else {
+        // لە فۆنتەکانی تر لایاندەبات و هەمووی بۆ ئەم فۆنتە دادەنێت
+        mergeFonts.forEach(f => {
+            allAvailable.forEach(key => f.styles.delete(key));
+        });
+        allAvailable.forEach(key => target.styles.add(key));
+        showToast(`هەموو ستایلەکان بۆ فۆنتی ${target.name} هەڵبژێردران!`, "success");
+    }
+    renderMergeFonts();
 }
 
 async function executeMergeAss() {

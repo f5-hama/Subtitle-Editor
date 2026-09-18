@@ -1835,29 +1835,8 @@ input[type="checkbox"], input[type="radio"] {
             </div>
 
             <div class="custom-modal-actions">
-                <button class="btn" onclick="openRtlOptionsModal('merge')">تێکەڵکردن و داگرتن</button>                
+                <button class="btn" onclick="executeMergeAss()">تێکەڵکردن و داگرتن</button>                
                 <button class="btn btn-outline" onclick="document.getElementById('merge-modal').style.display='none'">داخستن</button>
-            </div>
-        </div>
-    </div>
-    
-
-    <!-- مۆداڵی چاککردنی لکانی پیتەکان -->
-    <div id="font-fix-modal" class="custom-modal-overlay">
-        <div class="custom-modal-content">
-            <h3 class="custom-modal-title">چاککردنی لکانی پیتەکان</h3>
-            <p style="font-size: 12.5px; color:var(--text-muted); margin-bottom:12px; line-height: 1.5;">فایلەکان هەڵبژێرە بۆ چاککردنی پیتە دابڕاو و لکاوەکان و فۆنتە تێکچووەکان بە شێوازی فەرمی.</p>
-            
-            <div class="file-box" style="margin-bottom: 14px; padding: 16px;">
-                <div class="upload-icon"><svg style="width:26px;height:26px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></div>
-                <label>فایلەکان هەڵبژێرە (SRT, ASS, VTT):</label>
-                <div class="file-name-display" id="fontFixCountDisplay">هیچ فایلێک دیاری نەکراوە</div>
-                <input type="file" id="fontFixFileInput" accept=".srt,.ass,.vtt,.txt" multiple onchange="updateFontFixCount(this)">
-            </div>
-            
-            <div class="custom-modal-actions">
-                <button class="btn" onclick="executeFontFix()">چاککردن و داگرتن</button>
-                <button class="btn btn-outline" onclick="document.getElementById('font-fix-modal').style.display='none'">داخستن</button>
             </div>
         </div>
     </div>
@@ -1877,38 +1856,14 @@ input[type="checkbox"], input[type="radio"] {
 
             
             <div class="custom-modal-actions">
-<button class="btn" onclick="openRtlOptionsModal('rtlfix')" data-i18n="rtlFixApplyBtn">چاککردن و داگرتن</button>                
+                <button class="btn" onclick="executeRtlFix()" data-i18n="rtlFixApplyBtn">چاککردن و داگرتن</button>                
                 <button class="btn btn-outline" onclick="document.getElementById('rtl-fix-modal').style.display='none'" data-i18n="closeBtn">داخستن</button>
             </div>
         </div>
     </div>
 
-    <!-- مۆداڵی هەڵبژاردنی شێوازی چاککردنی RTL پێش داگرتن (بۆ تێکەڵکردن و بۆ چاککردنی RTL) -->
-    <div id="rtl-options-modal" class="custom-modal-overlay">
-        <div class="custom-modal-content" style="max-width:420px;">
-            <h3 class="custom-modal-title">شێوازی چاککردنی RTL دیاری بکە</h3>
-            <p style="font-size: 12.5px; color:var(--text-muted); margin-bottom:12px; line-height: 1.5;">پێش داگرتن هەڵبژێرە کام شێواز بەکاربهێنرێت. دەتوانیت هەردووکیان یان تەنها یەکێکیان هەڵبژێریت.</p>
 
-            <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:6px;">
-                <label class="logo-style-opt">
-                    <input type="checkbox" id="rtlOptStandardFix" checked style="width:15px;height:15px;accent-color:var(--primary); flex-shrink:0; margin-top:1px;">
-                    <span><b>چاککردنی ئاسایی RTL</b><br><span style="color:var(--text-muted); font-size:10.5px;">تەنها ئاڕاستەی دەق ڕاست دەکاتەوە بەبێ گۆڕینی ڕیزبەندی وشەکان — گونجاوە بۆ ژێرنووسی نەرم (Soft-sub) لەناو پلەیەرەکان.</span></span>
-                </label>
-                <label class="logo-style-opt">
-                    <input type="checkbox" id="rtlOptReverseHardsub" style="width:15px;height:15px;accent-color:var(--primary); flex-shrink:0; margin-top:1px;">
-                    <span><b>پێچەوانەکردنی ڕستەکان بۆ هاردسەب</b><br><span style="color:var(--text-muted); font-size:10.5px;">شوێنی دەستپێک و کۆتایی وشە و هێماکان دەگۆڕێت تاکو لەکاتی کێشانی ژێرنووس بەناو ڤیدیۆدا (هاردسەب/FFmpeg) ئاڕاستەکە بە دروستی دەربکەوێت.</span></span>
-                </label>
-            </div>
-
-            <div class="custom-modal-actions">
-                <button class="btn" onclick="confirmRtlOptionsAndProceed()">بەردەوامبوون و داگرتن</button>
-                <button class="btn btn-outline" onclick="document.getElementById('rtl-options-modal').style.display='none'">پاشگەزبوونەوە</button>
-            </div>
-        </div>
-    </div>
-
-
-
+     <!-- مۆداڵی گۆڕینی فۆرماتی فایلەکان -->
     <div id="converter-modal" class="custom-modal-overlay">
         <div class="custom-modal-content">
             <h3 class="custom-modal-title" data-i18n="batchTitle">کارکردن بە کۆمەڵ لەسەر چەند فایلێک</h3>
@@ -4248,33 +4203,16 @@ function updateRtlFixCount(input) {
     }
 }
 
-// ================= Subtitle Edit Official RTL Engine =================
-// وەرگێڕانی 1:1 لەسەر کۆدی فەرمیی Subtitle Edit (Utilities.cs و StringExtensions.cs)
-
-const RTL_EMBEDDING = '\u202B'; // RLE: دەستپێکی ڕاست بۆ چەپ
-const RTL_POP = '\u202C';       // PDF: کۆتایی ڕاست بۆ چەپ
-const PRE_POST_STRINGS_TO_REVERSE = '-— !?.…"،,():;[]+~*/<>&^%$#\\|\'';
+// ================= Subtitle Edit: Fix RTL via Unicode control characters =================
+const RTL_EMBEDDING = '\u202B'; // هێمای فەرمیی RLE لە Subtitle Edit
 const RTL_LETTER_REGEX = /[\u0590-\u05FF\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/;
 
-const RTL_ENGINE_OPTIONS = {
-    unicodeEmbedding: true,
-    reverseStartEnd: false
-};
-
-let pendingRtlAction = null; // 'rtlfix' | 'merge'
-
-// پشکنینی بوونی پیتی RTL (هاوتای ContainsRightToLeftLetter)
+// پشکنینی بوونی پیتی کوردی/عەرەبی
 function containsRightToLeftLetter(text) {
     return RTL_LETTER_REGEX.test(text || '');
 }
 
-// سڕینەوەی هەموو کۆدە کۆنترۆڵییە شاراوەکانی پێشوو
-function removeUnicodeControlChars(text) {
-    if (!text) return text;
-    return text.replace(/[\u200E\u200F\u202A-\u202E]/g, '').replace(/\u00A0/g, ' ');
-}
-
-// دێڕی وێنەکێشانی ڤێکتەری ASS دەستکاری ناکرێت
+// دێڕی وێنەکێشانی ڤێکتەری دەستکاری ناکرێت
 function hasAssaDrawing(line) {
     if (!line) return false;
     let idx = line.indexOf('{');
@@ -4288,217 +4226,21 @@ function hasAssaDrawing(line) {
     return false;
 }
 
-// پاراستنی تاگەکانی ناو دێڕ بۆ پێداچوونەوە
-function hasInlineTagChunks(text) {
-    const rest = removeUnicodeControlChars(text || '').replace(/^(\{[^}]*\})+/, '');
-    if (!/\{[^}]*\}/.test(rest)) return false;
-    return /\S/.test(rest.replace(/\{[^}]*\}/g, ''));
-}
+// فەنکشنی فەرمیی Fix RTL via Unicode control characters
+function applyFixRtlUnicode(text) {
+    if (!text || hasAssaDrawing(text)) return text;
 
-// دیاریکردنی دەستپێکی دەق دوای تاگەکانی سەرەتا
-function getTextStartAfterMarkup(line) {
-    let index = 0;
-    while (index < line.length) {
-        let close = line[index] === '{' ? line.indexOf('}', index)
-            : line[index] === '<' ? line.indexOf('>', index) : -1;
-        if (close < 0) break;
-        index = close + 1;
+    // پاککردنەوەی هێمای پێشوو تا دووبارە نەبێتەوە
+    let clean = text.split(RTL_EMBEDDING).join('');
+
+    // ئەگەر دەقەکە کوردی/عەرەبی تێدابوو، هێمای \u202B دەخاتە سەرەتا
+    if (containsRightToLeftLetter(clean)) {
+        return RTL_EMBEDDING + clean;
     }
-    return index;
+    return clean;
 }
 
-// دیاریکردنی کۆتایی دەق پێش تاگەکانی کۆتایی
-function getTextEndBeforeMarkup(line, start) {
-    let index = line.length;
-    while (index > start) {
-        let last = line[index - 1];
-        let open = last === '}' ? line.lastIndexOf('{', index - 1)
-            : last === '>' ? line.lastIndexOf('<', index - 1) : -1;
-        if (open < start) break;
-        index = open;
-    }
-    return index;
-}
-
-function reverseString(s) {
-    return s.split('').reverse().join('');
-}
-
-function reverseParenthesis(s) {
-    if (!s) return s;
-    let out = '';
-    for (let i = 0; i < s.length; i++) {
-        let ch = s[i];
-        out += ch === '(' ? ')' : ch === ')' ? '(' : ch === '[' ? ']' : ch === ']' ? '[' : ch;
-    }
-    return out;
-}
-
-// ١. سیستەمی یەکەمی Subtitle Edit: Fix RTL via Unicode characters
-function fixRtlViaUnicodeChars(input) {
-    if (!input) return input;
-    let text = input.split(RTL_EMBEDDING).join('').split(RTL_POP).join('');
-    return text.split(/\r?\n/).map(line => {
-        if (hasAssaDrawing(line) || !containsRightToLeftLetter(line)) return line;
-
-        let start = getTextStartAfterMarkup(line);
-        let end = getTextEndBeforeMarkup(line, start);
-        if (end <= start) return line;
-
-        return line.substring(0, start) + RTL_EMBEDDING +
-               line.substring(start, end) + RTL_POP +
-               line.substring(end);
-    }).join('\n');
-}
-
-// ٢. سیستەمی دووەمی Subtitle Edit: Reverse RTL start/end
-function reverseStartAndEndingForRightToLeft(input) {
-    if (!input) return input;
-    let lines = input.split(/\r?\n/);
-    let newLines = [];
-
-    for (let li = 0; li < lines.length; li++) {
-        let s2 = lines[li].replace(/\r$/, '');
-        if (hasAssaDrawing(s2) || !containsRightToLeftLetter(s2)) {
-            newLines.push(s2);
-            continue;
-        }
-
-        let preTags = '';
-        while (s2.indexOf('{\\') === 0 && s2.indexOf('}') > 0) {
-            let end = s2.indexOf('}') + 1;
-            preTags += s2.substring(0, end);
-            s2 = s2.substring(end);
-        }
-
-        let postTags = '';
-        for (let k = 0; k < 10; k++) {
-            if (s2.startsWith('♪ ') || s2.startsWith('♫ ')) { preTags += s2.substring(0, 2); s2 = s2.substring(2); }
-            if (s2.startsWith('♪') || s2.startsWith('♫')) { preTags += s2.substring(0, 1); s2 = s2.substring(1); }
-            if (s2.startsWith('<i>') || s2.startsWith('<b>') || s2.startsWith('<u>')) { preTags += s2.substring(0, 3); s2 = s2.substring(3); }
-            if (s2.startsWith('<font ') && s2.indexOf('>') > 0) {
-                let idx = s2.indexOf('>') + 1;
-                preTags += s2.substring(0, idx);
-                s2 = s2.substring(idx);
-            }
-            if (s2.endsWith(' ♪') || s2.endsWith(' ♫')) { postTags = s2.substring(s2.length - 2) + postTags; s2 = s2.substring(0, s2.length - 2); }
-            if (s2.endsWith('♪') || s2.endsWith('♫')) { postTags = s2.substring(s2.length - 1) + postTags; s2 = s2.substring(0, s2.length - 1); }
-            if (s2.endsWith('</i>') || s2.endsWith('</b>') || s2.endsWith('</u>')) { postTags = s2.substring(s2.length - 4) + postTags; s2 = s2.substring(0, s2.length - 4); }
-            if (s2.endsWith('</font>')) { postTags = s2.substring(s2.length - 7) + postTags; s2 = s2.substring(0, s2.length - 7); }
-        }
-
-        let pre = '';
-        let i = 0;
-        while (i < s2.length && PRE_POST_STRINGS_TO_REVERSE.indexOf(s2[i]) >= 0 && s2[i] !== '{' &&
-               !s2.substring(i).startsWith('<i>') && !s2.substring(i).startsWith('<b>') && !s2.substring(i).startsWith('<font ')) {
-            pre += s2[i];
-            i++;
-        }
-
-        let post = '';
-        let j = s2.length - 1;
-        while (j > i && PRE_POST_STRINGS_TO_REVERSE.indexOf(s2[j]) >= 0 && s2[j] !== '}' &&
-               !s2.substring(0, j + 1).endsWith('</i>') && !s2.substring(0, j + 1).endsWith('</b>') && !s2.substring(0, j + 1).endsWith('</font>')) {
-            post += s2[j];
-            j--;
-        }
-
-        newLines.push(
-            preTags +
-            reverseParenthesis(post) +
-            s2.substring(pre.length, s2.length - post.length) +
-            reverseParenthesis(reverseString(pre)) +
-            postTags
-        );
-    }
-    return newLines.join('\n');
-}
-
-// مەکینەی پڕۆسێسکردنی دێڕەکان بەپێی هەڵبژاردنی بەکارهێنەر لە مۆداڵەکە
-function processRtlDialogueText(text) {
-    if (!text) return text;
-    let out = removeUnicodeControlChars(text);
-
-    // ئەگەر "پێچەوانەکردنی ڕستەکان بۆ هاردسەب" هەڵبژێردرا بێت:
-    if (RTL_ENGINE_OPTIONS.reverseStartEnd) {
-        out = reverseStartAndEndingForRightToLeft(out);
-    }
-
-    // ئەگەر "چاککردنی ئاسایی RTL" هەڵبژێردرا بێت:
-    if (RTL_ENGINE_OPTIONS.unicodeEmbedding) {
-        out = fixRtlViaUnicodeChars(out);
-    }
-
-    return out;
-}
-
-// فەنکشنەکانی پێوانەکاری بۆ کۆدەکانی تر
-function fixRtlSegment(seg) { return processRtlDialogueText(seg); }
-function applyPureRtlFixToLine(text) { return processRtlDialogueText(text); }
-function reverseAssChunksForLibass(text) { return processRtlDialogueText(text); }
-
-// کردنەوەی پەنجەرەی هەڵبژاردنی شێوازی RTL پێش داگرتن
-async function openRtlOptionsModal(action) {
-    if (action === 'merge') {
-        const baseF = document.getElementById('mergeBaseFile').files[0];
-        if (!baseF) { showToast("تکایە سەرەتا فایلی سەرەکی هەڵبژێرە!", "error"); return; }
-
-        const srcF = document.getElementById('mergeSourceFile').files[0];
-        if (!srcF) {
-            RTL_ENGINE_OPTIONS.unicodeEmbedding = true;
-            RTL_ENGINE_OPTIONS.reverseStartEnd = false;
-            try {
-                await executeMergeAss();
-            } catch (err) {
-                console.error('openRtlOptionsModal merge error:', err);
-                showToast('هەڵەیەک ڕوویدا: ' + (err && err.message ? err.message : err), 'error');
-            }
-            return;
-        }
-    } else if (action === 'rtlfix') {
-        const files = document.getElementById('rtlFixFileInput').files;
-        if (!files || files.length === 0) {
-            showToast((i18n[currentLang] && i18n[currentLang]['msgSelectBatch']) || 'تکایە سەرەتا فایل هەڵبژێرە!', 'error');
-            return;
-        }
-    }
-
-    pendingRtlAction = action;
-    const stdCb = document.getElementById('rtlOptStandardFix');
-    const revCb = document.getElementById('rtlOptReverseHardsub');
-    if (stdCb) stdCb.checked = RTL_ENGINE_OPTIONS.unicodeEmbedding;
-    if (revCb) revCb.checked = RTL_ENGINE_OPTIONS.reverseStartEnd;
-    document.getElementById('rtl-options-modal').style.display = 'flex';
-}
-
-// جێبەجێکردنی هەڵبژاردنەکە و داگرتنی ڕاستەوخۆ
-async function confirmRtlOptionsAndProceed() {
-    const stdCb = document.getElementById('rtlOptStandardFix');
-    const revCb = document.getElementById('rtlOptReverseHardsub');
-    const doStandard = stdCb ? stdCb.checked : true;
-    const doReverse = revCb ? revCb.checked : false;
-
-    RTL_ENGINE_OPTIONS.unicodeEmbedding = doStandard;
-    RTL_ENGINE_OPTIONS.reverseStartEnd = doReverse;
-
-    document.getElementById('rtl-options-modal').style.display = 'none';
-
-    const action = pendingRtlAction;
-    pendingRtlAction = null;
-
-    try {
-        if (action === 'merge') {
-            await executeMergeAss();
-        } else if (action === 'rtlfix') {
-            await executeRtlFix();
-        }
-    } catch (err) {
-        console.error('confirmRtlOptionsAndProceed error:', err);
-        showToast('هەڵەیەک ڕوویدا: ' + (err && err.message ? err.message : err), 'error');
-    }
-}
-
-// جێبەجێکردنی چاککردنی RTL لە بەشی RTL Fixـی مێنۆ
+// فەنکشنی سەرەکی بۆ جێبەجێکردن و داگرتن
 async function executeRtlFix() {
     const fileInput = document.getElementById('rtlFixFileInput');
     const files = fileInput ? fileInput.files : null;
@@ -4516,7 +4258,10 @@ async function executeRtlFix() {
         const lowerName = file.name.toLowerCase();
         let fixedContent = '';
 
-        if (lowerName.endsWith('.ass')) {
+        // ناسینەوەی زیرەکی فایلی ASS تەنانەت ئەگەر ناوی بە .txtـیش بێت
+        const isAss = lowerName.endsWith('.ass') || rawContent.includes('[Events]') || rawContent.includes('[Script Info]');
+
+        if (isAss) {
             const lines = rawContent.split(/\r?\n/);
             fixedContent = lines.map(line => {
                 if (line.startsWith('Dialogue:') || line.startsWith('Comment:')) {
@@ -4530,30 +4275,32 @@ async function executeRtlFix() {
                     if (splitIdx !== -1) {
                         const prefix = line.substring(0, splitIdx + 1);
                         const textBody = line.substring(splitIdx + 1);
-                        const fixedText = textBody.split('\\N').map(t => processRtlDialogueText(t)).join('\\N');
+                        // لە هەردوو دێڕی پێش و دوای \N هێمای \u202B دادەنێت وەک Subtitle Edit
+                        const fixedText = textBody.split('\\N').map(t => applyFixRtlUnicode(t)).join('\\N');
                         return prefix + fixedText;
                     }
                 }
                 return line;
             }).join('\n');
         } else {
-            // بۆ SRT و VTT
+            // بۆ فایلی SRT و VTT
             const lines = rawContent.split(/\r?\n/);
             fixedContent = lines.map(line => {
                 const trimmed = line.trim();
                 if (!trimmed || /^\d+$/.test(trimmed) || trimmed.includes('-->') || trimmed.startsWith('WEBVTT') || trimmed.startsWith('NOTE')) {
                     return line;
                 }
-                return processRtlDialogueText(line);
+                return applyFixRtlUnicode(line);
             }).join('\n');
         }
 
-        const newFileName = file.name.replace(/\.[^/.]+$/, '') + '_RTL_Fixed.' + file.name.split('.').pop();
+        const ext = isAss ? 'ass' : (lowerName.endsWith('.vtt') ? 'vtt' : 'srt');
+        const newFileName = file.name.replace(/\.[^/.]+$/, '').replace(/_RTL_Fixed$/, '') + '_RTL_Fixed.' + ext;
         triggerDownload(fixedContent, newFileName);
         await new Promise(r => setTimeout(r, 600));
     }
 
-    showToast((i18n[currentLang] && i18n[currentLang]['msgDone']) || 'چاککردنی RTL بە سەرکەوتوویی جێبەجێ کرا!', 'success');
+    showToast((i18n[currentLang] && i18n[currentLang]['msgDone']) || 'کرداری Fix RTL بە سەرکەوتوویی تەواو بوو!', 'success');
 }
 
         function openConverterModal() { document.getElementById('converter-modal').style.display = 'flex'; }

@@ -8439,6 +8439,19 @@ function buildKurdForestLogo(dialogues, res, count, styleKind, existingStyleName
     return { styleName: LOGO_STYLE, styleLine: styleLine, lines: lines };
 }
 
+// چارەسەری فەنکشنی ونبووی RTL بۆ تێکەڵکردنی فایلەکان
+function processRtlDialogueText(text) {
+    if (typeof applyFixRtlUnicode === 'function') {
+        return applyFixRtlUnicode(text);
+    }
+    return text;
+}
+
+// چارەسەری فەنکشنی ونبووی پشکنینی تاگەکان بۆ پێداچوونەوە
+function hasInlineTagChunks(text) {
+    return /\{[^}]*\}/.test(text || '');
+}
+
 async function executeMergeAss() {
     const baseF = document.getElementById('mergeBaseFile').files[0];
     const srcF = document.getElementById('mergeSourceFile').files[0];

@@ -1344,6 +1344,14 @@ input[type="checkbox"], input[type="radio"] {
     accent-color: var(--primary) !important;
 }
 
+
+/* هەڵبژاردنی جۆری RTL Fix — لەناو ماڵپەڕ (بێ پەنجەرەی وێبگەڕ) */
+.rtl-mode-opt { display:flex; align-items:center; gap:10px; width:100%; padding:11px 12px; border-radius:10px; border:1.5px solid var(--border-color); background:var(--bg-color); color:var(--text-main); font-size:13px; font-family:inherit; text-align:start; cursor:pointer; transition:border-color .15s, background .15s; -webkit-tap-highlight-color:transparent; }
+.rtl-mode-opt .rtl-mode-dot { flex:0 0 18px; width:18px; height:18px; border-radius:50%; border:2px solid var(--text-muted); box-sizing:border-box; position:relative; }
+.rtl-mode-opt.active { border-color:var(--primary); background:var(--primary-glow, rgba(142,182,155,.12)); }
+.rtl-mode-opt.active .rtl-mode-dot { border-color:var(--primary); }
+.rtl-mode-opt.active .rtl-mode-dot::after { content:''; position:absolute; inset:3px; border-radius:50%; background:var(--primary); }
+.rtl-mode-opt .rtl-mode-lbl { flex:1; line-height:1.5; }
 </style>
 
 <style>
@@ -1845,7 +1853,7 @@ input[type="checkbox"], input[type="radio"] {
     <div id="rtl-fix-modal" class="custom-modal-overlay">
         <div class="custom-modal-content">
             <h3 class="custom-modal-title" data-i18n="rtlFixTitle">چاککردنی ئاڕاستەی ژێرنووس (RTL Fix)</h3>
-            <p style="font-size: 12.5px; color:var(--text-muted); margin-bottom:12px; line-height: 1.5;" data-i18n="rtlFixDesc">فایلەکانی ژێرنووس هەڵبژێرە بۆ ڕێکخستنی کەوانە و هێماکان بەبێ دەستکاریکردنی هیچ شتێکی تری فایلەکە.</p>
+            <p style="font-size: 12.5px; color:var(--text-muted); margin-bottom:12px; line-height: 1.5;" data-i18n="rtlFixDesc">فایلەکانی ژێرنووس هەڵبژێرە. سیستەمی RTLی نوێ ئاڕاستەی هەر دێڕێک دیاری دەکات بەبێ دەستکاریکردنی تاگەکان و هیچ شتێکی تری فایلەکە.</p>
             
             <div class="file-box" id="boxRtlFix" style="margin-bottom: 14px; padding: 16px;">
                 <div class="upload-icon"><svg style="width:26px;height:26px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg></div>
@@ -1853,6 +1861,17 @@ input[type="checkbox"], input[type="radio"] {
                 <div class="file-name-display" id="rtlFixCountDisplay" data-i18n="batchNoFile">هیچ فایلێک دیاری نەکراوە</div>
                 <input type="file" id="rtlFixFileInput" accept=".srt,.ass,.vtt" multiple onchange="updateRtlFixCount(this)">
            </div>
+
+            <div style="margin-bottom: 14px;">
+                <label style="display:block; font-size:12.5px; font-weight:bold; margin-bottom:6px; color:var(--text-main);">جۆری چاککردن:</label>
+                <input type="hidden" id="rtlFixMode" value="hardsub">
+                <div id="rtlFixModeGroup" role="radiogroup" style="display:flex; flex-direction:column; gap:8px;">
+                    <button type="button" class="rtl-mode-opt active" data-mode="hardsub" role="radio" aria-checked="true" onclick="rtlFixSelectMode('hardsub')"><span class="rtl-mode-dot"></span><span class="rtl-mode-lbl">هارد سەب — <bdi dir="ltr">libass / FFmpeg</bdi> (پێشنیارکراو)</span></button>
+                    <button type="button" class="rtl-mode-opt" data-mode="universal" role="radio" aria-checked="false" onclick="rtlFixSelectMode('universal')"><span class="rtl-mode-dot"></span><span class="rtl-mode-lbl">گشتی — بۆ پلەیەر و <bdi dir="ltr">VSFilter</bdi> (بێ <bdi dir="ltr">\fe</bdi>)</span></button>
+                    <button type="button" class="rtl-mode-opt" data-mode="clean" role="radio" aria-checked="false" onclick="rtlFixSelectMode('clean')"><span class="rtl-mode-dot"></span><span class="rtl-mode-lbl">لابردنی هەموو هێماکانی <bdi dir="ltr">RTL</bdi> (گەڕاندنەوە)</span></button>
+                </div>
+                <div id="rtlFixHint" style="font-size:11.5px; color:var(--text-muted); line-height:1.65; margin-top:8px;"></div>
+            </div>
 
             
             <div class="custom-modal-actions">
@@ -2640,7 +2659,7 @@ input[type="checkbox"], input[type="radio"] {
                 pgsLangSpa: "ئیسپانی",
                 pgsLangJpn: "ژاپۆنی",
                 rtlFixTitle: "چاککردنی ئاڕاستەی ژێرنووس (RTL Fix)",
-                rtlFixDesc: "فایلەکان هەڵبژێرە بۆ ڕێکخستنی کەوانە و هێماکان بەبێ دەستکاری هیچ شتێکی تری فایلەکە.",
+                rtlFixDesc: "فایلەکانی ژێرنووس هەڵبژێرە. سیستەمی RTLی نوێ ئاڕاستەی هەر دێڕێک دیاری دەکات بەبێ دەستکاریکردنی تاگەکان و هیچ شتێکی تری فایلەکە.",
                 rtlFixSelectLbl: "فایلەکان هەڵبژێرە (SRT, ASS, VTT):",
                 rtlFixApplyBtn: "چاککردن و داگرتن",
                 pageTitle: "دەستکاریکەری ژێرنووس", loginTitle: "چوونەژوورەوەی وەرگێڕ", appDesc: "ئەم ماڵپەڕە تایبەتە بە وەرگێڕان و دەستکاریکردنی ژێرنووسی ڤیدیۆ.", loginBtn: "چوونەژوورەوە", installApp: "دابەزاندنی ئەپ", origFileLbl: "فایلی ئەسڵی (ئینگلیزی / عەرەبی / ...)", clickSelect: "کرتە بکە بۆ هەڵبژاردن", transFileLbl: "فایلی وەرگێڕدراو (ئارەزوومەندانە)", startBtn: "دەستپێکردن", batchBtn: "گۆڕینی فایل", historyBtn: "مێژووی کارەکان", historyTitle: "مێژووی ژێرنووسە دەستکاریکراوەکان", clearAllBtn: "سڕینەوەی هەمووی", restoreBtn: "کردنەوە", deleteBtn: "سڕینەوە", historyWarning: "ئاگاداربە: بەشی مێژوو خەریکە پڕ دەبێت!", historyEmpty: "هیچ فایلێک لە مێژوودا نییە", batchTitle: "کارکردن بە کۆمەڵ لەسەر چەند فایلێک", batchDesc: "دەتوانیت چەندین فایل پێکەوە هەڵبژێریت، کاتەکانیان بگۆڕیت یان فۆرماتەکەیان بگۆڕیت.", batchSelectLbl: "فایلەکان هەڵبژێرە:", batchNoFile: "هیچ فایلێک دیاری نەکراوە", batchFilesSelected: "فایل دیاریکراون", batchTimeLbl: "پێشخستن/دواخستنی کات (بە چرکە):", tagOptionLbl: "پاککردنەوەی تاگەکانی شێواز و فۆرمات:", tagKeep: "وەک خۆی", tagClean: "پاککردنەوە", batchFmtLbl: "فۆرماتی دەرچوون:", applyBtn: "جێبەجێکردن", closeBtn: "داخستن", editorTitle: "دەستکاریکردنی ژێرنووس", backBtn: "گەڕانەوە", undoBtn: "پاشگەزبوونەوە", redoBtn: "چوونەپێش", searchNavBtn: "گەڕان", searchLbl: "گەڕان و گۆڕین", searchPlh: "گەڕان بەدوای...", replacePlh: "گۆڕین بە...", replaceBtn: "گۆڕین", replaceAllBtn: "هەمووی بگۆڕە", aiBtn: "دانانی وەرگێڕان", dirBtn: "ئاڕاستەی نووسین", saveBtn: "سەیڤکردن و داگرتن", aiTitle: "دانانی وەرگێڕانی AI", aiCopy: "کۆپی ئەسڵی", aiPaste: "پەیست بکە", resumeTitle: "دەتەوێت بەردەوام بیت؟", resumeDesc: "پێدەچێت پێشتر کارێکت تەواو نەکردبێت، دەتەوێت لەو شوێنەی پێشتر وەستایت بەردەوام بیت؟", resumeBtn: "بەردەوامبوون", startNewBtn: "دەستپێکردنەوە", backTitle: "ئایا دڵنیایت؟", confirmBack: "ئایا دڵنیایت دەتەوێت بگەڕێیتەوە؟ کارەکانت سەیڤ نابن گەر داونلۆدت نەکردبێت.", yesLeave: "بەڵێ، دەرچوون", cancelBtn: "پاشگەزبوونەوە", developerInfo: "گەشەپێدەر: <strong>محمد عبدالقادر</strong>", welcomeText: "بەخێربێیت!",
@@ -2664,7 +2683,7 @@ input[type="checkbox"], input[type="radio"] {
                 imgSelectLbl: "کرتە بکە و وێنەکە هەڵبژێرە",
                 imgDirectLinkLbl: "لینکی ڕاستەوخۆی وێنەکە:",
                 imgCopyBtn: "کۆپیکردنی لینک",
-                feat6: "چاککردنی ئاڕاستەی RTL و هێماکان بەبێ دەستکاری هیچ شتێکی تر.",
+                feat6: "چاککردنی RTLی تاقیکراوە بۆ هارد سەب (libass): وشەی ئینگلیزی، ژمارە و تاگەکان ئاڕاستەکە تێکنادەن.",
                 feat7: "گۆڕینی فایلی وێنەیی PGS (.sup) بۆ دەق بە تەکنەلۆژیای زیرەکی OCR.",
                 feat8: "پاککردنەوەی دەنگە زیادەکانی وەک [music] و (screaming) لە ژێرنووس.",
                 pgsReadingLine: "خەریکی خوێندنەوەی دێڕی #",
@@ -4203,41 +4222,318 @@ function updateRtlFixCount(input) {
     }
 }
 
-// ================= Subtitle Edit: Fix RTL via Unicode control characters =================
-const RTL_EMBEDDING = '\u202B'; // هێمای فەرمیی RLE لە Subtitle Edit
-const RTL_LETTER_REGEX = /[\u0590-\u05FF\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/;
+/* =====================================================================
+   RtlEngine v2  —  سیستەمی RTLی نوێ بۆ هارد سەب (Hardsub)
+   ---------------------------------------------------------------------
+   تاقیکراوەتەوە بە libass (ffmpeg 6.1 / libass 0.17) لەسەر ٢٦ حاڵەتی
+   ڕاستەقینە: وشەی ئینگلیزی، ژمارە، کات، کەوانە، «»، ...، ♪، ؟!، URL،
+   دوو دێڕ (\N)، تاگی ڕەنگ/ئیتالیک/فۆنت/\an/\pos/\r ... هتد.
 
-// پشکنینی بوونی پیتی کوردی/عەرەبی
-function containsRightToLeftLetter(text) {
-    return RTL_LETTER_REGEX.test(text || '');
+   ڕەگی کێشەکانی سیستەمی کۆن (دۆزرایەوە):
+     ١. libass ئاڕاستەی سەرەکی لە Encoding ـی ستایل/`\fe` دەخوێنێتەوە.
+        Encoding=1 (بنەڕەت) = LTRی زۆرەملێ  ← هێماکانی Unicode بێ سوودن.
+     ٢. RLE (U+202B)ـی کۆن، هەر کە یەک تاگی ڕەنگ/ئیتالیک لە دێڕەکەدا
+        هەبێت پشتگوێ دەخرێت، و PDFـی نەبوو.
+     ٣. `\r` لە کۆتایی دێڕەکەدا `\fe` دەسڕێتەوە و دوایین `\fe` بڕیاردەرە.
+
+   چارەسەر:
+     ASS  : {\fe-1} (ئاڕاستەی خۆکار) + RLM لە سەرەتای هەر دێڕێک
+            + دووبارە دانانی \fe-1 دوای هەر \r + لابردنی \feی تر.
+     SRT/VTT: RLE+RLM … PDF لە هەر دێڕێک (تاگەکان لە شوێنی خۆیان).
+   هەرگیز دەستکاری تاگەکان، \p (وێنەکێشان) و Comment ناکات.
+   ===================================================================== */
+const RtlEngine = (function () {
+    'use strict';
+
+    const RLM = '\u200F';                 // Right-to-Left Mark
+    const RLE = '\u202B';                 // Right-to-Left Embedding
+    const PDF = '\u202C';                 // Pop Directional Formatting
+    const FE_AUTO = '{\\fe-1}';           // libass: -1 = ئاڕاستەی خۆکاری پەڕەگراف
+
+    // هێماکانی ئاڕاستە (ZWNJ / ZWJ / ZWSP / BOM ناسڕدرێنەوە — کوردی پێویستی پێیانە)
+    const BIDI_CONTROLS = /[\u200E\u200F\u061C\u202A-\u202E\u2066-\u2069]/g;
+    // عەرەبی/کوردی/فارسی/ئیبری/سریانی/تانا ... + شێوە پێشکەشکراوەکان
+    const RTL_CHAR = /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/;
+
+    const MODES = ['hardsub', 'universal', 'clean'];
+    const STORE_KEY = 'kf_rtl_mode';
+
+    /* ---------------- ڕێکخستنی جۆر ---------------- */
+    function normalizeMode(m) { return MODES.indexOf(m) >= 0 ? m : 'hardsub'; }
+    function getMode() {
+        try { return normalizeMode(localStorage.getItem(STORE_KEY)); } catch (e) { return 'hardsub'; }
+    }
+    function setMode(m) {
+        try { localStorage.setItem(STORE_KEY, normalizeMode(m)); } catch (e) { /* هیچ */ }
+    }
+
+    /* ---------------- یارمەتیدەرەکان ---------------- */
+    function hasRtl(text) { return RTL_CHAR.test(text || ''); }
+
+    function stripMarks(text) { return (text || '').replace(BIDI_CONTROLS, ''); }
+
+    // دێڕی وێنەکێشانی ڤێکتەری (\p1..\p9) — دەستکاری ناکرێت
+    function hasDrawing(text) {
+        if (!text) return false;
+        const blocks = text.match(/\{[^}]*\}/g);
+        if (!blocks) return false;
+        for (let i = 0; i < blocks.length; i++) {
+            if (/\\p[1-9](?![a-zA-Z])/i.test(blocks[i])) return true;
+        }
+        return false;
+    }
+
+    /* ---------------- ASS: پارچەکردن بۆ تۆکێن ---------------- */
+    // tag = {…}   br = \N یان \n   txt = دەقی ئاسایی
+    function tokenizeAss(text) {
+        const parts = text.split(/(\{[^}]*\}|\\[Nn])/);
+        const out = [];
+        for (let i = 0; i < parts.length; i++) {
+            const p = parts[i];
+            if (p === '') continue;
+            if (i % 2 === 1) out.push({ k: p.charAt(0) === '{' ? 'tag' : 'br', v: p });
+            else out.push({ k: 'txt', v: p });
+        }
+        return out;
+    }
+
+    // یەک دێڕی SRT/VTT: تاگەکانی {…} و <…> جیا دەکاتەوە
+    function tokenizeSub(text) {
+        const parts = text.split(/(\{[^}]*\}|<\/?[A-Za-z!][^>]*>|<\d{1,2}:\d{2}[^>]*>)/);
+        const out = [];
+        for (let i = 0; i < parts.length; i++) {
+            const p = parts[i];
+            if (p === '') continue;
+            out.push({ k: i % 2 === 1 ? 'tag' : 'txt', v: p });
+        }
+        return out;
+    }
+
+    function serialize(toks) {
+        let s = '';
+        for (let i = 0; i < toks.length; i++) s += toks[i].v;
+        return s;
+    }
+
+    function visibleText(toks) {
+        let s = '';
+        for (let i = 0; i < toks.length; i++) if (toks[i].k === 'txt') s += toks[i].v;
+        return s;
+    }
+
+    // هێماکانی کۆن لە دەقەکان دەسڕێتەوە (بۆ ئەوەی کاری دووبارە هەڵە دروست نەکات)
+    function stripMarksInTokens(toks) {
+        for (let i = 0; i < toks.length; i++) {
+            if (toks[i].k === 'txt') toks[i].v = toks[i].v.replace(BIDI_CONTROLS, '');
+        }
+    }
+
+    // یەکەم و کۆتا تۆکێنی دەق
+    function firstTxt(toks) { for (let i = 0; i < toks.length; i++) if (toks[i].k === 'txt' && toks[i].v !== '') return toks[i]; return null; }
+    function lastTxt(toks) { for (let i = toks.length - 1; i >= 0; i--) if (toks[i].k === 'txt' && toks[i].v !== '') return toks[i]; return null; }
+
+    /* ---------------- ASS: دەقی یەک Dialogue ---------------- */
+    /**
+     * @param {string} text   دەقی ئیڤێنت (دوای کۆماکانی ٩ەم)
+     * @param {string} [mode] hardsub | universal | clean
+     * @returns {string}
+     */
+    function fixAssText(text, mode) {
+        if (text == null || text === '') return text;
+        mode = normalizeMode(mode || getMode());
+        if (hasDrawing(text)) return text;               // وێنەکێشان: دەستکاری نەکە
+
+        const toks = tokenizeAss(text);
+        stripMarksInTokens(toks);
+
+        // ١) \fe — لە جۆری clean تەنها \fe-1ی خۆمان، لە جۆرەکانی تر هەموو \feـەکان
+        const feRe = mode === 'clean' ? /\\fe-1(?!\d)/g : /\\fe-?\d+/g;
+        for (let i = toks.length - 1; i >= 0; i--) {
+            if (toks[i].k !== 'tag') continue;
+            const inner = toks[i].v.slice(1, -1);
+            if (!feRe.test(inner)) { feRe.lastIndex = 0; continue; }
+            feRe.lastIndex = 0;
+            const rest = inner.replace(feRe, '');
+            if (rest === '') toks.splice(i, 1);
+            else toks[i].v = '{' + rest + '}';
+            feRe.lastIndex = 0;
+        }
+
+        if (mode === 'clean') return serialize(toks);
+
+        // ٢) هەر دێڕێک (بە \N جیا کراوەتەوە) کە پیتی RTLی هەبێت
+        const lines = [[]];
+        const breaks = [];
+        for (let i = 0; i < toks.length; i++) {
+            if (toks[i].k === 'br') { breaks.push(toks[i].v); lines.push([]); }
+            else lines[lines.length - 1].push(toks[i]);
+        }
+
+        let anyRtl = false;
+        for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            if (!hasRtl(visibleText(line))) continue;
+            anyRtl = true;
+            const ft = firstTxt(line);
+            if (mode === 'hardsub') {
+                ft.v = RLM + ft.v;                       // \fe-1 + RLM
+            } else {                                     // universal
+                ft.v = RLE + RLM + ft.v;
+                const lt = lastTxt(line);
+                lt.v = lt.v + PDF;
+            }
+        }
+        if (!anyRtl) return serialize(toks);             // دێڕی ئینگلیزی: وەک خۆی
+
+        // ٣) دووبارە چالاککردنی \fe-1 دوای هەر \r (ڕیسێت \fe دەسڕێتەوە)
+        if (mode === 'hardsub') {
+            for (let li = 0; li < lines.length; li++) {
+                const line = lines[li];
+                for (let ti = 0; ti < line.length; ti++) {
+                    if (line[ti].k === 'tag' && /\\r/.test(line[ti].v)) {
+                        line[ti].v = line[ti].v.slice(0, -1) + '\\fe-1}';
+                    }
+                }
+            }
+        }
+
+        // ٤) دووبارە دروستکردنەوە
+        let out = '';
+        for (let li = 0; li < lines.length; li++) {
+            out += serialize(lines[li]);
+            if (li < breaks.length) out += breaks[li];
+        }
+        return (mode === 'hardsub' ? FE_AUTO : '') + out;
+    }
+
+    /* ---------------- ASS: فایلی تەواو ---------------- */
+    function splitAssDialogue(line) {
+        // Dialogue: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
+        let commas = 0;
+        for (let c = 0; c < line.length; c++) {
+            if (line.charCodeAt(c) === 44 && ++commas === 9) return c + 1;
+        }
+        return -1;
+    }
+
+    function fixAssFile(content, mode) {
+        mode = normalizeMode(mode || getMode());
+        const eol = content.indexOf('\r\n') >= 0 ? '\r\n' : '\n';
+        const lines = content.split(/\r?\n/);
+        const stats = { changed: 0, lines: 0, skipped: 0 };
+        for (let i = 0; i < lines.length; i++) {
+            const ln = lines[i];
+            if (ln.substring(0, 9) !== 'Dialogue:') continue;    // Comment / Style / Format دەست لێ نادرێت
+            const at = splitAssDialogue(ln);
+            if (at < 0) continue;
+            stats.lines++;
+            const body = ln.substring(at);
+            if (hasDrawing(body)) { stats.skipped++; continue; }
+            const fixed = fixAssText(body, mode);
+            if (fixed !== body) { lines[i] = ln.substring(0, at) + fixed; stats.changed++; }
+        }
+        return { content: lines.join(eol), stats: stats };
+    }
+
+    /* ---------------- SRT / VTT ---------------- */
+    function fixSubLine(line, mode) {
+        mode = normalizeMode(mode || getMode());
+        const toks = tokenizeSub(line);
+        stripMarksInTokens(toks);
+        if (mode === 'clean') return serialize(toks);
+        if (!hasRtl(visibleText(toks))) return serialize(toks);
+        const ft = firstTxt(toks), lt = lastTxt(toks);
+        if (!ft) return serialize(toks);
+        ft.v = RLE + RLM + ft.v;
+        lt.v = lt.v + PDF;
+        return serialize(toks);
+    }
+
+    function fixSubText(text, mode) {                 // چەند دێڕی یەک cue
+        return (text || '').split(/\r?\n/).map(function (l) { return fixSubLine(l, mode); }).join('\n');
+    }
+
+    function fixSubFile(content, mode) {
+        mode = normalizeMode(mode || getMode());
+        const eol = content.indexOf('\r\n') >= 0 ? '\r\n' : '\n';
+        const lines = content.split(/\r?\n/);
+        const out = [];
+        const stats = { changed: 0, lines: 0, skipped: 0, hasTags: false };
+        let i = 0;
+        while (i < lines.length) {
+            const ln = lines[i];
+            out.push(ln); i++;
+            if (ln.indexOf('-->') < 0) continue;           // ژمارە / سەرپەڕ / NOTE / STYLE — وەک خۆی
+            while (i < lines.length && lines[i].trim() !== '') {   // دێڕەکانی دەقی ئەم cue
+                const orig = lines[i];
+                if (/\{\\|<\/?[a-zA-Z]/.test(orig)) stats.hasTags = true;
+                const fixed = fixSubLine(orig, mode);
+                stats.lines++;
+                if (fixed !== orig) stats.changed++;
+                out.push(fixed); i++;
+            }
+        }
+        return { content: out.join(eol), stats: stats };
+    }
+
+    return {
+        VERSION: '2.0', MODES: MODES.slice(),
+        getMode: getMode, setMode: setMode,
+        hasRtl: hasRtl, hasDrawing: hasDrawing, stripMarks: stripMarks,
+        fixAssText: fixAssText, fixAssFile: fixAssFile,
+        fixSubLine: fixSubLine, fixSubText: fixSubText, fixSubFile: fixSubFile
+    };
+})();
+
+
+// ---------- ناوە کۆنەکان (بۆ ئەوەی هیچ شوێنێکی تر نەشکێت) ----------
+function containsRightToLeftLetter(text) { return RtlEngine.hasRtl(text); }
+function hasAssaDrawing(line) { return RtlEngine.hasDrawing(line); }
+function applyFixRtlUnicode(text) { return RtlEngine.fixAssText(text); }
+
+// ---------- مۆداڵی چاککردنی RTL ----------
+const RTL_FIX_HINTS = {
+    hardsub: 'بۆ ASS: هەر دێڕێک بە دڵنیایی RTL دەبێت — تەنانەت لەگەڵ وشەی ئینگلیزی، ژمارە، تاگی ڕەنگ/ئیتالیک، <bdi dir="ltr">\\r</bdi> و <bdi dir="ltr">\\N</bdi>. تاگەکان دەستکاری ناکرێن. تاقیکراوەتەوە لەگەڵ libass (FFmpeg، Subtitle Edit، HandBrake، mpv).<br>بۆ SRT/VTT: ئەگەر تاگی <bdi dir="ltr">&lt;i&gt;</bdi> یان <bdi dir="ltr">&lt;font&gt;</bdi> هەبێت، باشترە بیگۆڕیت بۆ ASS، یان لە FFmpeg دا <bdi dir="ltr">force_style=\'Encoding=-1\'</bdi> بەکاربێنیت.',
+    universal: 'هێمای گشتیی Unicode (<bdi dir="ltr">RLE + RLM + PDF</bdi>) بەبێ <bdi dir="ltr">\\fe</bdi>. بۆ پلەیەرەکان و VSFilter/MPC-HC. ئاگاداری: لە هارد سەبی libass، ئەگەر دێڕەکە تاگی ڕەنگ/ئیتالیکی تێدا بێت ئەم جۆرە کار ناکات.',
+    clean: 'هەموو هێماکانی ئاڕاستەی شاراوە و <bdi dir="ltr">{\\fe-1}</bdi> لادەبات و فایلەکە دەگەڕێنێتەوە بۆ دۆخی ئاسایی.'
+};
+
+function updateRtlFixHint() {
+    const sel = document.getElementById('rtlFixMode');
+    const hint = document.getElementById('rtlFixHint');
+    if (sel && hint) hint.innerHTML = RTL_FIX_HINTS[sel.value] || '';
 }
 
-// دێڕی وێنەکێشانی ڤێکتەری دەستکاری ناکرێت
-function hasAssaDrawing(line) {
-    if (!line) return false;
-    let idx = line.indexOf('{');
-    while (idx >= 0) {
-        let close = line.indexOf('}', idx);
-        if (close < 0) break;
-        let tag = line.substring(idx, close + 1);
-        if (/\\p[1-9](?![a-zA-Z])/i.test(tag)) return true;
-        idx = line.indexOf('{', close);
-    }
-    return false;
+function rtlFixSelectMode(mode) {
+    if (RtlEngine.MODES.indexOf(mode) < 0) mode = 'hardsub';
+    const inp = document.getElementById('rtlFixMode');
+    if (inp) inp.value = mode;
+    document.querySelectorAll('#rtlFixModeGroup .rtl-mode-opt').forEach(function (b) {
+        const on = b.getAttribute('data-mode') === mode;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+    RtlEngine.setMode(mode);
+    updateRtlFixHint();
 }
 
-// فەنکشنی فەرمیی Fix RTL via Unicode control characters
-function applyFixRtlUnicode(text) {
-    if (!text || hasAssaDrawing(text)) return text;
+function openRtlFixModal() {
+    document.getElementById('rtl-fix-modal').style.display = 'flex';
+    document.getElementById('rtlFixFileInput').value = '';
+    document.getElementById('rtlFixCountDisplay').innerText = i18n[currentLang]['batchNoFile'] || 'هیچ فایلێک دیاری نەکراوە';
+    document.getElementById('rtlFixCountDisplay').style.color = "var(--text-muted)";
+    rtlFixSelectMode(RtlEngine.getMode());
+}
 
-    // پاککردنەوەی هێمای پێشوو تا دووبارە نەبێتەوە
-    let clean = text.split(RTL_EMBEDDING).join('');
-
-    // ئەگەر دەقەکە کوردی/عەرەبی تێدابوو، هێمای \u202B دەخاتە سەرەتا
-    if (containsRightToLeftLetter(clean)) {
-        return RTL_EMBEDDING + clean;
+function updateRtlFixCount(input) {
+    const display = document.getElementById('rtlFixCountDisplay');
+    if (input.files && input.files.length > 0) {
+        display.innerText = `${input.files.length} ${i18n[currentLang]['batchFilesSelected'] || 'فایل دیاریکراون'}`;
+        display.style.color = "var(--success)";
+    } else {
+        display.innerText = i18n[currentLang]['batchNoFile'] || 'هیچ فایلێک دیاری نەکراوە';
+        display.style.color = "var(--text-muted)";
     }
-    return clean;
 }
 
 // فەنکشنی سەرەکی بۆ جێبەجێکردن و داگرتن
@@ -4249,58 +4545,47 @@ async function executeRtlFix() {
         return;
     }
 
+    const modeSel = document.getElementById('rtlFixMode');
+    const mode = modeSel ? modeSel.value : RtlEngine.getMode();
+    RtlEngine.setMode(mode);
+
     const rtlModal = document.getElementById('rtl-fix-modal');
     if (rtlModal) rtlModal.style.display = 'none';
+
+    let totalChanged = 0, totalSkipped = 0, tagWarn = false;
 
     for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const rawContent = await file.text();
         const lowerName = file.name.toLowerCase();
-        let fixedContent = '';
 
         // ناسینەوەی زیرەکی فایلی ASS تەنانەت ئەگەر ناوی بە .txtـیش بێت
-        const isAss = lowerName.endsWith('.ass') || rawContent.includes('[Events]') || rawContent.includes('[Script Info]');
+        const isAss = lowerName.endsWith('.ass') || lowerName.endsWith('.ssa') || rawContent.includes('[Events]') || rawContent.includes('[Script Info]');
+        const isVtt = !isAss && (lowerName.endsWith('.vtt') || /^\uFEFF?WEBVTT/.test(rawContent));
 
+        let result;
         if (isAss) {
-            const lines = rawContent.split(/\r?\n/);
-            fixedContent = lines.map(line => {
-                if (line.startsWith('Dialogue:') || line.startsWith('Comment:')) {
-                    let commaCount = 0, splitIdx = -1;
-                    for (let c = 0; c < line.length; c++) {
-                        if (line[c] === ',') {
-                            commaCount++;
-                            if (commaCount === 9) { splitIdx = c; break; }
-                        }
-                    }
-                    if (splitIdx !== -1) {
-                        const prefix = line.substring(0, splitIdx + 1);
-                        const textBody = line.substring(splitIdx + 1);
-                        // لە هەردوو دێڕی پێش و دوای \N هێمای \u202B دادەنێت وەک Subtitle Edit
-                        const fixedText = textBody.split('\\N').map(t => applyFixRtlUnicode(t)).join('\\N');
-                        return prefix + fixedText;
-                    }
-                }
-                return line;
-            }).join('\n');
+            result = RtlEngine.fixAssFile(rawContent, mode);
         } else {
-            // بۆ فایلی SRT و VTT
-            const lines = rawContent.split(/\r?\n/);
-            fixedContent = lines.map(line => {
-                const trimmed = line.trim();
-                if (!trimmed || /^\d+$/.test(trimmed) || trimmed.includes('-->') || trimmed.startsWith('WEBVTT') || trimmed.startsWith('NOTE')) {
-                    return line;
-                }
-                return applyFixRtlUnicode(line);
-            }).join('\n');
+            result = RtlEngine.fixSubFile(rawContent, mode);
+            if (result.stats.hasTags && mode !== 'clean') tagWarn = true;
         }
+        totalChanged += result.stats.changed;
+        totalSkipped += result.stats.skipped || 0;
 
-        const ext = isAss ? 'ass' : (lowerName.endsWith('.vtt') ? 'vtt' : 'srt');
-        const newFileName = file.name.replace(/\.[^/.]+$/, '').replace(/_RTL_Fixed$/, '') + '_RTL_Fixed.' + ext;
-        triggerDownload(fixedContent, newFileName);
+        const ext = isAss ? 'ass' : (isVtt ? 'vtt' : 'srt');
+        const suffix = mode === 'clean' ? '_RTL_Clean' : '_RTL_Fixed';
+        const baseName = file.name.replace(/\.[^/.]+$/, '').replace(/_RTL_(Fixed|Clean)$/, '');
+        triggerDownload(result.content, baseName + suffix + '.' + ext);
         await new Promise(r => setTimeout(r, 600));
     }
 
-    showToast((i18n[currentLang] && i18n[currentLang]['msgDone']) || 'کرداری Fix RTL بە سەرکەوتوویی تەواو بوو!', 'success');
+    let msg = (mode === 'clean' ? 'هێماکان لابران' : 'چاککردنی RTL تەواو بوو') + ' — ' + totalChanged + ' دێڕ';
+    if (totalSkipped > 0) msg += ' (' + totalSkipped + ' دێڕی وێنەکێشان دەستکاری نەکران)';
+    showToast(msg, 'success');
+    if (tagWarn) {
+        setTimeout(() => showToast("ئاگاداری: SRT/VTTەکە تاگی <i>/<font>ی تێدایە. بۆ هارد سەب باشترە بیگۆڕیت بۆ ASS، یان لە FFmpeg دا force_style='Encoding=-1' بەکاربێنیت.", 'info'), 900);
+    }
 }
 
         function openConverterModal() { document.getElementById('converter-modal').style.display = 'flex'; }
@@ -8406,13 +8691,8 @@ function buildKurdForestLogo(dialogues, res, count, styleKind, existingStyleName
     return { styleName: LOGO_STYLE, styleLine: styleLine, lines: lines };
 }
 
-// چارەسەری فەنکشنی ونبووی RTL بۆ تێکەڵکردنی فایلەکان
-function processRtlDialogueText(text) {
-    if (typeof applyFixRtlUnicode === 'function') {
-        return applyFixRtlUnicode(text);
-    }
-    return text;
-}
+// تێکەڵکردنی فایلەکان RTL چاک ناکات (تەنها بەشی «چاککردنی RTL» ئەو کارە دەکات). ناوەکە بۆ گونجاندنە.
+function processRtlDialogueText(text) { return text; }
 
 // چارەسەری فەنکشنی ونبووی پشکنینی تاگەکان بۆ پێداچوونەوە
 function hasInlineTagChunks(text) {
@@ -8595,7 +8875,7 @@ async function executeMergeAss() {
             if (splitIdx !== -1) {
                 let prefix = tr.substring(0, splitIdx + 1);
                 let textBody = tr.substring(splitIdx + 1);
-                let fixedText = textBody.split('\\N').map(t => processRtlDialogueText(t)).join('\\N');
+                let fixedText = textBody; // RTL لێرە جێبەجێ ناکرێت — تەنها لە بەشی «چاککردنی RTL»
                 tr = prefix + fixedText;
             }
 
@@ -8652,7 +8932,7 @@ async function executeMergeAss() {
                 if (splitIdx !== -1) {
                     let prefix = tr.substring(0, splitIdx + 1);
                     let textBody = tr.substring(splitIdx + 1);
-                    let fixedText = textBody.split('\\N').map(t => processRtlDialogueText(t)).join('\\N');
+                    let fixedText = textBody; // RTL لێرە جێبەجێ ناکرێت — تەنها لە بەشی «چاککردنی RTL»
                     tr = prefix + fixedText;
                 }
 
@@ -8962,7 +9242,7 @@ function crAnalyzeLine(idx, orig, trans) {
     }
 
     // ٤. هێمای شاراوەی ئاڕاستە
-    if (/[\u200E\u200F\u061C\u202A-\u202E\u2066-\u2069]/.test(trans)) warns.push('هێمای شاراوەی ئاڕاستە (RTL/LTR) لە دەقەکەدایە — بە خۆکاری لەکاتی داگرتن دەسڕدرێتەوە.');
+    if (/[\u200E\u200F\u061C\u202A-\u202E\u2066-\u2069]/.test(trans)) warns.push('هێمای شاراوەی ئاڕاستە (RTL/LTR) لە دەقەکەدایە — چاککەری RTLی نوێ بە خۆکاری ڕێکیان دەخاتەوە.');
 
     // ٥. ئامادەیی بۆ RTL / تێکەڵکردن
     if (crHasRtl(trans) && hasInlineTagChunks(trans)) {
@@ -8970,7 +9250,7 @@ function crAnalyzeLine(idx, orig, trans) {
         const rest = trans.substring(lead.length);
         const chunks = rest.match(/(?:\{[^}]*\})+[^{]*|[^{]+/g) || [];
         const emptyChunk = chunks.some(c => c.indexOf('{') === 0 && c.replace(/\{[^}]*\}/g, '').trim() === '');
-        if (emptyChunk) errs.push('کۆدێک هەیە هیچ نووسینێکی بەدواوە نییە — لەکاتی چاککردنی RTL ئاڕاستەکە تێکدەچێت. کۆدەکە بلکێنە بەو وشەیەی پێویستە کاری لەسەر بکات.');
+        if (emptyChunk) warns.push('کۆدێک هەیە هیچ نووسینێکی بەدواوە نییە — کاریگەری نابێت. (سیستەمی RTLی نوێ ئاڕاستەکە تێکنادات.)');
         if (/\\p[1-9]/i.test(trans)) warns.push('کۆدی وێنەکێشان (\\p) هەیە — ئەم دێڕە دەستکاری ناکرێت لەکاتی چاککردنی RTL.');
     }
 

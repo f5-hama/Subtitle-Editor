@@ -1952,6 +1952,7 @@ input[type="checkbox"], input[type="radio"] {
                 
                 <div class="tool-divider"></div>
                 
+                <button class="top-btn primary-tool" onclick="openFontsModal()" title="فۆنتەکان" id="btn-fonts-top"><span style="font-weight:800;font-size:12px;line-height:1;">Aa</span></button>
                 <button class="top-btn primary-tool" onclick="toggleSearchBar()" title="گەڕان">
                     <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                 </button>
@@ -2352,6 +2353,27 @@ input[type="checkbox"], input[type="radio"] {
         </div>
     </div>
    
+<style>#vDraggableSubText .ass-blk{outline:1.5px dashed var(--primary);outline-offset:1px;cursor:grab;}</style>
+<!-- بەڕێوەبەری فۆنتەکان -->
+<div id="kf-fonts-modal" class="custom-modal-overlay">
+    <div class="custom-modal-content" style="max-width: 420px; padding: 14px; max-height: 92vh; overflow-y: auto; overflow-x: hidden; text-align: right;">
+        <h3 style="color:var(--primary); margin:0 0 6px 0; font-size:15px;">فۆنتەکانی ژێرنووس</h3>
+        <p style="font-size:11.5px; line-height:1.7; color:var(--text-muted); margin:0 0 10px 0;">
+            بۆ ئەوەی پێشبینین و شوێنی دەق <b>ڕێک وەک پلەیەر و هارد سەب</b> بێت، فایلی فۆنتەکانی ناو ئەم ژێرنووسە (TTF / OTF) لێرە زیاد بکە.
+            فۆنتەکان لەسەر ئامێرەکەت پاشەکەوت دەکرێن و جارێکی تر پێویست بە زیادکردن ناکات.
+        </p>
+        <div style="font-size:12px; font-weight:bold; color:var(--primary); margin-bottom:5px;">فۆنتەکانی ناو فایلەکە:</div>
+        <div id="kfFontsUsed"></div>
+        <button type="button" class="btn" style="width:100%; margin:8px 0 10px 0; font-size:12.5px;" onclick="document.getElementById('kfFontFilePick').click()">+ زیادکردنی فایلی فۆنت</button>
+        <input type="file" id="kfFontFilePick" accept=".ttf,.otf,.ttc,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2" multiple style="display:none" onchange="kfOnFontFilesPicked(this)">
+        <div style="font-size:12px; font-weight:bold; color:var(--primary); margin-bottom:5px;">فۆنتە زیادکراوەکان:</div>
+        <div id="kfFontsLoaded"></div>
+        <div class="custom-modal-actions" style="margin-top:10px;">
+            <button class="btn btn-outline" onclick="closeFontsModal()">داخستن</button>
+        </div>
+    </div>
+</div>
+
 <!-- پەنجەرەی دیاریکردنی شوێن بە مەگنەتیک و هێڵی ڕێنمایی ناوەڕاست -->
 <div id="grid40-modal" class="custom-modal-overlay">
     <div class="custom-modal-content" style="max-width: 440px; padding: 14px; max-height: 92vh; overflow-y: auto; overflow-x: hidden;">
@@ -2399,7 +2421,7 @@ input[type="checkbox"], input[type="radio"] {
             <div id="vSnapGuideH" style="display: none; position: absolute; left: 0; right: 0; top: 50%; height: 1.5px; background: var(--primary); box-shadow: 0 0 8px var(--primary); z-index: 15; pointer-events: none;"></div>
 
            <!-- دەقی ڕاکێشراو بە ئەندازەی تەواو بێ پادینگی زیادە -->
-<div id="vDraggableSubText" style="position: absolute; font-family: 'KurdForest', Tahoma, sans-serif; white-space: nowrap !important; width: max-content !important; max-width: 100% !important; word-break: keep-all !important; direction: rtl; cursor: grab; padding: 0 !important; margin: 0 !important; border: none !important; outline: 1.5px dashed var(--primary); outline-offset: 1px; background: transparent !important; line-height: 1 !important; z-index: 25; box-sizing: content-box !important;">دەق</div>
+<div id="vDraggableSubText" style="position:absolute;left:0;top:0;width:0;height:0;transform-origin:0 0;cursor:grab;padding:0;margin:0;border:none;background:transparent;z-index:25;">دەق</div>
         </div>
 
         <!-- کۆنترۆڵی جوڵاندن و ڕێکخستن -->
@@ -5669,6 +5691,14 @@ function openSubStyleModal(index) {
         subtitleNotes[index] = '';
     }
 
+    // تاگەکانی ئەسڵیی فایلەکە (\pos \an \fs \bord ...) دەخرێنە سەر دەقەکە، تا مۆداڵەکە
+    // ڕێک هەمان شتی ناو فایلەکە نیشان بدات و شوێن/ستایل لە دەست نەدرێت
+    if (typeof isAssFormat !== 'undefined' && isAssFormat && originalData[index]) {
+        text = AssTags.inherit(originalData[index].rawText, text);
+    }
+    const styleBase = kfComputeStyleBase(index, text);
+    window.__styleModalBase = styleBase;
+
     // دەرهێنان و پاراستنی هەموو تاگە پێشکەوتووەکان (شوێن، سووڕانەوە، پانبوون، بەرزبوون، لاری)
     let advancedTags = '';
     let posM = text.match(/\\(?:pos|move)\([^)]*\)/i);
@@ -5694,6 +5724,7 @@ function openSubStyleModal(index) {
             .replace(/\\fsc[xy][\d\.]+/gi, '')
             .replace(/\\fax-?[\d\.]+/gi, '')
             .replace(/\\fs\d+(?:\.\d+)?/gi, '')
+            .replace(/\\an\d/gi, '')
             .replace(/\{\s*\}/g, '')
             .trim();
         modalTa.value = displayText;
@@ -5715,10 +5746,11 @@ function openSubStyleModal(index) {
     if (fnInput) {
         let fnM = text.match(/\\fn([^\\}]+)/);
         fnInput.value = fnM ? fnM[1].trim() : '';
+        // بەتاڵ = هەمان فۆنتی ناو فایلەکە (ناوەکەی وەک placeholder نیشان دەدرێت)
+        fnInput.placeholder = styleBase.styleFont || 'Speda, Ali_K_Samik, Arial...';
     }
 
-    let alignMatch = text.match(/\\an(\d)/);
-    selectAlignment(alignMatch ? alignMatch[1] : '2');
+    selectAlignment(styleBase.align || '2');
 
     const chkFade = document.getElementById('chkEnableFade');
     const inEl = document.getElementById('fadeInMs');
@@ -5738,36 +5770,21 @@ function openSubStyleModal(index) {
 
     const boldBtn = document.getElementById('btnTechBold');
     const italicBtn = document.getElementById('btnTechItalic');
-    if (boldBtn) boldBtn.classList.toggle('active', /\\b1\b/.test(text));
-    if (italicBtn) italicBtn.classList.toggle('active', /\\i1\b/.test(text));
+    if (boldBtn) boldBtn.classList.toggle('active', !!styleBase.bold.val);
+    if (italicBtn) italicBtn.classList.toggle('active', !!styleBase.italic.val);
 
     const blurInput = document.getElementById('techBlurVal');
     const bordInput = document.getElementById('techOutlineVal');
     const shadInput = document.getElementById('techShadowVal');
     const fsInput = document.getElementById('techFontSizeVal');
     
-    let blurMatch = text.match(/\\blur([\d\.]+)/);
-    if (blurInput) blurInput.value = blurMatch ? blurMatch[1] : '';
-    
-    let bordMatch = text.match(/\\bord([\d\.]+)/);
-    if (bordInput) bordInput.value = bordMatch ? bordMatch[1] : '';
-    
-    let shadMatch = text.match(/\\shad([\d\.]+)/);
-    if (shadInput) shadInput.value = shadMatch ? shadMatch[1] : '';
-    
-    let fsMatch = text.match(/\\fs(\d+(?:\.\d+)?)/);
-    if (fsInput) {
-        if (fsMatch) {
-            fsInput.value = fsMatch[1];
-        } else {
-            let lineFs = (typeof getSubtitleLineFontSize === 'function') ? getSubtitleLineFontSize(index, text) : '';
-            const fnM = text.match(/\\fn([^\\}]+)/);
-            fsInput.value = (fnM && fnM[1].trim()) ? lineFs : '';
-        }
-    }
+    // بەهای ڕاستەقینەی ئەم دێڕە لە فایلەکە: تاگی ناو دێڕ ← ستایلی فایلەکە
+    [[blurInput, 'blur'], [bordInput, 'bord'], [shadInput, 'shad'], [fsInput, 'fs']].forEach(function (pair) {
+        if (pair[0]) pair[0].value = styleBase[pair[1]].val;
+    });
 
     let outAlpha = /\\3a&H(?:FF|ff)&/.test(text);
-    let shadAlpha = /\\4a&H(?:FF|ff)&/.test(text) || /\\shad0(?![\d\.])/.test(text);
+    let shadAlpha = /\\4a&H(?:FF|ff)&/.test(text);
     let out3c = text.match(/\\3c&H([0-9A-Fa-f]{6})&?/i);
     let out4c = text.match(/\\4c&H([0-9A-Fa-f]{6})&?/i);
     setStrokeColor(outAlpha ? 'NONE' : (out3c ? bgrToHex(out3c[1]) : 'KEEP'), null);
@@ -5875,6 +5892,12 @@ function applySubStyleToLine() {
         const shadVal = shadInput ? shadInput.value.trim() : '';
         const fsVal = fsInput ? fsInput.value.trim() : '';
 
+        // بەراورد لەگەڵ بەهای ئەسڵی: ئەگەر نەگۆڕا = وەک خۆی دەمێنێتەوە، ئەگەر گۆڕا = بەهای نوێ
+        const B = window.__styleModalBase || null;
+        const baseOf = (k) => { const b = B && B[k]; return { val: (b && b.val != null) ? String(b.val) : '', had: !!(b && b.had) }; };
+        const sBlur = baseOf('blur'), sBord = baseOf('bord'), sShad = baseOf('shad'), sFs = baseOf('fs');
+        const chBlur = blurVal !== sBlur.val, chBord = bordVal !== sBord.val, chShad = shadVal !== sShad.val, chFs = fsVal !== sFs.val;
+
         // خوێندنەوە و پاراستنی شوێن و سووڕانەوە و قەبارە
         const extraTagsIn = document.getElementById('modalExtraLineTags');
         let advancedTags = extraTagsIn ? extraTagsIn.value.trim() : '';
@@ -5918,9 +5941,9 @@ function applySubStyleToLine() {
             .replace(/\\b[01]/gi, '')
             .replace(/\\i[01]/gi, '');
 
-        if (blurVal !== '') cleanText = cleanText.replace(/\\blur[\d.]+/gi, '');
-        if (bordVal !== '') cleanText = cleanText.replace(/\\bord[\d.]+/gi, '');
-        if (shadVal !== '') cleanText = cleanText.replace(/\\shad[\d.]+/gi, '');
+        if (chBlur) cleanText = cleanText.replace(/\\blur[\d.]+/gi, '');
+        if (chBord) cleanText = cleanText.replace(/\\bord[\d.]+/gi, '');
+        if (chShad) cleanText = cleanText.replace(/\\shad[\d.]+/gi, '');
         if (fsVal !== '') cleanText = cleanText.replace(/\\fs\d+(?:\.\d+)?/gi, '');
         if (fnVal !== '') cleanText = cleanText.replace(/\\fn[^\}\\]*/gi, '');
 
@@ -5936,18 +5959,23 @@ function applySubStyleToLine() {
         cleanText = cleanText.replace(/\{\}/g, '').trim();
 
         let tags = '';
-        if (advancedTags) {
-            tags += advancedTags;
-        } else if (align && align !== '2') {
-            tags += `\\an${align}`;
-        }
+        // ئەگەر \an لە فایلەکە هەبوو یان لە ستایلەکە جیاوازە، دەپارێزرێت (پێشتر لەگەڵ \pos ون دەبوو)
+        advancedTags = advancedTags.replace(/\\an\d/gi, '');
+        const anWanted = B ? (align !== B.styleAlign || B.hadAn) : (align && align !== '2');
+        if (anWanted) tags += `\\an${align}`;
+        if (advancedTags) tags += advancedTags;
 
         if (isFade) tags += `\\fad(${fadeIn},${fadeOut})`;
-        if (isBold) tags += '\\b1';
-        if (isItalic) tags += '\\i1';
+        if (B) {
+            if (isBold !== B.bold.val || B.bold.had) tags += isBold ? '\\b1' : '\\b0';
+            if (isItalic !== B.italic.val || B.italic.had) tags += isItalic ? '\\i1' : '\\i0';
+        } else {
+            if (isBold) tags += '\\b1';
+            if (isItalic) tags += '\\i1';
+        }
         if (fnVal !== '') tags += `\\fn${fnVal}`;
-        if (blurVal !== '') tags += `\\blur${blurVal}`;
-        if (fsVal !== '') {
+        if (chBlur && blurVal !== '') tags += `\\blur${blurVal}`;
+        if (fsVal !== '' && (chFs || sFs.had)) {
             let fsNum = parseFloat(fsVal);
             if (!isNaN(fsNum)) {
                 fsNum = Math.min(500, Math.max(1, fsNum));
@@ -5956,13 +5984,13 @@ function applySubStyleToLine() {
             }
         }
 
-        if (bordVal !== '') tags += `\\bord${bordVal}`;
+        if (chBord && bordVal !== '') tags += `\\bord${bordVal}`;
         if (strokeCol !== 'KEEP') {
             if (strokeCol === 'NONE') tags += '\\bord0\\3a&HFF&';
             else tags += `\\3a&H00&\\3c&H${hexToAssBgr(strokeCol)}&`;
         }
 
-        if (shadVal !== '') tags += `\\shad${shadVal}`;
+        if (chShad && shadVal !== '') tags += `\\shad${shadVal}`;
         if (shadowCol !== 'KEEP') {
             if (shadowCol === 'NONE') tags += '\\shad0\\4a&HFF&';
             else tags += `\\4a&H00&\\4c&H${hexToAssBgr(shadowCol)}&`;
@@ -6023,6 +6051,7 @@ function clearLineStyles() {
     }
 
     // ڕێکخستنەوەی هەموو کۆنترۆڵەکانی پەنجەرەکە
+    window.__styleModalBase = null;
     resetTaSelection('modalSubtitleLiveText');
     const fnClr = document.getElementById('techFontName');
     if (fnClr) fnClr.value = '';
@@ -6315,9 +6344,10 @@ let currentDragAlign = '2';
 // دەرهێنانی تەواو و دەقیقی ڕێزۆلوشنی فایلی ژێرنووسەکە بەبێ تێکچوون
 function getActiveScriptResolution() {
     let resX = 0, resY = 0;
-    
-    // ١. دەرهێنانی ڕێزۆلوشن لە خودی سەردێڕی فایلی ASS
-    if (typeof assHeaderLines !== 'undefined' && assHeaderLines && assHeaderLines.length > 0) {
+    const hasHeader = (typeof assHeaderLines !== 'undefined' && assHeaderLines && assHeaderLines.length > 0);
+
+    // ١. ڕێزۆلوشن لە سەردێڕی ASS
+    if (hasHeader) {
         let text = assHeaderLines.join('\n');
         let yM = text.match(/PlayResY\s*:\s*(\d+)/i);
         let xM = text.match(/PlayResX\s*:\s*(\d+)/i);
@@ -6325,19 +6355,13 @@ function getActiveScriptResolution() {
         if (xM) resX = parseInt(xM[1], 10);
     }
 
-    // ٢. ئەگەر تەنها یەکێکیان هەبوو، ئەوی تریان بەپێی ڕێژەی ڤیدیۆ حیساب دەکرێت بەبێ سڕینەوەی ژمارەی فایلەکە!
-    if (resY > 0 && (!resX || resX === 0)) {
-        const video = document.getElementById('preview-video');
-        const vRatio = (video && video.videoWidth && video.videoHeight) ? (video.videoWidth / video.videoHeight) : (16 / 9);
-        resX = Math.round(resY * vRatio);
-    } else if (resX > 0 && (!resY || resY === 0)) {
-        const video = document.getElementById('preview-video');
-        const vRatio = (video && video.videoWidth && video.videoHeight) ? (video.videoWidth / video.videoHeight) : (16 / 9);
-        resY = Math.round(resX / vRatio);
-    }
-
-    // ٣. تەنها ئەگەر لە فایلەکە هیچ ڕێزۆلوشنێک نەبوو، ڕێزۆلوشنی ڤیدیۆکە وەردەگیرێت
-    if (!resX && !resY) {
+    if (hasHeader) {
+        // ٢. یاسای ڕاستەقینەی libass / VSFilter بۆ ئەو کاتەی PlayRes نییە
+        if (!resX && !resY) { resX = 384; resY = 288; }
+        else if (!resY) { resY = (resX === 1280) ? 1024 : Math.round(resX * 3 / 4); }
+        else if (!resX) { resX = (resY === 1024) ? 1280 : Math.round(resY * 4 / 3); }
+    } else {
+        // ٣. فایلی بێ سەردێڕ (SRT/VTT): ڕێزۆلوشنی ڤیدیۆ
         const video = document.getElementById('preview-video');
         if (video && video.videoWidth && video.videoHeight) {
             resX = video.videoWidth;
@@ -6347,7 +6371,6 @@ function getActiveScriptResolution() {
             resY = 1080;
         }
     }
-    
     return { resX, resY };
 }
 
@@ -6411,7 +6434,8 @@ function openGrid40Modal() {
     const lineTa = card ? card.querySelector('textarea') : null;
 
     // کۆکردنەوەی هەموو سەرچاوەکانی دەق تاوەکو هیچ تاگێک ون نەبێت
-    let fullLineText = lineTa ? lineTa.value : '';
+    // دەقی کاریگەر: وەرگێڕان + تاگەکانی ئەسڵ (\\pos \\an ...)
+    let fullLineText = (lineTa && currentStylingIndex >= 0) ? assEffectiveLineText(currentStylingIndex, lineTa.value) : (lineTa ? lineTa.value : '');
     let extraTags = extraIn ? extraIn.value : '';
     let modalText = modalTa ? modalTa.value : '';
     let fullSource = extraTags + ' ' + fullLineText + ' ' + modalText;
@@ -6441,7 +6465,9 @@ function openGrid40Modal() {
     currentDragFscy = fscyM ? parseFloat(fscyM[1]) : 100;
     currentDragFax = faxM ? parseFloat(faxM[1]) : 0;
 
-    currentDragAlign = getDragLineAlignment(fullSource);
+    // ئاڕاستەکردن: ئەوەی لە مۆداڵی تەکنیک هەڵبژێردراوە (دوایین هەڵبژاردنی بەکارهێنەر)، دەنا لە دەق/ستایل
+    const alignCtl = document.getElementById('selectedAlignVal');
+    currentDragAlign = (alignCtl && /^[1-9]$/.test(alignCtl.value)) ? alignCtl.value : getDragLineAlignment(fullSource);
 
     // ٣. شوێنی پێشوو لەسەر شاشە (\pos)
     let posM = fullSource.match(/\\pos\(\s*(-?[\d\.]+)\s*,\s*(-?[\d\.]+)\s*\)/);
@@ -6449,8 +6475,13 @@ function openGrid40Modal() {
         currentDragAssX = Math.round(parseFloat(posM[1]));
         currentDragAssY = Math.round(parseFloat(posM[2]));
     } else {
-        currentDragAssX = Math.round(currentDragResX / 2);
-        currentDragAssY = Math.round(currentDragResY * 0.88);
+        // بێ \\pos: شوێنی ڕاستەقینەی دێڕ لە پەراوێزەکانی فایلەکە + ئاڕاستەکردن (وەک libass)
+        const dStyle = getDragLineStyle();
+        const dMeta = (originalData[currentStylingIndex] && originalData[currentStylingIndex].assMeta) || {};
+        const dp = AssLayout.eventParams('', dStyle, dMeta);
+        const da = AssLayout.anchorFor(currentDragAlign, null, dp, { resX: currentDragResX, resY: currentDragResY, left: 0, top: 0, sx: 1, sy: 1 });
+        currentDragAssX = Math.round(da.resX);
+        currentDragAssY = Math.round(da.resY);
     }
 
     document.getElementById('grid40-modal').style.display = 'flex';
@@ -6494,7 +6525,9 @@ function renderDragPreviewStyled() {
     var raw = currentDragRawText || '';
     var m = getDragFrameMetrics();
     var frameHeight = m ? m.height : (canvas.clientHeight || 230);
+    var frameWidth = m ? m.width : (canvas.clientWidth || 400);
     var scaleRatio = frameHeight / (currentDragResY || 360);
+    var bordScale = AssLayout.isScaledBorder() ? scaleRatio : (frameHeight / (canvas.height || currentDragResY || 360));
 
     // ستایلی تایبەتی ئەو دێڕە لە ناو فایلەکە
     var baseStyle = getDragLineStyle();
@@ -6504,15 +6537,16 @@ function renderDragPreviewStyled() {
 
     var textForPreview = raw.replace(/\\fs\d+(?:\.\d+)?/gi, '');
     textForPreview = textForPreview.replace(/[♪\|]/g, '');
-
-    var html = '';
-    if (typeof parseAssLineToStyledHtml === 'function') {
-        html = parseAssLineToStyledHtml(textForPreview, styleForPreview, scaleRatio);
-    }
     var plain = textForPreview.replace(/\{[^}]*\}/g, '').trim();
-    if (!plain) html = '<span style="color:' + (baseStyle.primaryColor || '#fff') + ';">دەقی ژێرنووس</span>';
-    
-    dragText.innerHTML = html.replace(/\\N/gi, '<br>');
+    if (!plain) textForPreview += 'دەقی ژێرنووس';
+
+    // هەمان جیومەتری libass: fs = بەرزیی خانە، سندوقی دێڕ لەسەر خاڵی \pos ڕادەکێشرێت
+    var meta = (typeof originalData !== 'undefined' && originalData[currentStylingIndex] && originalData[currentStylingIndex].assMeta) || {};
+    var p = AssLayout.eventParams(textForPreview, baseStyle, meta);
+    var out = {};
+    var runs = AssLayout.runsHtml(textForPreview, styleForPreview, scaleRatio, { bordScale: bordScale, out: out });
+    var maxW = (currentDragResX - p.mL - p.mR) * (frameWidth / (currentDragResX || 1));
+    dragText.innerHTML = '<div class="ass-blk" dir="auto" style="' + AssLayout.blockCss(currentDragAlign || '2', out.L, maxW, out.font) + '">' + runs + '</div>';
 }
 
 // نوێکردنەوەی ڕاستەوخۆی دەقەکە بەبێ ڕیسێت بوون
@@ -6527,9 +6561,7 @@ function updateLiveDragTransform() {
     currentDragFscy = parseFloat(document.getElementById('vDragScaleY').value) || 100;
     currentDragFax = parseFloat(document.getElementById('vDragShearX').value) || 0;
 
-    let scaleRatio = (canvas.clientHeight || 1) / (currentDragResY || 1080);
-    dragText.style.fontSize = Math.max(0.5, fs * scaleRatio).toFixed(2) + 'px';
-    
+
     // دووبارە جێبەجێکردنی شوێنەکە تاوەکو شێوەکەی تێک نەچێت
     setDragElementPosition(currentDragAssX, currentDragAssY);
 
@@ -6550,21 +6582,8 @@ function setDragElementPosition(assX, assY) {
         dragText.style.top = ((assY / currentDragResY) * 100) + '%';
     }
 
-    var align = currentDragAlign || '2';
-    var tX = '-50%', tY = '-50%';
-    
-    // ئاڕاستەی ئاسۆیی (X)
-    if (['1','4','7'].indexOf(align) !== -1) tX = '0%';
-    if (['2','5','8'].indexOf(align) !== -1) tX = '-50%';
-    if (['3','6','9'].indexOf(align) !== -1) tX = '-100%';
-    
-    // ئاڕاستەی ستوونی (Y) بەپێی هێڵی بنچینەی پیتەکان (Baseline)
-    if (['7','8','9'].indexOf(align) !== -1) tY = '0%';
-    if (['4','5','6'].indexOf(align) !== -1) tY = '-50%';
-    if (['1','2','3'].indexOf(align) !== -1) tY = '-82%';
-
-    let skewDeg = -Math.atan(currentDragFax || 0) * (180 / Math.PI);
-    dragText.style.transform = `translate(${tX}, ${tY}) rotate(${-(currentDragFrz || 0)}deg) scale(${(currentDragFscx || 100) / 100}, ${(currentDragFscy || 100) / 100}) skewX(${skewDeg}deg)`;
+    // سووڕان/پان/لاری لەسەر خودی خاڵی ڕاکێشان (وەک libass)؛ جێگیرکردنی سندوق لەناو .ass-blk ەکەیە
+    dragText.style.transform = AssLayout.transformCss({ frz: currentDragFrz || 0, fscx: currentDragFscx || 100, fscy: currentDragFscy || 100, fax: currentDragFax || 0 });
 
     if (display) display.innerText = `X: ${assX}, Y: ${assY} [${currentDragResX}×${currentDragResY}]`;
 }
@@ -6578,12 +6597,20 @@ function getDragFrameMetrics() {
     const frame = (canvas && canvas.clientWidth) ? canvas : box;
     const fR = frame.getBoundingClientRect();
     if (!fR.width || !fR.height) return null;
+    let cl = fR.left, ct = fR.top, cw = fR.width, ch = fR.height;
+    // canvas بە object-fit:contain لەناو سندوقەکەدا دەکشێت؛ ناوەڕۆکی ڕاستەقینە (بێ لێتەرباکس) وەردەگرین
+    if (frame === canvas && canvas.width && canvas.height) {
+        const sc = Math.min(fR.width / canvas.width, fR.height / canvas.height);
+        cw = canvas.width * sc; ch = canvas.height * sc;
+        cl = fR.left + (fR.width - cw) / 2; ct = fR.top + (fR.height - ch) / 2;
+    }
     return {
-        offsetLeft: fR.left - bR.left,
-        offsetTop: fR.top - bR.top,
-        width: fR.width,
-        height: fR.height,
-        rect: fR
+        // شوێنی absolute لەناو سندوقەکە لە لێواری ناوەوەی border دەست پێدەکات
+        offsetLeft: cl - (bR.left + box.clientLeft),
+        offsetTop: ct - (bR.top + box.clientTop),
+        width: cw,
+        height: ch,
+        rect: { left: cl, top: ct, width: cw, height: ch }
     };
 }
 
@@ -6612,10 +6639,12 @@ function nudgeDragPos(dx, dy) {
 
 function alignDragPos(where) {
     var st = getDragLineStyle();
-    var mL = st.marginL || 10, mR = st.marginR || 10, mV = st.marginV || 18;
+    var meta = (typeof originalData !== 'undefined' && originalData[currentStylingIndex] && originalData[currentStylingIndex].assMeta) || {};
+    var p = AssLayout.eventParams('', st, meta);
+    var mL = p.mL, mR = p.mR, mV = p.mV;
     if (where === 'left') currentDragAssX = Math.round(mL);
     else if (where === 'right') currentDragAssX = Math.round(currentDragResX - mR);
-    else if (where === 'center') currentDragAssX = Math.round(currentDragResX / 2);
+    else if (where === 'center') currentDragAssX = Math.round((mL + currentDragResX - mR) / 2);
     else if (where === 'top') currentDragAssY = Math.round(mV);
     else if (where === 'bottom') currentDragAssY = Math.round(currentDragResY - mV);
     else if (where === 'middle') currentDragAssY = Math.round(currentDragResY / 2);
@@ -6744,6 +6773,9 @@ function confirmDraggablePosition() {
     if (fsInput) {
         fsInput.value = chosenFs;
     }
+    // ئاڕاستەکردن لەگەڵ \\pos قوفڵ دەکرێت و مۆداڵی تەکنیک هاوکاتە
+    selectAlignment(currentDragAlign || '2');
+    if (window.__styleModalBase) window.__styleModalBase.hadAn = true;
 
     if (modalTa) {
         modalTa.value = modalTa.value
@@ -6777,7 +6809,10 @@ function confirmDraggablePosition() {
                     .replace(/\{\s*\}/g, '')
                     .trim();
                 
-                let combinedTags = `{${newAdvTags}\\fs${chosenFs}}`;
+                // قەبارە تەنها ئەگەر گۆڕدرا (یان لە فایلەکە بە تاگ هەبوو) دەنووسرێت
+                const Bd = window.__styleModalBase || null;
+                const includeFs = !Bd || (String(chosenFs) !== Bd.fs.val) || Bd.fs.had;
+                let combinedTags = `{${newAdvTags}${includeFs ? `\\fs${chosenFs}` : ''}}`;
                 ta.value = (combinedTags + baseTxt).replace(/\{([^{}]*)\}\{([^{}]*)\}/g, '{$1$2}');
                 notifySubtitleChange(ta);
                 saveSession();
@@ -7089,99 +7124,10 @@ function buildAssShadowCss(bordW, strokeColor, shadW, shadowColor, blurW) {
     return shadows.length > 0 ? 'text-shadow: ' + shadows.join(', ') + ';' : 'text-shadow: none;';
 }
 
-// شیکەرەوەی ناوەڕۆکی دێڕ بە دەرکێشانی تەواوی تاگەکانی \c و \3c و \bord و \fn
-function parseAssLineToStyledHtml(rawText, style, scaleY) {
+// شیکەرەوەی ناوەڕۆکی دێڕ (ئێستا بەستراوەتەوە بە AssLayout کە وەک libass بەرزی/baseline دەکات)
+function parseAssLineToStyledHtml(rawText, style, scaleY, opts) {
     if (!rawText) return '';
-    
-    var curPrimary = style.primaryColor || '#FFFFFF';
-    var curOutline = style.outlineColor || '#000000';
-    var curShadow = style.shadowColor || '#000000';
-    var curBord = (style.outline !== undefined ? style.outline : 1.5) * scaleY;
-    var curShad = (style.shadow !== undefined ? style.shadow : 1.0) * scaleY;
-    var curBlur = 0;
-    var curBold = style.bold;
-    var curItalic = style.italic;
-    var curFs = style.fontsize * scaleY;
-    var curFn = style.fontname || 'KurdForest';
-    var curSpacing = (style.spacing || 0) * scaleY;
-    var curUnder = false, curStrike = false, curAlpha = 1;
-    
-    var textOnly = rawText.replace(/\{\\p[1-9]\}[^\}]*(\{\\p0\}|$)/gi, '');
-    var parts = textOnly.split(/(\{[\s\S]*?\})/g);
-    var html = '';
-
-    for (var i = 0; i < parts.length; i++) {
-        var part = parts[i];
-        if (!part) continue;
-        if (part.charAt(0) === '{' && part.charAt(part.length - 1) === '}') {
-            var cM = part.match(/(?:^|[\\{])(?:c|1c)\s*(&?H?[0-9a-fA-F]{1,8})&?/i);
-            if (cM) curPrimary = parseAssColor(cM[1], curPrimary);
-            
-            var c3M = part.match(/(?:^|[\\{])3c\s*(&?H?[0-9a-fA-F]{1,8})&?/i);
-            if (c3M) curOutline = parseAssColor(c3M[1], curOutline);
-            
-            var c4M = part.match(/(?:^|[\\{])4c\s*(&?H?[0-9a-fA-F]{1,8})&?/i);
-            if (c4M) curShadow = parseAssColor(c4M[1], curShadow);
-            
-            var bordM = part.match(/\\bord([\d\.]+)/i);
-            if (bordM) curBord = parseFloat(bordM[1]) * scaleY;
-            
-            var shadM = part.match(/\\shad([\d\.]+)/i);
-            if (shadM) curShad = parseFloat(shadM[1]) * scaleY;
-            
-            var blurM = part.match(/\\(?:blur|be)([\d\.]+)/i);
-            if (blurM) curBlur = parseFloat(blurM[1]) * scaleY;
-            
-            var fsM = part.match(/\\fs(\d+(?:\.\d+)?)/i);
-            if (fsM) curFs = parseFloat(fsM[1]) * scaleY;
-            
-            var fnM = part.match(/\\fn([^\}\\]+)/i);
-            if (fnM) curFn = fnM[1].trim();
-            
-            var fspM = part.match(/\\fsp(-?[\d\.]+)/i);
-            if (fspM) curSpacing = parseFloat(fspM[1]) * scaleY;
-
-            var alphaM = part.match(/\\(?:1a|alpha)\s*&?H?([0-9a-fA-F]{2})&?/i);
-            if (alphaM) curAlpha = 1 - (parseInt(alphaM[1], 16) / 255);
-
-            if (/\\u1\b/i.test(part)) curUnder = true;
-            if (/\\u0\b/i.test(part)) curUnder = false;
-            if (/\\s1\b/i.test(part)) curStrike = true;
-            if (/\\s0\b/i.test(part)) curStrike = false;
-
-            if (/\\b1\b/i.test(part)) curBold = true;
-            if (/\\b0\b/i.test(part)) curBold = false;
-            if (/\\i1\b/i.test(part)) curItalic = true;
-            if (/\\i0\b/i.test(part)) curItalic = false;
-
-            if (/\\r\b/i.test(part)) {
-                curPrimary = style.primaryColor || '#FFFFFF';
-                curOutline = style.outlineColor || '#000000';
-                curShadow = style.shadowColor || '#000000';
-                curUnder = false; curStrike = false; curAlpha = 1;
-                curSpacing = (style.spacing || 0) * scaleY;
-            }
-        } else {
-            var cleanChunk = part.replace(/\\N/gi, '<br>').replace(/\\n/gi, '<br>').replace(/\\h/gi, '&nbsp;');
-            var shadowCss = buildAssShadowCss(curBord, curOutline, curShad, curShadow, curBlur);
-            var fsCss = 'font-size: ' + Math.max(0.5, curFs).toFixed(2) + 'px !important;';
-            
-            // دانانی ناوی فۆنتی ستایلەکە وەک فۆنتی سەرەکی
-            var fnCss = 'font-family: \'' + curFn + '\', \'KurdForest\', Tahoma, Arial, sans-serif !important;';
-
-            var w = curBold ? 'font-weight:bold;' : 'font-weight:normal;';
-            var f = curItalic ? 'font-style:italic;' : 'font-style:normal;';
-            var deco = [];
-            if (curUnder) deco.push('underline');
-            if (curStrike) deco.push('line-through');
-            var decoCss = 'text-decoration:' + (deco.length ? deco.join(' ') : 'none') + ';';
-            var spCss = curSpacing ? ('letter-spacing:' + curSpacing.toFixed(2) + 'px;') : '';
-            var alCss = (curAlpha < 1) ? ('opacity:' + Math.max(0, curAlpha).toFixed(3) + ';') : '';
-
-            html += '<span style="color:' + curPrimary + ' !important; ' + fsCss + ' ' + fnCss + ' ' + shadowCss + ' ' + w + ' ' + f + ' ' + decoCss + ' ' + spCss + ' ' + alCss + ' line-height:1.25;">' + cleanChunk + '</span>';
-        }
-    }
-    return html || rawText;
+    return AssLayout.runsHtml(rawText, style, scaleY, opts);
 }
 
 // دۆزینەوەی چوارچێوەی ڤیدیۆ
@@ -7245,12 +7191,15 @@ function getAssStylesDictionary() {
                 outline: (sObj.outline !== undefined && sObj.outline !== '') ? parseFloat(sObj.outline) : 1.5,
                 shadow: (sObj.shadow !== undefined && sObj.shadow !== '') ? parseFloat(sObj.shadow) : 1.0,
                 alignment: sObj.alignment || '2',
-                marginL: parseFloat(sObj.marginl) || 10,
-                marginR: parseFloat(sObj.marginr) || 10,
-                marginV: parseFloat(sObj.marginv) || 18,
+                marginL: isFinite(parseFloat(sObj.marginl)) ? parseFloat(sObj.marginl) : 10,
+                marginR: isFinite(parseFloat(sObj.marginr)) ? parseFloat(sObj.marginr) : 10,
+                marginV: isFinite(parseFloat(sObj.marginv)) ? parseFloat(sObj.marginv) : 18,
                 scaleX: parseFloat(sObj.scalex) || 100,
                 scaleY: parseFloat(sObj.scaley) || 100,
-                spacing: parseFloat(sObj.spacing) || 0
+                spacing: parseFloat(sObj.spacing) || 0,
+                fontsizeRaw: sObj.fontsize,
+                outlineRaw: sObj.outline,
+                shadowRaw: sObj.shadow
             };
         }
     }
@@ -7274,19 +7223,8 @@ function renderSubtitlesNow() {
             if (ct >= originalData[i].startSec && ct <= originalData[i].endSec) {
                 var card = document.querySelector('.subtitle-card[data-index="' + i + '"]');
                 var userText = card ? card.querySelector('textarea').value : '';
-                var finalText = '';
-
-                if (userText && userText.trim() !== '') {
-                    var origRaw = originalData[i].rawText || '';
-                    var origTagsMatch = origRaw.match(/^(\{[^}]+\})+/);
-                    if (origTagsMatch && !userText.includes('{')) {
-                        finalText = origTagsMatch[0] + userText;
-                    } else {
-                        finalText = userText;
-                    }
-                } else {
-                    finalText = originalData[i].rawText || originalData[i].text;
-                }
+                // دەقی کاریگەر: وەرگێڕان + تاگەکانی سەرەتای دێڕی ئەسڵی (\pos \an \fs ...)
+                var finalText = assEffectiveLineText(i, userText);
 
                 activeSubs.push({
                     index: i,
@@ -7313,106 +7251,14 @@ function renderSubtitlesNow() {
         }
 
         var stylesMap = (typeof getAssStylesDictionary === 'function') ? getAssStylesDictionary() : {};
-        var res = getActiveScriptResolution();
-        var fileResX = res.resX || 1920;
-        var fileResY = res.resY || 1080;
         var vBox = getVideoRenderBox(video, playerWrapper);
-        
-        // پێوانەی ڕێژەی زەربکردنی پیکسڵەکان بەپێی ڕێزۆلوشنی فایلەکە
-        var scaleX = vBox.width / fileResX;
-        var scaleY = vBox.height / fileResY;
+        var lctx = AssLayout.makeCtx(vBox, video.videoHeight || 0);
 
         var renderedElementsHtml = '';
         activeSubs.forEach(function(sub) {
-            var str = sub.text;
-            var elapsed = ct - sub.startSec;
-            var style = stylesMap[sub.styleName] || stylesMap['default'] || {
-                fontname: 'KurdForest', fontsize: 45, primaryColor: '#FFFFFF', outlineColor: '#000000', shadowColor: '#000000',
-                bold: false, italic: false, outline: 1.5, shadow: 1.0, alignment: '2', marginL: 10, marginR: 10, marginV: 18
-            };
-
-            var align = style.alignment || '2';
-            var anM = str.match(/\\an(\d)/i);
-            if (anM) align = anM[1];
-
-            var opacityVal = 1;
-            var fadM = str.match(/\\fad\((\d+),\s*(\d+)\)/i);
-            if (fadM) {
-                var fIn = parseFloat(fadM[1]) / 1000;
-                var fOut = parseFloat(fadM[2]) / 1000;
-                var remaining = sub.endSec - ct;
-                if (fIn > 0 && elapsed < fIn) opacityVal = elapsed / fIn;
-                else if (fOut > 0 && remaining < fOut) opacityVal = remaining / fOut;
-            }
-            var opacityCss = 'opacity: ' + Math.max(0, Math.min(1, opacityVal)).toFixed(3) + ';';
-
-            var rotM = str.match(/\\(?:frz|fr)(-?[\d\.]+)/i);
-            var rotDeg = rotM ? parseFloat(rotM[1]) : 0;
-            var rotTransform = rotDeg !== 0 ? ' rotate(' + (-rotDeg) + 'deg)' : '';
-
-            var fscxM = str.match(/\\fscx(\d+(?:\.\d+)?)/i);
-            var fscyM = str.match(/\\fscy(\d+(?:\.\d+)?)/i);
-            var scX = fscxM ? parseFloat(fscxM[1]) / 100 : 1;
-            var scY = fscyM ? parseFloat(fscyM[1]) / 100 : 1;
-            var scaleTransform = (scX !== 1 || scY !== 1) ? ' scale(' + scX + ',' + scY + ')' : '';
-
-            var posX = 0, posY = 0, isPos = false;
-            var posM = str.match(/\\pos\(\s*(-?[\d\.]+)\s*,\s*(-?[\d\.]+)\s*\)/i);
-            var moveM = str.match(/\\move\(\s*(-?[\d\.]+)\s*,\s*(-?[\d\.]+)\s*,\s*(-?[\d\.]+)\s*,\s*(-?[\d\.]+)(?:,\s*(\d+)\s*,\s*(\d+))?\s*\)/i);
-
-            if (moveM) {
-                isPos = true;
-                var x1 = parseFloat(moveM[1]), y1 = parseFloat(moveM[2]);
-                var x2 = parseFloat(moveM[3]), y2 = parseFloat(moveM[4]);
-                var t1 = moveM[5] ? parseFloat(moveM[5]) / 1000 : 0;
-                var t2 = moveM[6] ? parseFloat(moveM[6]) / 1000 : sub.duration;
-                var progress = (t2 > t1) ? Math.max(0, Math.min(1, (elapsed - t1) / (t2 - t1))) : 1;
-                posX = vBox.left + ((x1 + (x2 - x1) * progress) * scaleX);
-                posY = vBox.top + ((y1 + (y2 - y1) * progress) * scaleY);
-            } else if (posM) {
-                isPos = true;
-                // ڕێکخستنی شوێن بەپێی ڕێزۆلوشنی فایلەکە
-                posX = vBox.left + (parseFloat(posM[1]) * scaleX);
-                posY = vBox.top + (parseFloat(posM[2]) * scaleY);
-            }
-
-            var mL = (style.marginL || 10) * scaleX;
-            var mR = (style.marginR || 10) * scaleX;
-            var mV = (style.marginV || 18) * scaleY;
-
-            var transX = '-50%', transY = '-82%';
-            if (['1','4','7'].indexOf(align) !== -1) transX = '0%';
-            if (['2','5','8'].indexOf(align) !== -1) transX = '-50%';
-            if (['3','6','9'].indexOf(align) !== -1) transX = '-100%';
-
-            if (['7','8','9'].indexOf(align) !== -1) transY = '0%';
-            if (['4','5','6'].indexOf(align) !== -1) transY = '-50%';
-            if (['1','2','3'].indexOf(align) !== -1) transY = '-82%';
-
-            var posCss = '';
-            var textAlignCss = 'text-align: center;';
-            if (['1','4','7'].indexOf(align) !== -1) textAlignCss = 'text-align: left;';
-            if (['3','6','9'].indexOf(align) !== -1) textAlignCss = 'text-align: right;';
-
-            if (isPos) {
-                posCss = 'position: absolute; left: ' + posX.toFixed(1) + 'px; top: ' + posY.toFixed(1) + 'px; transform: translate(' + transX + ', ' + transY + ')' + rotTransform + scaleTransform + ';';
-            } else {
-                var finalX = vBox.left + (vBox.width / 2);
-                var finalY = vBox.top + vBox.height - mV;
-                if (['7','8','9'].indexOf(align) !== -1) finalY = vBox.top + mV;
-                else if (['4','5','6'].indexOf(align) !== -1) finalY = vBox.top + (vBox.height / 2);
-
-                if (['1','4','7'].indexOf(align) !== -1) finalX = vBox.left + mL;
-                else if (['3','6','9'].indexOf(align) !== -1) finalX = vBox.left + vBox.width - mR;
-
-                posCss = 'position: absolute; left: ' + finalX.toFixed(1) + 'px; top: ' + finalY.toFixed(1) + 'px; transform: translate(' + transX + ', ' + transY + ')' + rotTransform + scaleTransform + ';';
-            }
-
-            var formattedHtml = parseAssLineToStyledHtml(str, style, scaleY);
-            var maxW = Math.max(80, vBox.width - 8);
-            var wrapCss = 'unicode-bidi: plaintext; white-space: pre-line; width: max-content; word-break: normal; overflow-wrap: break-word; line-height: 1.25; ' + textAlignCss + ' max-width: ' + maxW.toFixed(0) + 'px;';
-            
-            renderedElementsHtml += '<div class="sub-rendered-line" dir="auto"' + (isPos ? ' data-pos="1"' : '') + ' style="' + posCss + ' ' + opacityCss + ' ' + wrapCss + ' pointer-events: none; z-index: 20;">' + formattedHtml + '</div>';
+            var style = AssLayout.styleOrDefault(sub.styleName, stylesMap);
+            var meta = (originalData[sub.index] && originalData[sub.index].assMeta) || {};
+            renderedElementsHtml += AssLayout.eventHtml(sub.text, style, meta, lctx, { elapsed: ct - sub.startSec, duration: sub.duration });
         });
 
         overlay.innerHTML = renderedElementsHtml;
@@ -7454,8 +7300,7 @@ var LibassRenderer = (function () {
     function buildHeader() {
         if (typeof assHeaderLines !== 'undefined' && assHeaderLines && assHeaderLines.length) {
             var txt = assHeaderLines.join('\n').replace(/\s+$/, '');
-            // هەموو ستایلەکان بۆ فۆنتی KurdForest دەگۆڕدرێن (تەنها لە پێشبینین)
-            txt = txt.replace(/^(\s*Style:\s*[^,\n]+,)[^,\n]*/gim, '$1KurdForest');
+            // فۆنتی ستایلەکان وەک خۆیان دەمێننەوە (فۆنتی ناو فایلەکە)
             if (!/\[Events\]/i.test(txt)) txt += '\n\n[Events]';
             if (!/^\s*Format:\s*Layer/im.test(txt)) txt += '\n' + EVENT_FORMAT;
             return txt + '\n';
@@ -7475,18 +7320,12 @@ var LibassRenderer = (function () {
         var card = document.querySelector('.subtitle-card[data-index="' + i + '"]');
         var ta = card ? card.querySelector('textarea') : null;
         var userText = ta ? ta.value : '';
-        if (userText && userText.trim() !== '') {
-            var origRaw = item.rawText || '';
-            var tagsMatch = origRaw.match(/^(\{[^}]+\})+/);
-            if (tagsMatch && userText.indexOf('{') === -1) userText = tagsMatch[0] + userText;
-            return userText.replace(/\r?\n/g, '\\N');
-        }
-        return (item.rawText || item.text || '').replace(/\r?\n/g, '\\N');
+        return assEffectiveLineText(i, userText).replace(/\r?\n/g, '\\N');
     }
 
     // لابردنی تاگی \fn لە پێشبینین تا فۆنتی KurdForest بەردەوام بێت (داتای ئەسڵی دەمێنێتەوە)
     function stripFnTags(text) {
-        return String(text || '').replace(/\\fn[^\\}]*/gi, '');
+        return String(text || ''); // فۆنتەکان وەک خۆیان
     }
 
     function eventLineFor(i) {
@@ -7844,7 +7683,8 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                         if (foundIdx !== -1) {
                             let userText = textareas[foundIdx] ? textareas[foundIdx].value.trim() : "";
                             if (!useOriginal && userText === "") return; // تەنها دێڕە نووسراوەکان
-                            let lines = userText !== "" ? userText : (originalData[foundIdx].rawText || originalData[foundIdx].text);
+                            // تاگەکانی ئەسڵ (\pos \an \fs ...) دەپارێزرێن ئەگەر وەرگێڕان خۆی هەمان تاگی نەبێت — وەک پێشبینین
+                            let lines = userText !== "" ? AssTags.inherit(originalData[foundIdx].rawText, userText) : (originalData[foundIdx].rawText || originalData[foundIdx].text);
                             lines = lines.replace(/\n/g, '\\N');
                             // RTL لێرە جێبەجێ ناکرێت — دەقەکە وەک خۆی داگیردەکرێت (پێداچوونەوە)
 
@@ -7866,7 +7706,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                 originalData.forEach((item, idx) => {
                     let userText = textareas[idx] ? textareas[idx].value.trim() : "";
                     if (!useOriginal && userText === "") return; // تەنها دێڕە نووسراوەکان
-                    let lines = userText !== "" ? userText : (item.rawText || item.text);
+                    let lines = userText !== "" ? AssTags.inherit(item.rawText, userText) : (item.rawText || item.text);
                     lines = lines.replace(/\n/g, '\\N');
                     // RTL لێرە جێبەجێ ناکرێت — دەقەکە وەک خۆی داگیردەکرێت (پێداچوونەوە)
 
@@ -9014,6 +8854,843 @@ async function executeMergeAss() {
 }
     </script>
 <!-- ================= بزوێنەری ژێرنووس بە سەلامەتی تەواو و بێ ونبوون ================= -->
+<script id="kf-ass-core">
+/* =====================================================================
+   AssTags — خوێندنەوەی ورد و یەکخستنی تاگەکانی ASS
+   - هەموو تاگەکانی ناو {} دەکاتە تۆکن (\t(...) وەک یەک تۆکن دەمێنێتەوە)
+   - inherit(): تاگەکانی سەرەتای دێڕی ئەسڵی (\pos \an \fs \bord ...) دەخاتە سەر
+     وەرگێڕان، مەگەر خودی وەرگێڕان هەمان تاگی خۆی هەبێت (ئەوکات هی خۆی زاڵە)
+   ===================================================================== */
+var AssTags = (function () {
+    // درێژترین یەکەم: fscx پێش fs ، bord/blur پێش b ، an پێش a ...
+    var NAMES = ['iclip', 'clip', 'fscx', 'fscy', 'fsc', 'fade', 'fad', 'move', 'alpha',
+        'xbord', 'ybord', 'xshad', 'yshad', 'bord', 'shad', 'blur', 'fsp', 'fax', 'fay',
+        'frx', 'fry', 'frz', 'org', 'pos', 'pbo', '1c', '2c', '3c', '4c', '1a', '2a', '3a', '4a',
+        'an', 'fn', 'fs', 'fr', 'be', 'kf', 'ko', 'k', 't', 'c', 'a', 'b', 'i', 'u', 's', 'q', 'r', 'p'];
+    var GROUP = { move: 'pos', fade: 'fad', fr: 'frz', '1c': 'c', kf: 'k', ko: 'k', iclip: 'clip', a: 'an' };
+
+    function groupOf(name) {
+        name = String(name).toLowerCase();
+        return GROUP[name] || name;
+    }
+
+    function matchName(s, i) {
+        var low = s.substr(i, 5).toLowerCase();
+        for (var k = 0; k < NAMES.length; k++) {
+            if (low.indexOf(NAMES[k]) === 0) return NAMES[k];
+        }
+        return null;
+    }
+
+    // ناوەڕۆکی ناو یەک {…} دەکاتە لیستی تۆکن
+    function tokenize(inner) {
+        var toks = [], i = 0, n = inner.length;
+        while (i < n) {
+            if (inner.charAt(i) !== '\\') {
+                var j = inner.indexOf('\\', i);
+                if (j < 0) j = n;
+                toks.push({ name: null, arg: inner.slice(i, j), raw: inner.slice(i, j) });
+                i = j;
+                continue;
+            }
+            var nm = matchName(inner, i + 1);
+            var start = i;
+            var p = i + 1 + (nm ? nm.length : 0);
+            var argStart = p;
+            if (nm && nm !== 'fn' && nm !== 'r' && inner.charAt(p) === '(') {
+                var depth = 0;
+                while (p < n) {
+                    var ch = inner.charAt(p);
+                    if (ch === '(') depth++;
+                    else if (ch === ')') { depth--; if (depth === 0) { p++; break; } }
+                    p++;
+                }
+            } else {
+                var j2 = inner.indexOf('\\', nm ? p : i + 1);
+                p = (j2 < 0) ? n : j2;
+            }
+            toks.push({ name: nm, arg: inner.slice(argStart, p), raw: inner.slice(start, p) });
+            i = p;
+        }
+        return toks;
+    }
+
+    // بلۆکەکانی سەرەتای دێڕ (پێش یەکەم پیت)
+    function leading(text) {
+        text = (text == null) ? '' : String(text);
+        var m = /^(?:\{[^}]*\})+/.exec(text);
+        if (!m) return { blocks: [], rest: text, raw: '' };
+        var blocks = [], re = /\{([^}]*)\}/g, b;
+        while ((b = re.exec(m[0]))) blocks.push(b[1]);
+        return { blocks: blocks, rest: text.slice(m[0].length), raw: m[0] };
+    }
+
+    // هەموو تۆکنەکانی هەموو بلۆکەکانی دێڕ بە ڕیز
+    function allTokens(text) {
+        var out = [], re = /\{([^}]*)\}/g, b;
+        text = (text == null) ? '' : String(text);
+        while ((b = re.exec(text))) {
+            var t = tokenize(b[1]);
+            for (var i = 0; i < t.length; i++) if (t[i].name) out.push(t[i]);
+        }
+        return out;
+    }
+
+    // یەکەم تۆکنی ئەو گروپە (وەک 'pos' 'an' 'bord' ...)
+    function first(text, group) {
+        var toks = allTokens(text);
+        for (var i = 0; i < toks.length; i++) if (groupOf(toks[i].name) === group) return toks[i];
+        return null;
+    }
+
+    // یەکەم تۆکنی هەموو گروپەکان بە یەک تێپەڕین { group: token }
+    function firstMap(text) {
+        var toks = allTokens(text), map = {};
+        for (var i = 0; i < toks.length; i++) {
+            var g = groupOf(toks[i].name);
+            if (!(g in map)) map[g] = toks[i];
+        }
+        return map;
+    }
+
+    // تاگەکانی سەرەتای ئەسڵ + وەرگێڕان.  ئەگەر وەرگێڕان هەمان گروپی تاگ هەبێت هی خۆی دەمێنێتەوە.
+    function inherit(origRaw, userText) {
+        var ut = (userText == null) ? '' : String(userText);
+        var o = leading(origRaw);
+        if (!o.blocks.length) return ut;
+        var oTok = [];
+        o.blocks.forEach(function (b) { tokenize(b).forEach(function (t) { if (t.name) oTok.push(t); }); });
+        if (!oTok.length) return ut;
+        var u = leading(ut), have = {};
+        u.blocks.forEach(function (b) { tokenize(b).forEach(function (t) { if (t.name) have[groupOf(t.name)] = true; }); });
+        var keep = oTok.filter(function (t) { return !have[groupOf(t.name)]; });
+        if (!keep.length) return ut;
+        return '{' + keep.map(function (t) { return t.raw; }).join('') + '}' + ut;
+    }
+
+    // جیاکردنەوەی ژمارە لە ئارگیومێنتی تاگ
+    function num(tok, dflt) {
+        if (!tok) return dflt;
+        var n = parseFloat(tok.arg);
+        return isFinite(n) ? n : dflt;
+    }
+
+    // \a (کۆن) بۆ \an
+    function legacyToAn(a) {
+        a = parseInt(a, 10);
+        if (a >= 1 && a <= 3) return String(a);
+        if (a >= 5 && a <= 7) return String(a + 2);
+        if (a >= 9 && a <= 11) return String(a - 5);
+        return null;
+    }
+
+    return {
+        tokenize: tokenize, leading: leading, allTokens: allTokens, first: first, firstMap: firstMap,
+        inherit: inherit, groupOf: groupOf, num: num, legacyToAn: legacyToAn
+    };
+})();
+
+// دەقی کاریگەری هەر دێڕێک: ئەگەر وەرگێڕان بەتاڵە = ئەسڵی؛ دەنا وەرگێڕان + تاگەکانی ئەسڵ
+function assEffectiveLineText(i, userTextOpt) {
+    var it = (typeof originalData !== 'undefined') ? originalData[i] : null;
+    if (!it) return '';
+    var t = userTextOpt;
+    if (t === undefined) {
+        var card = document.querySelector('.subtitle-card[data-index="' + i + '"]');
+        var ta = card ? card.querySelector('textarea') : null;
+        t = ta ? ta.value : '';
+    }
+    if (!t || t.trim() === '') return it.rawText || it.text || '';
+    return (typeof isAssFormat !== 'undefined' && isAssFormat) ? AssTags.inherit(it.rawText, t) : t;
+}
+
+/* =====================================================================
+   FontStore — فایلی فۆنتەکان: خوێندنەوەی ناو و مەتریکس (OS/2 win) وەک libass
+   AssFontMetrics — قەبارە و بەرزی بنەڕەتیی هەر فۆنتێک بەو شێوەیەی libass دەیکات
+   ===================================================================== */
+var FontStore = (function () {
+    var entries = [];          // { id, fileName, size, names[], info|null, persistedId }
+    var byName = {};           // ناوی بچووک -> entry
+    var listeners = [];
+    var DB_NAME = 'kf_fonts_db', STORE = 'fonts';
+
+    function tagAt(dv, o) {
+        return String.fromCharCode(dv.getUint8(o), dv.getUint8(o + 1), dv.getUint8(o + 2), dv.getUint8(o + 3));
+    }
+
+    async function inflate(u8) {
+        var ds = new DecompressionStream('deflate');
+        var stream = new Blob([u8]).stream().pipeThrough(ds);
+        return new Response(stream).arrayBuffer();
+    }
+
+    // خشتەی تەیبڵەکانی sfnt / ttc / woff
+    function readDirectory(buf) {
+        var dv = new DataView(buf);
+        if (buf.byteLength < 12) return null;
+        var sig = dv.getUint32(0, false), base = 0, tables = {}, i, o;
+        if (sig === 0x74746366) { base = dv.getUint32(12, false); sig = dv.getUint32(base, false); } // ttcf
+        if (sig === 0x774F4646) { // wOFF
+            var nw = dv.getUint16(12, false);
+            for (i = 0; i < nw; i++) {
+                o = 44 + i * 20;
+                tables[tagAt(dv, o)] = { off: dv.getUint32(o + 4, false), cl: dv.getUint32(o + 8, false), ol: dv.getUint32(o + 12, false), woff: true };
+            }
+        } else if (sig === 0x00010000 || sig === 0x4F54544F || sig === 0x74727565) {
+            var nt = dv.getUint16(base + 4, false);
+            for (i = 0; i < nt; i++) {
+                o = base + 12 + i * 16;
+                tables[tagAt(dv, o)] = { off: dv.getUint32(o + 8, false), len: dv.getUint32(o + 12, false) };
+            }
+        } else return null; // woff2 و شتی دیکە
+        return { buf: buf, tables: tables };
+    }
+
+    async function tableView(dir, tag) {
+        var t = dir.tables[tag];
+        if (!t) return null;
+        if (t.woff) {
+            if (t.cl === t.ol) return new DataView(dir.buf, t.off, t.ol);
+            var out = await inflate(new Uint8Array(dir.buf, t.off, t.cl));
+            return new DataView(out);
+        }
+        if (t.off + t.len > dir.buf.byteLength) return null;
+        return new DataView(dir.buf, t.off, t.len);
+    }
+
+    function decodeName(dv, off, len, platform) {
+        var s = '', i;
+        if (platform === 3 || platform === 0) {
+            for (i = 0; i + 1 < len; i += 2) s += String.fromCharCode(dv.getUint16(off + i, false));
+        } else {
+            for (i = 0; i < len; i++) s += String.fromCharCode(dv.getUint8(off + i));
+        }
+        return s.trim();
+    }
+
+    async function parseInfo(buf) {
+        var dir = readDirectory(buf);
+        if (!dir) return null;
+        var info = { names: [], upm: 0, winA: 0, winD: 0, hheaA: 0, hheaD: 0, weight: 400, italic: false };
+        var head = await tableView(dir, 'head');
+        if (head && head.byteLength >= 20) info.upm = head.getUint16(18, false);
+        var mac = (head && head.byteLength >= 46) ? head.getUint16(44, false) : 0;
+        var hhea = await tableView(dir, 'hhea');
+        if (hhea && hhea.byteLength >= 8) { info.hheaA = hhea.getInt16(4, false); info.hheaD = -hhea.getInt16(6, false); }
+        var os2 = await tableView(dir, 'OS/2');
+        if (os2 && os2.byteLength >= 78) {
+            info.weight = os2.getUint16(4, false) || 400;
+            var sel = os2.getUint16(62, false);
+            info.italic = !!(sel & 1);
+            info.winA = os2.getUint16(74, false);
+            info.winD = os2.getUint16(76, false);
+        } else {
+            if (mac & 1) info.weight = 700;
+            if (mac & 2) info.italic = true;
+        }
+        // libass: ئەگەر win نەبوو، hhea بەکاردێنێت
+        if (!(info.winA + info.winD) && (info.hheaA + info.hheaD) > 0) { info.winA = info.hheaA; info.winD = info.hheaD; }
+        var nm = await tableView(dir, 'name');
+        if (nm && nm.byteLength >= 6) {
+            var cnt = nm.getUint16(2, false), so = nm.getUint16(4, false), seen = {};
+            for (var i = 0; i < cnt; i++) {
+                var o = 6 + i * 12;
+                if (o + 12 > nm.byteLength) break;
+                var plat = nm.getUint16(o, false), id = nm.getUint16(o + 6, false);
+                var len = nm.getUint16(o + 8, false), off = nm.getUint16(o + 10, false);
+                if (id !== 1 && id !== 4 && id !== 6 && id !== 16 && id !== 21) continue;
+                if (so + off + len > nm.byteLength) continue;
+                var s = decodeName(nm, so + off, len, plat);
+                if (s && !seen[s.toLowerCase()]) { seen[s.toLowerCase()] = 1; info.names.push(s); }
+            }
+        }
+        return info;
+    }
+
+    function notify() { listeners.forEach(function (fn) { try { fn(); } catch (e) { } }); }
+
+    function reindex() {
+        byName = {};
+        entries.forEach(function (e) {
+            e.names.forEach(function (n) { if (!byName[n.toLowerCase()]) byName[n.toLowerCase()] = e; });
+        });
+    }
+
+    async function addFontBuffer(buf, fileName, opts) {
+        opts = opts || {};
+        var dup = entries.filter(function (e) { return e.fileName === fileName && e.size === buf.byteLength; })[0];
+        if (dup) return dup;
+        var info = null;
+        try { info = await parseInfo(buf); } catch (e) { info = null; }
+        var base = String(fileName || 'font').replace(/\.[^.]+$/, '');
+        var names = (info && info.names.length) ? info.names.slice() : [base];
+        var entry = { id: 'f' + Date.now() + Math.floor(Math.random() * 1e4), fileName: fileName, size: buf.byteLength, names: names, info: info, persistedId: null, bytes: buf };
+        var desc = { weight: String((info && info.weight) || 400), style: (info && info.italic) ? 'italic' : 'normal' };
+        for (var i = 0; i < names.length; i++) {
+            try {
+                var face = new FontFace('"' + names[i].replace(/["\\]/g, '') + '"', buf.slice(0), desc);
+                await face.load();
+                document.fonts.add(face);
+            } catch (e) { /* ناوێکی نەگونجاو تێدەپەڕێت */ }
+        }
+        entries.push(entry);
+        reindex();
+        if (opts.persist !== false) {
+            try { entry.persistedId = await persist(fileName, buf); } catch (e) { }
+        }
+        if (typeof LibassRenderer !== 'undefined' && LibassRenderer.addFont) {
+            try { LibassRenderer.addFont(new Uint8Array(buf)); } catch (e) { }
+        }
+        if (!opts.silent) notify();
+        return entry;
+    }
+
+    // ---------- IndexedDB ----------
+    function idb() {
+        return new Promise(function (res, rej) {
+            var r = indexedDB.open(DB_NAME, 1);
+            r.onupgradeneeded = function () { r.result.createObjectStore(STORE, { keyPath: 'id', autoIncrement: true }); };
+            r.onsuccess = function () { res(r.result); };
+            r.onerror = function () { rej(r.error); };
+        });
+    }
+    async function persist(fileName, buf) {
+        var db = await idb();
+        return new Promise(function (res, rej) {
+            var tx = db.transaction(STORE, 'readwrite');
+            var rq = tx.objectStore(STORE).add({ fileName: fileName, buffer: buf });
+            rq.onsuccess = function () { res(rq.result); };
+            tx.onerror = function () { rej(tx.error); };
+        });
+    }
+    async function unpersist(id) {
+        if (id == null) return;
+        var db = await idb();
+        return new Promise(function (res) {
+            var tx = db.transaction(STORE, 'readwrite');
+            tx.objectStore(STORE).delete(id);
+            tx.oncomplete = function () { res(); };
+            tx.onerror = function () { res(); };
+        });
+    }
+    async function loadPersisted() {
+        try {
+            var db = await idb();
+            var rows = await new Promise(function (res, rej) {
+                var rq = db.transaction(STORE, 'readonly').objectStore(STORE).getAll();
+                rq.onsuccess = function () { res(rq.result || []); };
+                rq.onerror = function () { rej(rq.error); };
+            });
+            for (var i = 0; i < rows.length; i++) {
+                var e = await addFontBuffer(rows[i].buffer, rows[i].fileName, { persist: false, silent: true });
+                e.persistedId = rows[i].id;
+            }
+            if (rows.length) notify();
+        } catch (e) { /* IndexedDB بەردەست نییە: تەنها بۆ ئەم دانیشتنە */ }
+    }
+
+    async function remove(id) {
+        var e = entries.filter(function (x) { return x.id === id; })[0];
+        if (!e) return;
+        entries = entries.filter(function (x) { return x !== e; });
+        reindex();
+        try { await unpersist(e.persistedId); } catch (er) { }
+        notify(); // فۆنتی ناو document.fonts تا نوێکردنەوەی پەڕە دەمێنێتەوە
+    }
+
+    function infoFor(name) {
+        var e = byName[String(name || '').replace(/^@/, '').trim().toLowerCase()];
+        return (e && e.info) ? e.info : null;
+    }
+    function has(name) { return !!byName[String(name || '').replace(/^@/, '').trim().toLowerCase()]; }
+
+    return {
+        addFontBuffer: addFontBuffer, loadPersisted: loadPersisted, remove: remove, infoFor: infoFor, has: has,
+        list: function () { return entries.slice(); },
+        onChange: function (fn) { listeners.push(fn); },
+        _parseInfo: parseInfo
+    };
+})();
+
+var AssFontMetrics = (function () {
+    var cache = {}, probeCache = {}, host = null, cvs = null;
+
+    function reset() { cache = {}; probeCache = {}; }
+
+    function cleanName(fn) { return String(fn || '').replace(/^@/, '').replace(/["'\\;{}<>]/g, '').trim(); }
+
+    function stackFor(fn) {
+        var q = cleanName(fn);
+        return (q ? "'" + q + "', " : '') + "'KurdForest', Tahoma, Arial, sans-serif"; // تەنها ' چونکە دەچێتە ناو style=\"...\"
+    }
+
+    function measureCanvas(stack, bold, italic) {
+        try {
+            cvs = cvs || document.createElement('canvas').getContext('2d');
+            cvs.font = (italic ? 'italic ' : '') + (bold ? '700 ' : '400 ') + '200px ' + stack;
+            var m = cvs.measureText('Hxg');
+            var a = m.fontBoundingBoxAscent, d = m.fontBoundingBoxDescent;
+            if (a > 0 && (a + d) > 0) return { ratio: (a + d) / 200, baseFrac: a / (a + d) };
+        } catch (e) { }
+        return { ratio: 1.15, baseFrac: 0.8 };
+    }
+
+    // ratio = (winAscent+winDescent)/unitsPerEm ، baseFrac = winAscent/(winAscent+winDescent)
+    function get(fn, bold, italic) {
+        var key = cleanName(fn).toLowerCase() + '|' + (bold ? 1 : 0) + (italic ? 1 : 0);
+        if (cache[key]) return cache[key];
+        var stack = stackFor(fn), inf = FontStore.infoFor(cleanName(fn)), out;
+        if (inf && inf.upm && (inf.winA + inf.winD) > 0) {
+            out = { ratio: (inf.winA + inf.winD) / inf.upm, baseFrac: inf.winA / (inf.winA + inf.winD), stack: stack, exact: true };
+        } else {
+            var m = measureCanvas(stack, bold, italic);
+            out = { ratio: m.ratio, baseFrac: m.baseFrac, stack: stack, exact: false };
+        }
+        cache[key] = out;
+        return out;
+    }
+
+    // شوێنی ڕاستەقینەی baseline لە ناو دێڕێکی بەرزییەکەی L دا (بە پیێوانی DOM)
+    function cssBaseline(stack, bold, italic, E, L) {
+        E = Math.max(0.5, E);
+        var key = stack + '|' + (bold ? 1 : 0) + (italic ? 1 : 0) + '|' + E.toFixed(2) + '|' + L.toFixed(2);
+        if (key in probeCache) return probeCache[key];
+        if (!host) {
+            host = document.createElement('div');
+            host.style.cssText = 'position:fixed;left:-99999px;top:0;visibility:hidden;pointer-events:none;';
+            document.body.appendChild(host);
+        }
+        var d = document.createElement('div');
+        d.style.cssText = 'position:absolute;left:0;top:0;white-space:nowrap;margin:0;padding:0;border:0;' +
+            'font-family:' + stack + ';font-size:' + E + 'px;line-height:' + L + 'px;' +
+            'font-weight:' + (bold ? 700 : 400) + ';font-style:' + (italic ? 'italic' : 'normal') + ';';
+        d.innerHTML = '<span>Hxg</span><span style="display:inline-block;width:0;height:0"></span>';
+        host.appendChild(d);
+        var y = d.lastChild.getBoundingClientRect().bottom - d.getBoundingClientRect().top;
+        host.removeChild(d);
+        probeCache[key] = y;
+        return y;
+    }
+
+    // ئایا فۆنتەکە لەسەر ئامێرەکە دامەزراوە؟ (تاقیکردنەوەی پانی)
+    function isInstalled(name) {
+        name = cleanName(name);
+        if (!name) return false;
+        try {
+            cvs = cvs || document.createElement('canvas').getContext('2d');
+            var probe = 'mmmmmmmmmmlliWW\u0626\u06d5\u0645\u06d5 \u062a\u0627\u0642\u06cc';
+            var bases = ['monospace', 'serif', 'sans-serif'];
+            for (var i = 0; i < bases.length; i++) {
+                cvs.font = '72px ' + bases[i];
+                var w0 = cvs.measureText(probe).width;
+                cvs.font = '72px "' + name + '", ' + bases[i];
+                if (Math.abs(cvs.measureText(probe).width - w0) > 0.01) return true;
+            }
+        } catch (e) { }
+        return false;
+    }
+
+    FontStore.onChange(reset);
+    if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', reset);
+
+    return { get: get, cssBaseline: cssBaseline, stackFor: stackFor, cleanName: cleanName, isInstalled: isInstalled, reset: reset };
+})();
+
+/* =====================================================================
+   AssLayout — شوێن و قەبارەی دەق وەک libass (Hardsub / پلەیەرەکان)
+   یاساکانی libass:
+     ١) \fs = بەرزیی تەواوی خانەی فۆنت (winAscent+winDescent) نەک em
+     ٢) دێڕ بەرزییەکەی = fs ، baseline لە winAscent/(winAscent+winDescent)
+     ٣) \an + \pos : خاڵی ڕاکێشان لەسەر لێواری ڕاستەقینەی سندوقی دێڕەکانە
+     ٤) دێڕی بێ \pos : لە ڕێگەی MarginL/R/V ی ڕووداو (ئەگەر 0 نەبوو) یان ستایل
+   ===================================================================== */
+var AssLayout = (function () {
+    function nz(v, d) { var n = parseFloat(v); return isFinite(n) ? n : d; }
+
+    function headerText() {
+        return (typeof assHeaderLines !== 'undefined' && assHeaderLines && assHeaderLines.length) ? assHeaderLines.join('\n') : '';
+    }
+
+    // ScaledBorderAndShadow: بێ هێدەر = yes (وەک تێمپلەیتی ئەپەکە)، بە هێدەر و بێ هێڵ = no (وەک libass)
+    function isScaledBorder() {
+        var h = headerText();
+        if (!h) return true;
+        var m = /^\s*ScaledBorderAndShadow\s*:\s*(\S+)/im.exec(h);
+        return !!(m && /^(yes|1|true)$/i.test(m[1]));
+    }
+
+    // ctx: چوارچێوەی ڤیدیۆ لەسەر شاشە + ڕێزۆلوشنی فایل
+    function makeCtx(box, videoH) {
+        var res = getActiveScriptResolution();
+        var resX = res.resX || 384, resY = res.resY || 288;
+        var sx = box.width / resX, sy = box.height / resY;
+        var bordScale = isScaledBorder() ? sy : (videoH > 0 ? box.height / videoH : sy);
+        return { resX: resX, resY: resY, left: box.left || 0, top: box.top || 0, w: box.width, h: box.height, sx: sx, sy: sy, bordScale: bordScale };
+    }
+
+    function styleOrDefault(styleName, dict) {
+        var key = String(styleName || 'default').replace(/^\*/, '').trim().toLowerCase();
+        return (dict && (dict[key] || dict['default'])) || {
+            fontname: 'KurdForest', fontsize: 45, primaryColor: '#FFFFFF', outlineColor: '#000000', shadowColor: '#000000',
+            bold: false, italic: false, outline: 1.5, shadow: 1.0, alignment: '2', marginL: 10, marginR: 10, marginV: 18,
+            scaleX: 100, scaleY: 100, spacing: 0
+        };
+    }
+
+    function nums(str) {
+        var m = String(str).match(/-?\d+(?:\.\d+)?/g) || [];
+        return m.map(parseFloat);
+    }
+
+    // پارامەترە دێڕییەکان: alignment / pos / move / fad / frz / fsc / fax / پەراوێز
+    function eventParams(text, style, meta) {
+        var m = AssTags.firstMap(text), p = {};
+        var align = String(style.alignment || '2');
+        if (m.an) {
+            var a = (m.an.name.toLowerCase() === 'an') ? m.an.arg.trim() : AssTags.legacyToAn(m.an.arg);
+            if (a && /^[1-9]$/.test(a)) align = a;
+        }
+        if (!/^[1-9]$/.test(align)) align = '2';
+        p.align = align;
+        p.pos = null; p.move = null;
+        if (m.pos) {
+            var n = nums(m.pos.arg);
+            if (m.pos.name.toLowerCase() === 'move' && n.length >= 4) p.move = { x1: n[0], y1: n[1], x2: n[2], y2: n[3], t1: n.length >= 6 ? n[4] : null, t2: n.length >= 6 ? n[5] : null };
+            else if (n.length >= 2) p.pos = { x: n[0], y: n[1] };
+        }
+        p.fad = null;
+        if (m.fad && m.fad.name.toLowerCase() === 'fad') { var f = nums(m.fad.arg); if (f.length >= 2) p.fad = { i: f[0], o: f[1] }; }
+        p.frz = AssTags.num(m.frz, 0);
+        p.fscx = AssTags.num(m.fscx, nz(style.scaleX, 100));
+        p.fscy = AssTags.num(m.fscy, nz(style.scaleY, 100));
+        p.fax = AssTags.num(m.fax, 0);
+        var mm = meta || {};
+        var eL = parseInt(mm.marginL, 10) || 0, eR = parseInt(mm.marginR, 10) || 0, eV = parseInt(mm.marginV, 10) || 0;
+        p.mL = eL || nz(style.marginL, 10);
+        p.mR = eR || nz(style.marginR, 10);
+        p.mV = eV || nz(style.marginV, 18);
+        p.layer = parseInt(mm.layer, 10) || 0;
+        return p;
+    }
+
+    // خاڵی ڕاکێشان (پیکسەڵ لەناو ctx)
+    function anchorFor(align, pos, p, ctx) {
+        var x, y;
+        if (pos) { x = pos.x; y = pos.y; }
+        else {
+            var col = (parseInt(align, 10) - 1) % 3;      // 0 چەپ 1 ناوەند 2 ڕاست
+            var row = Math.floor((parseInt(align, 10) - 1) / 3); // 0 خوارەوە 1 ناوەڕاست 2 سەرەوە
+            x = col === 0 ? p.mL : (col === 2 ? ctx.resX - p.mR : (p.mL + ctx.resX - p.mR) / 2);
+            y = row === 0 ? ctx.resY - p.mV : (row === 2 ? p.mV : ctx.resY / 2);
+        }
+        return { x: ctx.left + x * ctx.sx, y: ctx.top + y * ctx.sy, resX: x, resY: y };
+    }
+
+    function transformCss(p) {
+        var tf = [];
+        if (p.frz) tf.push('rotate(' + (-p.frz) + 'deg)');
+        if (p.fscx !== 100 || p.fscy !== 100) tf.push('scale(' + (p.fscx / 100) + ',' + (p.fscy / 100) + ')');
+        if (p.fax) tf.push('skewX(' + (-Math.atan(p.fax) * 180 / Math.PI).toFixed(3) + 'deg)');
+        return tf.length ? tf.join(' ') : 'none';
+    }
+
+    function blockCss(align, L, maxW, fontCss) {
+        var col = (parseInt(align, 10) - 1) % 3, row = Math.floor((parseInt(align, 10) - 1) / 3);
+        var tx = col === 0 ? '0%' : (col === 2 ? '-100%' : '-50%');
+        var ty = row === 0 ? '-100%' : (row === 2 ? '0%' : '-50%');
+        var ta = col === 0 ? 'left' : (col === 2 ? 'right' : 'center');
+        return 'position:absolute;left:0;top:0;width:max-content;max-width:' + Math.max(40, maxW).toFixed(1) + 'px;' +
+            'transform:translate(' + tx + ',' + ty + ');text-align:' + ta + ';line-height:' + L.toFixed(3) + 'px;' +
+            'white-space:pre-line;word-break:normal;overflow-wrap:break-word;unicode-bidi:plaintext;margin:0;padding:0;' + (fontCss || '');
+    }
+
+    // ---------- دەقی دێڕ -> خشتەی Run ----------
+    function baseState(style, sy, bs) {
+        return {
+            primary: style.primaryColor || '#FFFFFF', outline: style.outlineColor || '#000000', shadow: style.shadowColor || '#000000',
+            bord: nz(style.outline, 1.5), shad: nz(style.shadow, 1.0), blur: 0,
+            bold: !!style.bold, italic: !!style.italic, fs: nz(style.fontsize, 45), fn: style.fontname || 'KurdForest',
+            spacing: nz(style.spacing, 0), under: false, strike: false, alpha: 1
+        };
+    }
+
+    function applyBlock(inner, st, style, sy, bs) {
+        var toks = AssTags.tokenize(inner);
+        for (var i = 0; i < toks.length; i++) {
+            var t = toks[i];
+            if (!t.name) continue;
+            var g = AssTags.groupOf(t.name), a = t.arg.trim();
+            var n = parseFloat(a);
+            switch (g) {
+                case 'c': st.primary = parseAssColor(a, st.primary); break;
+                case '3c': st.outline = parseAssColor(a, st.outline); break;
+                case '4c': st.shadow = parseAssColor(a, st.shadow); break;
+                case 'bord': if (isFinite(n)) st.bord = n; break;
+                case 'shad': if (isFinite(n)) st.shad = n; break;
+                case 'blur': case 'be': if (isFinite(n)) st.blur = n; break;
+                case 'fs': if (isFinite(n) && n > 0) st.fs = n; else if (a === '') st.fs = nz(style.fontsize, 45); break;
+                case 'fn': st.fn = a || style.fontname || 'KurdForest'; break;
+                case 'fsp': if (isFinite(n)) st.spacing = n; break;
+                case 'b': st.bold = (a === '1' || (isFinite(n) && n >= 700)); if (a === '0') st.bold = false; break;
+                case 'i': st.italic = (a === '1'); break;
+                case 'u': st.under = (a === '1'); break;
+                case 's': st.strike = (a === '1'); break;
+                case '1a': case 'alpha': {
+                    var hx = /([0-9a-fA-F]{1,2})&?$/.exec(a.replace(/&H/i, ''));
+                    if (hx) st.alpha = 1 - (parseInt(hx[1], 16) / 255);
+                    break;
+                }
+                case 'r': {
+                    var b0 = baseState(style, sy, bs);
+                    st.primary = b0.primary; st.outline = b0.outline; st.shadow = b0.shadow;
+                    st.bord = b0.bord; st.shad = b0.shad; st.blur = 0; st.bold = b0.bold; st.italic = b0.italic;
+                    st.fs = b0.fs; st.fn = b0.fn; st.spacing = b0.spacing; st.under = false; st.strike = false; st.alpha = 1;
+                    break;
+                }
+            }
+        }
+    }
+
+    function escChunk(s) {
+        if (typeof isAssFormat !== 'undefined' && isAssFormat) s = s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return s.replace(/\\N/g, '<br>').replace(/\\n/g, ' ').replace(/\\h/g, '&nbsp;');
+    }
+
+    // دەقی ASS -> HTML ی span ەکان (بە هەموو ڕاستکردنەوەکانی بەرزی و baseline)
+    // opts: { bordScale, out }   out.L = بەرزیی دێڕ (px) ، out.lines = ژمارەی دێڕ
+    function runsHtml(rawText, style, scaleY, opts) {
+        opts = opts || {};
+        var bs = (opts.bordScale != null) ? opts.bordScale : scaleY;
+        var st = baseState(style, scaleY, bs);
+        var textOnly = String(rawText || '').replace(/\{\\p[1-9]\}[^\}]*(\{\\p0\}|$)/gi, '');
+        var parts = textOnly.split(/(\{[\s\S]*?\})/g), runs = [];
+        parts.forEach(function (part) {
+            if (!part) return;
+            if (part.charAt(0) === '{' && part.charAt(part.length - 1) === '}') applyBlock(part.slice(1, -1), st, style, scaleY, bs);
+            else runs.push({ text: part, st: JSON.parse(JSON.stringify(st)) });
+        });
+        if (!runs.length) runs.push({ text: '', st: JSON.parse(JSON.stringify(st)) });
+
+        var lineAsc = 0, lineDesc = 0;
+        runs.forEach(function (r) {
+            var fi = AssFontMetrics.get(r.st.fn, r.st.bold, r.st.italic);
+            r.fi = fi;
+            r.F = r.st.fs * scaleY;                       // بەرزیی خانە
+            r.E = Math.max(0.5, r.F / fi.ratio);          // em ی CSS
+            var asc = r.F * fi.baseFrac;
+            lineAsc = Math.max(lineAsc, asc);
+            lineDesc = Math.max(lineDesc, r.F - asc);
+        });
+        var L = lineAsc + lineDesc, lines = 1;
+        var html = runs.map(function (r) {
+            var chunk = escChunk(r.text);
+            lines += (r.text.match(/\\N/g) || []).length;
+            var base = AssFontMetrics.cssBaseline(r.fi.stack, r.st.bold, r.st.italic, r.E, L);
+            var dy = lineAsc - base;
+            var shadowCss = buildAssShadowCss(r.st.bord * bs, r.st.outline, r.st.shad * bs, r.st.shadow, r.st.blur * bs);
+            var deco = [];
+            if (r.st.under) deco.push('underline');
+            if (r.st.strike) deco.push('line-through');
+            return '<span style="color:' + r.st.primary + ' !important;font-size:' + r.E.toFixed(3) + 'px !important;' +
+                'font-family:' + r.fi.stack + ' !important;' + shadowCss +
+                'font-weight:' + (r.st.bold ? 'bold' : 'normal') + ';font-style:' + (r.st.italic ? 'italic' : 'normal') + ';' +
+                'text-decoration:' + (deco.length ? deco.join(' ') : 'none') + ';' +
+                (r.st.spacing ? 'letter-spacing:' + (r.st.spacing * scaleY).toFixed(2) + 'px;' : '') +
+                (r.st.alpha < 1 ? 'opacity:' + Math.max(0, r.st.alpha).toFixed(3) + ';' : '') +
+                'line-height:inherit;position:relative;top:' + dy.toFixed(3) + 'px;">' + chunk + '</span>';
+        }).join('');
+        if (opts.out) {
+            var r0 = runs[0];
+            opts.out.L = L; opts.out.lines = lines; opts.out.lineAsc = lineAsc;
+            opts.out.font = 'font-family:' + r0.fi.stack + ';font-size:' + r0.E.toFixed(3) + 'px;font-weight:' + (r0.st.bold ? 'bold' : 'normal') + ';font-style:' + (r0.st.italic ? 'italic' : 'normal') + ';';
+        }
+        return html;
+    }
+
+    // ڕووداوێکی تەواو بۆ پێشبینینی ڤیدیۆ
+    function eventHtml(text, style, meta, ctx, o) {
+        o = o || {};
+        var p = eventParams(text, style, meta);
+        var pos = p.pos, x, y;
+        if (p.move) {
+            var t1 = (p.move.t1 != null) ? p.move.t1 / 1000 : 0, t2 = (p.move.t2 != null) ? p.move.t2 / 1000 : (o.duration || 1);
+            var pr = (t2 > t1) ? Math.max(0, Math.min(1, ((o.elapsed || 0) - t1) / (t2 - t1))) : 1;
+            pos = { x: p.move.x1 + (p.move.x2 - p.move.x1) * pr, y: p.move.y1 + (p.move.y2 - p.move.y1) * pr };
+        }
+        var an = anchorFor(p.align, pos, p, ctx);
+        var out = {};
+        var inner = runsHtml(text, style, ctx.sy, { bordScale: ctx.bordScale, out: out });
+        var maxW = (ctx.resX - p.mL - p.mR) * ctx.sx;
+        var op = 1;
+        if (p.fad) {
+            var fI = p.fad.i / 1000, fO = p.fad.o / 1000, rem = (o.duration || 1) - (o.elapsed || 0);
+            if (fI > 0 && (o.elapsed || 0) < fI) op = (o.elapsed || 0) / fI;
+            else if (fO > 0 && rem < fO) op = rem / fO;
+        }
+        op = Math.max(0, Math.min(1, op));
+        return '<div class="sub-rendered-line"' + (pos ? ' data-pos="1"' : '') + ' style="position:absolute;left:' + an.x.toFixed(2) + 'px;top:' + an.y.toFixed(2) +
+            'px;width:0;height:0;transform-origin:0 0;transform:' + transformCss(p) + ';opacity:' + op.toFixed(3) + ';pointer-events:none;z-index:' + (20 + p.layer) + ';">' +
+            '<div class="ass-blk" dir="auto" style="' + blockCss(p.align, out.L, maxW, out.font) + '">' + inner + '</div></div>';
+    }
+
+    return {
+        makeCtx: makeCtx, styleOrDefault: styleOrDefault, eventParams: eventParams, anchorFor: anchorFor,
+        transformCss: transformCss, blockCss: blockCss, runsHtml: runsHtml, eventHtml: eventHtml, isScaledBorder: isScaledBorder
+    };
+})();
+
+/* =====================================================================
+   بەشی ٤: بنکەی ستایلی مۆداڵی تەکنیک + بەڕێوەبەری فۆنتەکان
+   ===================================================================== */
+
+// ژمارە بە شێوەی ڕێک (24 نەک 24.000)
+function kfNumStr(v) {
+    var n = parseFloat(v);
+    return isFinite(n) ? String(Math.round(n * 1000) / 1000) : '';
+}
+
+// ستایلی ئەو دێڕەی لە فایلی ASS
+function kfLineStyle(index) {
+    if (typeof isAssFormat === 'undefined' || !isAssFormat) return null;
+    var map = (typeof getAssStylesDictionary === 'function') ? getAssStylesDictionary() : {};
+    var it = (typeof originalData !== 'undefined') ? originalData[index] : null;
+    var key = ((it && it.assMeta && it.assMeta.style) || 'Default').replace(/^\*/, '').trim().toLowerCase();
+    return map[key] || map['default'] || null;
+}
+
+// بەهای ڕاستەقینەی هەر دێڕێک: تاگی ناو دێڕ ← ستایلی ناو فایلەکە
+// text = دەقی کاریگەر (وەرگێڕان + تاگە بە میراتگیراوەکانی ئەسڵ)
+function kfComputeStyleBase(index, text) {
+    var st = kfLineStyle(index);
+    function num(g) {
+        var t = AssTags.first(text, g);
+        if (!t) return { had: false, n: NaN };
+        var n = parseFloat(t.arg);
+        return { had: isFinite(n), n: n };
+    }
+    var fs = num('fs'), bord = num('bord'), shad = num('shad'), blur = num('blur');
+    if (!blur.had) blur = num('be');
+    var B = {};
+    B.fs = { had: fs.had, val: fs.had ? kfNumStr(fs.n) : (st ? kfNumStr(st.fontsize) : '') };
+    B.bord = { had: bord.had, val: bord.had ? kfNumStr(bord.n) : (st ? kfNumStr(st.outline) : '') };
+    B.shad = { had: shad.had, val: shad.had ? kfNumStr(shad.n) : (st ? kfNumStr(st.shadow) : '') };
+    B.blur = { had: blur.had, val: blur.had ? kfNumStr(blur.n) : (st ? '0' : '') };
+    var bt = AssTags.first(text, 'b'), itg = AssTags.first(text, 'i');
+    B.bold = { had: !!bt, val: bt ? (bt.arg.trim() === '1' || parseInt(bt.arg, 10) >= 700) : !!(st && st.bold) };
+    B.italic = { had: !!itg, val: itg ? (itg.arg.trim() === '1') : !!(st && st.italic) };
+    var an = AssTags.first(text, 'an'), a = null;
+    if (an) a = (an.name.toLowerCase() === 'an') ? an.arg.trim() : AssTags.legacyToAn(an.arg);
+    B.hadAn = !!(a && /^[1-9]$/.test(a));
+    B.styleAlign = st ? String(st.alignment || '2') : '2';
+    B.align = B.hadAn ? a : B.styleAlign;
+    B.styleFont = st ? (st.fontname || '') : '';
+    return B;
+}
+
+/* ---------------- بەڕێوەبەری فۆنتەکان ---------------- */
+function kfCollectFontsUsed() {
+    var used = {}, order = [];
+    function add(n, where) {
+        n = AssFontMetrics.cleanName(n);
+        if (!n) return;
+        var k = n.toLowerCase();
+        if (!used[k]) { used[k] = { name: n, where: where }; order.push(k); }
+    }
+    try {
+        var map = (typeof getAssStylesDictionary === 'function') ? getAssStylesDictionary() : {};
+        Object.keys(map).forEach(function (k) { add(map[k].fontname, 'ستایل: ' + map[k].name); });
+        if (typeof originalData !== 'undefined') {
+            originalData.forEach(function (it, i) {
+                AssTags.allTokens(it.rawText || '').forEach(function (t) { if (t.name === 'fn') add(t.arg, 'ناو دێڕەکان'); });
+                var card = document.querySelector('.subtitle-card[data-index="' + i + '"]');
+                var ta = card ? card.querySelector('textarea') : null;
+                if (ta) AssTags.allTokens(ta.value).forEach(function (t) { if (t.name === 'fn') add(t.arg, 'ناو دێڕەکان'); });
+            });
+        }
+    } catch (e) { }
+    return order.map(function (k) { return used[k]; });
+}
+
+function kfEsc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+function renderFontsModal() {
+    var usedBox = document.getElementById('kfFontsUsed');
+    var listBox = document.getElementById('kfFontsLoaded');
+    if (!usedBox || !listBox) return;
+    var used = kfCollectFontsUsed();
+    if (!used.length) {
+        usedBox.innerHTML = '<div style="font-size:11.5px;color:var(--text-muted);padding:6px 0;">هیچ فۆنتێکی دیاریکراو لە فایلەکەدا نییە.</div>';
+    } else {
+        usedBox.innerHTML = used.map(function (u) {
+            var badge, color;
+            if (FontStore.has(u.name)) { badge = '✓ بارکراوە (ڕێک)'; color = '#22c55e'; }
+            else if (AssFontMetrics.isInstalled(u.name)) { badge = '≈ لەسەر ئامێرەکەیە (نزیکەیی)'; color = '#f59e0b'; }
+            else { badge = '✗ نەدۆزرایەوە'; color = '#ef4444'; }
+            return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--border-color);border-radius:9px;margin-bottom:5px;font-size:12px;">' +
+                '<span style="direction:ltr;font-weight:700;">' + kfEsc(u.name) + '</span>' +
+                '<span style="color:' + color + ';font-size:11px;white-space:nowrap;">' + badge + '</span></div>';
+        }).join('');
+    }
+    var loaded = FontStore.list();
+    if (!loaded.length) {
+        listBox.innerHTML = '<div style="font-size:11.5px;color:var(--text-muted);padding:6px 0;">هێشتا هیچ فایلێکی فۆنت زیاد نەکراوە.</div>';
+    } else {
+        listBox.innerHTML = loaded.map(function (f) {
+            var exact = f.info && f.info.upm && (f.info.winA + f.info.winD) > 0;
+            return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--border-color);border-radius:9px;margin-bottom:5px;font-size:12px;">' +
+                '<span style="direction:ltr;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">' + kfEsc(f.names[0] || f.fileName) +
+                (exact ? '' : ' <span style="color:#f59e0b;font-size:10px;">(مەتریکس نەخوێندرایەوە)</span>') + '</span>' +
+                '<button type="button" class="btn btn-outline" style="width:auto;flex:0 0 auto;padding:3px 10px;font-size:11px;color:#ef4444;border-color:rgba(239,68,68,.4);" onclick="kfRemoveFont(\'' + f.id + '\')">سڕینەوە</button></div>';
+        }).join('');
+    }
+}
+
+function openFontsModal() {
+    renderFontsModal();
+    var m = document.getElementById('kf-fonts-modal');
+    if (m) m.style.display = 'flex';
+}
+function closeFontsModal() {
+    var m = document.getElementById('kf-fonts-modal');
+    if (m) m.style.display = 'none';
+}
+
+async function kfOnFontFilesPicked(input) {
+    var files = input && input.files ? Array.prototype.slice.call(input.files) : [];
+    var ok = 0;
+    for (var i = 0; i < files.length; i++) {
+        try {
+            var buf = await files[i].arrayBuffer();
+            await FontStore.addFontBuffer(buf, files[i].name);
+            ok++;
+        } catch (e) { console.error('font load failed', files[i].name, e); }
+    }
+    if (input) input.value = '';
+    if (typeof showToast === 'function') showToast(ok ? (ok + ' فۆنت زیادکرا و پاشەکەوتکرا') : 'فۆنتەکە بار نەبوو', ok ? 'success' : 'error');
+    renderFontsModal();
+}
+
+async function kfRemoveFont(id) {
+    await FontStore.remove(id);
+    if (typeof showToast === 'function') showToast('فۆنتەکە سڕایەوە (بۆ دروستیی تەواو پەڕەکە نوێ بکەرەوە)', 'success');
+    renderFontsModal();
+}
+
+// کاتێک فۆنتێک زیاد/سڕایەوە: پێشبینین نوێ بکەرەوە
+FontStore.onChange(function () {
+    try { renderFontsModal(); } catch (e) { }
+    try { if (typeof renderSubtitlesNow === 'function') renderSubtitlesNow(); } catch (e) { }
+    try { if (typeof renderDragPreviewStyled === 'function' && document.getElementById('grid40-modal') && document.getElementById('grid40-modal').style.display === 'flex') renderDragPreviewStyled(); } catch (e) { }
+});
+
+// فۆنتە پاشەکەوتکراوەکان دوای بارکردنی پەڕە
+(function () {
+    function boot() { FontStore.loadPersisted(); }
+    if (document.readyState === 'complete') boot(); else window.addEventListener('load', boot);
+})();
+
+</script>
+
 <script src="https://cdn.jsdelivr.net/npm/jassub@1.6.4/dist/jassub.umd.js"></script>
 <script>
 (function () {

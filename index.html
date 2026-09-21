@@ -1439,6 +1439,10 @@ input[type="checkbox"], input[type="radio"] {
                         <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                         <span>گۆڕینی وێنە بۆ لینک</span>
                     </button>
+                    <button class="menu-btn-item" onclick="openServersModal(); toggleSetupMenu();">
+                        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                        <span>کۆدی سێرڤەرەکان</span>
+                    </button>
                     <button class="menu-btn-item" onclick="openHistoryModal(); toggleSetupMenu();">
                         <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                         <span>مێژووی کارەکان</span>
@@ -1579,6 +1583,50 @@ input[type="checkbox"], input[type="radio"] {
     </div>
     
     <!-- ١. مۆداڵی پاککردنەوەی دەنگەکان SDH -->
+<!-- کۆدی سێرڤەرەکان: لینک + ژمارەی ئەڵقە -> <span data-ep data-server data-url> -->
+<style>
+.kf-srv-ta{width:100%;box-sizing:border-box;border:1px solid var(--border-color);border-radius:10px;padding:9px 10px;background:var(--bg-color);color:var(--text-main);font:12px/1.6 ui-monospace,Menlo,Consolas,monospace;direction:ltr;text-align:left;resize:vertical;}
+.kf-srv-ta:focus{outline:none;border-color:var(--primary);}
+.kf-srv-mini{width:auto !important;padding:6px 12px !important;font-size:12px !important;border-radius:9px !important;}
+.kf-srv-opt{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-main);cursor:pointer;}
+.kf-srv-opt input[type=checkbox]{accent-color:var(--primary);width:15px;height:15px;}
+</style>
+<div id="kf-servers-modal" class="custom-modal-overlay">
+    <div class="custom-modal-content" style="max-width: 520px; padding: 14px; max-height: 94vh; overflow-y: auto; overflow-x: hidden; text-align: right;">
+        <h3 style="color:var(--primary); margin:0 0 6px 0; font-size:15px;">کۆدی سێرڤەرەکان</h3>
+        <p style="font-size:11.5px; line-height:1.75; color:var(--text-muted); margin:0 0 10px 0;">
+            لینکی سێرڤەرەکان و <b>تەنها ژمارەی ئەڵقە</b> لێرە دابنێ، بە هەر شێوازێک: ژمارە پێش لینکەکان یان دوایان یان لەسەر هەمان دێڕ.
+            ناوی سێرڤەرەکان خۆکار بە ئینگلیزی دەنووسرێن، Vidmoly و Google drive هەمیشە یەکەمن، و ئەگەر کۆدی کۆنیشت دابنێ ڕێکی دەخاتەوە.
+        </p>
+        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:6px;">
+            <button type="button" class="btn btn-outline kf-srv-mini" onclick="kfSrvPaste()">Paste</button>
+            <button type="button" class="btn btn-outline kf-srv-mini" onclick="kfSrvExample()">نموونە</button>
+            <button type="button" class="btn btn-outline kf-srv-mini" style="color:#ef4444 !important;border-color:rgba(239,68,68,.45) !important;" onclick="kfSrvClear()">پاککردنەوە</button>
+        </div>
+        <textarea id="kfSrvInput" class="kf-srv-ta" rows="9" spellcheck="false" autocomplete="off" oninput="kfSrvSchedule()"
+            placeholder="12&#10;https://vidmoly.org/embed-xxxxxxxx.html&#10;https://drive.google.com/file/d/xxxxxxxx/view&#10;&#10;13&#10;https://vidmoly.org/embed-yyyyyyyy.html&#10;https://streamwish.to/e/zzzzzzzz"></textarea>
+
+        <div style="display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center; margin:9px 0;">
+            <label class="kf-srv-opt"><input type="checkbox" id="kfSrvNormalize" checked onchange="kfSrvUpdate()"> لینکەکان بۆ شێوازی embed ڕاست بکەرەوە</label>
+            <label class="kf-srv-opt"><input type="checkbox" id="kfSrvSort" checked onchange="kfSrvUpdate()"> ئەڵقەکان ڕیز بکە</label>
+            <label class="kf-srv-opt" style="gap:6px;">ئەڵقەی سەرەتا (ئەگەر ژمارە نەنووسرابوو):
+                <input type="number" id="kfSrvStartEp" min="0" max="9999" style="width:64px;padding:4px 6px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-color);color:var(--text-main);text-align:center;" oninput="kfSrvSchedule()"></label>
+        </div>
+
+        <div id="kfSrvStats" style="font-size:12.5px; margin:4px 0 6px 0;"></div>
+        <div id="kfSrvWarn" style="display:none; max-height:110px; overflow-y:auto; margin-bottom:6px;"></div>
+        <div id="kfSrvSummary" style="display:none; max-height:130px; overflow-y:auto; margin-bottom:8px; padding:4px 8px; border:1px solid var(--border-color); border-radius:10px;"></div>
+
+        <textarea id="kfSrvOutput" class="kf-srv-ta" rows="9" readonly spellcheck="false" onclick="this.select()" style="white-space:pre;overflow:auto;"></textarea>
+
+        <div class="custom-modal-actions" style="margin-top:10px;">
+            <button class="btn" onclick="kfSrvCopy()">کۆپیکردنی کۆد</button>
+            <button class="btn btn-outline" onclick="kfSrvDownload()">داگرتن (.html)</button>
+            <button class="btn btn-outline" onclick="closeServersModal()">داخستن</button>
+        </div>
+    </div>
+</div>
+
     <div id="sdh-modal" class="custom-modal-overlay">
         <div class="custom-modal-content">
             <h3 class="custom-modal-title" data-i18n="sdhTitle">پاککردنەوەی دەنگەکان (SDH Cleaner)</h3>
@@ -9688,6 +9736,629 @@ FontStore.onChange(function () {
     function boot() { FontStore.loadPersisted(); }
     if (document.readyState === 'complete') boot(); else window.addEventListener('load', boot);
 })();
+
+/* =====================================================================
+   ServerLinks — کۆدی سێرڤەرەکان
+   هەر دەقێک (لینک + ژمارەی ئەڵقە، بە هەر شێوازێک) دەکات بە:
+     <!--Episode 12-->
+     <span data-ep="12" data-server="Vidmoly" data-url="..."></span>
+   - ناوی سێرڤەر خۆکار و بە ئینگلیزی لە دۆمەینەکەوە
+   - Vidmoly یەکەم، Google drive دووەم، ئەوانی تر بە ڕیزبەندی ئەمن
+   - ژمارەی ئەڵقە: پێش لینکەکان، دوای لینکەکان، لەسەر هەمان دێڕ، یان لە بلۆکی جیا
+   ===================================================================== */
+var ServerLinks = (function () {
+    'use strict';
+
+    // ڕیزبەندی = ڕیزی ناو ئەم لیستە (Vidmoly=1، Google drive=2، ...)
+    var SERVER_DEFS = [
+        ['Vidmoly', /(^|\.)vidmoly\.[a-z.]+$/],
+        ['Google drive', /^(?:drive|docs|drive\.usercontent)\.google\.com$/],
+        ['Filemoon', /(^|\.)(?:filemoon|moonplayer)\.[a-z.]+$/],
+        ['Streamwish', /(^|\.)(?:streamwish|awish|wishfast|hlswish|swhoi|swdyu|sfastwish|embedwish|wishembed|dwish|flaswish)\.[a-z.]+$/],
+        ['Voe', /(^|\.)voe(?:-[a-z0-9-]*)?\.[a-z.]+$/],
+        ['Mixdrop', /(^|\.)(?:mixdrop|mixdroop|mxdrop|m1xdrop)[a-z0-9]*\.[a-z.]+$/],
+        ['Streamtape', /(^|\.)(?:streamtape|strtape|stape|strcloud|streamta)[a-z0-9]*\.[a-z.]+$/],
+        ['Doodstream', /(^|\.)(?:dood[a-z0-9]*|d[0o]{3,4}d|do{3,}d|ds2(?:play|video)|dsvplay)\.[a-z.]+$/],
+        ['Lulustream', /(^|\.)(?:lulustream|luluvdo|luluvid)\.[a-z.]+$/],
+        ['Vidhide', /(^|\.)(?:vidhide[a-z]*|dhtpre)\.[a-z.]+$/],
+        ['Filelions', /(^|\.)(?:filelions|alions|azipcdn|mycloudz)\.[a-z.]+$/],
+        ['Upstream', /(^|\.)upstream\.to$/],
+        ['Mp4upload', /(^|\.)mp4upload\.[a-z.]+$/],
+        ['Ok.ru', /(^|\.)(?:ok|odnoklassniki)\.ru$/],
+        ['Dailymotion', /(^|\.)(?:dailymotion\.com|dai\.ly)$/],
+        ['YouTube', /(^|\.)(?:youtube(?:-nocookie)?\.com|youtu\.be)$/],
+        ['Vidguard', /(^|\.)(?:vidguard|vgfplay|listeamed|bembed|vgembed)\.[a-z.]+$/],
+        ['Streamsb', /(^|\.)(?:streamsb|sbembed\d*|sbplay\d*|sbfull|sbfast|sbchill|sbthe|sblanh|sbbrisk|sbspeed|sbanh|watchsb|lvturbo|cloudemb|embedsb|playersb|tubesb|ssbstream)\.[a-z.]+$/],
+        ['Uqload', /(^|\.)uqload\.[a-z.]+$/],
+        ['Streamlare', /(^|\.)(?:streamlare|slmaxed|sltube)\.[a-z.]+$/],
+        ['Sendvid', /(^|\.)sendvid\.com$/],
+        ['VK', /(^|\.)(?:vk\.com|vk\.ru|vkvideo\.ru)$/],
+        ['Vimeo', /(^|\.)vimeo\.com$/],
+        ['Fembed', /(^|\.)(?:fembed|femax20|feurl|fcdn)[a-z0-9-]*\.[a-z.]+$/],
+        ['Vtube', /(^|\.)vtube\.[a-z]+$/],
+        ['Vidoza', /(^|\.)vidoza\.[a-z]+$/],
+        ['Supervideo', /(^|\.)supervideo\.[a-z]+$/],
+        ['Pixeldrain', /(^|\.)pixeldrain\.[a-z]+$/],
+        ['Mega', /(^|\.)mega\.(?:nz|io|co\.nz)$/],
+        ['Terabox', /(^|\.)(?:1024)?tera(?:box|boxapp|boxlink|sharelink|share)\.[a-z.]+$|(^|\.)(?:4funbox|mirrobox|nephobox|momerybox)\.[a-z.]+$/],
+        ['Krakenfiles', /(^|\.)krakenfiles\.com$/],
+        ['Gofile', /(^|\.)gofile\.io$/],
+        ['Mediafire', /(^|\.)mediafire\.com$/],
+        ['Dropbox', /(^|\.)dropbox(?:usercontent)?\.com$/],
+        ['OneDrive', /(^|\.)(?:1drv\.ms|onedrive\.live\.com|[a-z0-9-]+\.sharepoint\.com)$/],
+        ['Yandex', /(^|\.)(?:yadi\.sk|disk\.yandex\.[a-z]+)$/],
+        ['Archive', /(^|\.)archive\.org$/],
+        ['Blogger', /(^|\.)(?:blogger\.com|blogspot\.[a-z.]+|googlevideo\.com|video\.google\.com)$/],
+        ['Rumble', /(^|\.)rumble\.com$/],
+        ['Facebook', /(^|\.)(?:facebook\.com|fb\.watch|fb\.com)$/],
+        ['Odysee', /(^|\.)odysee\.com$/]
+    ];
+    var UNKNOWN_RANK = 1000;
+
+    function keyOf(s) { return String(s).toLowerCase().replace(/[^a-z0-9]/g, ''); }
+
+    // ناوی کورت/جیاواز کە بەکارهێنەر ڕەنگە بینووسێت
+    var ALIASES = { gdrive: 'Google drive', googledrive: 'Google drive', drive: 'Google drive', gd: 'Google drive', gdr: 'Google drive',
+        dood: 'Doodstream', ok: 'Ok.ru', yt: 'YouTube', sb: 'Streamsb', tape: 'Streamtape', stape: 'Streamtape', wish: 'Streamwish', lulu: 'Lulustream',
+        moon: 'Filemoon', mp4: 'Mp4upload', vid: 'Vidmoly' };
+    var NAME_BY_KEY = {};
+    SERVER_DEFS.forEach(function (d) { NAME_BY_KEY[keyOf(d[0])] = d[0]; });
+    Object.keys(ALIASES).forEach(function (k) { NAME_BY_KEY[k] = ALIASES[k]; });
+    function rankOf(name) {
+        for (var i = 0; i < SERVER_DEFS.length; i++) if (SERVER_DEFS[i][0] === name) return i + 1;
+        return UNKNOWN_RANK;
+    }
+
+    // ---------------------------------------------------------- دەق
+    function normDigits(s) {
+        return s.replace(/[\u0660-\u0669]/g, function (d) { return String(d.charCodeAt(0) - 0x0660); })
+            .replace(/[\u06F0-\u06F9]/g, function (d) { return String(d.charCodeAt(0) - 0x06F0); })
+            .replace(/[\uFF10-\uFF19]/g, function (d) { return String(d.charCodeAt(0) - 0xFF10); });
+    }
+
+    function preprocess(text) {
+        var t = normDigits(String(text == null ? '' : text));
+        t = t.replace(/[\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g, '');   // ZW و نیشانەی ئاڕاستە
+        t = t.replace(/\u00A0/g, ' ').replace(/\r\n?/g, '\n');
+        t = t.replace(/<br\s*\/?>/gi, '\n').replace(/<\/(?:p|div|li|tr)>/gi, '\n');
+        t = t.replace(/&amp;/gi, '&').replace(/\\\//g, '/');
+        // کۆدی HTML ی یەک دێڕی درێژ: هەر تاگێک بە دێڕێکی جیا
+        t = t.replace(/<!--/g, '\n<!--').replace(/-->/g, '-->\n')
+            .replace(/<span\b/gi, '\n<span').replace(/<\/span>/gi, '</span>\n')
+            .replace(/<iframe\b/gi, '\n<iframe').replace(/<\/iframe>/gi, '</iframe>\n');
+        return t;
+    }
+
+    function clean(s, keepCase) {
+        var t = s.replace(/[^\p{L}\p{N}\p{M}.\s]/gu, ' ').replace(/\s+/g, ' ').trim();
+        return keepCase ? t : t.toLowerCase();
+    }
+
+    // ---------------------------------------------------------- ژمارەی ئەڵقە
+    var KW = '(?:episodes?|epis?|eps?|e|no|num|number|ئ[ەه][ڵل]ق[ەه]ی?|ب[ەه]شی?|حلق[ةه]|الحلق[ةه]|قسمت|[eé]pisodes?|episodio|folge|b[oö]l[uü]m|серия|эпизод|第|話|话|集|화|回)';
+    var EP_RE = new RegExp('^(?:' + KW + ')?\\.?\\s*(\\d{1,4}(?:\\.\\d{1,2})?)\\s*(?:' + KW + ')?\\.?$', 'u');
+    var SE_RE = /^s\d{1,2}\s*e\s*(\d{1,4})$/;
+    var KW_WORD_RE = new RegExp('^' + KW + '\\.?$', 'u');
+
+    function normEp(s) {
+        var m = /^(\d{1,4})(?:\.(\d{1,2}))?$/.exec(String(s).trim());
+        if (!m) return null;
+        var out = String(parseInt(m[1], 10));
+        if (m[2]) { var f = m[2].replace(/0+$/, ''); if (f) out += '.' + f; }
+        return out;
+    }
+
+    function parseEpStrict(c) {
+        var m = SE_RE.exec(c);
+        if (m) return normEp(m[1]);
+        m = EP_RE.exec(c);
+        return m ? normEp(m[1]) : null;
+    }
+
+    // ---------------------------------------------------------- لینک
+    var URL_RE = /(?:https?:\/\/|\/\/)[^\s"'<>`]+/gi;
+    var BARE_RE = /(?:^|[\s(\[<"'=])((?:www\.)?[a-z0-9][a-z0-9-]*(?:\.[a-z0-9-]+)*\.[a-z]{2,10}\/[^\s"'<>`]+)/gi;
+
+    function cleanUrl(u) {
+        for (;;) {
+            var last = u.charAt(u.length - 1);
+            if (/[.,;:!?'"\u060C\u061B\u00BB\u203A\]}>]/.test(last)) { u = u.slice(0, -1); continue; }
+            if (last === ')') {
+                var o = (u.match(/\(/g) || []).length, c = (u.match(/\)/g) || []).length;
+                if (c > o) { u = u.slice(0, -1); continue; }
+            }
+            break;
+        }
+        return u;
+    }
+
+    function hostOf(u) {
+        try { return new URL(u).hostname.toLowerCase().replace(/^www\./, ''); } catch (e) { return ''; }
+    }
+
+    // لینکەکانی ناو دێڕێک + ئەو دەقەی دەمێنێتەوە
+    function extractUrls(line) {
+        var urls = [], rest = line, firstPos = Infinity;
+        rest = rest.replace(URL_RE, function (m, offset) {
+            var u = cleanUrl(m);
+            if (u.indexOf('//') === 0) u = 'https:' + u;
+            urls.push(u);
+            if (offset < firstPos) firstPos = offset;
+            return ' ';
+        });
+        rest = rest.replace(BARE_RE, function (all, m) {
+            var u = cleanUrl(m), h = hostOf('https://' + u);
+            var known = SERVER_DEFS.some(function (d) { return d[1].test(h); });
+            if (!known && !/^www\./i.test(m)) return all;
+            urls.push('https://' + u);
+            var p = line.indexOf(m);
+            if (p >= 0 && p < firstPos) firstPos = p;
+            return all.replace(m, ' ');
+        });
+        return { urls: urls, rest: rest, firstPos: firstPos, before: line.slice(0, firstPos === Infinity ? 0 : firstPos) };
+    }
+
+    // ---------------------------------------------------------- ناسینەوەی سێرڤەر
+    function deriveName(host) {
+        if (!host) return 'Server';
+        if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(host)) return 'Direct';
+        var p = host.split('.');
+        var n = p.length;
+        var sld = p[n - 2] || p[0];
+        if (n >= 3 && p[n - 1].length === 2 && /^(?:co|com|org|net|gov|edu|ac)$/.test(p[n - 2])) sld = p[n - 3];
+        sld = sld.replace(/[^a-z0-9-]/g, '') || 'server';
+        return sld.charAt(0).toUpperCase() + sld.slice(1);
+    }
+
+    function isLatinLabel(s) { return /^[\x20-\x7E]+$/.test(s) && /[A-Za-z]/.test(s) && s.length <= 30; }
+
+    function identify(url, label) {
+        var host = hostOf(url);
+        for (var i = 0; i < SERVER_DEFS.length; i++) {
+            if (SERVER_DEFS[i][1].test(host)) return { name: SERVER_DEFS[i][0], rank: i + 1, known: true, host: host };
+        }
+        if (label) {
+            var canon = NAME_BY_KEY[keyOf(label)];
+            if (canon) return { name: canon, rank: rankOf(canon), known: true, host: host };
+            var lb = label.replace(/^[\s\-:|.\u2022]+|[\s\-:|.\u2022]+$/g, '').trim();
+            if (isLatinLabel(lb)) return { name: lb.charAt(0).toUpperCase() + lb.slice(1), rank: UNKNOWN_RANK, known: false, host: host };
+        }
+        return { name: deriveName(host), rank: UNKNOWN_RANK, known: false, host: host };
+    }
+
+    // ---------------------------------------------------------- ڕاستکردنەوەی لینک بۆ شێوازی embed
+    function normalizeUrl(url, server, enabled) {
+        var out = { url: url, note: '' };
+        var u;
+        try { u = new URL(url); } catch (e) { return out; }
+        if (u.protocol === 'http:' && server.known) { u.protocol = 'https:'; out.note = 'https'; }
+        if (!enabled) { out.url = (out.note ? u.toString() : url); return out; }
+        var p = u.pathname, id, m;
+        if (server.name === 'Google drive') {
+            m = /\/file\/(?:u\/\d+\/)?d\/([A-Za-z0-9_-]{10,})/.exec(p);
+            id = m ? m[1] : null;
+            if (!id && !/\/folders\//.test(p)) {
+                var qid = u.searchParams.get('id');
+                if (qid && /^[A-Za-z0-9_-]{10,}$/.test(qid) && !/^\/(?:document|spreadsheets|presentation|forms)\//.test(p)) id = qid;
+            }
+            if (id) {
+                var rk = u.searchParams.get('resourcekey');
+                var nu = 'https://drive.google.com/file/d/' + id + '/preview' + (rk ? '?resourcekey=' + encodeURIComponent(rk) : '');
+                if (nu !== url) { out.url = nu; out.note = 'preview'; }
+                return out;
+            }
+        } else if (server.name === 'Vidmoly') {
+            m = /^\/embed-([a-z0-9]+)\.html$/i.exec(p);
+            if (m) { if (out.note) out.url = u.toString(); return out; }
+            m = /^\/(?:w|v|e|d|embed)\/([a-z0-9]{6,})\/?(?:\.html)?$/i.exec(p) || /^\/embed-([a-z0-9]+)\/?$/i.exec(p) || /^\/([a-z0-9]{8,14})(?:\.html)?\/?$/i.exec(p);
+            if (m) { out.url = 'https://' + u.host + '/embed-' + m[1] + '.html'; out.note = 'embed'; return out; }
+        } else if (server.name === 'YouTube') {
+            id = null;
+            if (/(^|\.)youtu\.be$/.test(u.hostname)) { m = /^\/([\w-]{11})/.exec(p); id = m && m[1]; }
+            else if (/^\/watch/.test(p)) id = u.searchParams.get('v');
+            else if ((m = /^\/(?:shorts|live)\/([\w-]{11})/.exec(p))) id = m[1];
+            if (id && /^[\w-]{11}$/.test(id)) { out.url = 'https://www.youtube.com/embed/' + id; out.note = 'embed'; return out; }
+        } else if (server.name === 'Dailymotion') {
+            m = /^\/video\/([a-z0-9]+)/i.exec(p) || (/(^|\.)dai\.ly$/.test(u.hostname) ? /^\/([a-z0-9]+)/i.exec(p) : null);
+            if (m) { out.url = 'https://www.dailymotion.com/embed/video/' + m[1]; out.note = 'embed'; return out; }
+        } else if (server.name === 'Ok.ru') {
+            m = /^\/video\/(\d+)/.exec(p);
+            if (m) { out.url = 'https://ok.ru/videoembed/' + m[1]; out.note = 'embed'; return out; }
+        }
+        if (out.note) out.url = u.toString();
+        return out;
+    }
+
+    // ---------------------------------------------------------- تۆکنکردن
+    // تۆکنەکان: {k:'EP', v, local} | {k:'LINK', url, ep?, label?} | {k:'BREAK'}
+    function tokenize(text, warnings) {
+        var lines = preprocess(text).split('\n'), toks = [], pendingLabel = null, unknown = [];
+        function pushBreak() { if (toks.length && toks[toks.length - 1].k !== 'BREAK') toks.push({ k: 'BREAK' }); pendingLabel = null; }
+
+        lines.forEach(function (raw) {
+            var line = raw.trim();
+            if (!line) { pushBreak(); return; }
+            if (!/[\p{L}\p{N}]/u.test(line)) { pushBreak(); return; }          // ---- ==== وەک جیاکەرەوە
+
+            // ١) <span data-ep=... data-server=... data-url=...>
+            if (/<span\b/i.test(line)) {
+                var gu = /data-url\s*=\s*(?:"([^"]*)"|'([^']*)')/i.exec(line);
+                if (gu) {
+                    var ge = /data-ep\s*=\s*(?:"([^"]*)"|'([^']*)')/i.exec(line);
+                    var gs = /data-server\s*=\s*(?:"([^"]*)"|'([^']*)')/i.exec(line);
+                    var epv = ge ? (ge[1] != null ? ge[1] : ge[2]).trim() : '';
+                    var u0 = cleanUrl((gu[1] != null ? gu[1] : gu[2]).trim());
+                    if (u0.indexOf('//') === 0) u0 = 'https:' + u0;
+                    toks.push({ k: 'LINK', url: u0, ep: epv ? (normEp(epv) || epv) : undefined, label: gs ? (gs[1] != null ? gs[1] : gs[2]).trim() : null });
+                }
+                return;
+            }
+            // ٢) <!--Episode 12-->
+            if (/^<!--/.test(line)) {
+                var cm = parseEpStrict(clean(line));
+                if (cm != null) { toks.push({ k: 'EP', v: cm }); pendingLabel = null; }
+                return;
+            }
+
+            var ex = extractUrls(line);
+            if (ex.urls.length) {
+                var rem = clean(ex.rest), remRaw = clean(ex.rest, true), ep = null, label = null;
+                if (rem) {
+                    ep = parseEpStrict(rem);
+                    if (ep == null) {
+                        // وشەکان: ژمارە / وشەی ئەڵقە / ناوی سێرڤەری ناسراو / وشەی تر
+                        var words = rem.split(' '), rawWords = remRaw.split(' '), nums = [], other = [], known = [];
+                        words.forEach(function (w, wi) {
+                            if (/^\d{1,4}(?:\.\d{1,2})?$/.test(w)) nums.push(w);
+                            else if (KW_WORD_RE.test(w)) { /* وشەی ئەڵقە */ }
+                            else if (NAME_BY_KEY[keyOf(w)]) known.push(rawWords[wi]);
+                            else other.push(rawWords[wi]);
+                        });
+                        if (nums.length === 1 && other.length === 0) { ep = normEp(nums[0]); label = known.join(' ') || null; }
+                        else if (other.length || known.length) label = remRaw;
+                    }
+                }
+                // ژمارەکە لەپێش لینکەکانە (12 لینک) یان لەدوایانە (لینک 12)؟
+                var epPre = ep != null && /\d/.test(ex.before);
+                if (ex.urls.length > 1) label = null;
+                if (!label && pendingLabel) label = pendingLabel;
+                pendingLabel = null;
+                if (ep != null) toks.push({ k: 'EP', v: ep, local: true, pre: epPre });
+                ex.urls.forEach(function (u) { toks.push({ k: 'LINK', url: u, ep: ep != null ? ep : undefined, label: label }); });
+                return;
+            }
+
+            // ٣) دێڕی بێ لینک: ژمارەی ئەڵقە، ناوی سێرڤەر، یان شتێکی تر
+            var c = clean(line), e2 = parseEpStrict(c);
+            if (e2 != null) { toks.push({ k: 'EP', v: e2 }); pendingLabel = null; return; }
+            // «Episode 12 - Vidmoly»: وشەی ئەڵقە + یەک ژمارە + (ناوی سێرڤەری ناسراو) = سەردێڕی ئەڵقە
+            var cw = c.split(' '), cn = [], ck = 0, co = 0;
+            cw.forEach(function (w) {
+                if (/^\d{1,4}(?:\.\d{1,2})?$/.test(w)) cn.push(w);
+                else if (KW_WORD_RE.test(w)) ck++;
+                else if (!NAME_BY_KEY[keyOf(w)]) co++;
+            });
+            if (cn.length === 1 && ck > 0 && co === 0) { toks.push({ k: 'EP', v: normEp(cn[0]) }); pendingLabel = null; return; }
+            // ناوی سێرڤەرێکی کورت لە دێڕی پێش لینکەکە (نەک ناونیشانی ئەنیمێ)
+            if (c && c.length <= 30 && ck === 0 && /^[a-z0-9 .]+$/.test(c) && /[a-z]/.test(c)) {
+                var lab = line.replace(/[^\x20-\x7E]/g, '').replace(/[:\-|]+$/, '').trim();
+                if (NAME_BY_KEY[keyOf(lab)] || (lab.length <= 16 && lab.split(/\s+/).length <= 2)) pendingLabel = lab;
+                return;
+            }
+            if (/\d/.test(c)) unknown.push(line);
+        });
+        unknown.slice(0, 5).forEach(function (l) { warnings.push({ type: 'unknownLine', msg: 'دێڕی نەناسراو (پشتگوێ خرا): ' + (l.length > 60 ? l.slice(0, 60) + '…' : l) }); });
+        return toks;
+    }
+
+    // ---------------------------------------------------------- دیاریکردنی ئەڵقەی هەر لینکێک
+    function assignEpisodes(toks, opts) {
+        // بلۆکەکان (جیاکراوە بە هێڵی بەتاڵ)
+        var blocks = [], cur = [];
+        toks.forEach(function (t) { if (t.k === 'BREAK') { if (cur.length) blocks.push(cur); cur = []; } else cur.push(t); });
+        if (cur.length) blocks.push(cur);
+
+        // شێواز: ژمارە پێش لینکەکانە ('before') یان دوای ئەوان ('after')
+        var mode = 'none', firstEp = -1, firstLink = -1, hasPreLocal = false, idx = 0;
+        toks.forEach(function (t) {
+            if (t.k === 'EP' && !t.local && firstEp < 0) firstEp = idx;
+            if (t.k === 'EP' && t.local && t.pre) hasPreLocal = true;
+            if (t.k === 'LINK' && t.ep === undefined && firstLink < 0) firstLink = idx;
+            idx++;
+        });
+        if (firstEp >= 0 && (firstLink < 0 || firstEp < firstLink)) mode = 'before';
+        else if (firstEp >= 0) mode = 'after';
+        else if (hasPreLocal) mode = 'before';
+
+        var lastEp = null, pending = [], orphanBlocks = [];
+        blocks.forEach(function (b) {
+            var eps = b.filter(function (t) { return t.k === 'EP' && !t.local; });
+            var locals = b.filter(function (t) { return t.k === 'EP' && t.local; });
+            var links = b.filter(function (t) { return t.k === 'LINK' && t.ep === undefined; });
+
+            if (!links.length) {                                           // بلۆکێک کە تەنها ژمارەیە
+                if (eps.length) {
+                    if (mode === 'after' && pending.length) { pending.forEach(function (l) { l.ep = eps[0].v; }); pending = []; }
+                    lastEp = eps[eps.length - 1].v;
+                } else if (locals.length && locals[locals.length - 1].pre) lastEp = locals[locals.length - 1].v;
+                return;
+            }
+            if (!locals.length && eps.length === 1) {                      // بلۆکی تەواو: هەموو لینکەکان هی ئەم ئەڵقەیەن
+                links.forEach(function (l) { l.ep = eps[0].v; });
+                if (mode === 'after' && pending.length) { pending.forEach(function (l) { l.ep = eps[0].v; }); pending = []; }
+                lastEp = eps[0].v;
+                return;
+            }
+            if (!locals.length && !eps.length) {                           // بلۆکێکی بێ ژمارە
+                if (mode === 'before' && lastEp != null) links.forEach(function (l) { l.ep = lastEp; });
+                else if (mode === 'after') pending = pending.concat(links);
+                else orphanBlocks.push(links);
+                return;
+            }
+            // ژمارەی هەمان دێڕ یان چەند ئەڵقە لە یەک بلۆک: بە ڕیز
+            if (mode === 'after') {
+                b.forEach(function (t) {
+                    if (t.k === 'LINK' && t.ep === undefined) pending.push(t);
+                    else if (t.k === 'EP' && !t.local) { pending.forEach(function (l) { l.ep = t.v; }); pending = []; }
+                });
+            } else {
+                var cur = lastEp;
+                b.forEach(function (t) {
+                    if (t.k === 'EP') { if (!t.local || t.pre) cur = t.v; }
+                    else if (t.k === 'LINK' && t.ep === undefined) { if (cur != null) t.ep = cur; else orphanBlocks.push([t]); }
+                });
+                lastEp = cur;
+            }
+        });
+        if (pending.length) orphanBlocks.push(pending);
+
+        // لینکەکانی بێ ژمارە: ئەگەر ئەڵقەی سەرەتا دانرابوو، هەر بلۆکێک = ئەڵقەیەک
+        var unassigned = [];
+        var start = (opts && opts.defaultEp != null && opts.defaultEp !== '') ? normEp(opts.defaultEp) : null;
+        if (start != null) {
+            var n = parseFloat(start);
+            orphanBlocks.forEach(function (bl, i) { var v = normEp(String(n + i)); bl.forEach(function (l) { l.ep = v; l.auto = true; }); });
+        } else {
+            orphanBlocks.forEach(function (bl) { unassigned = unassigned.concat(bl); });
+        }
+        return { unassigned: unassigned, mode: mode };
+    }
+
+    function epSortKey(ep) { var n = parseFloat(ep); return isFinite(n) && /^\d/.test(ep) ? n : Infinity; }
+
+    function attrSafe(u) { return u.replace(/"/g, '%22').replace(/</g, '%3C').replace(/>/g, '%3E').replace(/\s/g, '%20'); }
+
+    // ---------------------------------------------------------- سەرەکی
+    // opts: { normalize:true, sortEpisodes:true, defaultEp:null }
+    function convert(text, opts) {
+        opts = opts || {};
+        var normalize = opts.normalize !== false, sortEps = opts.sortEpisodes !== false;
+        var warnings = [];
+        var toks = tokenize(text, warnings);
+        var info = assignEpisodes(toks, opts);
+
+        var map = {}, order = [], seen = {}, dups = 0, linkCount = 0;
+        toks.forEach(function (t, i) {
+            if (t.k !== 'LINK' || t.ep === undefined) return;
+            var sv = identify(t.url, t.label);
+            try { new URL(t.url); } catch (e) { warnings.push({ type: 'badUrl', msg: 'لینکی نادروست: ' + t.url }); return; }
+            var nz = normalizeUrl(t.url, sv, normalize);
+            var key = t.ep + '\u0001' + nz.url;
+            if (seen[key]) { dups++; return; }
+            seen[key] = 1;
+            if (!map[t.ep]) { map[t.ep] = []; order.push(t.ep); }
+            map[t.ep].push({ server: sv.name, rank: sv.rank, url: nz.url, note: nz.note, auto: !!t.auto, idx: i });
+            linkCount++;
+            if (sv.name === 'Google drive' && /\/drive\/(?:u\/\d+\/)?folders\//.test(nz.url)) warnings.push({ type: 'folder', msg: 'ئەڵقەی ' + t.ep + ': لینکی فۆڵدەری Google drive ـە، نەک ڤیدیۆ' });
+        });
+
+        var eps = order.slice();
+        if (sortEps) eps.sort(function (a, b) {
+            var ka = epSortKey(a), kb = epSortKey(b);
+            return ka !== kb ? ka - kb : (a < b ? -1 : a > b ? 1 : 0);
+        });
+
+        var episodes = eps.map(function (ep) {
+            var items = map[ep].slice().sort(function (a, b) {
+                if (a.rank !== b.rank) return a.rank - b.rank;
+                if (a.rank === UNKNOWN_RANK && a.server !== b.server) return a.server < b.server ? -1 : 1;
+                return a.idx - b.idx;
+            });
+            var names = {};
+            items.forEach(function (it) { if (names[it.server]) warnings.push({ type: 'sameServer', level: 'info', msg: 'ئەڵقەی ' + ep + ': سێرڤەری ' + it.server + ' دووجار هەیە' }); names[it.server] = 1; });
+            if (!names['Vidmoly'] && !names['Google drive']) warnings.push({ type: 'noPrimary', level: 'info', msg: 'ئەڵقەی ' + ep + ': نە Vidmoly و نە Google drive ی تێدانییە' });
+            return { ep: ep, items: items };
+        });
+
+        if (info.unassigned.length) {
+            warnings.unshift({ type: 'noEp', msg: info.unassigned.length + ' لینک ژمارەی ئەڵقەیان نییە و لە دەرچووەکە نەهاتن (ژمارەی ئەڵقە بنووسە یان «ئەڵقەی سەرەتا» پڕبکەرەوە)', urls: info.unassigned.map(function (l) { return l.url; }) });
+        }
+        if (dups) warnings.push({ type: 'dup', level: 'info', msg: dups + ' لینکی دووبارە لابرا' });
+
+        var lines = [];
+        episodes.forEach(function (e) {
+            lines.push('<!--Episode ' + e.ep + '-->');
+            e.items.forEach(function (it) {
+                lines.push('<span data-ep="' + e.ep + '" data-server="' + it.server + '" data-url="' + attrSafe(it.url) + '"></span>');
+            });
+            lines.push('');
+        });
+        return {
+            text: lines.join('\n').replace(/\n+$/, ''),
+            episodes: episodes,
+            warnings: warnings,
+            stats: { episodes: episodes.length, links: linkCount, unassigned: info.unassigned.length, mode: info.mode }
+        };
+    }
+
+    return { convert: convert, identify: identify, normalizeUrl: normalizeUrl, parseEpStrict: parseEpStrict, _tokenize: tokenize, SERVER_DEFS: SERVER_DEFS };
+})();
+
+/* =====================================================================
+   ڕووکاری «کۆدی سێرڤەرەکان» — مۆداڵی ناو مێنیو
+   ===================================================================== */
+var KF_SRV_KEY = 'kf_srv_v1';
+var kfSrvTimer = null;
+
+function kfSrvEl(id) { return document.getElementById(id); }
+
+function kfSrvSave() {
+    try {
+        localStorage.setItem(KF_SRV_KEY, JSON.stringify({
+            input: kfSrvEl('kfSrvInput').value,
+            normalize: kfSrvEl('kfSrvNormalize').checked,
+            sort: kfSrvEl('kfSrvSort').checked,
+            startEp: kfSrvEl('kfSrvStartEp').value
+        }));
+    } catch (e) { /* localStorage بەردەست نییە */ }
+}
+
+function kfSrvRestore() {
+    try {
+        var v = JSON.parse(localStorage.getItem(KF_SRV_KEY) || 'null');
+        if (!v) return;
+        kfSrvEl('kfSrvInput').value = v.input || '';
+        kfSrvEl('kfSrvNormalize').checked = v.normalize !== false;
+        kfSrvEl('kfSrvSort').checked = v.sort !== false;
+        kfSrvEl('kfSrvStartEp').value = v.startEp || '';
+    } catch (e) { }
+}
+
+function kfSrvOpts() {
+    return {
+        normalize: kfSrvEl('kfSrvNormalize').checked,
+        sortEpisodes: kfSrvEl('kfSrvSort').checked,
+        defaultEp: kfSrvEl('kfSrvStartEp').value.trim()
+    };
+}
+
+var KF_SRV_NOTES = {
+    preview: 'لینکەکە ڕاستکرایەوە بۆ شێوازی /preview',
+    embed: 'لینکەکە ڕاستکرایەوە بۆ شێوازی embed',
+    https: 'http گۆڕدرا بۆ https'
+};
+
+function kfSrvUpdate() {
+    var input = kfSrvEl('kfSrvInput'), out = kfSrvEl('kfSrvOutput');
+    var stats = kfSrvEl('kfSrvStats'), warn = kfSrvEl('kfSrvWarn'), sum = kfSrvEl('kfSrvSummary');
+    if (typeof ServerLinks === 'undefined') return;
+    var r;
+    try { r = ServerLinks.convert(input.value, kfSrvOpts()); }
+    catch (e) { console.error(e); out.value = ''; stats.textContent = 'هەڵەیەک ڕوویدا'; return; }
+
+    out.value = r.text;
+
+    if (!input.value.trim()) {
+        stats.innerHTML = '<span style="color:var(--text-muted);">لینک و ژمارەی ئەڵقە لە سەرەوە دابنێ…</span>';
+    } else {
+        stats.innerHTML = '<b>' + r.stats.episodes + '</b> ئەڵقە &nbsp;•&nbsp; <b>' + r.stats.links + '</b> لینک' +
+            (r.stats.unassigned ? ' &nbsp;•&nbsp; <span style="color:#ef4444;"><b>' + r.stats.unassigned + '</b> بێ ژمارەی ئەڵقە</span>' : '');
+    }
+
+    // ئاگادارکردنەوەکان
+    if (!r.warnings.length) { warn.innerHTML = ''; warn.style.display = 'none'; }
+    else {
+        warn.style.display = 'block';
+        warn.innerHTML = r.warnings.map(function (w) {
+            var info = (w.level === 'info');
+            var extra = (w.urls && w.urls.length) ? '<div style="direction:ltr;text-align:left;opacity:.75;font-size:10.5px;word-break:break-all;margin-top:2px;">' +
+                w.urls.slice(0, 3).map(kfEsc).join('<br>') + (w.urls.length > 3 ? '<br>…' : '') + '</div>' : '';
+            return '<div style="padding:5px 8px;margin-bottom:4px;border-radius:8px;font-size:11.5px;line-height:1.6;' +
+                (info ? 'background:rgba(148,163,184,.10);color:var(--text-muted);' : 'background:rgba(245,158,11,.12);color:#f59e0b;') + '">' +
+                (info ? 'ℹ️ ' : '⚠️ ') + kfEsc(w.msg) + extra + '</div>';
+        }).join('');
+    }
+
+    // پوختەی هەر ئەڵقەیەک: کام سێرڤەرەکان بۆی دۆزراونەتەوە
+    if (!r.episodes.length) { sum.innerHTML = ''; sum.style.display = 'none'; }
+    else {
+        sum.style.display = 'block';
+        sum.innerHTML = r.episodes.map(function (e) {
+            var names = e.items.map(function (it) {
+                var mark = it.note ? ' <span title="' + kfEsc(KF_SRV_NOTES[it.note] || '') + '" style="color:var(--primary);cursor:help;">✎</span>' : '';
+                var auto = it.auto ? ' <span title="ژمارەکە خۆکار دانرا" style="color:#f59e0b;cursor:help;">A</span>' : '';
+                return '<span style="white-space:nowrap;">' + kfEsc(it.server) + mark + auto + '</span>';
+            }).join(' <span style="opacity:.4;">·</span> ');
+            return '<div style="display:flex;gap:8px;align-items:baseline;padding:3px 0;border-bottom:1px solid var(--border-color);font-size:11.5px;">' +
+                '<b style="min-width:34px;color:var(--primary);direction:ltr;">' + kfEsc(e.ep) + '</b><span style="direction:ltr;text-align:left;flex:1;">' + names + '</span></div>';
+        }).join('');
+    }
+    kfSrvSave();
+}
+
+function kfSrvSchedule() {
+    clearTimeout(kfSrvTimer);
+    kfSrvTimer = setTimeout(kfSrvUpdate, 120);
+}
+
+function openServersModal() {
+    var m = kfSrvEl('kf-servers-modal');
+    if (!m) return;
+    kfSrvRestore();
+    kfSrvUpdate();
+    m.style.display = 'flex';
+}
+function closeServersModal() {
+    var m = kfSrvEl('kf-servers-modal');
+    if (m) m.style.display = 'none';
+}
+
+function kfSrvToast(msg, type) { if (typeof showToast === 'function') showToast(msg, type || 'success'); }
+
+async function kfSrvCopy() {
+    var out = kfSrvEl('kfSrvOutput');
+    var txt = out.value;
+    if (!txt) { kfSrvToast('هێشتا هیچ کۆدێک دروست نەکراوە', 'error'); return; }
+    var ok = false;
+    try { await navigator.clipboard.writeText(txt); ok = true; }
+    catch (e) {
+        try { out.focus(); out.select(); out.setSelectionRange(0, txt.length + 1); ok = document.execCommand('copy'); } catch (e2) { ok = false; }
+    }
+    kfSrvToast(ok ? 'کۆدەکە کۆپی کرا' : 'کۆپی نەکرا، بە دەست دیاری بکە و کۆپی بکە', ok ? 'success' : 'error');
+}
+
+function kfSrvDownload() {
+    var txt = kfSrvEl('kfSrvOutput').value;
+    if (!txt) { kfSrvToast('هێشتا هیچ کۆدێک دروست نەکراوە', 'error'); return; }
+    var blob = new Blob([txt + '\n'], { type: 'text/html;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'servers.html';
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+
+async function kfSrvPaste() {
+    var input = kfSrvEl('kfSrvInput');
+    try {
+        var t = await navigator.clipboard.readText();
+        if (!t) { kfSrvToast('کلیپبۆرد بەتاڵە', 'error'); return; }
+        input.value = input.value.trim() ? (input.value.replace(/\s+$/, '') + '\n\n' + t) : t;
+        kfSrvUpdate();
+    } catch (e) {
+        input.focus();
+        kfSrvToast('مۆڵەتی کلیپبۆرد نییە، لە ناو بۆکسەکەدا بە دەست Paste بکە', 'error');
+    }
+}
+
+function kfSrvExample() {
+    kfSrvEl('kfSrvInput').value =
+        '12\n' +
+        'https://drive.google.com/file/d/12awyMxF4u4s52d-tORlnv5MAV3q67Q59/view?usp=sharing\n' +
+        'https://vidmoly.org/embed-jbaf4ghttju0.html\n\n' +
+        '13\n' +
+        'https://streamwish.to/e/abc123xyz\n' +
+        'https://vidmoly.org/embed-k2m9x8q7w6e5.html\n' +
+        'https://drive.google.com/open?id=1BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB';
+    kfSrvUpdate();
+}
+
+function kfSrvClear() {
+    kfSrvEl('kfSrvInput').value = '';
+    kfSrvEl('kfSrvStartEp').value = '';
+    kfSrvUpdate();
+    kfSrvEl('kfSrvInput').focus();
+}
 
 </script>
 

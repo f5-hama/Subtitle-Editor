@@ -7,9 +7,6 @@
     <title data-i18n="pageTitle">دەستکاریکەری ژێرنووس</title>
 
     <!-- PWA: lightweight inline vector icon & manifest -->
-    <link rel="icon" type="image/svg+xml" href="icon.svg">
-    <link rel="apple-touch-icon" href="icon.svg">
-    <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -156,8 +153,6 @@ function deleteEmptySubtitleLines() {
         })();
     </script>
 
-    <link rel="stylesheet" href="./fonts.css">
-    
     <!-- کتێبخانەی فەرمیی ناسەرەوەی وێنە بۆ دەق (Tesseract OCR) -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     
@@ -1428,17 +1423,6 @@ input[type="checkbox"], input[type="radio"] {
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
 
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })
-                    .then(reg => {
-                        reg.update();
-                    })
-                    .catch(() => {});
-            });
-        }
-    </script>
 </head>
 <body class="startup-bg">
 
@@ -3428,6 +3412,7 @@ updateUndoRedoButtons();
       // بزوێنەری تایبەتی خوێندنەوەی فایلی PGS/SUP و ناسینەوەی OCR
 let isPgsCancelled = false;
 let pgsTesseractWorker = null;
+let pgsCurrentPsm = null;
 
 // کۆنترۆڵی فۆرماتی دەرچوون بۆ PGS
 function setPgsFormat(fmt) {
@@ -3987,669 +3972,445 @@ async function cancelPgsProcess() {
     }
 }
 
-// شی تەکنیکی پاکەتەکانی SUP و دەرهێنانی وێنە و کاتژمێری PTS
+// PGS/SUP Engine v3 — parser, compositor and OCR pipeline
 function parseSupFile(buffer) {
     const bytes = new Uint8Array(buffer);
+    const palettes = new Map();
+    const objects = new Map();
     const subtitles = [];
-    let i = 0;
-    let cur = null;
-    let palettes = {};
-    let videoWidth = 0, videoHeight = 0;
+    let offset = 0, display = null, active = null;
+    let videoWidth = 1920, videoHeight = 1080;
 
-    const makePalette = () => {
-        const p = new Array(256);
-        for (let k = 0; k < 256; k++) p[k] = [0, 0, 0, 0];
-        return p;
+    const u16 = (p) => (bytes[p] << 8) | bytes[p + 1];
+    const u24 = (p) => (bytes[p] * 0x10000) + (bytes[p + 1] << 8) + bytes[p + 2];
+    const clonePalette = (palette) => palette ? palette.map(c => c ? c.slice() : [0, 0, 0, 0]) : Array.from({length: 256}, () => [0, 0, 0, 0]);
+    const closeActive = (at) => {
+        if (!active) return;
+        active.endSec = Math.max(active.startSec + 0.08, Math.min(at, active.startSec + 30));
+        subtitles.push(active);
+        active = null;
     };
 
-    const closeCurrent = (endSec) => {
-        if (!cur) return;
-        cur.endSec = (endSec > cur.startSec) ? endSec : (cur.startSec + 2);
-        if (cur.rleData.length > 0 && cur.width > 0 && cur.height > 0) subtitles.push(cur);
-        cur = null;
-    };
+    while (offset + 13 <= bytes.length) {
+        if (bytes[offset] !== 0x50 || bytes[offset + 1] !== 0x47) {
+            offset++;
+            continue;
+        }
+        const pts = (((bytes[offset + 2] * 0x1000000) + (bytes[offset + 3] << 16) + (bytes[offset + 4] << 8) + bytes[offset + 5]) >>> 0) / 90000;
+        const type = bytes[offset + 10];
+        const length = u16(offset + 11);
+        const d = offset + 13, limit = d + length;
+        if (limit > bytes.length) throw new Error(`SUP packet is truncated at byte ${offset}.`);
 
-    while (i < bytes.length - 12) {
-        if (bytes[i] === 0x50 && bytes[i + 1] === 0x47) { // واژۆی PG
-            const pts = ((bytes[i + 2] << 24) | (bytes[i + 3] << 16) | (bytes[i + 4] << 8) | bytes[i + 5]) >>> 0;
-            const ptsSec = pts / 90000;
-            const segmentType = bytes[i + 10];
-            const segmentLength = (bytes[i + 11] << 8) | bytes[i + 12];
-            const d = i + 13;
-            if (d + segmentLength > bytes.length) break;
+        if (!display) display = { pts, pcs: null, paletteUpdates: [], objectUpdates: [] };
 
-            if (segmentType === 0x16) { // PCS
-                const w = (bytes[d] << 8) | bytes[d + 1];
-                const h = (bytes[d + 2] << 8) | bytes[d + 3];
-                if (w > 0 && h > 0) { videoWidth = w; videoHeight = h; }
-
-                const state = bytes[d + 7] & 0xC0;
-                const paletteId = bytes[d + 9];
-                const numObjects = bytes[d + 10];
-
-                if (state === 0x80) palettes = {}; // سەرەتای ئیپۆکێکی نوێ
-                closeCurrent(ptsSec); // هەر ژێرنووسێکی کراوە لێرەدا کۆتایی دێت
-
-                if (numObjects > 0) {
-                    let minX = 0xFFFF, minY = 0xFFFF;
-                    let off = d + 11;
-                    for (let n = 0; n < numObjects; n++) {
-                        if (off + 7 >= d + segmentLength) break;
-                        const cropped = (bytes[off + 3] & 0x80) !== 0;
-                        const ox = (bytes[off + 4] << 8) | bytes[off + 5];
-                        const oy = (bytes[off + 6] << 8) | bytes[off + 7];
-                        if (ox < minX) minX = ox;
-                        if (oy < minY) minY = oy;
-                        off += cropped ? 16 : 8;
-                    }
-                    if (minX === 0xFFFF) minX = 0;
-                    if (minY === 0xFFFF) minY = 0;
-                    cur = {
-                        startSec: ptsSec,
-                        endSec: ptsSec + 3,
-                        x: minX,
-                        y: minY,
-                        paletteId: paletteId,
-                        rleData: [],
-                        width: 0,
-                        height: 0,
-                        palette: palettes[paletteId] ? palettes[paletteId].slice() : makePalette(),
-                        videoWidth: videoWidth,
-                        videoHeight: videoHeight
+        if (type === 0x16 && length >= 11) {
+            videoWidth = u16(d) || videoWidth;
+            videoHeight = u16(d + 2) || videoHeight;
+            const objectCount = bytes[d + 10];
+            const compositionObjects = [];
+            let p = d + 11;
+            for (let n = 0; n < objectCount && p + 7 < limit; n++) {
+                const objectId = u16(p);
+                const windowId = bytes[p + 2];
+                const cropped = (bytes[p + 3] & 0x80) !== 0;
+                const x = u16(p + 4), y = u16(p + 6);
+                let crop = null;
+                if (cropped && p + 15 < limit) crop = { x: u16(p + 8), y: u16(p + 10), width: u16(p + 12), height: u16(p + 14) };
+                compositionObjects.push({ objectId, windowId, x, y, crop });
+                p += cropped ? 16 : 8;
+            }
+            display.pcs = {
+                pts, width: videoWidth, height: videoHeight,
+                compositionNumber: u16(d + 5), state: bytes[d + 7] & 0xC0,
+                paletteUpdate: !!(bytes[d + 8] & 0x80), paletteId: bytes[d + 9],
+                objects: compositionObjects
+            };
+        } else if (type === 0x14 && length >= 2) {
+            const paletteId = bytes[d], version = bytes[d + 1];
+            const palette = clonePalette(palettes.get(paletteId));
+            for (let p = d + 2; p + 4 < limit; p += 5) {
+                const id = bytes[p], y = bytes[p + 1], cr = bytes[p + 2] - 128, cb = bytes[p + 3] - 128, alpha = bytes[p + 4];
+                const yy = 1.164383 * (y - 16);
+                const clamp = v => Math.max(0, Math.min(255, Math.round(v)));
+                palette[id] = [clamp(yy + 1.792741 * cr), clamp(yy - 0.213249 * cb - 0.532909 * cr), clamp(yy + 2.112402 * cb), alpha];
+            }
+            display.paletteUpdates.push({ paletteId, version, palette });
+        } else if (type === 0x15 && length >= 4) {
+            const objectId = u16(d), version = bytes[d + 2], sequence = bytes[d + 3];
+            const first = !!(sequence & 0x80), last = !!(sequence & 0x40);
+            let record = first ? { objectId, version, width: 0, height: 0, expected: 0, chunks: [], complete: false } : objects.get(objectId);
+            if (!record || record.version !== version) record = { objectId, version, width: 0, height: 0, expected: 0, chunks: [], complete: false };
+            if (first) {
+                if (length < 11) throw new Error(`Invalid first ODS segment for object ${objectId}.`);
+                record.expected = Math.max(0, u24(d + 4) - 4);
+                record.width = u16(d + 7);
+                record.height = u16(d + 9);
+                record.chunks = [bytes.slice(d + 11, limit)];
+            } else {
+                record.chunks.push(bytes.slice(d + 4, limit));
+            }
+            record.complete = last;
+            objects.set(objectId, record);
+            display.objectUpdates.push(objectId);
+        } else if (type === 0x80) {
+            for (const update of display.paletteUpdates) palettes.set(update.paletteId, update.palette);
+            const pcs = display.pcs;
+            if (pcs) {
+                closeActive(pcs.pts);
+                if (pcs.objects.length) {
+                    const refs = pcs.objects.map(ref => {
+                        const object = objects.get(ref.objectId);
+                        if (!object || !object.width || !object.height || !object.chunks.length) return null;
+                        return { ...ref, width: object.width, height: object.height, rleData: object.chunks.map(c => c.slice()) };
+                    }).filter(Boolean);
+                    if (refs.length) active = {
+                        startSec: pcs.pts, endSec: pcs.pts + 3, x: 0, y: 0,
+                        width: 0, height: 0, objects: refs,
+                        paletteId: pcs.paletteId, palette: clonePalette(palettes.get(pcs.paletteId)),
+                        videoWidth: pcs.width, videoHeight: pcs.height,
+                        compositionNumber: pcs.compositionNumber
                     };
                 }
-            } else if (segmentType === 0x14) { // PDS (پاڵێت)
-                const pid = bytes[d];
-                if (!palettes[pid]) palettes[pid] = makePalette();
-                const pal = palettes[pid];
-                let p = d + 2;
-                while (p + 4 < d + segmentLength) {
-                    const id = bytes[p];
-                    const yVal = bytes[p + 1];
-                    const cr = bytes[p + 2];
-                    const cb = bytes[p + 3];
-                    const alpha = bytes[p + 4];
-                    const r = Math.max(0, Math.min(255, yVal + 1.402 * (cr - 128)));
-                    const g = Math.max(0, Math.min(255, yVal - 0.344136 * (cb - 128) - 0.714136 * (cr - 128)));
-                    const bVal = Math.max(0, Math.min(255, yVal + 1.772 * (cb - 128)));
-                    pal[id] = [r, g, bVal, alpha];
-                    p += 5;
-                }
-                if (cur && (cur.paletteId === pid || cur.palette === null)) cur.palette = pal.slice();
-            } else if (segmentType === 0x15 && cur) { // ODS (وێنە)
-                const seqFlag = bytes[d + 3];
-                if ((seqFlag & 0x80) !== 0) {
-                    // یەکەم پارچە: قەبارەی وێنە تەنها لێرەدا هەیە
-                    cur.width = (bytes[d + 7] << 8) | bytes[d + 8];
-                    cur.height = (bytes[d + 9] << 8) | bytes[d + 10];
-                    cur.rleData.push(bytes.subarray(d + 11, d + segmentLength));
-                } else {
-                    // پارچەی درێژکراوە: بێ سەرپەڕە، تەنها داتای RLE
-                    cur.rleData.push(bytes.subarray(d + 4, d + segmentLength));
-                }
-            } else if (segmentType === 0x80) { // END
-                // هیچ، تەنها کۆتایی پێکهێنانی دیسپلەیە
             }
-            i += 13 + segmentLength;
-        } else {
-            i++;
+            display = null;
         }
+        offset = limit;
     }
-    closeCurrent(cur ? cur.startSec + 3 : 0);
-
-    return subtitles.map(s => {
-        if (!s.videoWidth || !s.videoHeight) { s.videoWidth = videoWidth; s.videoHeight = videoHeight; }
-        return s;
-    });
+    closeActive(active ? active.startSec + 3 : 0);
+    return subtitles.filter(s => s.objects && s.objects.length);
 }
 
-// شیکردنەوەی RLE بۆ پیکسڵ (هەموو پارچەکان تێکەڵ دەکرێن پێش خوێندنەوە)
-function decodePgsRle(sub) {
-    let total = 0;
-    for (const c of sub.rleData) total += c.length;
-    const chunk = new Uint8Array(total);
-    let o = 0;
-    for (const c of sub.rleData) { chunk.set(c, o); o += c.length; }
-
-    const W = sub.width, H = sub.height;
-    const out = new Uint8Array(W * H); // ئیندێکسی پاڵێت بۆ هەر پیکسڵ
-    let x = 0, y = 0;
-    let p = 0;
-    const putRun = (color, run) => {
-        for (let r = 0; r < run; r++) {
-            if (x >= W) { x = 0; y++; }
-            if (y >= H) return;
-            out[y * W + x] = color;
-            x++;
-        }
+function decodePgsRle(source, width, height) {
+    const chunks = source.rleData || [];
+    const size = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+    const data = new Uint8Array(size);
+    let at = 0;
+    for (const chunk of chunks) { data.set(chunk, at); at += chunk.length; }
+    const pixels = new Uint8Array(width * height);
+    let p = 0, x = 0, y = 0;
+    const run = (color, count) => {
+        count = Math.min(count, width - x);
+        if (count > 0 && y < height) pixels.fill(color, y * width + x, y * width + x + count);
+        x += count;
     };
-    while (p < chunk.length && y < H) {
-        const byte = chunk[p++];
-        if (byte !== 0) { putRun(byte, 1); continue; }
-        if (p >= chunk.length) break;
-        const flag = chunk[p++];
-        if (flag === 0) { // کۆتایی دێڕ: دەچینە سەری دێڕی داهاتوو
-            x = 0; y++;
-        } else if ((flag & 0xC0) === 0x40) {
-            const run = ((flag & 0x3F) << 8) | chunk[p++];
-            putRun(0, run);
-        } else if ((flag & 0xC0) === 0x80) {
-            const run = flag & 0x3F;
-            putRun(chunk[p++], run);
-        } else if ((flag & 0xC0) === 0xC0) {
-            const run = ((flag & 0x3F) << 8) | chunk[p++];
-            putRun(chunk[p++], run);
-        } else {
-            putRun(0, flag & 0x3F);
+    while (p < data.length && y < height) {
+        const value = data[p++];
+        if (value) { run(value, 1); continue; }
+        if (p >= data.length) break;
+        const control = data[p++];
+        if (control === 0) { x = 0; y++; continue; }
+        let count = control & 0x3f;
+        if (control & 0x40) {
+            if (p >= data.length) break;
+            count = (count << 8) | data[p++];
         }
+        let color = 0;
+        if (control & 0x80) {
+            if (p >= data.length) break;
+            color = data[p++];
+        }
+        run(color, count);
     }
-    return out;
+    return pixels;
 }
 
-function extractPgsPaletteColors(sub, idx, W, H) {
-    const pal = sub.palette || [];
-    let textColors = {}, borderColors = {};
-    let totalTextAlpha = 0, textPixelCount = 0;
-
-    for (let i = 0; i < idx.length; i++) {
-        const cIdx = idx[i];
-        const color = pal[cIdx];
-        if (color && color[3] > 40) {
-            const a = color[3];
-            const r = color[0], g = color[1], b = color[2];
-            const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-            const hex = '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
-
-            if (lum > 75 && a > 80) {
-                // پیکسڵی ناوەوەی پیت
-                textColors[hex] = (textColors[hex] || 0) + 1;
-                totalTextAlpha += a;
-                textPixelCount++;
-            } else if (lum > 20 && lum <= 75) {
-                // پیکسڵی لێواری پیت (Border)
-                borderColors[hex] = (borderColors[hex] || 0) + 1;
-            }
+function buildPgsComposite(sub) {
+    const parts = [];
+    let minX = Infinity, minY = Infinity, maxX = 0, maxY = 0;
+    for (const obj of sub.objects) {
+        const pixels = decodePgsRle(obj, obj.width, obj.height);
+        const crop = obj.crop || { x: 0, y: 0, width: obj.width, height: obj.height };
+        const part = { ...obj, pixels, crop };
+        parts.push(part);
+        minX = Math.min(minX, obj.x); minY = Math.min(minY, obj.y);
+        maxX = Math.max(maxX, obj.x + crop.width); maxY = Math.max(maxY, obj.y + crop.height);
+    }
+    if (!parts.length || !Number.isFinite(minX)) return null;
+    const width = Math.max(1, maxX - minX), height = Math.max(1, maxY - minY);
+    const indices = new Uint8Array(width * height);
+    for (const part of parts) {
+        const c = part.crop;
+        for (let yy = 0; yy < c.height; yy++) for (let xx = 0; xx < c.width; xx++) {
+            const sx = c.x + xx, sy = c.y + yy;
+            if (sx >= part.width || sy >= part.height) continue;
+            const dx = part.x - minX + xx, dy = part.y - minY + yy;
+            indices[dy * width + dx] = part.pixels[sy * part.width + sx];
         }
     }
+    return { indices, width, height, x: minX, y: minY };
+}
 
-    // ڕەنگی سەرەکی دەق
-    let dominantText = '#FFFFFF', maxT = 0;
-    for (let h in textColors) {
-        if (textColors[h] > maxT) { maxT = textColors[h]; dominantText = h; }
-    }
-
-    // ڕەنگی لێوار
-    let dominantBorder = '#000000', maxB = 0;
-    for (let h in borderColors) {
-        if (borderColors[h] > maxB) { maxB = borderColors[h]; dominantBorder = h; }
-    }
-
-    // شەفافیەت (Alpha)
-    let assAlpha = null;
-    if (textPixelCount > 0) {
-        const avgA = totalTextAlpha / textPixelCount;
-        if (avgA < 225) { // ئەگەر نیمچە-ڕوون بوو
-            const assAVal = Math.max(0, Math.min(255, Math.round(255 - avgA)));
-            let hx = assAVal.toString(16).toUpperCase();
-            if (hx.length < 2) hx = '0' + hx;
-            assAlpha = hx;
-        }
-    }
-
-    return {
-        textColor: dominantText,
-        borderColor: dominantBorder,
-        assAlpha: assAlpha
+// چارەسەری هەڵەی سەرەکی: کاتێک دوو ئۆبجێکتی PGS لە هەمان کاتدا نیشان دەدرێن
+// (بۆ نموونە نووسینی سەر شاشەی مۆبایل/گەیم لەگەڵ ژێرنووسی گفتوگۆ لە خوارەوە)،
+// سیستەمی کۆن هەردووکیان دەکرد بە یەک وێنەی گەورە و بە یەک OCR دەیخوێندەوە،
+// ئەنجامەکە دەبوو بە دەقێکی تێکەڵ و هەڵە. ئێستا ئۆبجێکتەکان بەپێی نزیکی شوێنیان
+// دەکرێنە کۆمەڵە جیاواز (clustering)، هەر کۆمەڵەیەک بە جیایی OCR دەکرێت.
+function clusterPgsObjects(objects) {
+    const n = objects.length;
+    if (n <= 1) return [objects];
+    const parent = Array.from({ length: n }, (_, i) => i);
+    const find = (i) => { while (parent[i] !== i) { parent[i] = parent[parent[i]]; i = parent[i]; } return i; };
+    const union = (a, b) => { a = find(a); b = find(b); if (a !== b) parent[a] = b; };
+    const rectOf = (o) => {
+        const c = o.crop || { x: 0, y: 0, width: o.width, height: o.height };
+        return { x1: o.x, y1: o.y, x2: o.x + c.width, y2: o.y + c.height };
     };
+    const rects = objects.map(rectOf);
+    for (let i = 0; i < n; i++) {
+        for (let j = i + 1; j < n; j++) {
+            const a = rects[i], b = rects[j];
+            const heightA = a.y2 - a.y1, heightB = b.y2 - b.y1;
+            // تاقیکردنەوە لەسەر فایلی ڕاستەقینەی نموونە نیشانی دا کە هەرکات دوو ئۆبجێکتی
+            // PGS هەبن (تەنانەت بە بۆشایی بچووکی ٣٠-٤٠ پیکسڵ)، ئەوان هەمیشە دوو نووسینی
+            // تەواو جیاوازن (وەک کارتێکی نیشاندان لەگەڵ ژێرنووسی گفتوگۆ)، نەک دوو دێڕی
+            // یەک ژێرنووس. لەبەر ئەوە بۆشایی زۆر بچووک ڕادەگیرێت، تەنها بۆ ئەو حاڵەتەی
+            // ئۆبجێکتەکان تەواو بەیەکەوە دەلکێن یان دوو پارچەی هەمان دێڕن.
+            const margin = Math.min(16, Math.max(6, 0.15 * Math.min(heightA, heightB)));
+            const intersects = (a.x1 - margin) < b.x2 && (a.x2 + margin) > b.x1 && (a.y1 - margin) < b.y2 && (a.y2 + margin) > b.y1;
+            if (intersects) union(i, j);
+        }
+    }
+    const groups = new Map();
+    for (let i = 0; i < n; i++) {
+        const root = find(i);
+        if (!groups.has(root)) groups.set(root, []);
+        groups.get(root).push(objects[i]);
+    }
+    return [...groups.values()];
 }
 
-// ئامادەکردنی وێنەکە هاوشێوەی پرۆسێسی ناوخۆیی Subtitle Edit
+function splitPgsGroups(sub) {
+    const groups = clusterPgsObjects(sub.objects);
+    if (groups.length <= 1) return [sub];
+    return groups.map(objs => ({ ...sub, objects: objs }));
+}
+
+function extractPgsPaletteColors(sub, indices) {
+    const palette = sub.palette || [];
+    const counts = new Map();
+    let alphaTotal = 0, alphaCount = 0;
+    for (const index of indices) {
+        const color = palette[index];
+        if (!color || color[3] < 48) continue;
+        const key = color.slice(0, 3).map(v => Math.round(v)).join(',');
+        counts.set(key, (counts.get(key) || 0) + color[3]);
+        alphaTotal += color[3]; alphaCount++;
+    }
+    const ranked = [...counts].sort((a, b) => b[1] - a[1]).map(([key]) => key.split(',').map(Number));
+    const luminance = c => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+    const text = ranked.sort((a, b) => luminance(b) - luminance(a))[0] || [255,255,255];
+    const border = ranked.filter(c => luminance(c) < luminance(text) * 0.65)[0] || [0,0,0];
+    const hex = c => '#' + c.map(v => Math.max(0, Math.min(255, v)).toString(16).padStart(2, '0')).join('').toUpperCase();
+    const avgAlpha = alphaCount ? alphaTotal / alphaCount : 255;
+    return { textColor: hex(text), borderColor: hex(border), assAlpha: avgAlpha < 230 ? Math.round(255 - avgAlpha).toString(16).padStart(2, '0').toUpperCase() : null };
+}
+
 function renderPgsToCanvas(sub, targetCanvas) {
-    const W = sub.width, H = sub.height;
-    const idx = decodePgsRle(sub);
-    const pal = sub.palette || [];
-
-    let minX = W, minY = H, maxX = 0, maxY = 0;
-    let hasInk = false;
-
-    for (let y = 0; y < H; y++) {
-        for (let x = 0; x < W; x++) {
-            const color = pal[idx[y * W + x]] || [0, 0, 0, 0];
-            if (color[3] > 60) {
-                if (x < minX) minX = x;
-                if (x > maxX) maxX = x;
-                if (y < minY) minY = y;
-                if (y > maxY) maxY = y;
-                hasInk = true;
-            }
-        }
+    const composite = buildPgsComposite(sub);
+    if (!composite) { targetCanvas.width = targetCanvas.height = 1; sub.cropW = sub.cropH = 0; return; }
+    const { indices, width, height, x, y } = composite;
+    const palette = sub.palette || [];
+    let minX = width, minY = height, maxX = -1, maxY = -1;
+    for (let yy = 0; yy < height; yy++) for (let xx = 0; xx < width; xx++) {
+        const c = palette[indices[yy * width + xx]];
+        if (c && c[3] >= 48) { minX = Math.min(minX, xx); minY = Math.min(minY, yy); maxX = Math.max(maxX, xx); maxY = Math.max(maxY, yy); }
     }
-
-    if (!hasInk || minX > maxX || minY > maxY) {
-        targetCanvas.width = 10;
-        targetCanvas.height = 10;
-        sub.cropW = 0;
-        sub.cropH = 0;
-        return;
+    if (maxX < minX || maxY < minY) { targetCanvas.width = targetCanvas.height = 1; sub.cropW = sub.cropH = 0; return; }
+    const cropW = maxX - minX + 1, cropH = maxY - minY + 1;
+    // پیتی بچووکتر پێویستی بە بەرزکردنەوەی زیاترە بۆ ئەوەی Tesseract باشتر بیخوێنێتەوە.
+    const scale = cropH < 40 ? 3 : cropH < 70 ? 2 : 1, pad = 18;
+    targetCanvas.width = cropW * scale + pad * 2;
+    targetCanvas.height = cropH * scale + pad * 2;
+    const ctx = targetCanvas.getContext('2d', { willReadFrequently: true });
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, targetCanvas.width, targetCanvas.height);
+    const image = ctx.createImageData(cropW, cropH);
+    const rowHasInk = new Array(cropH).fill(false);
+    for (let yy = 0; yy < cropH; yy++) for (let xx = 0; xx < cropW; xx++) {
+        const c = palette[indices[(minY + yy) * width + minX + xx]] || [0,0,0,0];
+        const o = (yy * cropW + xx) * 4;
+        const a = c[3] / 255;
+        if (a > 0.02) {
+            rowHasInk[yy] = true;
+            // تێکەڵکردنی نەرم بەپێی ڕادەی ئەلفا وەک شێوەی سەرەکی (anti-aliasing) دەپارێزرێت،
+            // لە جیاتی بڕین بۆ ڕەش/سپی تەواو کە لێوارەکانی پیتەکانی کوانگ دەکات و OCR لاواز دەکات.
+            const lum = 0.2126*c[0] + 0.7152*c[1] + 0.0722*c[2];
+            const ink = lum > 95 ? 0 : 40;
+            const val = Math.round(ink * a + 255 * (1 - a));
+            image.data[o] = image.data[o+1] = image.data[o+2] = val; image.data[o+3] = 255;
+        } else { image.data[o] = image.data[o+1] = image.data[o+2] = image.data[o+3] = 255; }
     }
-
-    const cropW = maxX - minX + 1;
-    const cropH = maxY - minY + 1;
-
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = cropW;
-    tempCanvas.height = cropH;
-    const tCtx = tempCanvas.getContext('2d');
-    const imgData = tCtx.createImageData(cropW, cropH);
-    const data = imgData.data;
-
-    for (let y = 0; y < cropH; y++) {
-        for (let x = 0; x < cropW; x++) {
-            const color = pal[idx[(minY + y) * W + (minX + x)]] || [0, 0, 0, 0];
-            const o = (y * cropW + x) * 4;
-            if (color[3] > 70) {
-                const lum = 0.299 * color[0] + 0.587 * color[1] + 0.114 * color[2];
-                const val = lum > 110 ? 0 : 255;
-                data[o] = val; data[o+1] = val; data[o+2] = val; data[o+3] = 255;
-            } else {
-                data[o] = 255; data[o+1] = 255; data[o+2] = 255; data[o+3] = 255;
-            }
-        }
+    // ژمارەی ڕاستەقینەی دێڕەکان بە شیکردنەوەی ڕیز-بە-ڕیز (row projection): هەر ڕیزێک تیایدا
+    // هیچ پیکسێلی نووسین نەبێت بۆ ماوەیەکی گونجاو، بەشی دوایی دەبێتە دێڕێکی نوێ. ئەمە یارمەتی
+    // Tesseract دەدات لە هەڵبژاردنی دروستی دۆخی دابەشکردن (PSM) — دێڕی تاک لە بلۆکی چەند دێڕی جیا دەکاتەوە.
+    let lineCount = 0, inLine = false, gapRun = 0;
+    const minGap = Math.max(3, Math.round(cropH * 0.06));
+    for (let yy = 0; yy < cropH; yy++) {
+        if (rowHasInk[yy]) { if (!inLine) { lineCount++; inLine = true; } gapRun = 0; }
+        else { gapRun++; if (gapRun >= minGap) inLine = false; }
     }
-    tCtx.putImageData(imgData, 0, 0);
-
-    const pad = 20;
-    targetCanvas.width = cropW + (pad * 2);
-    targetCanvas.height = cropH + (pad * 2);
-
-    const ctx = targetCanvas.getContext('2d');
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(0, 0, targetCanvas.width, targetCanvas.height);
-    ctx.drawImage(tempCanvas, pad, pad);
-
-    const colors = extractPgsPaletteColors(sub, idx, W, H);
-    sub.dominantColor = colors.textColor;
-    sub.outlineColor = colors.borderColor;
-    sub.assAlpha = colors.assAlpha;
-    sub.cropW = cropW;
-    sub.cropH = cropH;
-    sub.detectedItalic = detectPgsItalic(idx, pal, W, H);
+    sub.lineCount = Math.max(1, lineCount);
+    const raw = document.createElement('canvas'); raw.width = cropW; raw.height = cropH;
+    raw.getContext('2d').putImageData(image, 0, 0);
+    // بەرزکردنەوەی نەرم (بایکیوبیک) لە جیاتی nearest-neighbor، بۆ لێواری ڕوونتر دوای گەورەکردن.
+    ctx.imageSmoothingEnabled = true;
+    if ('imageSmoothingQuality' in ctx) ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(raw, pad, pad, cropW * scale, cropH * scale);
+    const colors = extractPgsPaletteColors(sub, indices);
+    Object.assign(sub, { x: x + minX, y: y + minY, cropW, cropH, dominantColor: colors.textColor, outlineColor: colors.borderColor, assAlpha: colors.assAlpha });
+    sub.detectedItalic = detectPgsItalic(indices, palette, width, height);
+    sub.imageKey = `${cropW}x${cropH}:` + hashPgsPixels(indices);
 }
 
-// دۆزینەوەی لاری (Italic) بە پێوانەی لادانی ستوونی پیتەکان لە وێنەکەدا
-function detectPgsItalic(idx, pal, W, H) {
-    const isInk = (j) => { const c = pal[idx[j]] || [0, 0, 0, 0]; return c[3] > 60; };
-    let top = -1, bottom = -1;
-    for (let y = 0; y < H; y++) {
-        let any = false;
-        for (let x = 0; x < W; x++) if (isInk(y * W + x)) { any = true; break; }
-        if (any) { if (top < 0) top = y; bottom = y; }
-    }
-    if (top < 0 || bottom - top < 8) return false;
-    const upper = { sum: 0, n: 0 }, lower = { sum: 0, n: 0 };
-    const mid = (top + bottom) / 2;
-    for (let y = top; y <= bottom; y++) {
-        for (let x = 0; x < W; x++) {
-            if (!isInk(y * W + x)) continue;
-            if (y < mid) { upper.sum += x; upper.n++; } else { lower.sum += x; lower.n++; }
-        }
-    }
-    if (upper.n < 20 || lower.n < 20) return false;
-    const shift = (upper.sum / upper.n) - (lower.sum / lower.n);
-    const heightPx = bottom - top + 1;
-    return (shift / heightPx) > 0.18; // سەرەوەی نووسین بەرەو ڕاست لادەدات => لار
+function hashPgsPixels(pixels) {
+    let hash = 2166136261;
+    const step = Math.max(1, Math.floor(pixels.length / 12000));
+    for (let i = 0; i < pixels.length; i += step) { hash ^= pixels[i]; hash = Math.imul(hash, 16777619); }
+    return (hash >>> 0).toString(36);
 }
 
-// وەرگیراو لە یاساکانی OcrFixEngine.cs لە ناو Subtitle Edit
+function detectPgsItalic(indices, palette, width, height) {
+    let firstY = -1, lastY = -1, topSum = 0, topN = 0, bottomSum = 0, bottomN = 0;
+    for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+        const c = palette[indices[y * width + x]];
+        if (!c || c[3] < 80) continue;
+        if (firstY < 0) firstY = y; lastY = y;
+    }
+    if (firstY < 0 || lastY - firstY < 10) return false;
+    const middle = (firstY + lastY) / 2;
+    for (let y = firstY; y <= lastY; y++) for (let x = 0; x < width; x++) {
+        const c = palette[indices[y * width + x]];
+        if (!c || c[3] < 80) continue;
+        if (y < middle) { topSum += x; topN++; } else { bottomSum += x; bottomN++; }
+    }
+    return topN > 20 && bottomN > 20 && ((topSum/topN)-(bottomSum/bottomN))/(lastY-firstY+1) > 0.16;
+}
+
 function applySubtitleEditFixes(text, lang = 'eng') {
     if (!text) return '';
-    let s = text;
-
-    // لابردنی خاڵ و پەڵەی بێ دەق
-    s = s.replace(/^[.,'`~^°\-_"؛،]+\s*$/gm, '');
-
-    if (lang === 'eng') {
-        // چاککردنی I و l و 1 لە زمانی ئینگلیزیدا
-        s = s.replace(/\b[l|1]\b/g, 'I');
-        s = s.replace(/\b[l|1]['’](m|ve|ll|d)\b/gi, 'I\'$1');
-        s = s.replace(/([a-z])I([a-z])/g, '$1l$2');
-        s = s.replace(/\bcl([aeiou])/gi, 'd$1');
-        s = s.replace(/\b(modem|bum|yeam)\b/g, (m) => {
-            if (m === 'bum') return 'burn';
-            if (m === 'yeam') return 'yearn';
-            return m;
-        });
-    }
-
-    if (lang === 'ara' || lang === 'fas') {
-        s = s.replace(/ك/g, 'ک')
-             .replace(/ي/g, 'ی')
-             .replace(/ى/g, 'ی')
-             .replace(/\u0640+/g, '')
-             .replace(/[\u200B\uFEFF]/g, '');
-    }
-
-    s = s.replace(/\s+([,.:;?!؟،؛])/g, '$1');
-    s = s.replace(/(\.\.\.|…)\s*/g, '... ');
-    s = s.replace(/\s{2,}/g, ' ');
-
-    return s.trim();
+    let s = text.normalize('NFKC').replace(/\r/g, '').replace(/[|¦]/g, 'I').replace(/^[.,'`~^°_؛،]+\s*$/gm, '');
+    if (lang === 'eng') s = s.replace(/\b[l1]\b/g, 'I').replace(/\b[l1]['’](m|ve|ll|d)\b/gi, "I'$1").replace(/([a-z])I([a-z])/g, '$1l$2');
+    if (lang === 'ara' || lang === 'fas') s = s.replace(/ك/g,'ک').replace(/ي|ى/g,'ی').replace(/\u0640+/g,'').replace(/[\u200B\uFEFF]/g,'');
+    return s.split('\n').map(line => line.replace(/\s+([,.:;?!؟،؛])/g,'$1').replace(/\s{2,}/g,' ').trim()).filter(Boolean).join('\n').trim();
 }
 
-// ئەم فەنکشنە پشکنین دەکات: ئەگەر هەموو دێڕەکە لار بێت هەمووی دەکاتە لار، ئەگەر یەک وشە بێت تەنها ئەو وشەیە
-function processOcrItalics(retData, wholeCropItalic, targetFormat, selectedLang) {
-    if (!retData || !retData.lines || retData.lines.length === 0) {
-        let clean = applySubtitleEditFixes((retData && retData.text ? retData.text : '').trim(), selectedLang) || '...';
-        return {
-            text: clean,
-            isWholeItalic: wholeCropItalic
-        };
-    }
-
-    let totalWords = 0;
-    let totalItalicWords = 0;
-
-    // ١. ژماردنی کۆی وشەکان و ئەو وشانەی کە بە تەنیا لارن
-    retData.lines.forEach(line => {
-        const words = (line.words || []).filter(w => w.text && w.text.trim());
-        totalWords += words.length;
-        words.forEach(w => {
-            const isItalic = !!(w.is_italic || (w.font_name && /italic|oblique/i.test(w.font_name)));
-            if (isItalic) totalItalicWords++;
-        });
-    });
-
-    // ٢. ئەگەر هەموو وشەکان لار بوون یان تەواوی وێنەکە لار کێشرابوو
-    const isEntireSubtitleItalic = (totalWords > 0 && totalItalicWords === totalWords) || 
-                                   (wholeCropItalic && totalWords > 0 && totalItalicWords >= totalWords * 0.6);
-
-    if (isEntireSubtitleItalic) {
-        let fullClean = applySubtitleEditFixes(retData.text.trim(), selectedLang) || '...';
-        return {
-            text: fullClean,
-            isWholeItalic: true
-        };
-    }
-
-    // ٣. ئەگەر تەنها یەک یان دوو وشەی دیاریکراو لار بوون لەناو ڕستەکە
-    let processedLines = [];
-
-    retData.lines.forEach(line => {
-        const words = (line.words || []).filter(w => w.text && w.text.trim());
-        if (words.length === 0) return;
-
-        let lineTokens = [];
-        let inItalic = false;
-
-        words.forEach((w) => {
-            let wText = applySubtitleEditFixes(w.text.trim(), selectedLang);
-            if (!wText) return;
-
-            const isItalic = !!(w.is_italic || (w.font_name && /italic|oblique/i.test(w.font_name)));
-
-            if (isItalic) {
-                if (!inItalic) {
-                    lineTokens.push(targetFormat === 'ass' ? '{\\i1}' : '<i>');
-                    inItalic = true;
-                }
-                lineTokens.push(wText);
-            } else {
-                if (inItalic) {
-                    lineTokens.push(targetFormat === 'ass' ? '{\\i0}' : '</i>');
-                    inItalic = false;
-                }
-                lineTokens.push(wText);
-            }
-        });
-
-        if (inItalic) {
-            lineTokens.push(targetFormat === 'ass' ? '{\\i0}' : '</i>');
-        }
-
-        // ڕێکخستنی بۆشایی نێوان وشەکان
-        let lineStr = lineTokens.join(' ')
-            .replace(/\s*\{\\i0\}\s*/g, '{\\i0} ')
-            .replace(/\s*\{\\i1\}\s*/g, ' {\\i1}')
-            .replace(/\s*<\/i>\s*/g, '</i> ')
-            .replace(/\s*<i>\s*/g, ' <i>')
-            .replace(/\s{2,}/g, ' ')
-            .trim();
-
-        processedLines.push(lineStr);
-    });
-
-    let joinedText = processedLines.join(targetFormat === 'ass' ? '\\N' : '\n');
-    if (!joinedText.trim()) joinedText = '...';
-
-    return {
-        text: joinedText,
-        isWholeItalic: false
-    };
+function processOcrItalics(data, wholeItalic, targetFormat, lang) {
+    const clean = applySubtitleEditFixes(data && data.text ? data.text : '', lang) || '...';
+    const words = data && data.words ? data.words : [];
+    const italicWords = words.filter(w => w && (w.is_italic || /italic|oblique/i.test(w.font_name || ''))).length;
+    return { text: clean.replace(/\n/g, targetFormat === 'ass' ? '\\N' : '\n'), isWholeItalic: wholeItalic || (words.length > 0 && italicWords / words.length > 0.75) };
 }
 
-// پڕۆسەی دەستپێکردنی گۆڕین بە OCR
+// دانانی دۆخی دابەشکردنی Tesseract (PSM) تەنها ئەگەر پێویست بێت (بۆ خێراکردن، وردی نایگۆڕدرێت).
+async function setPgsPsm(worker, psm) {
+    if (pgsCurrentPsm === psm) return;
+    await worker.setParameters({ tessedit_pageseg_mode: String(psm) });
+    pgsCurrentPsm = psm;
+}
+
+async function recognizePgsCanvas(worker, canvas, lineCount) {
+    // دێڕی تاک (PSM 7) لە بلۆکی چەند دێڕی (PSM 6) جیاواز خوێندنەوەیان چاکترە،
+    // بۆیە بەپێی ژمارەی ڕاستەقینەی دێڕەکان هەڵدەبژێردرێت.
+    const primaryPsm = lineCount === 1 ? '7' : '6';
+    await setPgsPsm(worker, primaryPsm);
+    let result = await worker.recognize(canvas);
+    const confidence = Number(result.data && result.data.confidence || 0);
+    if (confidence < 55 && canvas.width > 2) {
+        // پێشتر ئەم هەوڵەدووەمە هیچ شتێکی جیاوازی نەدەکرد (هەمان وێنە دووبارە دەخوێندرایەوە
+        // بەبێ گۆڕانکاری، بۆیە هەرگیز ئەنجامی جیاوازی نەدەدا). ئێستا بە دۆخێکی دابەشکردنی
+        // ڕاستەقینە جیاواز (PSM) دووبارە هەوڵ دەدرێتەوە، و باشترین ئەنجام هەڵدەبژێردرێت.
+        const altPsm = primaryPsm === '7' ? '6' : '7';
+        await setPgsPsm(worker, altPsm);
+        const retryResult = await worker.recognize(canvas);
+        const retryConfidence = Number(retryResult.data && retryResult.data.confidence || 0);
+        if (retryConfidence > confidence) result = retryResult;
+    }
+    return result;
+}
+
 async function startPgsConversion() {
     const fileInput = document.getElementById('pgsFileInput');
-    if (!fileInput.files || fileInput.files.length === 0) {
-        showToast("تکایە سەرەتا فایل هەڵبژێرە!", 'error');
-        return;
-    }
-
-    if (typeof Tesseract === 'undefined') {
-        showToast('کتێبخانەی OCR بارنەبووە، تکایە ئینتەرنێت بپشکنە!', 'error');
-        return;
-    }
-
-    const files = Array.from(fileInput.files);
-    const selectedLang = document.getElementById('pgsLangSelect').value;
-    const targetFormat = document.getElementById('pgsOutputFormat').value;
-    const progressBox = document.getElementById('pgsProgressBox');
-    const statusText = document.getElementById('pgsStatusText');
-    const percentText = document.getElementById('pgsPercentText');
-    const fillBar = document.getElementById('pgsProgressBarFill');
-    const liveCanvas = document.getElementById('pgsLiveCanvas');
-    const btnStart = document.getElementById('btnStartPgs');
-
-    btnStart.disabled = true;
-    progressBox.style.display = 'block';
-    isPgsCancelled = false;
-
+    if (!fileInput.files || !fileInput.files.length) { showToast('تکایە سەرەتا فایل هەڵبژێرە!', 'error'); return; }
+    if (typeof Tesseract === 'undefined') { showToast('کتێبخانەی OCR بارنەبووە، تکایە ئینتەرنێت بپشکنە!', 'error'); return; }
+    const files = Array.from(fileInput.files), lang = document.getElementById('pgsLangSelect').value, format = document.getElementById('pgsOutputFormat').value;
+    const box = document.getElementById('pgsProgressBox'), status = document.getElementById('pgsStatusText'), pct = document.getElementById('pgsPercentText'), bar = document.getElementById('pgsProgressBarFill'), canvas = document.getElementById('pgsLiveCanvas'), startBtn = document.getElementById('btnStartPgs');
+    startBtn.disabled = true; box.style.display = 'block'; bar.style.width = '0%'; isPgsCancelled = false;
     try {
-        statusText.innerText = "داگرتنی داتای زمان...";
-        
-        pgsTesseractWorker = await Tesseract.createWorker(selectedLang, 1);
-        await pgsTesseractWorker.setParameters({
-            tessedit_pageseg_mode: '6',
-            preserve_interword_spaces: '1'
-        });
-
-        for (let fileIndex = 0; fileIndex < files.length; fileIndex++) {
-            if (isPgsCancelled) break;
-            const file = files[fileIndex];
-
-            statusText.innerText = `شی کردنەوەی وێنەکانی ${file.name}...`;
-            const buffer = await file.arrayBuffer();
-            const subtitles = parseSupFile(buffer);
-
-            if (!subtitles || subtitles.length === 0) {
-                showToast(`${file.name}: هیچ ژێرنووسێک نەدۆزرایەوە!`, 'warning');
-                continue;
-            }
-
-            const rawOcrList = [];
-
-            for (let idx = 0; idx < subtitles.length; idx++) {
-                if (isPgsCancelled) break;
-                const sub = subtitles[idx];
-                renderPgsToCanvas(sub, liveCanvas);
-
-                const ret = await pgsTesseractWorker.recognize(liveCanvas);
-                
-                // پشکنینی لاری بۆ هەموو ڕستەکە یان تەنها یەک وشە
-                const italicResult = processOcrItalics(ret.data, sub.detectedItalic, targetFormat, selectedLang);
-
-                const vH = sub.videoHeight || 1080;
-                const vW = sub.videoWidth || 1920;
-                
-                const isSignOrTop = (sub.y < vH * 0.65) || (sub.x < vW * 0.15) || (sub.x > vW * 0.65);
-
-                rawOcrList.push({
-                    startSec: sub.startSec,
-                    endSec: sub.endSec,
-                    text: italicResult.text,
-                    isWholeItalic: italicResult.isWholeItalic,
-                    color: sub.dominantColor || '#FFFFFF',
-                    outlineColor: sub.outlineColor || '#000000',
-                    assAlpha: sub.assAlpha || null,
-                    isSign: isSignOrTop,
-                    x: sub.x,
-                    y: sub.y,
-                    cropW: sub.cropW || 0,
-                    cropH: sub.cropH || 0,
-                    vW: vW,
-                    vH: vH
-                });
-
-                const percent = Math.round(((idx + 1) / subtitles.length) * 100);
-                fillBar.style.width = percent + '%';
-                percentText.innerText = `${percent}% (${idx + 1}/${subtitles.length})`;
-                statusText.innerText = `خوێندنەوەی دێڕی #${idx + 1}`;
-                await new Promise(r => setTimeout(r, 0));
-            }
-
-            if (isPgsCancelled) break;
-
-            // تێکەڵکردنی دێڕە جوڵاوەکان و Fade
-            const mergedResults = [];
-            for (let i = 0; i < rawOcrList.length; i++) {
-                const cur = rawOcrList[i];
-                if (mergedResults.length > 0) {
-                    const prev = mergedResults[mergedResults.length - 1];
-                    if (prev.text.toLowerCase() === cur.text.toLowerCase() && (cur.startSec - prev.endSec) < 0.6) {
-                        prev.endSec = cur.endSec;
-                        prev.mergeCount = (prev.mergeCount || 1) + 1;
-                        prev.hadFade = true;
-
-                        if (Math.abs(cur.x - prev.x) > 6 || Math.abs(cur.y - prev.y) > 6) {
-                            prev.hadMove = true;
-                            prev.startX = (prev.startX !== undefined) ? prev.startX : prev.x;
-                            prev.startY = (prev.startY !== undefined) ? prev.startY : prev.y;
-                            prev.endX = cur.x;
-                            prev.endY = cur.y;
-                        }
-                        continue;
+        status.innerText = 'داگرتنی داتای زمان...';
+        pgsTesseractWorker = await Tesseract.createWorker(lang, 1);
+        await pgsTesseractWorker.setParameters({ tessedit_pageseg_mode: '6', preserve_interword_spaces: '1', user_defined_dpi: '300' });
+        pgsCurrentPsm = '6'; // دەبێت لەگەڵ ئەو دۆخەی سەرەوە ڕاستەوخۆ دانرا هاوسەنگ بێت
+        for (let fileIndex = 0; fileIndex < files.length && !isPgsCancelled; fileIndex++) {
+            const file = files[fileIndex]; status.innerText = `شیکردنەوەی ${file.name}...`;
+            const subtitles = parseSupFile(await file.arrayBuffer());
+            if (!subtitles.length) { showToast(`${file.name}: هیچ ژێرنووسێک نەدۆزرایەوە!`, 'warning'); continue; }
+            const cache = new Map(), rows = [];
+            for (let i = 0; i < subtitles.length && !isPgsCancelled; i++) {
+                const sub = subtitles[i];
+                // گرووپکردنی ئۆبجێکتەکان: ئەگەر لەو دێڕەدا زیاتر لە یەک نووسینی جیاواز هەبێت
+                // (وەک نووسینی سەر شاشەی مۆبایل لەگەڵ ژێرنووسی خوارەوە لە هەمان کاتدا)،
+                // ئێستا هەریەکە بە جیایی OCR دەکرێت نەک وەک یەک وێنەی تێکەڵ.
+                const groups = splitPgsGroups(sub);
+                for (const groupSub of groups) {
+                    renderPgsToCanvas(groupSub, canvas);
+                    if (!groupSub.cropW) continue;
+                    let recognized = cache.get(groupSub.imageKey);
+                    if (!recognized) {
+                        const ret = await recognizePgsCanvas(pgsTesseractWorker, canvas, groupSub.lineCount);
+                        recognized = processOcrItalics(ret.data, groupSub.detectedItalic, format, lang);
+                        cache.set(groupSub.imageKey, recognized);
                     }
+                    const vW = groupSub.videoWidth || 1920, vH = groupSub.videoHeight || 1080;
+                    rows.push({ startSec: sub.startSec, endSec: sub.endSec, text: recognized.text, isWholeItalic: recognized.isWholeItalic, color: groupSub.dominantColor, outlineColor: groupSub.outlineColor, assAlpha: groupSub.assAlpha, x: groupSub.x, y: groupSub.y, cropW: groupSub.cropW, cropH: groupSub.cropH, vW, vH, isSign: groupSub.y < vH * .62 || groupSub.x < vW * .12 || groupSub.x + groupSub.cropW > vW * .88 });
                 }
-                mergedResults.push(cur);
+                const progress = Math.round((i + 1) / subtitles.length * 100); bar.style.width = progress + '%'; pct.innerText = `${progress}% (${i+1}/${subtitles.length})`; status.innerText = `خوێندنەوەی دێڕی #${i+1} — ${rows.length} دانە`;
+                await new Promise(resolve => setTimeout(resolve, 0));
             }
-
-            let finalOutput = '';
-
-            if (targetFormat === 'ass') {
-                const resX = mergedResults[0]?.vW || 1920;
-                const resY = mergedResults[0]?.vH || 1080;
-
-                finalOutput = `[Script Info]\nTitle: Converted SUP\nScriptType: v4.00+\nPlayResX: ${resX}\nPlayResY: ${resY}\nScaledBorderAndShadow: yes\n\n` +
-                              `[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n` +
-                              `Style: Default,Speda Bold,65,&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,1.8,1.8,2,20,20,40,1\n\n` +
-                              `[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n`;
-
-                mergedResults.forEach(item => {
-                    let tags = '';
-                    const textLines = item.text.split('\\N').filter(l => l.trim().length > 0);
-                    const lineCount = Math.max(1, textLines.length);
-
-                    const isTechnique = item.isSign || item.hadMove;
-
-                    if (isTechnique) {
-                        // قەبارەی ڕاستەقینە بۆ تابلۆ و تەکنیکەکان
-                        const exactFs = Math.round((item.cropH / lineCount) * (resY / item.vH));
-                        if (exactFs > 15) {
-                            tags += `\\fs${exactFs}`;
-                        }
-
-                        // پانی پیتەکان ئەگەر کێشرابێت
-                        if (item.text.length > 2 && exactFs > 20) {
-                            const expectedWidth = (item.text.length / lineCount) * (exactFs * 0.55);
-                            if (expectedWidth > 0 && item.cropW > expectedWidth * 1.35) {
-                                const fscx = Math.round((item.cropW / expectedWidth) * 100);
-                                tags += `\\fscx${Math.min(220, fscx)}`;
-                            }
-                        }
-
-                        // جوڵەی هێڵی \move یان شوێنی جێگیر \pos
-                        if (item.hadMove) {
-                            tags = `\\an7\\move(${item.startX},${item.startY},${item.endX},${item.endY})` + tags;
-                        } else {
-                            let alignTag = '\\an7';
-                            let targetX = item.x;
-                            if (item.x > resX * 0.35 && item.x < resX * 0.65) {
-                                alignTag = '\\an8';
-                                targetX = Math.round(item.x + (item.cropW / 2));
-                            }
-                            tags = `${alignTag}\\pos(${targetX},${item.y})` + tags;
-                        }
-
-                        if (item.outlineColor && item.outlineColor !== '#000000') {
-                            tags += `\\3c&H${hexToAssBgr(item.outlineColor)}&`;
-                        }
-                    }
-
-                    // ڕەنگی سەرەکی
-                    if (item.color && item.color !== '#FFFFFF') {
-                        tags += `\\c&H${hexToAssBgr(item.color)}&`;
-                    }
-
-                    if (item.assAlpha) {
-                        tags += `\\alpha&H${item.assAlpha}&`;
-                    }
-
-                    // ئەگەر هەموو دێڕەکە لار بوو، لە سەرەتا دادەنرێت
-                    if (item.isWholeItalic) {
-                        tags += '\\i1';
-                    }
-
-                    if (item.hadFade) {
-                        const fadeMs = Math.min(500, Math.max(180, (item.mergeCount || 2) * 50));
-                        tags += `\\fad(${fadeMs},${fadeMs})`;
-                    }
-
-                    const t = tags ? `{${tags}}${item.text}` : item.text;
-                    finalOutput += `Dialogue: 0,${formatTimeASS(item.startSec)},${formatTimeASS(item.endSec)},Default,,0,0,0,,${t}\n`;
-                });
-
-            } else if (targetFormat === 'vtt') {
-                finalOutput = 'WEBVTT\n\n';
-                mergedResults.forEach(item => {
-                    let cueSetting = item.isSign ? ' line:5%' : '';
-                    let textOut = item.isWholeItalic ? `<i>${item.text}</i>` : item.text;
-                    finalOutput += `${formatTimeVTT(item.startSec)} --> ${formatTimeVTT(item.endSec)}${cueSetting}\n${textOut}\n\n`;
-                });
-
+            if (isPgsCancelled) break;
+            const merged = [];
+            const normText = t => t.replace(/<\/?i>|\{\\i[01]\}/g,'').replace(/\s+/g,' ').trim().toLocaleLowerCase();
+            for (const row of rows) {
+                // شوێنی نزیکەیی (track) بۆ ئەوەی دووبارەبوونەوەی هەمان نووسین لە هەمان
+                // شوێن (بۆ نموونە نیشانەیەک کە بەردەوامە) بگونجێنرێت تەنانەت ئەگەر
+                // لە نێوانیاندا دێڕی جیاواز (وەک ژێرنووسی گفتوگۆ) هاتبێت.
+                const trackKey = Math.round(row.x / 40) + ',' + Math.round(row.y / 40);
+                let match = null;
+                for (let k = merged.length - 1; k >= 0 && k >= merged.length - 8; k--) {
+                    if (row.startSec - merged[k].endSec >= .35) break;
+                    if (merged[k].trackKey === trackKey) { match = merged[k]; break; }
+                }
+                if (match && normText(match.text) === normText(row.text)) match.endSec = row.endSec;
+                else { row.trackKey = trackKey; merged.push(row); }
+            }
+            merged.sort((a, b) => a.startSec - b.startSec);
+            let output = '';
+            if (format === 'ass') {
+                const resX = merged[0]?.vW || 1920, resY = merged[0]?.vH || 1080;
+                output = `[Script Info]\nTitle: Converted PGS\nScriptType: v4.00+\nPlayResX: ${resX}\nPlayResY: ${resY}\nScaledBorderAndShadow: yes\n\n[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\nStyle: Default,Arial,58,&H00FFFFFF,&H000000FF,&H00000000,&H64000000,0,0,0,0,100,100,0,0,1,2,1,2,24,24,36,1\n\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n`;
+                for (const item of merged) {
+                    let tags = '', centerX = Math.round(item.x + item.cropW / 2), baseY = Math.round(item.y + item.cropH);
+                    if (item.isSign) tags += `\\an8\\pos(${centerX},${Math.round(item.y)})`; else tags += `\\an2\\pos(${centerX},${baseY})`;
+                    if (item.color && item.color !== '#FFFFFF') tags += `\\c&H${hexToAssBgr(item.color)}&`;
+                    if (item.outlineColor && item.outlineColor !== '#000000') tags += `\\3c&H${hexToAssBgr(item.outlineColor)}&`;
+                    if (item.assAlpha) tags += `\\alpha&H${item.assAlpha}&`;
+                    if (item.isWholeItalic) tags += '\\i1';
+                    output += `Dialogue: 0,${formatTimeASS(item.startSec)},${formatTimeASS(item.endSec)},Default,,0,0,0,,{${tags}}${item.text}\n`;
+                }
+            } else if (format === 'vtt') {
+                output = 'WEBVTT\n\n' + merged.map(item => `${formatTimeVTT(item.startSec)} --> ${formatTimeVTT(item.endSec)}${item.isSign ? ' line:10%' : ''}\n${item.isWholeItalic ? `<i>${item.text}</i>` : item.text}\n`).join('\n');
             } else {
-                // SRT
-                mergedResults.forEach((item, index) => {
-                    let textOut = item.isWholeItalic ? `<i>${item.text}</i>` : item.text;
-                    finalOutput += `${index + 1}\n${formatTimeSRT(item.startSec)} --> ${formatTimeSRT(item.endSec)}\n${textOut}\n\n`;
-                });
+                output = merged.map((item, i) => `${i+1}\n${formatTimeSRT(item.startSec)} --> ${formatTimeSRT(item.endSec)}\n${item.isWholeItalic ? `<i>${item.text}</i>` : item.text}\n`).join('\n');
             }
-
-            const outFileName = file.name.replace(/\.[^/.]+$/, "") + "_converted." + targetFormat;
-            triggerDownload(finalOutput.trim() + '\n\n', outFileName);
-            await new Promise(r => setTimeout(r, 600));
+            triggerDownload(output.trim() + '\n', file.name.replace(/\.[^/.]+$/, '') + '_converted.' + format);
+            status.innerText = `${merged.length} دێڕ بە سەرکەوتوویی دەرکرا`;
+            await new Promise(resolve => setTimeout(resolve, 500));
         }
-
-        document.getElementById('pgs-modal').style.display = 'none';
-        showToast("فایلی PGS بە سەرکەوتوویی و بە تەواوی تەکنیکەکان گۆڕدرا!", "success");
-
-    } catch (err) {
-        showToast("هەڵە: " + err.message, "error");
+        if (!isPgsCancelled) { document.getElementById('pgs-modal').style.display = 'none'; showToast('فایلی PGS بە سەرکەوتوویی گۆڕدرا!', 'success'); }
+    } catch (error) {
+        console.error('PGS conversion failed', error); showToast('هەڵەی PGS: ' + (error && error.message ? error.message : error), 'error');
     } finally {
-        btnStart.disabled = false;
-        if (pgsTesseractWorker) {
-            try { await pgsTesseractWorker.terminate(); } catch(e){}
-            pgsTesseractWorker = null;
-        }
+        startBtn.disabled = false;
+        if (pgsTesseractWorker) { try { await pgsTesseractWorker.terminate(); } catch (_) {} pgsTesseractWorker = null; }
     }
 }
 

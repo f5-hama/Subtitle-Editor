@@ -6,11 +6,12 @@
     <meta name="theme-color" content="#080a0d">
     <title data-i18n="pageTitle">دەستکاریکەری ژێرنووس</title>
 
-    <!-- PWA: lightweight inline vector icon & manifest -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="SubEdit">
+    <!-- ١. ئایکۆنی ڕەسمی ئەپەکە بە شێوەی ڕاستەوخۆ (Inline Data URI) بۆ وێبگەڕ و مۆبایل -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='110' fill='%23181a1b'/%3E%3Crect x='64' y='126' width='384' height='260' rx='42' fill='none' stroke='%23ffffff' stroke-width='24'/%3E%3Crect x='136' y='212' width='136' height='26' rx='13' fill='%23ffffff'/%3E%3Crect x='304' y='212' width='72' height='26' rx='13' fill='%23ffffff'/%3E%3Crect x='136' y='274' width='72' height='26' rx='13' fill='%23ffffff'/%3E%3Crect x='240' y='274' width='136' height='26' rx='13' fill='%23ffffff'/%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='110' fill='%23181a1b'/%3E%3Crect x='64' y='126' width='384' height='260' rx='42' fill='none' stroke='%23ffffff' stroke-width='24'/%3E%3Crect x='136' y='212' width='136' height='26' rx='13' fill='%23ffffff'/%3E%3Crect x='304' y='212' width='72' height='26' rx='13' fill='%23ffffff'/%3E%3Crect x='136' y='274' width='72' height='26' rx='13' fill='%23ffffff'/%3E%3Crect x='240' y='274' width='136' height='26' rx='13' fill='%23ffffff'/%3E%3C/svg%3E">
+
+    <!-- ٢. مەنیفەیستی ڕاستەوخۆ لەناو خودی HTML بە هەمان ئایکۆن و ڕێکخستنەکانەوە -->
+    <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Subtitle%20Edit%22%2C%22short_name%22%3A%22SubEdit%22%2C%22description%22%3A%22Web-based%20Subtitle%20Editor%22%2C%22start_url%22%3A%22.%2Findex.html%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23181a1b%22%2C%22theme_color%22%3A%22%23181a1b%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20512%20512'%253E%253Crect%20width%3D'512'%20height%3D'512'%20rx%3D'110'%20fill%3D'%2523181a1b'%2F%253E%253Crect%20x%3D'64'%20y%3D'126'%20width%3D'384'%20height%3D'260'%20rx%3D'42'%20fill%3D'none'%20stroke%3D'%2523ffffff'%20stroke-width%3D'24'%2F%253E%253Crect%20x%3D'136'%20y%3D'212'%20width%3D'136'%20height%3D'26'%20rx%3D'13'%20fill%3D'%2523ffffff'%2F%253E%253Crect%20x%3D'304'%20y%3D'212'%20width%3D'72'%20height%3D'26'%20rx%3D'13'%20fill%3D'%2523ffffff'%2F%253E%253Crect%20x%3D'136'%20y%3D'274'%20width%3D'72'%20height%3D'26'%20rx%3D'13'%20fill%3D'%2523ffffff'%2F%253E%253Crect%20x%3D'240'%20y%3D'274'%20width%3D'136'%20height%3D'26'%20rx%3D'13'%20fill%3D'%2523ffffff'%2F%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%22any%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
     
     <script>
         if (window.location.pathname.slice(-1) !== '/' && !window.location.pathname.endsWith('.html')) {

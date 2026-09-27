@@ -432,22 +432,35 @@ function deleteEmptySubtitleLines() {
             box-shadow: var(--shadow-sm); 
             border: 1px solid var(--border-color); 
             z-index: 105;
+            overflow: hidden; /* کەناری سندووقەکە قوفڵ دەکات تا هیچ دوگمەیەک لێی دەرنەچێت */
         }
         .top-nav { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; gap: 8px; border-bottom: 1px dashed var(--border-color); }
-        .top-tools { display: flex; gap: 8px; align-items: center; justify-content: center; padding: 6px 12px; }
-        .tool-divider { width: 1px; height: 16px; background: var(--border-color); margin: 0 2px; }
+        .top-tools { 
+            display: flex; 
+            gap: 4px; /* بۆشایی نێوان دوگمەکان لە 8px کرا بە 4px تا جوان لە شاشەی مۆبایل جێیان ببێتەوە */
+            align-items: center; 
+            justify-content: center; 
+            padding: 6px 4px; 
+            overflow-x: auto; 
+            scrollbar-width: none;
+        }
+        .top-tools::-webkit-scrollbar { display: none; }
+        .tool-divider { width: 1px; height: 16px; background: var(--border-color); margin: 0 2px; flex-shrink: 0; }
         
         .top-btn, .back-btn { 
             background: var(--bg-color); 
             border: 1.5px solid var(--border-color); 
             color: var(--text-main); 
             border-radius: 9px; 
-            padding: 6px 10px; 
+            padding: 5px 6px; /* کەمێک کۆکراوەتەوە بۆ ئەوەی دوگمەی سووری لای چەپ نەچێتە دەرەوە */
+            min-width: 33px;
+            height: 33px;
             cursor: pointer; 
             display: flex; 
             align-items: center; 
             justify-content: center; 
             transition: all 0.2s ease; 
+            flex-shrink: 0;
         }
         .top-btn:active, .back-btn:active { transform: scale(0.92); }
         .top-btn.primary-tool { color: var(--primary); border-color: var(--primary); }
@@ -1937,6 +1950,11 @@ input[type="checkbox"], input[type="radio"] {
                 <button class="top-btn" onclick="redo()" id="btn-redo" title="چوونەپێش">
                     <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6"></path></svg>
                 </button>
+                <button class="top-btn" onclick="fixAllFspZero()" id="btn-fix-fsp" title="نەهێشتنی پچڕانی پیتەکان (fsp 0)" style="color: var(--primary);">
+    <svg class="icon" style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M7 12h10M9 18h6"/>
+    </svg>
+</button>
                 <button class="top-btn danger-tool" onclick="deleteEmptySubtitleLines()" title="سڕینەوەی دێڕە بەتاڵەکان">
                     <svg class="icon" style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -2272,8 +2290,6 @@ input[type="checkbox"], input[type="radio"] {
 </summary>
                     <p style="font-size:10.5px;color:var(--text-muted);margin:0 0 6px 0;line-height:1.6;">پان، بەرزی، سووڕان و لاری لە دوگمەی «دیاریکردنی شوێن» دەستکاری دەکرێن.</p>
                     <div class="tech-row" style="margin:6px 0;">
-                        <div style="display:flex; align-items:center; gap:4px; font-size:11px;"><span>دووری پیت:</span>
-                            <input type="number" id="techSpacingVal" placeholder="0" min="-20" max="50" step="0.5" class="tech-input" style="width:50px;" title="\fsp"></div>
                         <div style="display:flex; align-items:center; gap:4px; font-size:11px;"><span>شاراوەیی %:</span>
                             <input type="number" id="techAlphaVal" placeholder="0" min="0" max="100" step="5" class="tech-input" style="width:50px;" title="\alpha (٠ = ئاسایی، ١٠٠ = نادیار)"></div>
                     </div>
@@ -2469,28 +2485,40 @@ input[type="checkbox"], input[type="radio"] {
             </div>
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span>قەبارە (\fs):</span>
-                    <input type="number" id="vDragFontSizeInput" value="45" min="1" max="500" step="1" class="tech-input" style="width: 50px;" oninput="updateLiveDragTransform()">
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span>سووڕانەوە (\frz):</span>
-                    <input type="number" id="vDragRotateZ" value="0" step="1" class="tech-input" style="width: 50px;" oninput="updateLiveDragTransform()" placeholder="°">
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span>پانی (\fscx):</span>
-                    <input type="number" id="vDragScaleX" value="100" step="5" class="tech-input" style="width: 50px;" oninput="updateLiveDragTransform()" placeholder="%">
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span>بەرزی (\fscy):</span>
-                    <input type="number" id="vDragScaleY" value="100" step="5" class="tech-input" style="width: 50px;" oninput="updateLiveDragTransform()" placeholder="%">
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; grid-column: span 2;">
-                    <span>لاری (Distort/\fax):</span>
-                    <input type="number" id="vDragShearX" value="0" step="0.1" class="tech-input" style="width: 50px;" oninput="updateLiveDragTransform()">
-                </div>
-            </div>
-        </div>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span>قەبارە (\fs):</span>
+        <input type="number" id="vDragFontSizeInput" value="45" min="1" max="500" step="1" class="tech-input" style="width: 50px;" oninput="updateLiveDragTransform()">
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span>سووڕانەوەی Z (\frz):</span>
+        <input type="number" id="vDragRotateZ" value="0" step="1" class="tech-input" style="width: 50px;" oninput="updateLiveDragTransform()" placeholder="°">
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span>3D بەرزی (\frx):</span>
+        <input type="number" id="vDragRotateX" value="0" step="1" class="tech-input" style="width: 50px;" oninput="updateLiveDragTransform()" placeholder="°">
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span>3D پانی (\fry):</span>
+        <input type="number" id="vDragRotateY" value="0" step="1" class="tech-input" style="width: 50px;" oninput="updateLiveDragTransform()" placeholder="°">
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span>پانی (\fscx):</span>
+        <input type="number" id="vDragScaleX" value="100" step="5" class="tech-input" style="width: 50px;" oninput="updateLiveDragTransform()" placeholder="%">
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span>بەرزی (\fscy):</span>
+        <input type="number" id="vDragScaleY" value="100" step="5" class="tech-input" style="width: 50px;" oninput="updateLiveDragTransform()" placeholder="%">
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span>لاری ئاسۆیی (\fax):</span>
+        <input type="number" id="vDragShearX" value="0" step="0.1" class="tech-input" style="width: 50px;" oninput="updateLiveDragTransform()">
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span>لاری ستوونی (\fay):</span>
+        <input type="number" id="vDragShearY" value="0" step="0.1" class="tech-input" style="width: 50px;" oninput="updateLiveDragTransform()">
+    </div>
+ </div>
+</div>
 
         <!-- شاشەی ڤیدیۆ بە هێڵی مەگنەتیکی ناوەڕاست -->
         <div id="vDragScreenBox" style="position: relative; width: 100%; max-height: 230px; background: #000; border-radius: 10px; overflow: hidden; border: 1.5px solid var(--border-color); display: flex; align-items: center; justify-content: center; touch-action: none; user-select: none;">
@@ -5337,15 +5365,21 @@ function openSubStyleModal(index) {
     let advancedTags = '';
     let posM = text.match(/\\(?:pos|move)\([^)]*\)/i);
     let frzM = text.match(/\\frz-?[\d\.]+/i);
+    let frxM = text.match(/\\frx-?[\d\.]+/i);
+    let fryM = text.match(/\\fry-?[\d\.]+/i);
     let fscxM = text.match(/\\fscx[\d\.]+/i);
     let fscyM = text.match(/\\fscy[\d\.]+/i);
     let faxM = text.match(/\\fax-?[\d\.]+/i);
+    let fayM = text.match(/\\fay-?[\d\.]+/i);
 
     if (posM) advancedTags += posM[0];
     if (frzM) advancedTags += frzM[0];
+    if (frxM) advancedTags += frxM[0];
+    if (fryM) advancedTags += fryM[0];
     if (fscxM) advancedTags += fscxM[0];
     if (fscyM) advancedTags += fscyM[0];
     if (faxM) advancedTags += faxM[0];
+    if (fayM) advancedTags += fayM[0];
 
     const extraIn = document.getElementById('modalExtraLineTags');
     if (extraIn) extraIn.value = advancedTags;
@@ -5540,23 +5574,32 @@ function applySubStyleToLine() {
         const posMatch = rawVal.match(/\\pos\([^)]+\)/);
         const moveMatch = rawVal.match(/\\move\([^)]+\)/);
         const frzMatch = rawVal.match(/\\frz-?[\d\.]+/);
+        const frxMatch = rawVal.match(/\\frx-?[\d\.]+/);
+        const fryMatch = rawVal.match(/\\fry-?[\d\.]+/);
         const fscxMatch = rawVal.match(/\\fscx[\d\.]+/);
         const fscyMatch = rawVal.match(/\\fscy[\d\.]+/);
         const faxMatch = rawVal.match(/\\fax-?[\d\.]+/);
+        const fayMatch = rawVal.match(/\\fay-?[\d\.]+/);
 
         if (!advancedTags) {
             if (posMatch) advancedTags += posMatch[0];
             else if (moveMatch) advancedTags += moveMatch[0];
             if (frzMatch) advancedTags += frzMatch[0];
+            if (frxMatch) advancedTags += frxMatch[0];
+            if (fryMatch) advancedTags += fryMatch[0];
             if (fscxMatch) advancedTags += fscxMatch[0];
             if (fscyMatch) advancedTags += fscyMatch[0];
             if (faxMatch) advancedTags += faxMatch[0];
+            if (fayMatch) advancedTags += fayMatch[0];
         } else {
             if (posMatch && !advancedTags.includes('\\pos')) advancedTags = posMatch[0] + advancedTags;
             if (frzMatch && !advancedTags.includes('\\frz')) advancedTags += frzMatch[0];
+            if (frxMatch && !advancedTags.includes('\\frx')) advancedTags += frxMatch[0];
+            if (fryMatch && !advancedTags.includes('\\fry')) advancedTags += fryMatch[0];
             if (fscxMatch && !advancedTags.includes('\\fscx')) advancedTags += fscxMatch[0];
             if (fscyMatch && !advancedTags.includes('\\fscy')) advancedTags += fscyMatch[0];
             if (faxMatch && !advancedTags.includes('\\fax')) advancedTags += faxMatch[0];
+            if (fayMatch && !advancedTags.includes('\\fay')) advancedTags += fayMatch[0];
         }
 
         const strokeCol = document.getElementById('strokeColorPicker') ? document.getElementById('strokeColorPicker').value : 'KEEP';
@@ -6047,15 +6090,21 @@ function getSubtitleLineFontSize(index, rawText) {
 }
 
 let currentDragFrz = 0;
+let currentDragFrx = 0;
+let currentDragFry = 0;
 let currentDragFscx = 100;
 let currentDragFscy = 100;
 let currentDragFax = 0;
+let currentDragFay = 0;
 
 function resetDragTransforms() {
     document.getElementById('vDragRotateZ').value = 0;
+    if(document.getElementById('vDragRotateX')) document.getElementById('vDragRotateX').value = 0;
+    if(document.getElementById('vDragRotateY')) document.getElementById('vDragRotateY').value = 0;
     document.getElementById('vDragScaleX').value = 100;
     document.getElementById('vDragScaleY').value = 100;
     document.getElementById('vDragShearX').value = 0;
+    if(document.getElementById('vDragShearY')) document.getElementById('vDragShearY').value = 0;
     updateLiveDragTransform();
 }
 
@@ -6091,10 +6140,11 @@ function openGrid40Modal() {
 
     // کۆکردنەوەی هەموو سەرچاوەکانی دەق تاوەکو هیچ تاگێک ون نەبێت
     // دەقی کاریگەر: وەرگێڕان + تاگەکانی ئەسڵ (\\pos \\an ...)
-    let fullLineText = (lineTa && currentStylingIndex >= 0) ? assEffectiveLineText(currentStylingIndex, lineTa.value) : (lineTa ? lineTa.value : '');
-    let extraTags = extraIn ? extraIn.value : '';
-    let modalText = modalTa ? modalTa.value : '';
-    let fullSource = extraTags + ' ' + fullLineText + ' ' + modalText;
+    let origRaw = (typeof originalData !== 'undefined' && originalData[currentStylingIndex]) ? (originalData[currentStylingIndex].rawText || '') : '';
+        let fullLineText = (lineTa && currentStylingIndex >= 0) ? assEffectiveLineText(currentStylingIndex, lineTa.value) : (lineTa ? lineTa.value : '');
+        let extraTags = extraIn ? extraIn.value : '';
+        let modalText = modalTa ? modalTa.value : '';
+        let fullSource = extraTags + ' ' + origRaw + ' ' + fullLineText + ' ' + modalText;
 
     currentDragRawText = modalText || fullLineText;
 
@@ -6106,39 +6156,57 @@ function openGrid40Modal() {
 
     // ٢. سووڕانەوە، پانبوونەوە، بەرزبوونەوە، لاری
     let frzM = fullSource.match(/\\frz(-?[\d\.]+)/);
+    let frxM = fullSource.match(/\\frx(-?[\d\.]+)/);
+    let fryM = fullSource.match(/\\fry(-?[\d\.]+)/);
     let fscxM = fullSource.match(/\\fscx([\d\.]+)/);
     let fscyM = fullSource.match(/\\fscy([\d\.]+)/);
     let faxM = fullSource.match(/\\fax(-?[\d\.]+)/);
+    let fayM = fullSource.match(/\\fay(-?[\d\.]+)/);
 
     document.getElementById('vDragFontSizeInput').value = curFs || 45;
     document.getElementById('vDragRotateZ').value = frzM ? parseFloat(frzM[1]) : 0;
+    if (document.getElementById('vDragRotateX')) document.getElementById('vDragRotateX').value = frxM ? parseFloat(frxM[1]) : 0;
+    if (document.getElementById('vDragRotateY')) document.getElementById('vDragRotateY').value = fryM ? parseFloat(fryM[1]) : 0;
     document.getElementById('vDragScaleX').value = fscxM ? parseFloat(fscxM[1]) : 100;
     document.getElementById('vDragScaleY').value = fscyM ? parseFloat(fscyM[1]) : 100;
     document.getElementById('vDragShearX').value = faxM ? parseFloat(faxM[1]) : 0;
+    if (document.getElementById('vDragShearY')) document.getElementById('vDragShearY').value = fayM ? parseFloat(fayM[1]) : 0;
 
     currentDragFrz = frzM ? parseFloat(frzM[1]) : 0;
+    currentDragFrx = frxM ? parseFloat(frxM[1]) : 0;
+    currentDragFry = fryM ? parseFloat(fryM[1]) : 0;
     currentDragFscx = fscxM ? parseFloat(fscxM[1]) : 100;
     currentDragFscy = fscyM ? parseFloat(fscyM[1]) : 100;
     currentDragFax = faxM ? parseFloat(faxM[1]) : 0;
+    currentDragFay = fayM ? parseFloat(fayM[1]) : 0;
 
     // ئاڕاستەکردن: ئەوەی لە مۆداڵی تەکنیک هەڵبژێردراوە (دوایین هەڵبژاردنی بەکارهێنەر)، دەنا لە دەق/ستایل
     const alignCtl = document.getElementById('selectedAlignVal');
     currentDragAlign = (alignCtl && /^[1-9]$/.test(alignCtl.value)) ? alignCtl.value : getDragLineAlignment(fullSource);
 
-    // ٣. شوێنی پێشوو لەسەر شاشە (\pos)
-    let posM = fullSource.match(/\\pos\(\s*(-?[\d\.]+)\s*,\s*(-?[\d\.]+)\s*\)/);
-    if (posM) {
-        currentDragAssX = Math.round(parseFloat(posM[1]));
-        currentDragAssY = Math.round(parseFloat(posM[2]));
-    } else {
-        // بێ \\pos: شوێنی ڕاستەقینەی دێڕ لە پەراوێزەکانی فایلەکە + ئاڕاستەکردن (وەک libass)
-        const dStyle = getDragLineStyle();
-        const dMeta = (originalData[currentStylingIndex] && originalData[currentStylingIndex].assMeta) || {};
-        const dp = AssLayout.eventParams('', dStyle, dMeta);
-        const da = AssLayout.anchorFor(currentDragAlign, null, dp, { resX: currentDragResX, resY: currentDragResY, left: 0, top: 0, sx: 1, sy: 1 });
-        currentDragAssX = Math.round(da.resX);
-        currentDragAssY = Math.round(da.resY);
-    }
+// ٣. دۆزینەوەی شوێنی پێشوو چ بە \pos بێت یان بە \move
+        let posM = fullSource.match(/\\pos\(\s*(-?[\d\.]+)\s*,\s*(-?[\d\.]+)\s*\)/);
+        let moveM = fullSource.match(/\\move\(\s*(-?[\d\.]+)\s*,\s*(-?[\d\.]+)/);
+
+        if (posM) {
+            currentDragAssX = Math.round(parseFloat(posM[1]));
+            currentDragAssY = Math.round(parseFloat(posM[2]));
+        } else if (moveM) {
+            // ئەگەر تاگی جوڵان بێت، یەکەم شوێنی دەرکەوتنەکەی وەردەگرێت
+            currentDragAssX = Math.round(parseFloat(moveM[1]));
+            currentDragAssY = Math.round(parseFloat(moveM[2]));
+        } else {
+            // ئەگەر بێ تاگ بوو، شوێنەکەی بەپێی ئاڕاستەی سەرەوە/خوارەوە دیاری دەکات
+            const dStyle = getDragLineStyle();
+            const dMeta = (originalData[currentStylingIndex] && originalData[currentStylingIndex].assMeta) || {};
+            const dp = AssLayout.eventParams(fullSource, dStyle, dMeta);
+            const activeAlign = dp.align || currentDragAlign || '2';
+            const da = AssLayout.anchorFor(activeAlign, null, dp, { resX: currentDragResX, resY: currentDragResY, left: 0, top: 0, sx: 1, sy: 1 });
+            currentDragAssX = Math.round(da.resX);
+            currentDragAssY = Math.round(da.resY);
+            currentDragAlign = activeAlign;
+            selectAlignment(activeAlign);
+        }
 
     document.getElementById('grid40-modal').style.display = 'flex';
 
@@ -6213,14 +6281,14 @@ function updateLiveDragTransform() {
 
     let fs = parseFloat(document.getElementById('vDragFontSizeInput').value) || 45;
     currentDragFrz = parseFloat(document.getElementById('vDragRotateZ').value) || 0;
+    currentDragFrx = parseFloat(document.getElementById('vDragRotateX') ? document.getElementById('vDragRotateX').value : 0) || 0;
+    currentDragFry = parseFloat(document.getElementById('vDragRotateY') ? document.getElementById('vDragRotateY').value : 0) || 0;
     currentDragFscx = parseFloat(document.getElementById('vDragScaleX').value) || 100;
     currentDragFscy = parseFloat(document.getElementById('vDragScaleY').value) || 100;
     currentDragFax = parseFloat(document.getElementById('vDragShearX').value) || 0;
+    currentDragFay = parseFloat(document.getElementById('vDragShearY') ? document.getElementById('vDragShearY').value : 0) || 0;
 
-
-    // دووبارە جێبەجێکردنی شوێنەکە تاوەکو شێوەکەی تێک نەچێت
     setDragElementPosition(currentDragAssX, currentDragAssY);
-
     renderDragPreviewStyled();
 }
 
@@ -6239,7 +6307,15 @@ function setDragElementPosition(assX, assY) {
     }
 
     // سووڕان/پان/لاری لەسەر خودی خاڵی ڕاکێشان (وەک libass)؛ جێگیرکردنی سندوق لەناو .ass-blk ەکەیە
-    dragText.style.transform = AssLayout.transformCss({ frz: currentDragFrz || 0, fscx: currentDragFscx || 100, fscy: currentDragFscy || 100, fax: currentDragFax || 0 });
+    dragText.style.transform = AssLayout.transformCss({
+    frx: currentDragFrx || 0,
+    fry: currentDragFry || 0,
+    frz: currentDragFrz || 0,
+    fscx: currentDragFscx || 100,
+    fscy: currentDragFscy || 100,
+    fax: currentDragFax || 0,
+    fay: currentDragFay || 0
+});
 
     if (display) display.innerText = `X: ${assX}, Y: ${assY} [${currentDragResX}×${currentDragResY}]`;
 }
@@ -6417,9 +6493,12 @@ function confirmDraggablePosition() {
     let newAdvTags = `${alignTag}\\pos(${currentDragAssX},${currentDragAssY})`;
     
     if (currentDragFrz !== 0) newAdvTags += `\\frz${currentDragFrz}`;
+    if (currentDragFrx !== 0) newAdvTags += `\\frx${currentDragFrx}`;
+    if (currentDragFry !== 0) newAdvTags += `\\fry${currentDragFry}`;
     if (currentDragFscx !== 100) newAdvTags += `\\fscx${currentDragFscx}`;
     if (currentDragFscy !== 100) newAdvTags += `\\fscy${currentDragFscy}`;
     if (currentDragFax !== 0) newAdvTags += `\\fax${currentDragFax}`;
+    if (currentDragFay !== 0) newAdvTags += `\\fay${currentDragFay}`;
 
     if (extraIn) {
         extraIn.value = newAdvTags;
@@ -6908,23 +6987,17 @@ function parseAssColor(str, defaultHex) {
     if (!str && str !== 0) return defaultHex || '#FFFFFF';
     try {
         var s = str.toString().trim();
-        // ئەگەر ڕەنگەکە بە ژمارەی Decimal نوسرابێت
-        if (/^-?\d+$/.test(s) && !/[&hH#]/.test(s)) {
-            var num = (parseInt(s, 10) >>> 0).toString(16);
-            s = num;
-        }
-        var clean = s.replace(/&H/gi, '').replace(/&/g, '').replace(/#/g, '').trim();
-        if (!clean) return defaultHex || '#FFFFFF';
-        while (clean.length < 6) clean = '0' + clean;
-        
+        // لابردنی کەوانە و نیشانەی هەڵەی وەک ) و } کە ڕەنگەکە تێکدەدەن
+        s = s.replace(/[\)\(\}\s]/g, '');
+        var m = s.match(/([0-9a-fA-F]{6,8})/);
+        if (!m) return defaultHex || '#FFFFFF';
+        var clean = m[1];
         var r, g, b;
-        if (clean.length >= 8) {
-            clean = clean.slice(-8);
+        if (clean.length === 8) {
             b = clean.substring(2, 4);
             g = clean.substring(4, 6);
             r = clean.substring(6, 8);
         } else {
-            clean = clean.slice(-6);
             b = clean.substring(0, 2);
             g = clean.substring(2, 4);
             r = clean.substring(4, 6);
@@ -11729,6 +11802,68 @@ function copyFilteredForAI() {
     });
 }
 
+function fixAllFspZero() {
+    if (!isEditing || !originalData.length) {
+        showToast("تکایە سەرەتا فایلێکی ژێرنووس بکەرەوە!", "warning");
+        return;
+    }
+
+    let fixedCount = 0;
+    const tas = document.querySelectorAll('.subtitle-kurd textarea');
+
+    // ١. سفرکردنەوەی fsp لەناو هەموو دێڕە نووسراوەکان
+    tas.forEach((ta, i) => {
+        let text = ta.value;
+        if (/\\fsp-?[\d.]+/i.test(text)) {
+            let newText = text.replace(/\\fsp-?[\d.]+/gi, '\\fsp0');
+            if (newText !== text) {
+                ta.value = newText;
+                fixedCount++;
+                if (originalData[i]) {
+                    originalData[i].rawText = (originalData[i].rawText || '').replace(/\\fsp-?[\d.]+/gi, '\\fsp0');
+                }
+            }
+        }
+    });
+
+    // ٢. دێڕە بنەڕەتییەکانی ناو فایلەکە
+    originalData.forEach((item, i) => {
+        if (item.rawText && /\\fsp-?[\d.]+/i.test(item.rawText)) {
+            let replaced = item.rawText.replace(/\\fsp-?[\d.]+/gi, '\\fsp0');
+            if (replaced !== item.rawText) {
+                item.rawText = replaced;
+                if (!tas[i] || !tas[i].value.trim()) fixedCount++;
+            }
+        }
+    });
+
+    // ٣. سفرکردنەوەی Spacing لە ستایلەکانی ASS
+    if (typeof assHeaderLines !== 'undefined' && assHeaderLines.length) {
+        assHeaderLines = assHeaderLines.map(line => {
+            if (line.trim().startsWith('Style:')) {
+                let parts = line.split(',');
+                if (parts.length >= 23 && parts[13].trim() !== '0') {
+                    parts[13] = '0';
+                    fixedCount++;
+                    return parts.join(',');
+                }
+            }
+            return line;
+        });
+    }
+
+    if (fixedCount > 0) {
+        historyStack.push(getCurrentSnapshot());
+        if (historyStack.length > 40) historyStack.shift();
+        redoStack = [];
+        updateUndoRedoButtons();
+        saveSession();
+        if (typeof renderSubtitlesNow === 'function') renderSubtitlesNow();
+        showToast(`پچڕانی پیتەکان چاککرا! لە ${fixedCount} دێڕ و ستایل کرا بە fsp0`, "success");
+    } else {
+        showToast("هیچ بۆشاییەکی پیت (fsp) نەدۆزرایەوە، هەمووی ئاساییە!", "info");
+    }
+}
 </script>
 </body>
 </html>

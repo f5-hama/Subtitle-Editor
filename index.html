@@ -6,10 +6,9 @@
     <meta name="theme-color" content="#080a0d">
     <title data-i18n="pageTitle">دەستکاریکەری ژێرنووس</title>
 
-    <!-- ١. ئایکۆنی ڕەسمی ئەپەکە بە شێوەی ڕاستەوخۆ (Inline Data URI) بۆ وێبگەڕ و مۆبایل -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='110' fill='%23181a1b'/%3E%3Crect x='64' y='126' width='384' height='260' rx='42' fill='none' stroke='%23ffffff' stroke-width='24'/%3E%3Crect x='136' y='212' width='136' height='26' rx='13' fill='%23ffffff'/%3E%3Crect x='304' y='212' width='72' height='26' rx='13' fill='%23ffffff'/%3E%3Crect x='136' y='274' width='72' height='26' rx='13' fill='%23ffffff'/%3E%3Crect x='240' y='274' width='136' height='26' rx='13' fill='%23ffffff'/%3E%3C/svg%3E">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='110' fill='%23181a1b'/%3E%3Crect x='64' y='126' width='384' height='260' rx='42' fill='none' stroke='%23ffffff' stroke-width='24'/%3E%3Crect x='136' y='212' width='136' height='26' rx='13' fill='%23ffffff'/%3E%3Crect x='304' y='212' width='72' height='26' rx='13' fill='%23ffffff'/%3E%3Crect x='136' y='274' width='72' height='26' rx='13' fill='%23ffffff'/%3E%3Crect x='240' y='274' width='136' height='26' rx='13' fill='%23ffffff'/%3E%3C/svg%3E">
-
+<!-- ١. ئایکۆنی ڕەسمی ئەپەکە بە شێوەی ڕاستەوخۆ (Inline Data URI) بۆ وێبگەڕ و مۆبایل -->
+    <link rel="icon" type="image/svg+xml" href="./icon.svg">
+    <link rel="apple-touch-icon" href="./icon.svg">
     <link rel="manifest" href="./manifest.json">
     
     <script>
@@ -17,29 +16,6 @@
             window.location.replace(window.location.href + '/');
         }
     </script>
-    
-    <script>
-    // چالاککردنی سێرڤس وۆرکەر
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js')
-                .then(() => console.log('SW Active'))
-                .catch(err => console.error('SW Error:', err));
-        });
-    }
-
-    // ئەگەر لەناو بەرنامەکەدا بوویت، دوگمەی دابەزاندن بە تەواوی لابدە
-    function hideInstallInsideApp() {
-        const isApp = window.matchMedia('(display-mode: standalone)').matches 
-                   || window.navigator.standalone === true;
-        if (isApp) {
-            const btn = document.getElementById('install-app-btn');
-            if (btn) btn.remove();
-        }
-    }
-    window.addEventListener('DOMContentLoaded', hideInstallInsideApp);
-    window.addEventListener('load', hideInstallInsideApp);
-</script>
 
 <!-- بارکردنی دەستبەجێی ڕەنگی هەڵبژێردراو پێش کردنەوەی شاشە تا ڕەنگی سەوز دەرنەکەوێت -->
     <script>
@@ -11896,6 +11872,36 @@ function fixAllFspZero() {
         showToast("هیچ بۆشاییەکی پیت (fsp) نەدۆزرایەوە، هەمووی ئاساییە!", "info");
     }
 }
+
+<!-- پەیوەستکردنی سێرڤس وۆرکەر و شاردنەوەی دوگمەی دابەزاندن لەناو بەرنامەکە -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('SW Registered'))
+                    .catch(err => console.error('SW Error:', err));
+            });
+        }
+
+        // پشکنین: ئەگەر لەناو ئەپەکە بوو، دوگمەی دابەزاندن لە مێنیو بیسڕەوە
+        function removeInstallBtnInsideApp() {
+            const isInsideApp = window.matchMedia('(display-mode: standalone)').matches 
+                             || window.matchMedia('(display-mode: fullscreen)').matches
+                             || window.navigator.standalone === true;
+            
+            if (isInsideApp) {
+                const btn = document.getElementById('install-app-btn');
+                if (btn) {
+                    btn.remove(); // بە تەواوی دەیسڕێتەوە
+                }
+            }
+        }
+
+        removeInstallBtnInsideApp();
+        window.addEventListener('DOMContentLoaded', removeInstallBtnInsideApp);
+        window.addEventListener('load', removeInstallBtnInsideApp);
+    </script>
+    
 </script>
 </body>
 </html>

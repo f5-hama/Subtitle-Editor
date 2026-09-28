@@ -11873,35 +11873,32 @@ function fixAllFspZero() {
     }
 }
 
-<!-- پەیوەستکردنی سێرڤس وۆرکەر و شاردنەوەی دوگمەی دابەزاندن لەناو بەرنامەکە -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(reg => console.log('SW Registered'))
-                    .catch(err => console.error('SW Error:', err));
-            });
-        }
+</script>
 
-        // پشکنین: ئەگەر لەناو ئەپەکە بوو، دوگمەی دابەزاندن لە مێنیو بیسڕەوە
-        function removeInstallBtnInsideApp() {
-            const isInsideApp = window.matchMedia('(display-mode: standalone)').matches 
-                             || window.matchMedia('(display-mode: fullscreen)').matches
-                             || window.navigator.standalone === true;
-            
-            if (isInsideApp) {
-                const btn = document.getElementById('install-app-btn');
-                if (btn) {
-                    btn.remove(); // بە تەواوی دەیسڕێتەوە
-                }
-            }
-        }
+<script>
+    // تۆمارکردنی sw.js
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .then(() => console.log('SW Registered'))
+                .catch(err => console.error('SW Error:', err));
+        });
+    }
 
-        removeInstallBtnInsideApp();
-        window.addEventListener('DOMContentLoaded', removeInstallBtnInsideApp);
-        window.addEventListener('load', removeInstallBtnInsideApp);
-    </script>
-    
+    // شاردنەوەی دوگمەی دابەزاندن کاتێک لەناو بەرنامەکەدا دەکرێتەوە
+    function removeInstallBtnInsideApp() {
+        const isInsideApp = window.matchMedia('(display-mode: standalone)').matches 
+                         || window.matchMedia('(display-mode: fullscreen)').matches
+                         || window.navigator.standalone === true;
+        
+        if (isInsideApp) {
+            const btn = document.getElementById('install-app-btn');
+            if (btn) btn.remove();
+        }
+    }
+    removeInstallBtnInsideApp();
+    window.addEventListener('DOMContentLoaded', removeInstallBtnInsideApp);
+    window.addEventListener('load', removeInstallBtnInsideApp);
 </script>
 </body>
 </html>

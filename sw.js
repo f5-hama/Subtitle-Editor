@@ -2,9 +2,11 @@ const CACHE_NAME = 'subtitle-edit-live-cache';
 
 // ئەو فایلە سەرەکییانەی دەبێت یەکسەر پاشەکەوت بن بۆ دۆخی بێخەت
 const PRECACHE_ASSETS = [
-    './manifest.json',
+    './',
     './index.html',
-    './KurdForest.ttf'
+    './KurdForest.ttf',
+    './icon.svg',
+    './manifest.json'
 ];
 
 // لە یەکەم دابەزاندندا فایلەکان دەهێنێت و یەکسەر دەستبەکار دەبێت

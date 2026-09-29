@@ -44,6 +44,7 @@
         if (typeof updateUndoRedoButtons === 'function') {
             updateUndoRedoButtons();
         }
+        showToast('دێڕەکە سڕدرایەوە (دەتوانیت Undo بکەیت)', 'success');
     }
     // فەنکشنی سڕینەوەی یەکجارەکی هەموو دێڕە بەتاڵەکان بە یەک کلیک
 function deleteEmptySubtitleLines() {
@@ -1605,7 +1606,7 @@ input[type="checkbox"], input[type="radio"] {
             <p style="font-size: 13px; color:var(--text-main); margin-bottom:14px; line-height: 1.6;" data-i18n="resumeDesc">پێدەچێت پێشتر کارێکت تەواو نەکردبێت، دەتەوێت لەو شوێنەی پێشتر وەستایت بەردەوام بیت؟</p>
             <div class="custom-modal-actions">
                 <button class="btn" onclick="resumeSession()" data-i18n="resumeBtn">بەردەوامبوون</button>
-                <button class="btn btn-outline" onclick="clearSession()" style="color: #ef4444; border-color: #ef4444;" data-i18n="startNewBtn">دەستپێکردنەوە</button>
+                <button class="btn btn-outline" onclick="clearSession(); showToast('کارە پاشەکەوتکراوەکە سڕدرایەوە، دەتوانیت دەستپێبکەیتەوە', 'info');" style="color: #ef4444; border-color: #ef4444;" data-i18n="startNewBtn">دەستپێکردنەوە</button>
             </div>
         </div>
     </div>
@@ -1831,11 +1832,6 @@ input[type="checkbox"], input[type="radio"] {
                 <div id="mergeAssignSummary" style="font-size:10.5px; color:var(--text-muted); margin-top:6px; line-height:1.6;"></div>
             </div>
 
-            <div style="margin-bottom:10px; margin-top:6px;">
-                <label style="font-size:12px; font-weight:bold; color:var(--primary); display:block; margin-bottom:4px;">فۆنتی بنەڕەت بۆ ئەو ستایلانەی دیاری نەکراون (ئارەزوومەندانە):</label>
-                <input type="text" id="mergeNewFontName" placeholder="ناوی فۆنت، بۆ نموونە Speda Bold..." class="input-field" style="padding:7px; font-size:12px;">
-            </div>
-
             <!-- ======= بەشی زیادکردنی لۆگۆی KURD FOREST (ئارەزوومەندانە) ======= -->
             <div style="margin-bottom:10px; background:rgba(0,0,0,0.3); padding:9px; border-radius:10px; border:1px solid var(--border-color);">
                 <label style="display:flex; align-items:center; gap:7px; cursor:pointer; font-size:12px; font-weight:bold; color:var(--primary);">
@@ -1979,7 +1975,7 @@ input[type="checkbox"], input[type="radio"] {
                 </button>
 
                 <!-- دوگمەی لابردنی ڤیدیۆ لە سەرەوە -->
-                <button class="top-btn danger-tool" id="btn-remove-video-top" onclick="resetVideoPlayer()" title="لابردنی ڤیدیۆ" style="display: none;">
+                <button class="top-btn danger-tool" id="btn-remove-video-top" onclick="resetVideoPlayer(); showToast('ڤیدیۆکە لابرا', 'info');" title="لابردنی ڤیدیۆ" style="display: none;">
                     <svg class="icon" style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
@@ -2231,40 +2227,6 @@ input[type="checkbox"], input[type="radio"] {
                 <div style="font-size:10px; color:var(--text-muted); margin-top:4px;">ناوی فۆنتەکە بە دەست بنووسە؛ وەک <span dir="ltr">{\fn...}</span> لەسەر دێڕەکە دادەنرێت.</div>
             </div>
 
-            <!-- ٣. نۆتەی گۆرانی و تابلۆ -->
-            <div style="margin-bottom: 10px; background: rgba(142, 182, 155, 0.08); border-radius: 10px; padding: 8px 10px; border: 1px solid var(--border-color);">
-                <div style="font-size: 11px; font-weight: bold; color: var(--primary); margin-bottom: 6px; text-align: start;">نیشانەی گۆرانی یان تابلۆ بۆ دەق:</div>
-                
-                <div class="tech-row" style="margin-bottom: 6px;">
-                    <button type="button" class="tech-toggle-btn" style="display:inline-flex; align-items:center; justify-content:center; gap:6px;" onclick="insertSymbolToText('♪')">
-    <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
-    <span>گۆرانی</span>
-    <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
-</button>
-<button type="button" class="tech-toggle-btn" style="display:inline-flex; align-items:center; justify-content:center; gap:6px;" onclick="insertSymbolToText('|')">
-    <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="3" x2="12" y2="21"/></svg>
-    <span>تابلۆ</span>
-    <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="3" x2="12" y2="21"/></svg>
-</button>
-                </div>
-
-                <div style="text-align: start;">
-                    <span style="font-size: 10.5px; color: var(--text-muted); display: block; margin-bottom: 4px;">ڕەنگی نیشانەکە:</span>
-                    <div style="display: flex; gap: 5px; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 8px; border: 1px solid var(--border-color);">
-                        <div class="palette-btn active" style="width:20px; height:20px; border-radius:4px; background:#FFF200;" onclick="setSymbolColor('#FFF200', this)" title="زەرد"></div>
-                        <div class="palette-btn" style="width:20px; height:20px; border-radius:4px; background:#FFD700;" onclick="setSymbolColor('#FFD700', this)" title="زێڕین"></div>
-                        <div class="palette-btn" style="width:20px; height:20px; border-radius:4px; background:#00F0FF;" onclick="setSymbolColor('#00F0FF', this)" title="شین"></div>
-                        <div class="palette-btn" style="width:20px; height:20px; border-radius:4px; background:#39FF14;" onclick="setSymbolColor('#39FF14', this)" title="سەوز"></div>
-                        <div class="palette-btn" style="width:20px; height:20px; border-radius:4px; background:#FFFFFF;" onclick="setSymbolColor('#FFFFFF', this)" title="سپی"></div>
-                        <div class="palette-btn" style="width:20px; height:20px; border-radius:4px; background:#FF3131;" onclick="setSymbolColor('#FF3131', this)" title="سوور"></div>
-                        <div class="palette-btn" style="width:20px; height:20px; border-radius:4px; background:#FF77A9;" onclick="setSymbolColor('#FF77A9', this)" title="پەمەیی"></div>
-                        <div class="palette-btn" style="width:20px; height:20px; border-radius:4px; background:#BF55EC;" onclick="setSymbolColor('#BF55EC', this)" title="مۆر"></div>
-                        <div class="palette-btn" style="width:20px; height:20px; border-radius:4px; background:#FFA500;" onclick="setSymbolColor('#FFA500', this)" title="پرتەقاڵی"></div>
-                    </div>
-                </div>
-                <input type="hidden" id="symbolColorChoice" value="#FFF200">
-            </div>
-
 <!-- ٤. Bold، Italic، Blur، Outline و Shadow -->
             <div style="margin-bottom: 10px; background: rgba(142, 182, 155, 0.08); border-radius: 10px; padding: 8px 10px; border: 1px solid var(--border-color);">
                 <div class="tech-row" style="margin-bottom: 6px;">
@@ -2291,25 +2253,20 @@ input[type="checkbox"], input[type="radio"] {
                         <input type="number" id="techFontSizeVal" placeholder="0" min="1" max="500" step="0.5" class="tech-input" style="width:50px;">
                     </div>
                 </div>
-                <details id="kfMoreTech" style="margin:2px 0 8px 0;">
-                    <summary style="cursor:pointer; font-size:11.5px; font-weight:bold; color:var(--primary); padding:3px 0; display:flex; align-items:center; gap:5px;">
-    <svg style="width:13px;height:13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 4v16m8-8H4"/></svg>
-    <span>تەکنیکی زیاتر (دووری پیت، ڕوونی، نەرمکردنی لێوار…)</span>
-</summary>
-                    <p style="font-size:10.5px;color:var(--text-muted);margin:0 0 6px 0;line-height:1.6;">پان، بەرزی، سووڕان و لاری لە دوگمەی «دیاریکردنی شوێن» دەستکاری دەکرێن.</p>
-                    <div class="tech-row" style="margin:6px 0;">
-                        <div style="display:flex; align-items:center; gap:4px; font-size:11px;"><span>شاراوەیی %:</span>
-                            <input type="number" id="techAlphaVal" placeholder="0" min="0" max="100" step="5" class="tech-input" style="width:50px;" title="\alpha (٠ = ئاسایی، ١٠٠ = نادیار)"></div>
+                <div class="tech-row" style="margin-bottom: 6px;">
+                    <div style="display:flex; align-items:center; gap:4px; font-size:11px;">
+                        <span>شاراوەیی %:</span>
+                        <input type="number" id="techAlphaVal" placeholder="0" min="0" max="100" step="5" class="tech-input" style="width:50px;" title="\alpha (٠ = ئاسایی، ١٠٠ = نادیار)">
                     </div>
-                    <div class="tech-row" style="margin:6px 0;">
-                        <div style="display:flex; align-items:center; gap:4px; font-size:11px;"><span>نەرمکردنی لێوار:</span>
-                            <input type="number" id="techBeVal" placeholder="0" min="0" max="10" step="1" class="tech-input" style="width:50px;" title="\be"></div>
+                    <div style="display:flex; align-items:center; gap:4px; font-size:11px;">
+                        <span>نەرمکردنی لێوار:</span>
+                        <input type="number" id="techBeVal" placeholder="0" min="0" max="10" step="1" class="tech-input" style="width:50px;" title="\be">
                     </div>
-                    <div class="tech-row" style="margin:6px 0 2px 0;">
-                        <button type="button" class="tech-toggle-btn" id="btnTechUnder" onclick="this.classList.toggle('active')"><u>ژێرهێڵ</u></button>
-                        <button type="button" class="tech-toggle-btn" id="btnTechStrike" onclick="this.classList.toggle('active')"><s>هێڵی سەر وشە</s></button>
-                    </div>
-                </details>
+                </div>
+                <div class="tech-row" style="margin-bottom: 8px;">
+                    <button type="button" class="tech-toggle-btn" id="btnTechUnder" onclick="this.classList.toggle('active')"><u>ژێرهێڵ</u></button>
+                    <button type="button" class="tech-toggle-btn" id="btnTechStrike" onclick="this.classList.toggle('active')"><s>هێڵی سەر وشە</s></button>
+                </div>
 
                 <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 6px 8px; border: 1px solid var(--border-color); display:flex; flex-direction:column; gap:6px;">
                     <div style="display: flex; align-items: center; justify-content: space-between;">
@@ -2353,6 +2310,38 @@ input[type="checkbox"], input[type="radio"] {
                 </div>
 
                 <textarea id="modalSubtitleLiveText" style="width: 100%; min-height: 50px; max-height: 80px; padding: 7px 9px; border-radius: 8px; border: 1.5px solid var(--border-color); background: var(--bg-color); color: var(--text-main); font-size: 12.5px; line-height: 1.4; resize: vertical; outline: none; direction: auto; text-align: start; box-sizing: border-box;"></textarea>
+
+                
+                <div class="tech-row" style="margin:6px 0;">
+                    <button type="button" class="tech-toggle-btn" style="display:inline-flex; align-items:center; justify-content:center; gap:6px;" onclick="insertSymbolToText('♪')">
+    <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+    <span>گۆرانی</span>
+    <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+</button>
+<button type="button" class="tech-toggle-btn" style="display:inline-flex; align-items:center; justify-content:center; gap:6px;" onclick="insertSymbolToText('|')">
+    <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="3" x2="12" y2="21"/></svg>
+    <span>تابلۆ</span>
+    <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="3" x2="12" y2="21"/></svg>
+</button>
+                </div>
+
+                <div style="text-align: start;">
+                    <span style="font-size: 10.5px; color: var(--text-muted); display: block; margin-bottom: 4px;">ڕەنگی نیشانەکە:</span>
+                    <div style="display: flex; gap: 5px; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 8px; border: 1px solid var(--border-color);">
+                        <div class="palette-btn active" style="width:20px; height:20px; border-radius:4px; background:#FFF200;" onclick="setSymbolColor('#FFF200', this)" title="زەرد"></div>
+                        <div class="palette-btn" style="width:20px; height:20px; border-radius:4px; background:#FFD700;" onclick="setSymbolColor('#FFD700', this)" title="زێڕین"></div>
+                        <div class="palette-btn" style="width:20px; height:20px; border-radius:4px; background:#00F0FF;" onclick="setSymbolColor('#00F0FF', this)" title="شین"></div>
+                        <div class="palette-btn" style="width:20px; height:20px; border-radius:4px; background:#39FF14;" onclick="setSymbolColor('#39FF14', this)" title="سەوز"></div>
+                        <div class="palette-btn" style="width:20px; height:20px; border-radius:4px; background:#FFFFFF;" onclick="setSymbolColor('#FFFFFF', this)" title="سپی"></div>
+                        <div class="palette-btn" style="width:20px; height:20px; border-radius:4px; background:#FF3131;" onclick="setSymbolColor('#FF3131', this)" title="سوور"></div>
+                        <div class="palette-btn" style="width:20px; height:20px; border-radius:4px; background:#FF77A9;" onclick="setSymbolColor('#FF77A9', this)" title="پەمەیی"></div>
+                        <div class="palette-btn" style="width:20px; height:20px; border-radius:4px; background:#BF55EC;" onclick="setSymbolColor('#BF55EC', this)" title="مۆر"></div>
+                        <div class="palette-btn" style="width:20px; height:20px; border-radius:4px; background:#FFA500;" onclick="setSymbolColor('#FFA500', this)" title="پرتەقاڵی"></div>
+                    </div>
+                </div>
+                <input type="hidden" id="symbolColorChoice" value="#FFF200">
+            
+
             </div>
 
             <!-- بۆکسی تێبینی: ڕاستەوخۆ دەچێتە خواری ڕستەکە بە \N -->
@@ -2792,8 +2781,13 @@ input[type="checkbox"], input[type="radio"] {
 
     <script>
         function showToast(message, type = 'info') {
-            const container = document.getElementById('toast-container');
-            if (!container) return;
+            // کۆنتەینەری نامەکان دەبێت راستەوخۆ لە ناو body بێت، ئەگینا کاتێک #editor-screen شاردراوەتەوە نامەکان نابینرێن
+            let container = document.getElementById('toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toast-container';
+            }
+            if (container.parentElement !== document.body) document.body.appendChild(container);
             const toast = document.createElement('div');
             toast.className = 'toast ' + type;
             toast.innerText = message;
@@ -3064,6 +3058,9 @@ function restoreFromHistory(id) {
         if (modal) modal.style.display = 'none';
         subtitleNotes = item.notes || [];
         buildEditorUI(item.savedState || []);
+        showToast('کارەکە لە مێژووەوە گەڕێندرایەوە', 'success');
+    } else {
+        showToast('ئەم تۆمارە لە مێژوودا نەدۆزرایەوە!', 'error');
     }
 }
 
@@ -3072,11 +3069,13 @@ function deleteHistoryItem(id) {
     hist = hist.filter(h => h && h.id !== id);
     localStorage.setItem('kf_edit_history', JSON.stringify(hist));
     openHistoryModal();
+    showToast('تۆمارەکە لە مێژوو سڕدرایەوە', 'success');
 }
 
 function clearAllHistory() {
     localStorage.removeItem('kf_edit_history');
     openHistoryModal();
+    showToast('هەموو مێژووەکە سڕدرایەوە', 'success');
 }
 
 // دەستپێکردنی ڕاستەوخۆی ماڵپەڕ
@@ -3310,7 +3309,8 @@ window.onload = () => {
         function replaceText() {
             const searchTerm = document.getElementById('searchInput').value;
             const replaceTerm = document.getElementById('replaceInput').value;
-            if (!searchTerm || currentSearchIndex === 0) return;
+            if (!searchTerm) return showToast('تکایە سەرەتا وشەیەک بنووسە بۆ گەڕان', 'error');
+            if (currentSearchIndex === 0) return showToast('هیچ ئەنجامێک هەڵنەبژێردراوە — سەرەتا گەڕان بکە', 'warning');
             const idx = currentSearchIndex - 1;
             const ta = document.querySelectorAll('.subtitle-kurd textarea')[idx];
             if (ta) {
@@ -3324,6 +3324,9 @@ if (historyStack.length > 40) historyStack.shift();
 redoStack = [];
 updateUndoRedoButtons();
                     saveSession();
+                    showToast('وشەکە گۆڕدرا', 'success');
+                } else {
+                    showToast('ئەم وشەیە لەم دێڕەدا نەماوە', 'warning');
                 }
             }
             findNext(1);
@@ -3377,6 +3380,8 @@ function saveImgbbKey(input) {
     if (activeUser) {
         localStorage.setItem('kf_imgbb_user_' + activeUser, key);
     }
+    clearTimeout(window.__imgbbToastTimer);
+    window.__imgbbToastTimer = setTimeout(() => showToast(key ? 'کلیلی ImgBB پاشەکەوت کرا' : 'کلیلی ImgBB سڕدرایەوە', key ? 'success' : 'info'), 800);
 }
 
 async function uploadDirectImage(input) {
@@ -5043,6 +5048,7 @@ async function pasteFromClipboard() {
         function processAIPaste() {
             let txt = document.getElementById('ai-paste-area').value; 
             let m;
+            let aiPasteCount = 0;
             // ئەم کۆدە ڕێگری دەکات لە قووتدانی دێڕەکانی تر و هەموو خانەیەک ڕێک لە شوێنی خۆی دادەنێت تەنانەت ئەگەر بەتاڵیش بێت
             let regex = /(?:^|\n)\s*\[(\d+)\][ \t]*([\s\S]*?)(?=(?:\r?\n\s*\[\d+\]|$))/g;
             while((m = regex.exec(txt)) !== null) {
@@ -5053,11 +5059,17 @@ async function pasteFromClipboard() {
                     ta.value = m[2].trim();
                     ta.style.height = 'auto';
                     ta.style.height = ta.scrollHeight + 'px';
+                    aiPasteCount++;
                 }
+            }
+            if (aiPasteCount === 0) {
+                showToast('هیچ دێڕێکی گونجاو نەدۆزرایەوە — دەبێت بەم شێوەیە بێت: [1] دەق', 'error');
+                return;
             }
             document.getElementById('ai-modal').style.display = 'none'; 
             updateProgress(); 
             saveSession();
+            showToast(`${aiPasteCount} دێڕ لە AI جێگیر کرا`, 'success');
         }
 
         let currentStylingIndex = -1;
@@ -5756,6 +5768,12 @@ function applySubStyleToLine() {
 }
 
 // سڕینەوەی هەموو ستایلەکانی ئەم دێڕە (لەگەڵ نیشانەی گۆرانی و تابلۆش)
+function clearTechFontName() {
+    const fn = document.getElementById('techFontName');
+    if (fn) { fn.value = ''; fn.focus(); }
+    showToast('فۆنتی دێڕەکە بەتاڵ کرا (وەک خۆی) — بۆ تۆمارکردن «جێبەجێکردن» دابگرە', 'info');
+}
+
 function clearLineStyles() {
     const modalTa = document.getElementById('modalSubtitleLiveText');
     if (modalTa) {
@@ -6135,15 +6153,26 @@ let currentDragFscy = 100;
 let currentDragFax = 0;
 let currentDragFay = 0;
 
+// دوگمەی گەڕاندنەوە (Reset): بە یەک کلیک هەموو شتێک دەگەڕێتەوە بۆ ئەوەی دێڕەکە خۆی هەیبوو
+// (شوێن X/Y، قەبارە، سووڕانەوە، پان، بەرزی و لاری) وەک کاتی کردنەوەی پەنجەرەکە
+window.__dragOrig = null;
+
 function resetDragTransforms() {
-    document.getElementById('vDragRotateZ').value = 0;
-    if(document.getElementById('vDragRotateX')) document.getElementById('vDragRotateX').value = 0;
-    if(document.getElementById('vDragRotateY')) document.getElementById('vDragRotateY').value = 0;
-    document.getElementById('vDragScaleX').value = 100;
-    document.getElementById('vDragScaleY').value = 100;
-    document.getElementById('vDragShearX').value = 0;
-    if(document.getElementById('vDragShearY')) document.getElementById('vDragShearY').value = 0;
+    var o = window.__dragOrig;
+    if (!o) return;
+    document.getElementById('vDragFontSizeInput').value = o.fs;
+    document.getElementById('vDragRotateZ').value = o.frz;
+    if (document.getElementById('vDragRotateX')) document.getElementById('vDragRotateX').value = o.frx;
+    if (document.getElementById('vDragRotateY')) document.getElementById('vDragRotateY').value = o.fry;
+    document.getElementById('vDragScaleX').value = o.fscx;
+    document.getElementById('vDragScaleY').value = o.fscy;
+    document.getElementById('vDragShearX').value = o.fax;
+    if (document.getElementById('vDragShearY')) document.getElementById('vDragShearY').value = o.fay;
+    currentDragAssX = o.x;
+    currentDragAssY = o.y;
+    currentDragAlign = o.align;
     updateLiveDragTransform();
+    showToast('دێڕەکە گەڕایەوە بۆ شێوە و شوێنی ئەسڵی خۆی', 'info');
 }
 
 function openGrid40Modal() {
@@ -6245,6 +6274,14 @@ function openGrid40Modal() {
             currentDragAlign = activeAlign;
             selectAlignment(activeAlign);
         }
+
+    // وێنەی ئەسڵیی دێڕەکە بۆ دوگمەی Reset (شوێن + تەکنیک + قەبارە)
+    window.__dragOrig = {
+        fs: document.getElementById('vDragFontSizeInput').value,
+        frz: currentDragFrz, frx: currentDragFrx, fry: currentDragFry,
+        fscx: currentDragFscx, fscy: currentDragFscy, fax: currentDragFax, fay: currentDragFay,
+        x: currentDragAssX, y: currentDragAssY, align: currentDragAlign
+    };
 
     document.getElementById('grid40-modal').style.display = 'flex';
 
@@ -6710,6 +6747,7 @@ function confirmVideoCanvasColor() {
         function handleNativeVideoUpload(input) {
             if (input.files && input.files[0]) {
                 playVideoSource(URL.createObjectURL(input.files[0]));
+                showToast('ڤیدیۆکە بارکرا', 'success');
             }
         }
 
@@ -7894,9 +7932,16 @@ async function handleMergeBaseFileSelect(input) {
     }
     if (nameEl) { nameEl.style.display = 'block'; nameEl.innerHTML = SVG_ICONS.check + ' ' + file.name.replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])); }
 
-    mergeBaseRawText = await file.text();
-    renderMergeStylesList();
-    refreshMergeFontTargets();
+    try {
+        mergeBaseRawText = await file.text();
+        renderMergeStylesList();
+        refreshMergeFontTargets();
+        const styleCount = (mergeBaseRawText.match(/^\s*Style:/gim) || []).length;
+        showToast(`فایلی سەرەکی بارکرا (${styleCount} ستایل)`, 'success');
+    } catch (e) {
+        mergeBaseRawText = '';
+        showToast('نەتوانرا فایلی سەرەکی بخوێنرێتەوە!', 'error');
+    }
 }
 
 function renderMergeStylesList() {
@@ -8173,10 +8218,16 @@ async function handleMergeSourceFileSelect(input) {
         if (f) { nameEl.style.display = 'block'; nameEl.innerHTML = SVG_ICONS.check + ' ' + f.name.replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])); }
         else { nameEl.style.display = 'none'; nameEl.innerText = ''; }
     }
-    mergeSourceRawText = f ? await f.text() : '';
-    mergeSourceEditableLines = parseMergeSourceDialogues(mergeSourceRawText);
-    renderMergeSourceEditor();
-    refreshMergeFontTargets();
+    try {
+        mergeSourceRawText = f ? await f.text() : '';
+        mergeSourceEditableLines = parseMergeSourceDialogues(mergeSourceRawText);
+        renderMergeSourceEditor();
+        refreshMergeFontTargets();
+        if (f) showToast(`فایلی دووەم بارکرا (${mergeSourceEditableLines.length} دێڕ)`, 'success');
+    } catch (e) {
+        mergeSourceRawText = ''; mergeSourceEditableLines = [];
+        showToast('نەتوانرا فایلی دووەم بخوێنرێتەوە!', 'error');
+    }
 }
 
 function collectStylesAndInlines(text) {
@@ -8228,8 +8279,10 @@ function addMergeFont() {
     let raw = inp.value.trim();
     if (!raw) return showToast("تکایە ناوی فۆنتێک بنووسە!", "error");
     // ڕێگەدان بە نووسینی چەند فۆنتێک بە کۆما یان بە دێڕی نوێ
+    let addedFonts = 0;
     raw.split(/[,\n;]+/).map(x => x.trim()).filter(Boolean).forEach(name => {
         if (mergeFonts.some(f => f.name.toLowerCase() === name.toLowerCase())) return;
+        addedFonts++;
         mergeFonts.push({
             id: ++mergeFontSeq, name: name, fileFamily: '', factorAuto: null,
             manual: 100, useAuto: true, styles: new Set(), inlines: new Set(),
@@ -8239,11 +8292,14 @@ function addMergeFont() {
     inp.value = '';
     mergeFonts.forEach(measureMergeFont);
     renderMergeFonts();
+    if (addedFonts > 0) showToast(addedFonts === 1 ? 'فۆنت زیادکرا!' : `${addedFonts} فۆنت زیادکران!`, 'success');
+    else showToast('ئەم فۆنتە پێشتر زیادکراوە!', 'warning');
 }
 
 function removeMergeFont(id) {
     mergeFonts = mergeFonts.filter(f => f.id !== id);
     renderMergeFonts();
+    showToast('فۆنتەکە سڕدرایەوە', 'info');
 }
 function clearAllMergeFonts() {
     if (!mergeFonts.length) return showToast("هیچ فۆنتێک زیاد نەکراوە!", "info");
@@ -8308,6 +8364,7 @@ function clearMergeFontFile(id) {
     f.fileFamily = ''; f.fileName = '';
     measureMergeFont(f);
     renderMergeFonts();
+    showToast('فایلی فۆنتەکە لابرا', 'info');
 }
 
 
@@ -8687,16 +8744,20 @@ function toggleSelectAllStylesForFont(id) {
 }
 
 async function executeMergeAss() {
+    try {
+        await executeMergeAssCore();
+    } catch (err) {
+        console.error('Merge error:', err);
+        showToast('هەڵەیەک ڕوویدا لە کاتی تێکەڵکردن: ' + (err && err.message ? err.message : 'نەزانراو'), 'error');
+    }
+}
+async function executeMergeAssCore() {
     const baseF = document.getElementById('mergeBaseFile').files[0];
     const srcF = document.getElementById('mergeSourceFile').files[0];
-    const newFont = document.getElementById('mergeNewFontName') ? document.getElementById('mergeNewFontName').value.trim() : 'Speda Bold';
 
     if (!baseF) return showToast("تکایە سەرەتا فایلی سەرەکی هەڵبژێرە!", "error");
 
     const fontPlan = buildMergeFontPlan();
-    // ئەگەر تەنها فایلی یەکەم هەڵبژێردرابێت و هیچ فۆنتێک دیاری نەکرابێت،
-    // تەنها ستایلە سڕدراوەکان لادەبرێن و هیچ شتێکی تر (سایز، سترۆک، شادۆ، بەرزی) نەگۆڕدرێت
-    const stylesOnlyMode = !srcF && !fontPlan.any && !newFont;
     const baseText = mergeBaseRawText || await baseF.text();
     const srcText = srcF ? (buildEditedMergeSourceText() || await srcF.text()) : '';
 
@@ -8714,7 +8775,7 @@ async function executeMergeAss() {
     const baseRes = getResolution(baseText);
     const srcRes = srcText ? getResolution(srcText) : baseRes;
 
-    // پرێسێتی قسەکردن بەپێی ڕێزۆلوشن
+    // پرێسێتی قسەکردن بەپێی ڕێزۆلوشن (هەمان ئەسڵییەکەی پێشوو)
     function getSpedaPreset(resY) {
         if (resY >= 900) return { size: 67, marginV: 75, shadow: "2.0", outline: "1.5" }; // 1080p
         if (resY >= 600) return { size: 45, marginV: 50, shadow: "1.3", outline: "1.0" }; // 720p
@@ -8722,7 +8783,7 @@ async function executeMergeAss() {
         return { size: 22, marginV: 25, shadow: "0.7", outline: "0.5" };                   // 360p
     }
 
-    // جیاکردنەوەی ستایلەکانی قسەکردن لە تابلۆ و تەکنیک
+    // ناسینەوەی ستایلەکانی گفتوگۆ (هەمان ئەسڵییەکەی پێشوو)
     function isDialogueStyle(styleName) {
         let lower = styleName.toLowerCase().trim();
         if (lower === 'op-elbaph' || lower.startsWith('op-elbaph')) return true;
@@ -8781,48 +8842,40 @@ async function executeMergeAss() {
                 let styleName = parts[0].replace('Style:', '').trim();
                 if (mergeDeletedStyles.has(styleName.toLowerCase())) return;
 
-                if (stylesOnlyMode) {
-                    baseStyles.push(tr);
-                    return;
-                }
-
-                parts[6] = makeShadowSolid(parts[6]);
-
                 const assign = fontPlan.styleMap[styleName.toLowerCase()] || null;
-                const styleFont = assign ? assign.font : (newFont || '');
-                const sizeFactor = assign ? assign.factor : 1;
+                if (assign) {
+                    const styleFont = assign.font;
+                    const sizeFactor = assign.factor || 1;
 
-                if (isDialogueStyle(styleName)) {
-                    if (styleFont) parts[1] = styleFont;
-                    const preset = getSpedaPreset(baseRes.y);
-                    parts[2] = smartFontSize(preset.size, sizeFactor, baseRes.y);
-                    parts[11] = '100';
-                    parts[12] = '100';
-                    parts[13] = '0';
-                    parts[16] = preset.outline;
-                    parts[17] = preset.shadow;
-                    parts[21] = preset.marginV;
-                    parts[22] = '1';
-                } else {
-                    // تابلۆ و تەکنیک: ناوی فۆنت دەگۆڕێت و قەبارە بەپێی فۆنتەکە دەگونجێنرێت
-                    if (styleFont) parts[1] = styleFont;
-                    let originalSize = parseFloat(parts[2]) || 20;
-                    parts[2] = smartFontSize(originalSize, 0.88 * sizeFactor, baseRes.y);
+                    if (isDialogueStyle(styleName)) {
+                        if (styleFont) parts[1] = styleFont;
+                        const preset = getSpedaPreset(baseRes.y);
+                        parts[2] = smartFontSize(preset.size, sizeFactor, baseRes.y);
+                        parts[11] = '100';
+                        parts[12] = '100';
+                        parts[13] = '0';
+                        parts[16] = preset.outline;
+                        parts[17] = preset.shadow;
+                        parts[21] = preset.marginV;
+                        parts[22] = '1';
+                    } else {
+                        if (styleFont) parts[1] = styleFont;
+                        let originalSize = parseFloat(parts[2]) || 20;
+                        parts[2] = smartFontSize(originalSize, 0.88 * sizeFactor, baseRes.y);
+                    }
+                    parts[6] = makeShadowSolid(parts[6]);
+                    tr = parts.join(',');
                 }
-                tr = parts.join(',');
             }
             baseStyles.push(tr);
         } else if (tr.startsWith('Dialogue:') || tr.startsWith('Comment:')) {
             let m = tr.match(/^(?:Dialogue|Comment):\s*[^,]*,[^,]*,[^,]*,([^,]+),/i);
             if (m && mergeDeletedStyles.has(m[1].trim().toLowerCase())) return;
 
-            if (stylesOnlyMode) {
-                baseDialogues.push(tr);
-                return;
-            }
-
             tr = cleanHarmfulTags(tr);
-            tr = applyInlineFontPlan(tr, fontPlan, newFont, baseRes.y);
+            if (fontPlan.any) {
+                tr = applyInlineFontPlan(tr, fontPlan, '', baseRes.y);
+            }
 
             let commaCount = 0, splitIdx = -1;
             for (let c = 0; c < tr.length; c++) {
@@ -8834,8 +8887,7 @@ async function executeMergeAss() {
             if (splitIdx !== -1) {
                 let prefix = tr.substring(0, splitIdx + 1);
                 let textBody = tr.substring(splitIdx + 1);
-                let fixedText = textBody; // RTL لێرە جێبەجێ ناکرێت — تەنها لە بەشی «چاککردنی RTL»
-                tr = prefix + fixedText;
+                tr = prefix + textBody;
             }
 
             baseDialogues.push(tr);
@@ -8850,7 +8902,29 @@ async function executeMergeAss() {
             if (tr.startsWith('Style:')) {
                 let parts = tr.split(',');
                 if (parts.length >= 23) {
-                    parts[6] = makeShadowSolid(parts[6]);
+                    let styleName = parts[0].replace('Style:', '').trim();
+                    const assign = fontPlan.styleMap[styleName.toLowerCase()] || null;
+                    if (assign) {
+                        const styleFont = assign.font;
+                        const sizeFactor = assign.factor || 1;
+                        if (styleFont) parts[1] = styleFont;
+
+                        if (isDialogueStyle(styleName)) {
+                            const preset = getSpedaPreset(baseRes.y);
+                            parts[2] = smartFontSize(preset.size, sizeFactor, baseRes.y);
+                            parts[11] = '100';
+                            parts[12] = '100';
+                            parts[13] = '0';
+                            parts[16] = preset.outline;
+                            parts[17] = preset.shadow;
+                            parts[21] = preset.marginV;
+                            parts[22] = '1';
+                        } else {
+                            let originalSize = parseFloat(parts[2]) || 20;
+                            parts[2] = smartFontSize(originalSize, 0.88 * sizeFactor, baseRes.y);
+                        }
+                        parts[6] = makeShadowSolid(parts[6]);
+                    }
                     if (needsRescale) {
                         parts[2] = Math.round(parseFloat(parts[2]) * scaleY);
                         parts[13] = (parseFloat(parts[13]) * scaleX).toFixed(1);
@@ -8865,7 +8939,9 @@ async function executeMergeAss() {
                 srcStyles.push(tr);
             } else if (tr.startsWith('Dialogue:') || tr.startsWith('Comment:')) {
                 tr = cleanHarmfulTags(tr);
-                tr = applyInlineFontPlan(tr, fontPlan, '', baseRes.y);
+                if (fontPlan.any) {
+                    tr = applyInlineFontPlan(tr, fontPlan, '', baseRes.y);
+                }
                 if (needsRescale) {
                     tr = tr.replace(/\\fs(\d+(?:\.\d+)?)/g, (m, v) => `\\fs${Math.round(parseFloat(v) * scaleY)}`);
                     tr = tr.replace(/\\bord(\d+(?:\.\d+)?)/g, (m, v) => `\\bord${(parseFloat(v) * scaleY).toFixed(1)}`);
@@ -8891,8 +8967,7 @@ async function executeMergeAss() {
                 if (splitIdx !== -1) {
                     let prefix = tr.substring(0, splitIdx + 1);
                     let textBody = tr.substring(splitIdx + 1);
-                    let fixedText = textBody; // RTL لێرە جێبەجێ ناکرێت — تەنها لە بەشی «چاککردنی RTL»
-                    tr = prefix + fixedText;
+                    tr = prefix + textBody;
                 }
 
                 srcDialogues.push(tr);
@@ -8909,14 +8984,12 @@ async function executeMergeAss() {
     if (logoCb && logoCb.checked) {
         const logoCountVal = document.getElementById('logoCount') ? document.getElementById('logoCount').value : 1;
         const logoStyleVal = Array.from(document.querySelectorAll('.logoStyleCb:checked')).map(cb => cb.value);
-        // ئەگەر ستایلی کورد فۆڕێست پێشتر لە فایلەکەدا هەبێت، ستایلەکە وەک خۆی دەمێنێتەوە
         let existingLogoStyle = null;
         allStyles.forEach(s => {
             let nm = s.split(',')[0].replace(/^Style:/i, '').trim();
             let low = nm.toLowerCase().replace(/[\s_-]/g, '');
             if (!existingLogoStyle && low.indexOf('kurd') !== -1 && low.indexOf('forest') !== -1) existingLogoStyle = nm;
         });
-        // درێژی فایلەکە تەنها لە دێڕە کۆتاییەکانەوە دەژمێردرێت (نەک لە فایلە خامەکانەوە)
         const totalHint = detectAssTotalSeconds(cleanDialogues);
         const logo = buildKurdForestLogo(cleanDialogues, baseRes, logoCountVal, logoStyleVal, existingLogoStyle, totalHint);
         if (!existingLogoStyle) {
@@ -8929,7 +9002,6 @@ async function executeMergeAss() {
         }
         cleanDialogues = cleanDialogues.concat(logo.lines);
         logoAddedCount = logo.lines.length;
-
     }
 
     let usedStyleNames = new Set(['default']);
@@ -8971,6 +9043,7 @@ async function executeMergeAss() {
     let logoNotice = logoAddedCount > 0 ? ` (لۆگۆی KURD FOREST ${logoAddedCount} جار زیادکرا)` : '';
     showToast(`${successWord}${purgeNotice}${logoNotice}!`, "success");
 }
+
     </script>
 <!-- ================= بزوێنەری ژێرنووس بە سەلامەتی تەواو و بێ ونبوون ================= -->
 <script id="kf-ass-core">
@@ -10942,6 +11015,7 @@ function kfSrvClear() {
     kfSrvEl('kfSrvStartEp').value = '';
     kfSrvUpdate();
     kfSrvEl('kfSrvInput').focus();
+    kfSrvToast('خانەکان پاک کرانەوە', 'info');
 }
 
 </script>
@@ -11518,6 +11592,7 @@ function resetCensorBoxPosition() {
     box.style.height = '60px';
     box.style.left = Math.max(10, (container.clientWidth - 110) / 2) + 'px';
     box.style.top = Math.max(10, (container.clientHeight - 60) / 2) + 'px';
+    showToast('شوێنی سانسۆرەکە گەڕایەوە ناوەند', 'info');
 }
 
 function closeCensorModal() {

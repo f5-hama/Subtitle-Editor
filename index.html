@@ -2465,6 +2465,17 @@ input[type="checkbox"], input[type="radio"] {
             بۆ ئەوەی پێشبینین و شوێنی دەق <b>ڕێک وەک پلەیەر و هارد سەب</b> بێت، فایلی فۆنتەکانی ناو ئەم ژێرنووسە (TTF / OTF) لێرە زیاد بکە.
             فۆنتەکان لەسەر ئامێرەکەت پاشەکەوت دەکرێن و جارێکی تر پێویست بە زیادکردن ناکات.
         </p>
+        <div style="border:1px solid rgba(139,92,246,0.35); border-radius:10px; padding:10px; margin:0 0 12px 0; background:rgba(139,92,246,0.06);">
+            <div style="font-size:12px; font-weight:bold; color:var(--primary); margin-bottom:5px;">ڕەندەری libass (وەک هاردسەبی ڕاستەقینە):</div>
+            <p style="font-size:11px; line-height:1.6; color:var(--text-muted); margin:0 0 8px 0;">
+                ئەم بژاردەیە پێشبینینەکە دەگۆڕێت بۆ کتێبخانەی <b>libass</b>ی ڕاستەقینە (هەمان کتێبخانەیەی FFmpeg و زۆربەی پلەیەرەکان بەکاریدەهێنن)، تاوەکو وێنەکێشان، سووڕانەوە، و شوێنی دەق ڕێک وەک ئەنجامی کۆتایی (هاردسەب) دەربکەون. پێویستی بە ئینتەرنێت هەیە جاری یەکەم بۆ داگرتنی کتێبخانەکە؛ ئەگەر شکستی هێنا، خۆکار دەگەڕێتەوە بۆ پێشبینینی ئاسایی.
+            </p>
+            <button type="button" id="kfLibassBtn" class="btn" style="width:100%; font-size:12.5px; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="toggleLibassPreview()">
+                <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M14.828 14.828a4 4 0 1 0-5.656-5.656 4 4 0 0 0 5.656 5.656zM21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>
+                <span id="kfLibassBtnText">چالاککردنی ڕەندەری libass</span>
+            </button>
+            <div id="kfLibassBtnStatus" style="font-size:10.5px; color:var(--text-muted); margin-top:6px; text-align:center; min-height:14px;"></div>
+        </div>
         <div style="font-size:12px; font-weight:bold; color:var(--primary); margin-bottom:5px;">فۆنتەکانی ناو فایلەکە:</div>
         <div id="kfFontsUsed"></div>
         <button type="button" class="btn" style="width:100%; margin:8px 0 10px 0; font-size:12.5px; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="document.getElementById('kfFontFilePick').click()">
@@ -4540,8 +4551,11 @@ function parseASSContent(data, isOrig) {
                 let currentId = id++;
 
                 // ئەگەر فایلی قورسی ٨ مێگابایت یان ڤێکتەر بوو دەچێتە بەکگراوند
-                if (isOrig && (parsedObj.eventType === 'Comment' || isHeavyTypesettingLine(parsedObj.rawText))) {
-                    rawAssMasterEvents.push({ isTech: true, rawLine: line });
+                // تێبینی: ئەم پشکنینە دەبێت لەسەر هەردوو فایلەکە (ئەسڵی و وەرگێڕان) بەیەک شێوە بچێت،
+                // دەنا ژمارەی دێڕەکانی originalData و kurdData لێک جیا دەبنەوە و دێڕەکان بە هەڵە
+                // بە یەکتر دەگونجێنرێن (دەقی دێڕێک دەکەوێتە سەر دێڕێکی تر).
+                if (parsedObj.eventType === 'Comment' || isHeavyTypesettingLine(parsedObj.rawText)) {
+                    if (isOrig) rawAssMasterEvents.push({ isTech: true, rawLine: line });
                 } else {
                     let t = extLines(parsedObj.rawText);
                     
@@ -5397,8 +5411,11 @@ function openSubStyleModal(index) {
         let displayText = text
             .replace(/\\(?:pos|move)\([^)]*\)/gi, '')
             .replace(/\\frz-?[\d\.]+/gi, '')
+            .replace(/\\frx-?[\d\.]+/gi, '')
+            .replace(/\\fry-?[\d\.]+/gi, '')
             .replace(/\\fsc[xy][\d\.]+/gi, '')
             .replace(/\\fax-?[\d\.]+/gi, '')
+            .replace(/\\fay-?[\d\.]+/gi, '')
             .replace(/\\fs\d+(?:\.\d+)?/gi, '')
             .replace(/\\an\d/gi, '')
             .replace(/\{\s*\}/g, '')
@@ -7474,6 +7491,27 @@ var LibassRenderer = (function () {
 })();
 
 function toggleLibassPreview() { LibassRenderer.toggle(); }
+
+// نوێکردنەوەی دوگمە و باری ڕەندەری libass لە بەشی فۆنتەکان
+function kfLibassRefresh() {
+    var btn = document.getElementById('kfLibassBtn');
+    var txtEl = document.getElementById('kfLibassBtnText');
+    var stEl = document.getElementById('kfLibassBtnStatus');
+    if (!btn || !txtEl || !stEl || typeof LibassRenderer === 'undefined') return;
+    var s = LibassRenderer.status();
+    var map = {
+        off:      { label: 'چالاککردنی ڕەندەری libass',            status: '',                                                color: '' },
+        loading:  { label: 'وەستاندنی libass',                       status: 'چاوەڕوانبە... بارکردنی کتێبخانەی libass',        color: 'var(--text-muted)' },
+        checking: { label: 'وەستاندنی libass',                       status: 'پشکنینی وێنە...',                                color: 'var(--text-muted)' },
+        proven:   { label: 'وەستاندنی libass (ئێستا چالاکە ✓)',      status: '✓ بە دروستی وێنە دەکێشێت',                       color: 'var(--success)' },
+        failed:   { label: 'هەوڵدانەوە (بارکردنی libass شکستی هێنا)', status: 'شکستی هێنا — پەیوەندی ئینتەرنێت بپشکنە و دووبارە هەوڵبدەوە', color: '#ef4444' }
+    };
+    var m = map[s] || map.off;
+    txtEl.textContent = m.label;
+    stEl.textContent = m.status;
+    stEl.style.color = m.color || 'var(--text-muted)';
+    btn.classList.toggle('btn-outline', s === 'off');
+}
 
 
 function setupVideoSync() {
@@ -9780,6 +9818,12 @@ var AssDraw = (function () {
                 var a = spline[i], b = spline[i + 1], c = spline[i + 2], e = spline[i + 3];
                 var p1 = [(2 * b[0] + c[0]) / 3, (2 * b[1] + c[1]) / 3], p2 = [(b[0] + 2 * c[0]) / 3, (b[1] + 2 * c[1]) / 3];
                 var end = [(b[0] + 4 * c[0] + e[0]) / 6, (b[1] + 4 * c[1] + e[1]) / 6];
+                if (i === 0) {
+                    // خاڵی ڕاستەقینەی دەستپێکی curve یەکەم (وەک libass): (a+4b+c)/6 ، نەک خاڵی پێش s
+                    var start = [(a[0] + 4 * b[0] + c[0]) / 6, (a[1] + 4 * b[1] + c[1]) / 6];
+                    d += 'L' + P(start[0], start[1]);
+                    px = start[0]; py = start[1];
+                }
                 d += 'C' + P(p1[0], p1[1]) + ' ' + P(p2[0], p2[1]) + ' ' + P(end[0], end[1]);
                 px = end[0]; py = end[1];
             }
@@ -10031,6 +10075,7 @@ function openFontsModal() {
     renderFontsModal();
     var m = document.getElementById('kf-fonts-modal');
     if (m) m.style.display = 'flex';
+    if (typeof kfLibassRefresh === 'function') kfLibassRefresh();
 }
 function closeFontsModal() {
     var m = document.getElementById('kf-fonts-modal');

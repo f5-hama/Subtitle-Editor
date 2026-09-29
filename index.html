@@ -7242,12 +7242,13 @@ function renderSubtitlesNow() {
 }
 
 /* ============================================================
-   ڕەندەری تەواو و بێ کێشەی libass (JASSUB) - لۆکاڵ و ئۆفلاین
+   ڕەندەری تەواو و بێ کێشەی libass (JASSUB) بە پشتیوانیی تەواوی فۆنتەکان
    ============================================================ */
 var LibassRenderer = (function () {
     var JASSUB = null, instance = null, canvas = null, loadingPromise = null;
     var lastScript = '', lastSyncAt = 0, enabled = false, failed = false;
     var lastError = '';
+    var extraFonts = [];
 
     // ناونیشانی ڕاستەقینەی فۆڵدەری jassub
     var CDN = new URL('./jassub/', window.location.href).href;
@@ -7266,15 +7267,54 @@ var LibassRenderer = (function () {
     var DEF_STYLE_FORMAT = 'Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding';
     var EVENT_FORMAT = 'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text';
 
+    // فەنکشنی زیرەک بۆ گۆڕینی ناوی فۆنت بۆ ئەو فۆنتەی کە بەکارهێنەر زیادی کردووە
+    function resolveFontForAss(fontName) {
+        if (!fontName) return fontName;
+        var fnClean = fontName.trim().replace(/^@/, '');
+        if (typeof FontStore !== 'undefined') {
+            var res = FontStore.resolve(fnClean);
+            if (res && res.names && res.names[0]) {
+                return res.names[0];
+            }
+            var loaded = FontStore.list().filter(function(x){ return x.ok; });
+            if (loaded.length > 0 && !FontStore.has(fnClean)) {
+                return loaded[0].names[0] || loaded[0].fileName.replace(/\.[^.]+$/, '');
+            }
+        }
+        return fnClean;
+    }
+
     function buildHeader() {
+        var loadedCustomFont = null;
+        if (typeof FontStore !== 'undefined') {
+            var loadedList = FontStore.list().filter(function(x){ return x.ok; });
+            if (loadedList.length > 0) {
+                loadedCustomFont = loadedList[0].names[0] || loadedList[0].fileName.replace(/\.[^.]+$/, '');
+            }
+        }
+
         if (typeof assHeaderLines !== 'undefined' && assHeaderLines && assHeaderLines.length) {
-            var txt = assHeaderLines.join('\n').replace(/\s+$/, '');
+            var modifiedLines = assHeaderLines.map(function(line) {
+                var tr = line.trim();
+                if (tr.startsWith('Style:')) {
+                    var parts = tr.split(',');
+                    if (parts.length >= 2) {
+                        parts[1] = resolveFontForAss(parts[1]);
+                        return parts.join(',');
+                    }
+                }
+                return line;
+            });
+            var txt = modifiedLines.join('\n').replace(/\s+$/, '');
             if (!/\[Events\]/i.test(txt)) txt += '\n\n[Events]';
             if (!/^\s*Format:\s*Layer/im.test(txt)) txt += '\n' + EVENT_FORMAT;
             return txt + '\n';
         }
+
         var r = (typeof getActiveScriptResolution === 'function') ? getActiveScriptResolution() : { resX: 1920, resY: 1080 };
-        return '[Script Info]\nScriptType: v4.00+\nWrapStyle: 0\nPlayResX: ' + r.resX + '\nPlayResY: ' + r.resY + '\nScaledBorderAndShadow: yes\n\n[V4+ Styles]\n' + DEF_STYLE_FORMAT + '\nStyle: Default,KurdForest,67,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,1.5,2.0,2,10,10,20,1\n\n[Events]\n' + EVENT_FORMAT + '\n';
+        var defaultFontName = loadedCustomFont || 'KurdForest';
+
+        return '[Script Info]\nScriptType: v4.00+\nWrapStyle: 0\nPlayResX: ' + r.resX + '\nPlayResY: ' + r.resY + '\nScaledBorderAndShadow: yes\n\n[V4+ Styles]\n' + DEF_STYLE_FORMAT + '\nStyle: Default,' + defaultFontName + ',67,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,1.5,2.0,2,10,10,20,1\n\n[Events]\n' + EVENT_FORMAT + '\n';
     }
 
     function currentTextFor(i) {
@@ -7283,7 +7323,12 @@ var LibassRenderer = (function () {
         var card = document.querySelector('.subtitle-card[data-index="' + i + '"]');
         var ta = card ? card.querySelector('textarea') : null;
         var userText = ta ? ta.value : '';
-        return assEffectiveLineText(i, userText).replace(/\r?\n/g, '\\N');
+        var lineText = assEffectiveLineText(i, userText).replace(/\r?\n/g, '\\N');
+
+        // گۆڕینی تاگی \fn ناو دێڕەکان بۆ فۆنتە نوێیەکە
+        return lineText.replace(/\\fn([^\\}]+)/gi, function(match, fnName) {
+            return '\\fn' + resolveFontForAss(fnName);
+        });
     }
 
     function eventLineFor(i) {
@@ -7323,7 +7368,6 @@ var LibassRenderer = (function () {
             for (var n = 0; n < originalData.length; n++) events.push(eventLineFor(n));
         }
 
-        // سانسۆرەکانیش زیاد دەکرێن بۆ ناو پێشبینین
         if (typeof censorAddedList !== 'undefined' && censorAddedList.length > 0) {
             censorAddedList.forEach(function(c) {
                 events.push('Dialogue: 99,' + c.stTime + ',' + c.enTime + ',Default,,0,0,0,,' + c.rawText);
@@ -7333,7 +7377,6 @@ var LibassRenderer = (function () {
         return buildHeader() + events.join('\n') + '\n';
     }
 
-    // بارکردنی فایلی jassub.umd.js
     function loadJassub() {
         if (typeof window.JASSUB === 'function') return Promise.resolve(window.JASSUB);
         return new Promise(function(resolve, reject) {
@@ -7371,6 +7414,19 @@ var LibassRenderer = (function () {
             JASSUB = JASSUB_CLASS;
             var scriptContent = buildScript();
 
+            // کۆکردنەوەی هەموو ئەو فۆنتانەی لە پێشتر یان لە سەیڤکراوەکان بارکراون
+            var allFonts = extraFonts.slice();
+            if (typeof FontStore !== 'undefined') {
+                FontStore.list().forEach(function(f) {
+                    if (f.bytes && f.ok) {
+                        var u8 = (f.bytes instanceof Uint8Array) ? f.bytes : new Uint8Array(f.bytes);
+                        if (!allFonts.some(function(b) { return b === u8 || b.byteLength === u8.byteLength; })) {
+                            allFonts.push(u8);
+                        }
+                    }
+                });
+            }
+
             var opts = {
                 video: video,
                 subContent: scriptContent,
@@ -7383,7 +7439,7 @@ var LibassRenderer = (function () {
                     'noto sans arabic': CDN + 'NotoSansArabic-Regular.ttf'
                 },
                 fallbackFont: 'noto sans arabic',
-                fonts: extraFonts.slice(),
+                fonts: allFonts,
                 timeOffset: 0.25,
                 dropAllAnimations: false,
                 dropAllBlur: false,
@@ -7454,15 +7510,14 @@ var LibassRenderer = (function () {
         notifyUi();
     }
 
-    var extraFonts = [];
     function addFont(buf) {
         try {
             var bytes = (buf instanceof Uint8Array) ? buf : new Uint8Array(buf);
             extraFonts.push(bytes);
             if (instance && typeof instance.addFont === 'function') {
                 instance.addFont(bytes);
-                sync(true);
             }
+            sync(true); // یەکسەر فۆنتە نوێیەکە دەخاتە سەر ڤیدیۆکە
         } catch (e) { console.error('libass addFont error:', e); }
     }
 
@@ -10180,6 +10235,7 @@ async function kfRemoveFont(id) {
 FontStore.onChange(function () {
     try { renderFontsModal(); } catch (e) { }
     try { if (typeof renderSubtitlesNow === 'function') renderSubtitlesNow(); } catch (e) { }
+    try { if (typeof LibassRenderer !== 'undefined') LibassRenderer.sync(true); } catch (e) { }
     try { if (typeof renderDragPreviewStyled === 'function' && document.getElementById('grid40-modal') && document.getElementById('grid40-modal').style.display === 'flex') renderDragPreviewStyled(); } catch (e) { }
 });
 

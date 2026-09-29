@@ -2130,7 +2130,7 @@ input[type="checkbox"], input[type="radio"] {
                 <label style="font-weight: bold; font-size: 12px; color: var(--primary); display: block; margin-bottom: 4px;">ستایلی دیاریکراو بۆ کۆپیکردن:</label>
                 <div class="custom-select-wrapper" style="width: 100%; position: relative;">
                     <button type="button" class="custom-select-btn" id="aiStyleSelectBtn" style="width: 100%; justify-content: space-between; padding: 9px 12px; border-radius: 10px; font-size: 13px;" onclick="toggleAiStyleMenu(this)">
-                        <span id="aiCurrentStyleText">-- هەموو دێڕەکان --</span>
+                        <span id="aiCurrentStyleText">— هەموو دێڕەکان —</span>
                         <svg class="icon" style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </button>
                     <div class="custom-select-menu" id="aiStyleMenu" style="width: 100%; max-height: 180px; overflow-y: auto; left: 0; right: 0;">
@@ -4967,7 +4967,7 @@ function openAiModal() {
             styles.add(sName);
         });
 
-        var html = '<option value="ALL">-- هەموو دێڕەکان --</option>';
+        var html = '<option value="ALL">— هەموو دێڕەکان —</option>';
         styles.forEach(function(st) {
             html += '<option value="' + st + '">' + st + '</option>';
         });
@@ -7436,7 +7436,7 @@ var LibassRenderer = (function () {
                 },
                 fallbackFont: 'noto sans arabic',
                 fonts: allFonts,
-                timeOffset: 0.25,        // کاتی زێڕین بۆ هاوسەنگکردنی تەواوەتی دەنگ و دەق
+                timeOffset: 0,        // کاتی زێڕین بۆ هاوسەنگکردنی تەواوەتی دەنگ و دەق
                 dropAllAnimations: false,
                 dropAllBlur: false,
                 targetFps: 24,           // ٢٤ فریم (سووک و بێ لاگ لەسەر مۆبایل)
@@ -11934,7 +11934,7 @@ function openAiModal() {
             styles.add(sName);
         });
 
-        var html = '<div class="custom-select-item" onclick="setAiChosenStyle(\'ALL\', \'-- هەموو دێڕەکان --\')">-- هەموو دێڕەکان --</div>';
+        var html = '<div class="custom-select-item" onclick="setAiChosenStyle(\'ALL\', \'— هەموو دێڕەکان —\')">— هەموو دێڕەکان —</div>';
         styles.forEach(function(st) {
             html += '<div class="custom-select-item" onclick="setAiChosenStyle(\'' + st.replace(/'/g, "\\'") + '\', \'' + st.replace(/'/g, "\\'") + '\')">' + st + '</div>';
         });

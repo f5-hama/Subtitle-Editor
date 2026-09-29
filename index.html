@@ -4909,6 +4909,13 @@ function restoreSnapshot(snapshot) {
         updateProgress();
     }
     updateUndoRedoButtons();
+    // ناردنی دەستبەجێی گۆڕانکارییەکە بۆ ناو libass لە کاتی Undo و Redo
+    if (typeof LibassRenderer !== 'undefined' && LibassRenderer.isEnabled()) {
+        LibassRenderer.sync(true);
+    }
+    if (typeof renderSubtitlesNow === 'function') {
+        renderSubtitlesNow();
+    }
 }
 
 function undo() { 
@@ -7165,7 +7172,7 @@ function renderSubtitlesNow() {
     try {
         var ct = video.currentTime || 0;
 
-        // ١. نوێکردنەوەی کاتژمێر و شریتی پێشکەوتن بەبێ دروستکردنی هیچ قورساییەک
+// ١. نوێکردنەوەی کاتژمێر و شریتی ڤیدیۆ
         if (video.duration) {
             var pct = (ct / video.duration) * 100;
             var fill = document.getElementById('customProgressFill');
@@ -7173,13 +7180,22 @@ function renderSubtitlesNow() {
             var timeText = document.getElementById('customTimeText');
             if (timeText) {
                 var formattedStr = formatPlayerTime(ct) + ' / ' + formatPlayerTime(video.duration);
-                if (timeText.innerText !== formattedStr) {
-                    timeText.innerText = formattedStr;
-                }
+                if (timeText.innerText !== formattedStr) timeText.innerText = formattedStr;
             }
         }
 
-        // ٢. ئەگەر libass چالاک بێت، دەستبەجێ بە کارتی گرافیک (GPU) ژێرنووسەکە لێدەدات و مۆبایل سەرقاڵ ناکات
+        if (!originalData || originalData.length === 0) return;
+
+        // ٢. ڕەنگکردن و دیاریکردنی کارتی چالاک لە خوارەوە (active-sub)
+        document.querySelectorAll('.active-sub').forEach(function(el) { el.classList.remove('active-sub'); });
+        for (var i = 0; i < originalData.length; i++) {
+            if (ct >= originalData[i].startSec && ct <= originalData[i].endSec) {
+                var c = document.querySelector('.subtitle-card[data-index="' + i + '"]');
+                if (c) c.classList.add('active-sub');
+            }
+        }
+
+        // ٣. ئەگەر libass چالاک بێت لێرە دەردەچێت دوای ئەوەی کارتەکەی دیاری کرد
         if (typeof LibassRenderer !== 'undefined' && LibassRenderer.isActive()) {
             if (overlay) overlay.innerHTML = '';
             return;
@@ -7187,7 +7203,7 @@ function renderSubtitlesNow() {
 
         if (!originalData || originalData.length === 0) return;
 
-        // ٣. دۆخی ئاسایی (کاتێک libass کوژاوەیە)
+        // ٤. دۆخی ئاسایی (کاتێک libass کوژاوەیە)
         var activeSubs = [];
         for (var i = 0; i < originalData.length; i++) {
             if (ct >= originalData[i].startSec && ct <= originalData[i].endSec) {
@@ -7436,7 +7452,7 @@ var LibassRenderer = (function () {
                 },
                 fallbackFont: 'noto sans arabic',
                 fonts: allFonts,
-                timeOffset: 0,        // کاتی زێڕین بۆ هاوسەنگکردنی تەواوەتی دەنگ و دەق
+                timeOffset: 0.05,        // کاتی زێڕین بۆ هاوسەنگکردنی تەواوەتی دەنگ و دەق
                 dropAllAnimations: false,
                 dropAllBlur: false,
                 targetFps: 24,           // ٢٤ فریم (سووک و بێ لاگ لەسەر مۆبایل)

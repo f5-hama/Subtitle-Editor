@@ -7165,22 +7165,29 @@ function renderSubtitlesNow() {
     try {
         var ct = video.currentTime || 0;
 
-        // ١. نوێکردنەوەی دەستبەجێی کاتژمێر و شریتی پێشکەوتنی ڤیدیۆ (بۆ هەردوو دۆخی libass و ئاسایی)
+        // ١. نوێکردنەوەی کاتژمێر و شریتی پێشکەوتن بەبێ دروستکردنی هیچ قورساییەک
         if (video.duration) {
             var pct = (ct / video.duration) * 100;
             var fill = document.getElementById('customProgressFill');
             if (fill) fill.style.width = pct + '%';
             var timeText = document.getElementById('customTimeText');
-            if (timeText) timeText.innerText = formatPlayerTime(ct) + ' / ' + formatPlayerTime(video.duration);
+            if (timeText) {
+                var formattedStr = formatPlayerTime(ct) + ' / ' + formatPlayerTime(video.duration);
+                if (timeText.innerText !== formattedStr) {
+                    timeText.innerText = formattedStr;
+                }
+            }
         }
 
-        if (!originalData || originalData.length === 0) return;
-
-// ئەگەر libass چالاک بێت، پێویست ناکات دەقەکان دووبارە بە مۆبایل هەژمار بکرێنەوە
+        // ٢. ئەگەر libass چالاک بێت، دەستبەجێ بە کارتی گرافیک (GPU) ژێرنووسەکە لێدەدات و مۆبایل سەرقاڵ ناکات
         if (typeof LibassRenderer !== 'undefined' && LibassRenderer.isActive()) {
             if (overlay) overlay.innerHTML = '';
             return;
         }
+
+        if (!originalData || originalData.length === 0) return;
+
+        // ٣. دۆخی ئاسایی (کاتێک libass کوژاوەیە)
         var activeSubs = [];
         for (var i = 0; i < originalData.length; i++) {
             if (ct >= originalData[i].startSec && ct <= originalData[i].endSec) {
@@ -7199,23 +7206,12 @@ function renderSubtitlesNow() {
             }
         }
 
-        // دیاریکردنی کارتی دێڕی چالاک لە خوارەوە
         document.querySelectorAll('.active-sub').forEach(function(el) { el.classList.remove('active-sub'); });
         activeSubs.forEach(function(s) {
             var c = document.querySelector('.subtitle-card[data-index="' + s.index + '"]');
             if (c) c.classList.add('active-sub');
         });
 
-        // ئەگەر libass چالاک بێت، خۆی ژێرنووسەکان دەکێشێت
-        if (typeof LibassRenderer !== 'undefined' && LibassRenderer.status() !== 'off') {
-            LibassRenderer.probe(activeSubs.length);
-        }
-        if (typeof LibassRenderer !== 'undefined' && LibassRenderer.isActive()) {
-            if (overlay) overlay.innerHTML = '';
-            return; // لێرە دەردەچێت، بەڵام کاتژمێر و شریتەکە پێشتر نوێکراونەتەوە!
-        }
-
-        // ئەگەر libass نەبوو، بە شێوازی HTML ژێرنووسەکە دەکێشرێت
         if (!overlay) return;
         var stylesMap = (typeof getAssStylesDictionary === 'function') ? getAssStylesDictionary() : {};
         var vBox = getVideoRenderBox(video, playerWrapper);
@@ -7242,7 +7238,7 @@ function renderSubtitlesNow() {
 }
 
 /* ============================================================
-   ڕەندەری تەواو و بێ کێشەی libass (JASSUB) بە پشتیوانیی تەواوی فۆنتەکان
+   ڕەندەری تەواو، سووک و خێرای libass (JASSUB) بە پشتیوانیی فۆنت و سانسۆر
    ============================================================ */
 var LibassRenderer = (function () {
     var JASSUB = null, instance = null, canvas = null, loadingPromise = null;
@@ -7250,7 +7246,7 @@ var LibassRenderer = (function () {
     var lastError = '';
     var extraFonts = [];
 
-    // ناونیشانی ڕاستەقینەی فۆڵدەری jassub
+    // ڕێڕەوی لۆکاڵی فۆڵدەری jassub
     var CDN = new URL('./jassub/', window.location.href).href;
 
     function fmtAssTime(sec) {
@@ -7267,7 +7263,7 @@ var LibassRenderer = (function () {
     var DEF_STYLE_FORMAT = 'Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding';
     var EVENT_FORMAT = 'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text';
 
-    // فەنکشنی زیرەک بۆ گۆڕینی ناوی فۆنت بۆ ئەو فۆنتەی کە بەکارهێنەر زیادی کردووە
+    // گۆڕینی فۆنت بۆ ئەو فۆنتەی بەکارهێنەر دایناوە
     function resolveFontForAss(fontName) {
         if (!fontName) return fontName;
         var fnClean = fontName.trim().replace(/^@/, '');
@@ -7325,7 +7321,6 @@ var LibassRenderer = (function () {
         var userText = ta ? ta.value : '';
         var lineText = assEffectiveLineText(i, userText).replace(/\r?\n/g, '\\N');
 
-        // گۆڕینی تاگی \fn ناو دێڕەکان بۆ فۆنتە نوێیەکە
         return lineText.replace(/\\fn([^\\}]+)/gi, function(match, fnName) {
             return '\\fn' + resolveFontForAss(fnName);
         });
@@ -7368,6 +7363,7 @@ var LibassRenderer = (function () {
             for (var n = 0; n < originalData.length; n++) events.push(eventLineFor(n));
         }
 
+        // سانسۆرەکان دەچنە بەرزترین چینی فایلەکە (Layer 99)
         if (typeof censorAddedList !== 'undefined' && censorAddedList.length > 0) {
             censorAddedList.forEach(function(c) {
                 events.push('Dialogue: 99,' + c.stTime + ',' + c.enTime + ',Default,,0,0,0,,' + c.rawText);
@@ -7386,7 +7382,7 @@ var LibassRenderer = (function () {
                 if (typeof window.JASSUB === 'function') resolve(window.JASSUB);
                 else reject(new Error('JASSUB نەدۆزرایەوە'));
             };
-            s.onerror = function() { reject(new Error('فایلی jassub.umd.js نەدۆزرایەوە لە ناو فۆڵدەری jassub')); };
+            s.onerror = function() { reject(new Error('فایلی jassub.umd.js نەدۆزرایەوە')); };
             document.head.appendChild(s);
         });
     }
@@ -7414,7 +7410,7 @@ var LibassRenderer = (function () {
             JASSUB = JASSUB_CLASS;
             var scriptContent = buildScript();
 
-            // کۆکردنەوەی هەموو ئەو فۆنتانەی لە پێشتر یان لە سەیڤکراوەکان بارکراون
+            // کۆکردنەوەی تەواوی فۆنتەکان
             var allFonts = extraFonts.slice();
             if (typeof FontStore !== 'undefined') {
                 FontStore.list().forEach(function(f) {
@@ -7440,12 +7436,12 @@ var LibassRenderer = (function () {
                 },
                 fallbackFont: 'noto sans arabic',
                 fonts: allFonts,
-                timeOffset: 0.25,
+                timeOffset: 0.25,        // کاتی زێڕین بۆ هاوسەنگکردنی تەواوەتی دەنگ و دەق
                 dropAllAnimations: false,
                 dropAllBlur: false,
-                targetFps: 24,
-                prescaleFactor: 0.80,
-                offscreenRender: false,
+                targetFps: 24,           // ٢٤ فریم (سووک و بێ لاگ لەسەر مۆبایل)
+                prescaleFactor: 0.70,    // ڕێژەی کێشانی سووک و خێرا بۆ تەڵخی و تابلۆکان
+                offscreenRender: true,   // وێنەکێشان ڕاستەوخۆ بە کارتی گرافیک (GPU)
                 useLocalFonts: true
             };
 
@@ -7517,7 +7513,7 @@ var LibassRenderer = (function () {
             if (instance && typeof instance.addFont === 'function') {
                 instance.addFont(bytes);
             }
-            sync(true); // یەکسەر فۆنتە نوێیەکە دەخاتە سەر ڤیدیۆکە
+            sync(true);
         } catch (e) { console.error('libass addFont error:', e); }
     }
 

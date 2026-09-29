@@ -7242,64 +7242,15 @@ function renderSubtitlesNow() {
 }
 
 /* ============================================================
-   ڕەندەری libass (JASSUB) — پێشبینینی ١٠٠٪ وەکو FFmpeg
-   هەموو تاگ، ستایل، ڕێزۆلوشن، دراوینگ، \t \clip \move \fad \p1 …
+   ڕەندەری تەواو و بێ کێشەی libass (JASSUB) - لۆکاڵ و ئۆفلاین
    ============================================================ */
 var LibassRenderer = (function () {
     var JASSUB = null, instance = null, canvas = null, loadingPromise = null;
-    var lastScript = '', lastSyncAt = 0, enabled = false, failed = false;   // کوژاوە بە بنەڕەت: ڕەندەری HTML سەلامەتە
-    var proven = false, lastProbe = 0, noInkSince = 0, lastError = '';
+    var lastScript = '', lastSyncAt = 0, enabled = false, failed = false;
+    var lastError = '';
 
-    // --- شوێنکەوتنی ڕاستەقینەی داگرتن (بایت بە بایت)، بۆ نیشاندانی ڕێژەی ڕاستی لە دوگمەکە ---
-    var dl = { loaded: 0, total: 0, totalKnown: true, active: false };
-    var dlNotifyAt = 0;
-    function resetDl() { dl.loaded = 0; dl.total = 0; dl.totalKnown = true; dl.active = false; }
-    function notifyDl() {
-        var now = Date.now();
-        if (now - dlNotifyAt < 120) return;
-        dlNotifyAt = now;
-        notifyUi();
-    }
-    function dlPercent() {
-        if (!dl.totalKnown || !dl.total) return null;
-        return Math.max(0, Math.min(99, Math.round(dl.loaded / dl.total * 100)));
-    }
-    // fetch ـی ڕاستەقینە بە شوێنکەوتنی بایتەکان (بەبێ دروستکردنی هیچ ژمارەیەکی هەڵبەستراو)
-    function fetchWithProgress(url) {
-        return fetch(url).then(function (r) {
-            if (!r.ok) throw new Error('HTTP ' + r.status + ' لە ' + url);
-            var len = r.headers.get('content-length');
-            if (len) dl.total += parseInt(len, 10); else dl.totalKnown = false;
-            if (!r.body || !r.body.getReader) {
-                return r.arrayBuffer().then(function (buf) { dl.loaded += buf.byteLength; notifyDl(); return buf; });
-            }
-            var reader = r.body.getReader(), chunks = [], total = 0;
-            function pump() {
-                return reader.read().then(function (res) {
-                    if (res.done) return;
-                    chunks.push(res.value); total += res.value.byteLength;
-                    dl.loaded += res.value.byteLength; notifyDl();
-                    return pump();
-                });
-            }
-            return pump().then(function () {
-                var out = new Uint8Array(total), off = 0;
-                for (var i = 0; i < chunks.length; i++) { out.set(chunks[i], off); off += chunks[i].length; }
-                return out.buffer;
-            });
-        }).catch(function (err) {
-            // TypeError ی وا "Failed to fetch" واتای ڕاستەقینەی HTTP ی نییە -- زۆرجار CORS، بلۆککردنی تۆڕ، یان adblocker ـە
-            if (err instanceof TypeError || !/^HTTP /.test(err.message || '')) {
-                throw new Error('نەگەیشتە ' + url + ' (' + (err.message || 'network error') + ') — ڕەنگە CORS، فایەروۆڵ، Adblock یان بلۆککردنی تۆڕی ئەم ژینگەیە هۆکار بێت');
-            }
-            throw err;
-        });
-    }
-    function decodeText(buf) { return new TextDecoder('utf-8').decode(new Uint8Array(buf)); }
-    function supportsSIMD() {
-        try { return WebAssembly.validate(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 96, 0, 1, 123, 3, 2, 1, 0, 10, 10, 1, 8, 0, 65, 0, 253, 15, 253, 98, 11])); }
-        catch (e) { return false; }
-    }
+    // ناونیشانی ڕاستەقینەی فۆڵدەری jassub
+    var CDN = new URL('./jassub/', window.location.href).href;
 
     function fmtAssTime(sec) {
         if (!isFinite(sec) || sec < 0) sec = 0;
@@ -7316,50 +7267,14 @@ var LibassRenderer = (function () {
     var EVENT_FORMAT = 'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text';
 
     function buildHeader() {
-        var loadedCustomFont = null;
-        if (typeof FontStore !== 'undefined') {
-            var loadedList = FontStore.list().filter(function(x){ return x.ok; });
-            if (loadedList.length > 0) {
-                loadedCustomFont = loadedList[0].names[0] || loadedList[0].fileName.replace(/\.[^.]+$/, '');
-            }
-        }
-
         if (typeof assHeaderLines !== 'undefined' && assHeaderLines && assHeaderLines.length) {
-            var modifiedLines = assHeaderLines.map(function(line) {
-                var tr = line.trim();
-                if (tr.startsWith('Style:')) {
-                    var parts = tr.split(',');
-                    if (parts.length >= 2) {
-                        var fontName = parts[1].trim();
-                        if (typeof FontStore !== 'undefined') {
-                            var res = FontStore.resolve(fontName);
-                            if (res && res.names && res.names[0]) {
-                                parts[1] = res.names[0];
-                                return parts.join(',');
-                            }
-                            if (loadedCustomFont && !FontStore.has(fontName)) {
-                                parts[1] = loadedCustomFont;
-                                return parts.join(',');
-                            }
-                        }
-                    }
-                }
-                return line;
-            });
-            var txt = modifiedLines.join('\n').replace(/\s+$/, '');
+            var txt = assHeaderLines.join('\n').replace(/\s+$/, '');
             if (!/\[Events\]/i.test(txt)) txt += '\n\n[Events]';
             if (!/^\s*Format:\s*Layer/im.test(txt)) txt += '\n' + EVENT_FORMAT;
             return txt + '\n';
         }
-
         var r = (typeof getActiveScriptResolution === 'function') ? getActiveScriptResolution() : { resX: 1920, resY: 1080 };
-        var defaultFontName = loadedCustomFont || 'KurdForest';
-
-        return '[Script Info]\nScriptType: v4.00+\nWrapStyle: 0\nScaledBorderAndShadow: yes\nYCbCr Matrix: TV.709\n' +
-            'PlayResX: ' + r.resX + '\nPlayResY: ' + r.resY + '\n\n[V4+ Styles]\n' + DEF_STYLE_FORMAT + '\n' +
-            'Style: Default,' + defaultFontName + ',' + Math.max(20, Math.round(r.resY / 20)) +
-            ',&H00FFFFFF,&H000000FF,&H00000000,&H80000000,0,0,0,0,100,100,0,0,1,2.2,1,2,20,20,' +
-            Math.max(10, Math.round(r.resY / 45)) + ',1\n\n[Events]\n' + EVENT_FORMAT + '\n';
+        return '[Script Info]\nScriptType: v4.00+\nWrapStyle: 0\nPlayResX: ' + r.resX + '\nPlayResY: ' + r.resY + '\nScaledBorderAndShadow: yes\n\n[V4+ Styles]\n' + DEF_STYLE_FORMAT + '\nStyle: Default,KurdForest,67,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,1.5,2.0,2,10,10,20,1\n\n[Events]\n' + EVENT_FORMAT + '\n';
     }
 
     function currentTextFor(i) {
@@ -7371,24 +7286,6 @@ var LibassRenderer = (function () {
         return assEffectiveLineText(i, userText).replace(/\r?\n/g, '\\N');
     }
 
-    function stripFnTags(text) {
-        if (!text) return '';
-        return String(text).replace(/\\fn([^\\}]+)/gi, function(match, fontName) {
-            var fnClean = fontName.trim();
-            if (typeof FontStore !== 'undefined') {
-                var resolved = FontStore.resolve(fnClean);
-                if (resolved && resolved.names && resolved.names[0]) {
-                    return '\\fn' + resolved.names[0];
-                }
-                var loaded = FontStore.list().filter(function(x){ return x.ok; });
-                if (loaded.length > 0 && !FontStore.has(fnClean)) {
-                    return '\\fn' + (loaded[0].names[0] || fnClean);
-                }
-            }
-            return match;
-        });
-    }
-
     function eventLineFor(i) {
         var item = originalData[i];
         if (!item) return '';
@@ -7397,7 +7294,7 @@ var LibassRenderer = (function () {
             fmtAssTime(item.startSec) + ',' + fmtAssTime(item.endSec) + ',' +
             ((m.style || 'Default').trim() || 'Default') + ',' + (m.name || '') + ',' +
             (m.marginL || '0') + ',' + (m.marginR || '0') + ',' + (m.marginV || '0') + ',' +
-            (m.effect || '') + ',' + stripFnTags(currentTextFor(i));
+            (m.effect || '') + ',' + currentTextFor(i);
     }
 
     function buildScript() {
@@ -7411,14 +7308,12 @@ var LibassRenderer = (function () {
             for (var k = 0; k < master.length; k++) {
                 var ev = master[k];
                 if (ev.isTech) {
-                    // دێڕەکانی تایپسێتینگ/دراوینگ/Comment وەک خۆیان (بێ دەستکاری)
                     if (ev.rawLine) events.push(ev.rawLine);
                 } else {
                     var idx = uidToIndex[ev.uid];
                     if (typeof idx !== 'undefined') events.push(eventLineFor(idx));
                 }
             }
-            // دێڕی نوێی زیادکراو کە لە ماستەرەکە نییە
             var seen = {};
             for (var q = 0; q < master.length; q++) if (!master[q].isTech) seen[master[q].uid] = true;
             for (var j = 0; j < originalData.length; j++) {
@@ -7427,64 +7322,39 @@ var LibassRenderer = (function () {
         } else {
             for (var n = 0; n < originalData.length; n++) events.push(eventLineFor(n));
         }
-        // زیادکردنی سانسۆرەکان بۆ پێشبینینی ڕاستەوخۆی libass
+
+        // سانسۆرەکانیش زیاد دەکرێن بۆ ناو پێشبینین
         if (typeof censorAddedList !== 'undefined' && censorAddedList.length > 0) {
             censorAddedList.forEach(function(c) {
                 events.push('Dialogue: 99,' + c.stTime + ',' + c.enTime + ',Default,,0,0,0,,' + c.rawText);
             });
         }
+
         return buildHeader() + events.join('\n') + '\n';
     }
 
-    function statusBadge(text, ok) { /* hidden */ }
-
-    function ensureCanvas(wrapper) {
-        if (canvas && canvas.parentNode) return canvas;
-        canvas = document.createElement('canvas');
-        canvas.id = 'libass-canvas';
-        canvas.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:18;';
-        wrapper.appendChild(canvas);
-        return canvas;
-    }
-
-    var CDN = './jassub/';
-    var workerBlob = null;
-    // Worker ی cross-origin بلۆک دەکرێت؛ کۆدەکەی وەک Blob ی هەمان origin بار دەکەین (بە شوێنکەوتنی ڕاستی داگرتن)
-    function getWorkerUrl() {
-        if (workerBlob) return Promise.resolve(workerBlob);
-        return fetchWithProgress(CDN + 'jassub-worker.js').then(function (buf) {
-            workerBlob = URL.createObjectURL(new Blob([buf], { type: 'application/javascript' }));
-            return workerBlob;
-        });
-    }
+    // بارکردنی فایلی jassub.umd.js
     function loadJassub() {
         if (typeof window.JASSUB === 'function') return Promise.resolve(window.JASSUB);
-        return fetchWithProgress(CDN + 'jassub.umd.js').then(function (buf) {
+        return new Promise(function(resolve, reject) {
             var s = document.createElement('script');
-            s.textContent = decodeText(buf);
+            s.src = CDN + 'jassub.umd.js';
+            s.onload = function() {
+                if (typeof window.JASSUB === 'function') resolve(window.JASSUB);
+                else reject(new Error('JASSUB نەدۆزرایەوە'));
+            };
+            s.onerror = function() { reject(new Error('فایلی jassub.umd.js نەدۆزرایەوە لە ناو فۆڵدەری jassub')); };
             document.head.appendChild(s);
-            if (typeof window.JASSUB !== 'function') throw new Error('JASSUB دوای جێبەجێکردن بەردەست نەبوو');
-            return window.JASSUB;
         });
     }
-    var wasmBlobUrl = null, wasmIsModern = false;
-    function prefetchWasm() {
-        if (wasmBlobUrl) return Promise.resolve(wasmBlobUrl);
-        wasmIsModern = supportsSIMD();
-        var url = CDN + (wasmIsModern ? 'jassub-worker-modern.wasm' : 'jassub-worker.wasm');
-        return fetchWithProgress(url).then(function (buf) {
-            wasmBlobUrl = URL.createObjectURL(new Blob([buf], { type: 'application/wasm' }));
-            return wasmBlobUrl;
-        });
-    }
-    var lastLoadError = '';
+
     function fail(err) {
         console.error('libass load failed:', err);
-        failed = true; enabled = false; loadingPromise = null; proven = false; dl.active = false;
-        lastLoadError = (err && err.message) || String(err);
+        failed = true; enabled = false; loadingPromise = null;
+        lastError = (err && err.message) || String(err);
         try { if (instance) instance.destroy(); } catch (e) { }
         instance = null;
-        if (typeof showToast === 'function') showToast('libass بار نەبوو (' + ((err && err.message) || err) + ')، پێشبینینی ئاسایی بەکاردێت', 'error');
+        if (typeof showToast === 'function') showToast('libass بار نەبوو: ' + lastError, 'error');
         if (typeof renderSubtitlesNow === 'function') renderSubtitlesNow();
         notifyUi();
     }
@@ -7495,14 +7365,18 @@ var LibassRenderer = (function () {
         if (!video || !video.src) return;
         if (instance) { sync(true); return; }
         if (loadingPromise) return;
-        resetDl(); dl.active = true; notifyUi();
-        loadingPromise = Promise.all([loadJassub(), getWorkerUrl(), prefetchWasm()]).then(function (r) {
-            JASSUB = r[0];
-            dl.active = false;
+
+        notifyUi();
+        loadingPromise = loadJassub().then(function (JASSUB_CLASS) {
+            JASSUB = JASSUB_CLASS;
+            var scriptContent = buildScript();
+
             var opts = {
                 video: video,
-                subContent: buildScript(),
-                workerUrl: r[1],
+                subContent: scriptContent,
+                workerUrl: CDN + 'jassub-worker.js',
+                wasmUrl: CDN + 'jassub-worker.wasm',
+                modernWasmUrl: CDN + 'jassub-worker-modern.wasm',
                 legacyWasmUrl: CDN + 'jassub-worker.wasm.js',
                 availableFonts: {
                     'liberation sans': CDN + 'default.woff2',
@@ -7510,29 +7384,29 @@ var LibassRenderer = (function () {
                 },
                 fallbackFont: 'noto sans arabic',
                 fonts: extraFonts.slice(),
-                timeOffset: 0.05,
+                timeOffset: 0.25,
                 dropAllAnimations: false,
                 dropAllBlur: false,
-                targetFps: 24,           // ڕێکخراو لەسەر ٢٤ فریم (فریمی ئەسڵی ڤیدیۆ، کێشی بە ڕێژەی ٦٠٪ دادەبەزێنێت)
-                prescaleFactor: 0.80,    // قەبارەی سووک بۆ ئەوەی ڕەندەری مۆبایل خێرا بکات
-                offscreenRender: true,   // چالاککردنی گرافیکی خێرا و ڕاستەوخۆ لەناو Worker
+                targetFps: 24,
+                prescaleFactor: 0.80,
+                offscreenRender: false,
                 useLocalFonts: true
             };
-            if (wasmIsModern) { opts.modernWasmUrl = r[2]; opts.wasmUrl = CDN + 'jassub-worker.wasm'; }
-            else { opts.wasmUrl = r[2]; opts.modernWasmUrl = CDN + 'jassub-worker-modern.wasm'; }
+
             instance = new JASSUB(opts);
-            lastScript = ''; proven = false; noInkSince = 0; lastError = '';
-            try { instance._worker.addEventListener('error', function (e) { lastError = (e && e.message) || 'worker error'; }); } catch (e) { }
-            setCanvasVisible(false);
+            lastScript = scriptContent;
+            failed = false;
             loadingPromise = null;
             notifyUi();
-        }).catch(function (err) { dl.active = false; fail(err); });
+
+            if (typeof renderSubtitlesNow === 'function') renderSubtitlesNow();
+        }).catch(function (err) { fail(err); });
     }
 
     function sync(force) {
         if (!instance) { attach(); return; }
         var now = Date.now();
-        if (!force && now - lastSyncAt < 150) return;
+        if (!force && now - lastSyncAt < 300) return;
         lastSyncAt = now;
         try {
             var script = buildScript();
@@ -7545,27 +7419,14 @@ var LibassRenderer = (function () {
 
     function destroy() {
         try { if (instance) instance.destroy(); } catch (e) {}
-        instance = null; loadingPromise = null; lastScript = ''; proven = false; noInkSince = 0;
+        instance = null; loadingPromise = null; lastScript = '';
         if (canvas && canvas.parentNode) canvas.parentNode.removeChild(canvas);
         canvas = null;
     }
 
-    // تەنها کاتێک libass بەڕاستی شتی کێشا، پێشبینینی HTML دەشاردرێتەوە (پێشتر هەر کە دروست بوو دەشاردرایەوە و دەقەکان دەفەوتان)
-    function isActive() { return !!(enabled && instance && !failed && proven); }
-    function status() { return failed ? 'failed' : !enabled ? 'off' : !instance ? (dl.active ? 'downloading' : 'loading') : proven ? 'proven' : 'checking'; }
-    function progressInfo() { return { loaded: dl.loaded, total: dl.totalKnown ? dl.total : 0, percent: dlPercent(), active: dl.active }; }
-    function libassCanvas() { return document.querySelector('#video-player-wrapper .JASSUB canvas') || (instance && instance._canvas) || null; }
-    function setCanvasVisible(v) { var c = libassCanvas(); if (c) c.style.visibility = v ? 'visible' : 'hidden'; }
+    function isActive() { return !!(enabled && instance && !failed); }
+    function status() { return failed ? 'failed' : !enabled ? 'off' : !instance ? 'loading' : 'proven'; }
     function notifyUi() { if (typeof kfLibassRefresh === 'function') kfLibassRefresh(); }
-    // expected = ژمارەی ئەو ڕستانەی لەم کاتەدا دەبێت دیار بن. ئەگەر libass هیچی نەکێشا: بەردەوام HTML پیشان دەدرێت
-    function probe(expected) {
-        if (!enabled || !instance || failed) return;
-        if (!proven) {
-            proven = true;
-            setCanvasVisible(true);
-            notifyUi();
-        }
-    }
 
     function hasVideo() {
         var v = document.getElementById('preview-video');
@@ -7582,18 +7443,17 @@ var LibassRenderer = (function () {
         enabled = !enabled;
         if (!enabled) {
             destroy();
-            statusBadge('libass: کوژاوە', false);
         } else {
             failed = false;
             attach();
         }
         if (typeof showToast === 'function') {
-            showToast(enabled ? 'ڕەندەری libass چالاککرا (وەکو FFmpeg)' : 'گەڕاندنەوە بۆ پێشبینینی سادە', enabled ? 'success' : 'info');
+            showToast(enabled ? 'ڕەندەری libass چالاککرا (ئۆفلاین)' : 'گەڕاندنەوە بۆ پێشبینینی سادە', enabled ? 'success' : 'info');
         }
         if (typeof renderSubtitlesNow === 'function') renderSubtitlesNow();
+        notifyUi();
     }
 
-    // زیادکردنی فۆنتی بەکارهێنەر بۆ ناو libass (تا وەک FFmpeg هەمان فۆنت بەکاربێت)
     var extraFonts = [];
     function addFont(buf) {
         try {
@@ -7601,19 +7461,19 @@ var LibassRenderer = (function () {
             extraFonts.push(bytes);
             if (instance && typeof instance.addFont === 'function') {
                 instance.addFont(bytes);
-                sync(true); // ئەمە وا دەکات هەرکە فۆنتت دانا یەکسەر بچێتە سەر ڤیدیۆکە
+                sync(true);
             }
         } catch (e) { console.error('libass addFont error:', e); }
     }
-    
-    function applyExtraFonts() {
-        if (!instance || typeof instance.addFont !== 'function') return;
-        for (var i = 0; i < extraFonts.length; i++) instance.addFont(extraFonts[i]);
-    }
 
     function isEnabled() { return enabled && !failed; }
-    function lastError_() { return lastLoadError; }
-    return { attach: attach, sync: sync, destroy: destroy, isActive: isActive, isEnabled: isEnabled, status: status, progressInfo: progressInfo, lastError: lastError_, probe: probe, toggle: toggle, buildScript: buildScript, addFont: addFont, applyExtraFonts: applyExtraFonts };
+    function lastError_() { return lastError; }
+
+    return { 
+        attach: attach, sync: sync, destroy: destroy, isActive: isActive, 
+        isEnabled: isEnabled, status: status, lastError: lastError_, 
+        toggle: toggle, buildScript: buildScript, addFont: addFont 
+    };
 })();
 
 function toggleLibassPreview() {

@@ -4257,12 +4257,98 @@ async function executeRtlFix() {
             return text.replace(/\{[^}]+\}/g, '').replace(/<[^>]+>/g, '').trim();
         }
         
-        // بزوێنەری زیرەکی گۆڕینەوەی تەکنیکەکان لە نێوان ASS و SRT و VTT
+// فەنکشنی داخستنی دروستی تاگەکان بۆ هەر دێڕێک
+        function assLineToHtml(lineStr) {
+            if (!lineStr) return "";
+            let parts = lineStr.split(/(\{[\s\S]*?\})/g);
+            let out = "";
+            let activeColor = null;
+            let isItalic = false, isBold = false, isUnderline = false, isStrike = false;
+
+            function closeColor() {
+                if (activeColor) {
+                    out += "</font>";
+                    activeColor = null;
+                }
+            }
+
+            for (let i = 0; i < parts.length; i++) {
+                let p = parts[i];
+                if (!p) continue;
+
+                if (p.startsWith("{") && p.endsWith("}")) {
+                    let inner = p.slice(1, -1);
+
+                    // ئەگەر تاگی گەڕاندنەوەی گشتی بێت {\r}
+                    if (/\\r/i.test(inner)) {
+                        closeColor();
+                        if (isItalic) { out += "</i>"; isItalic = false; }
+                        if (isBold) { out += "</b>"; isBold = false; }
+                        if (isUnderline) { out += "</u>"; isUnderline = false; }
+                        if (isStrike) { out += "</s>"; isStrike = false; }
+                    }
+
+                    // ئیتالیک
+                    if (/\\i1\b/i.test(inner)) {
+                        if (!isItalic) { out += "<i>"; isItalic = true; }
+                    } else if (/\\i0\b/i.test(inner)) {
+                        if (isItalic) { out += "</i>"; isItalic = false; }
+                    }
+
+                    // بۆڵد
+                    if (/\\b1\b|\\b[7-9]00\b/i.test(inner)) {
+                        if (!isBold) { out += "<b>"; isBold = true; }
+                    } else if (/\\b0\b/i.test(inner)) {
+                        if (isBold) { out += "</b>"; isBold = false; }
+                    }
+
+                    // ژێرهێڵ
+                    if (/\\u1\b/i.test(inner)) {
+                        if (!isUnderline) { out += "<u>"; isUnderline = true; }
+                    } else if (/\\u0\b/i.test(inner)) {
+                        if (isUnderline) { out += "</u>"; isUnderline = false; }
+                    }
+
+                    // ڕەنگەکان: {\c&HBBGGRR&} یان {\1c&HBBGGRR&}
+                    let colorMatch = inner.match(/\\(?:1?c)&H([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})&?/i);
+                    if (colorMatch) {
+                        let b = colorMatch[1], g = colorMatch[2], r = colorMatch[3];
+                        let hex = `#${r}${g}${b}`.toUpperCase();
+
+                        // ئەگەر ڕەنگی سپی بێت، بە مانای گەڕانەوە دێت بۆ ڕەنگی بنەڕەتی
+                        if (hex === '#FFFFFF') {
+                            closeColor();
+                        } else {
+                            closeColor(); // پێش کردنەوەی ڕەنگی نوێ، ڕەنگی کۆن دادەخرێت
+                            out += `<font color="${hex}">`;
+                            activeColor = hex;
+                        }
+                    } else if (/\\c(?![0-9a-fA-F&])|\\1c(?![0-9a-fA-F&])/i.test(inner)) {
+                        closeColor();
+                    }
+                } else {
+                    out += p.replace(/\\h/gi, ' ');
+                }
+            }
+
+            // لە کۆتایی دێڕەکەدا دەبێت هەموو تاگە کراوەکان دابخرێنەوە
+            closeColor();
+            if (isItalic) out += "</i>";
+            if (isBold) out += "</b>";
+            if (isUnderline) out += "</u>";
+            if (isStrike) out += "</s>";
+
+            // سڕینەوەی تاگی بەتاڵ
+            return out.replace(/<font[^>]*>\s*<\/font>/gi, '')
+                      .replace(/<([ibus])>\s*<\/\1>/gi, '');
+        }
+
+        // بزوێنەری سەرەکی بۆ هەموو فۆرماتەکان
         function universalTagConverter(rawText, targetFormat, tagOption) {
             if (!rawText) return "";
             let s = rawText;
 
-            // ١. ئەگەر بەکارهێنەر داوای پاککردنەوەی تەواوی کردبێت:
+            // ١. ئەگەر بەکارهێنەر بژاردەی «پاککردنەوە»ی هەڵبژاردبێت
             if (tagOption === 'clean') {
                 return s.replace(/\{[^}]*\}/g, '')
                         .replace(/<[^>]*>/g, '')
@@ -4270,54 +4356,39 @@ async function executeRtlFix() {
                         .trim();
             }
 
-            // ٢. ئەگەر فۆرماتی ئامانج ASS بێت:
+            // ٢. گۆڕین بۆ ASS (هەرچی تاگی HTML هەیە بە تەواوی دەکاتە تاگی فەرمی ASS)
             if (targetFormat === 'ass') {
-                // گۆڕینی تاگەکانی HTML بۆ شێوازی فەرمی ASS
-                s = s.replace(/<i>/gi, '{\\i1}').replace(/<\/i>/gi, '{\\i0}')
-                     .replace(/<b>/gi, '{\\b1}').replace(/<\/b>/gi, '{\\b0}')
-                     .replace(/<u>/gi, '{\\u1}').replace(/<\/u>/gi, '{\\u0}')
-                     .replace(/<s>/gi, '{\\s1}').replace(/<\/s>/gi, '{\\s0}');
-
-                // گۆڕینی ڕەنگی HTML وەک <font color="#RRGGBB"> بۆ شێوازی ASS وەک {\c&HBBGGRR&}
-                s = s.replace(/<font\s+color=["']?#?([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})["']?>/gi, function(m, r, g, b) {
-                    return `{\\c&H${b.toUpperCase()}${g.toUpperCase()}${r.toUpperCase()}&}`;
-                }).replace(/<\/font>/gi, '{\\c}');
-
-                // سڕینەوەی هەر تاگێکی تری HTML کە لە ASS بەکارنایەت
-                s = s.replace(/<[^>]+>/g, '');
-                
-                // دڵنیابوون لەوەی دێڕی نوێ دەبێتە \N
                 s = s.replace(/\r?\n/g, '\\N');
+
+                // ڕەنگەکانی HTML بە کۆد (#HEX)
+                s = s.replace(/<font\s+[^>]*color=["']?#?([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})["']?[^>]*>([\s\S]*?)<\/font>/gi, function(m, r, g, b, text) {
+                    return `{\\c&H${b.toUpperCase()}${g.toUpperCase()}${r.toUpperCase()}&}${text}{\\c}`;
+                });
+
+                // ڕەنگەکان بە ناو (red, green, blue...)
+                const nameMap = { red:'0000FF', green:'00FF00', blue:'FF0000', yellow:'00FFFF', white:'FFFFFF', black:'000000' };
+                s = s.replace(/<font\s+[^>]*color=["']?([a-zA-Z]+)["']?[^>]*>([\s\S]*?)<\/font>/gi, function(m, name, text) {
+                    let bgr = nameMap[name.toLowerCase()] || 'FFFFFF';
+                    return `{\\c&H${bgr}&}${text}{\\c}`;
+                });
+
+                // شێوازەکانی تر
+                s = s.replace(/<i>([\s\S]*?)<\/i>/gi, '{\\i1}$1{\\i0}')
+                     .replace(/<b>([\s\S]*?)<\/b>/gi, '{\\b1}$1{\\b0}')
+                     .replace(/<u>([\s\S]*?)<\/u>/gi, '{\\u1}$1{\\u0}')
+                     .replace(/<s>([\s\S]*?)<\/s>/gi, '{\\s1}$1{\\s0}')
+                     .replace(/<[^>]+>/g, ''); // پاککردنەوەی تاگی نامۆی وەک <v>
+
+                // لکاندنی تاگە دووبارەکان
+                s = s.replace(/\{\\c\}\{\\c&H/gi, '{\\c&H');
                 return s.trim();
             }
 
-            // ٣. ئەگەر فۆرماتی ئامانج SRT یان VTT بێت:
+            // ٣. گۆڕین بۆ SRT یان VTT (هەر دێڕێک بە سەربەخۆ دادەخرێت تا ڕەنگەکان تێکەڵ نەبن)
             if (targetFormat === 'srt' || targetFormat === 'vtt') {
-                // کاتێک لە ASSـەوە دێت: گۆڕینی دێڕی نوێی \N بۆ ئینتەری ئاسایی
-                s = s.replace(/\\[Nn]/g, '\n').replace(/\\h/gi, ' ');
-
-                // گۆڕینی ستایلە سەرەکییەکان بۆ تاگی هاوتای HTML
-                s = s.replace(/\{\\i1\}/gi, '<i>').replace(/\{\\i0\}/gi, '</i>')
-                     .replace(/\{\\b1\}/gi, '<b>').replace(/\{\\b0\}/gi, '</b>')
-                     .replace(/\{\\u1\}/gi, '<u>').replace(/\{\\u0\}/gi, '</u>')
-                     .replace(/\{\\s1\}/gi, '<s>').replace(/\{\\s0\}/gi, '</s>');
-
-                // گۆڕینی ڕەنگی ASS {\c&HBBGGRR&} بۆ ڕەنگی هاوتای HTML <font color="#RRGGBB">
-                s = s.replace(/\{\\(?:1?c)&H([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})&?\}/gi, function(m, b, g, r) {
-                    return `<font color="#${r}${g}${b}">`;
-                }).replace(/\{\\c\}|\{\\r[^\}]*\}/gi, '</font>');
-
-                // سڕینەوەی هەموو کۆدە نەخوێندراوەکانی تر لە SRT/VTT (وەک \pos, \move, \an, \fad, \clip, \p1...)
-                s = s.replace(/\{[^}]*\}/g, '');
-
-                // پاککردنەوەی تاگی بەتاڵ و زیادە
-                s = s.replace(/<([ibus])>\s*<\/\1>/gi, '')
-                     .replace(/<font[^>]*>\s*<\/font>/gi, '');
-
-                // ئەگەر لە VTTـەوە هاتبوو: سڕینەوەی تاگی دەنگی <v Speaker>
-                s = s.replace(/<\/?[vV][^>]*>/g, '');
-
-                return s.trim();
+                let lines = s.split(/\\[Nn]|\r?\n/);
+                let processedLines = lines.map(l => assLineToHtml(l.trim()));
+                return processedLines.join('\n').trim();
             }
 
             return s;

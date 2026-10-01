@@ -323,7 +323,13 @@ function deleteEmptySubtitleLines() {
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
         #progress-container { width: 100%; height: 5px; background: var(--border-color); position: absolute; bottom: 0; left: 0; overflow: hidden; }
-        #progress-bar { height: 100%; width: 0%; background: linear-gradient(90deg, #34e89e 0%, #0f9b0f 100%); transition: width 0.25s ease; }
+        #progress-bar { 
+    height: 100%; 
+    width: 0%; 
+    background: linear-gradient(90deg, var(--primary) 0%, var(--primary-hover) 100%) !important; 
+    box-shadow: 0 0 10px var(--primary-glow) !important;
+    transition: width 0.25s ease; 
+}
         
         #toast-container { position: fixed; bottom: calc(95px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); z-index: 99999; display: flex; flex-direction: column; gap: 8px; pointer-events: none; width: max-content; max-width: 92%; }
         .toast { background: rgba(22, 30, 26, 0.96); border: 1px solid var(--card-border); color: white; padding: 10px 18px; border-radius: 12px; font-size: 13.5px; font-weight: bold; box-shadow: 0 6px 20px rgba(0,0,0,0.3); backdrop-filter: blur(10px); opacity: 0; transform: translateY(15px); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); text-align: center; }
@@ -1974,7 +1980,7 @@ input[type="checkbox"], input[type="radio"] {
                 </button>
 
                 <!-- دوگمەی لابردنی ڤیدیۆ لە سەرەوە -->
-                <button class="top-btn danger-tool" id="btn-remove-video-top" onclick="resetVideoPlayer(); showToast('ڤیدیۆکە لابرا', 'info');" title="لابردنی ڤیدیۆ" style="display: none;">
+                <button class="top-btn danger-tool" id="btn-remove-video-top" onclick="userRemoveVideo()" title="لابردنی ڤیدیۆ" style="display: none;">
                     <svg class="icon" style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
@@ -3036,7 +3042,17 @@ function restoreFromHistory(id) {
         if (modal) modal.style.display = 'none';
         subtitleNotes = item.notes || [];
         buildEditorUI(item.savedState || []);
-        showToast('کارەکە لە مێژووەوە گەڕێندرایەوە', 'success');
+        
+        // بردنەوەت بۆ سەر هەمان دێڕی مێژووەکە
+        restoreScrollPosition(item.scrollPos, item.lastLineIndex);
+        // هێنانەوەی ڤیدیۆ تەنها ئەگەر بۆ ئەم فایلە لە مێژوودا مابێت و لانەبرابێت
+        VideoStore.load(currentFileName).then(saved => {
+            if (saved && saved.blob) {
+                playVideoSource(URL.createObjectURL(saved.blob));
+                showToast('ڤیدیۆکە بارکرایەوە: ' + saved.fileName, 'info');
+            }
+        });
+        showToast('کارەکە گەڕێندرایەوە سەر هەمان دێڕ', 'success');
     } else {
         showToast('ئەم تۆمارە لە مێژوودا نەدۆزرایەوە!', 'error');
     }
@@ -3157,24 +3173,89 @@ window.onload = () => {
             }
         }
 
-        window.addEventListener('popstate', () => {
+// سیستەمی دووجار گەڕانەوە لەناو شاشەی ئیدیت
+        let lastEditorBackPressTime = 0;
+        let lastAppExitPressTime = 0;
+
+        // دڵنیابوون لە دۆخی شاشەی سەرەکی
+        if (!history.state || history.state.page !== 'setup') {
+            history.replaceState({ page: 'setup' }, '', window.location.pathname);
+        }
+
+        function getActiveModal() {
+            const overlays = document.querySelectorAll('.custom-modal-overlay');
+            for (let i = overlays.length - 1; i >= 0; i--) {
+                const style = window.getComputedStyle(overlays[i]);
+                if (style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0') {
+                    return overlays[i];
+                }
+            }
+            return null;
+        }
+
+        window.addEventListener('popstate', (e) => {
+            // ١. ئەگەر هەر مۆداڵێک کراوە بێت، تەنها مۆداڵەکە دابخە
+            const activeModal = getActiveModal();
+            if (activeModal) {
+                activeModal.style.display = 'none';
+                if (isEditing) {
+                    history.pushState({ page: 'editor' }, '', '#editor');
+                } else {
+                    history.pushState({ page: 'setup' }, '', window.location.pathname);
+                }
+                return;
+            }
+
+            // ٢. ئەگەر شریتی گەڕان کراوە بێت
+            const searchPanel = document.getElementById('searchBarPanel');
+            if (searchPanel && searchPanel.style.display === 'block') {
+                toggleSearchBar();
+                if (isEditing) history.pushState({ page: 'editor' }, '', '#editor');
+                return;
+            }
+
+            // ٣. ئەگەر لەناو شاشەی دەستکاریکردنی ژێرنووس بوو (Editor):
             if (isEditing) {
-                document.getElementById('back-confirm-modal').style.display = 'flex';
-                history.pushState({page: 'editor'}, '', '#editor'); 
+                const now = Date.now();
+                if (now - lastEditorBackPressTime < 2000) {
+                    // ئەگەر دووجار گەڕایەوە: دەچێتە شاشەی سەرەکی (دەرت ناکات!)
+                    executeGoBack();
+                } else {
+                    // گەڕانەوەی یەکەم: ئاگاداری پیشان بدە و لەناو ئیدیت بیهێڵەوە
+                    lastEditorBackPressTime = now;
+                    history.pushState({ page: 'editor' }, '', '#editor');
+                    showToast('بۆ گەڕانەوە بۆ شاشەی سەرەکی، جارێکی تر کرتە لە گەڕانەوە بکە', 'info');
+                }
+                return;
+            }
+
+            // ٤. ئەگەر لە شاشەی سەرەکی بوو (دەرچوون لە ئەپ بە تەواوی بە دووجار داگرتن):
+            const nowApp = Date.now();
+            if (nowApp - lastAppExitPressTime < 2000) {
+                history.back();
+            } else {
+                lastAppExitPressTime = nowApp;
+                history.pushState({ page: 'setup' }, '', window.location.pathname);
+                showToast('بۆ دەرچوون لە ئەپ، جارێکی تر کرتە لە گەڕانەوە بکە', 'info');
             }
         });
 
-        function confirmGoBack() { document.getElementById('back-confirm-modal').style.display = 'flex'; }
+        function confirmGoBack() {
+            executeGoBack(); // ڕاستەوخۆ دەگەڕێتەوە بێ پرسیار
+        }
         
         function executeGoBack() {
+            saveSession(); // دڵنیابوون لەوەی دواین دەستکاری بە تەواوی لە مێژوودا پاشەکەوت دەبێت
             isEditing = false;
-            document.getElementById('back-confirm-modal').style.display = 'none';
+            const modal = document.getElementById('back-confirm-modal');
+            if (modal) modal.style.display = 'none';
             document.getElementById('editor-screen').style.display = 'none';
             document.getElementById('setup-screen').style.display = 'flex';
             document.body.className = document.documentElement.classList.contains('dark-theme') ? 'startup-bg dark-theme' : 'startup-bg';
             resetVideoPlayer();
             clearSession(); 
             history.replaceState(null, '', window.location.pathname);
+            showToast('کارەکەت لە مێژوودا سەیڤ کرا و گەڕایتەوە', 'info');
         }
 
         function toggleSearchBar() {
@@ -4759,10 +4840,77 @@ function parseVTTContent(data) {
     return items;
 }
 
+// دۆزینەوەی ئەو دێڕەی کە لەسەر شاشەکە دیارە لە کاتی سەیڤکردندا
+function getCurrentScrollInfo() {
+    const container = document.getElementById('subtitles-container');
+    if (!container) return { scrollTop: 0, lineIndex: 0 };
+
+    // ئەگەر دەستت لەناو دێڕێک دابێت بۆ دەستکاریکردن
+    const activeEl = document.activeElement;
+    if (activeEl && activeEl.tagName === 'TEXTAREA') {
+        const c = activeEl.closest('.subtitle-card');
+        if (c && c.getAttribute('data-index') !== null) {
+            return { scrollTop: container.scrollTop, lineIndex: parseInt(c.getAttribute('data-index'), 10) };
+        }
+    }
+
+    // ئەگینا ئەو دێڕە وەردەگرێت کە دەکەوێتە سەرەوەی سندووقەکە
+    const cards = container.querySelectorAll('.subtitle-card');
+    const containerTop = container.getBoundingClientRect().top;
+    let closestIndex = 0;
+    let minDiff = Infinity;
+
+    for (let i = 0; i < cards.length; i++) {
+        const rect = cards[i].getBoundingClientRect();
+        const diff = Math.abs(rect.top - containerTop);
+        if (diff < minDiff) {
+            minDiff = diff;
+            closestIndex = parseInt(cards[i].getAttribute('data-index') || i, 10);
+        }
+    }
+
+    return { scrollTop: container.scrollTop, lineIndex: closestIndex };
+}
+
+// خلیسکاندنەوە بۆ سەر هەمان ئەو دێڕەی لێی وەستابوویت بە گڵۆوێکەوە
+function restoreScrollPosition(scrollPos, lineIndex) {
+    setTimeout(() => {
+        const container = document.getElementById('subtitles-container');
+        if (!container) return;
+
+        if (lineIndex !== undefined && lineIndex !== null && lineIndex >= 0) {
+            const card = container.querySelector(`.subtitle-card[data-index="${lineIndex}"]`);
+            if (card) {
+                card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                card.style.transition = 'box-shadow 0.4s, transform 0.4s';
+                card.style.boxShadow = '0 0 18px var(--primary)';
+                setTimeout(() => { card.style.boxShadow = ''; }, 1500);
+                return;
+            }
+        }
+
+        if (scrollPos !== undefined && scrollPos !== null) {
+            container.scrollTop = scrollPos;
+        }
+    }, 150);
+}
+
 function saveSession() {
     try {
         if (!isEditing) return;
-        const session = { originalData, currentFileName, isAssFormat, isVttFormat, assHeaderLines, rawAssMasterEvents, savedState: getCurrentState(), notes: subtitleNotes };
+        const scrollInfo = getCurrentScrollInfo();
+        const session = { 
+            originalData, 
+            currentFileName, 
+            isAssFormat, 
+            isVttFormat, 
+            assHeaderLines, 
+            rawAssMasterEvents, 
+            savedState: getCurrentState(), 
+            notes: subtitleNotes,
+            scrollPos: scrollInfo.scrollTop,
+            lastLineIndex: scrollInfo.lineIndex
+        };
         localStorage.setItem('kf_autosave_session', JSON.stringify(session));
 
         saveToHistory({
@@ -4777,7 +4925,9 @@ function saveSession() {
             isAssFormat,
             isVttFormat,
             assHeaderLines,
-            rawAssMasterEvents
+            rawAssMasterEvents,
+            scrollPos: scrollInfo.scrollTop,
+            lastLineIndex: scrollInfo.lineIndex
         });
     } catch(e) {
         console.warn("Storage full, session skipped safely.");
@@ -4802,7 +4952,17 @@ function resumeSession() {
             rawAssMasterEvents = session.rawAssMasterEvents || [];
             subtitleNotes = session.notes || [];
             buildEditorUI(session.savedState || []);
+            
+            // دەستپێکردنەوە لە هەمان شوێن و دێڕ
+            restoreScrollPosition(session.scrollPos, session.lastLineIndex);
         }
+        // هێنانەوەی ڤیدیۆ لە بەردەوامبوون
+            VideoStore.load(currentFileName).then(saved => {
+                if (saved && saved.blob) {
+                    playVideoSource(URL.createObjectURL(saved.blob));
+                    showToast('ڤیدیۆکە بارکرایەوە: ' + saved.fileName, 'info');
+                }
+            });
         const modal = document.getElementById('resume-modal');
         if (modal) modal.style.display = 'none';
     } catch(e) { 
@@ -4925,6 +5085,11 @@ function buildEditorUI(kurdishState = [], resetHistory = true) {
     updateProgress();
     saveSession(); 
     updateUndoRedoButtons();
+    
+    // ناساندنی شاشەی ئیدیت بۆ ئەوەی لە گەڕانەوەدا دەرت نەکات
+    if (window.location.hash !== '#editor') {
+        history.pushState({ page: 'editor' }, '', '#editor');
+    }
 }
 
 let typingTimer = null;
@@ -6671,10 +6836,71 @@ function confirmVideoCanvasColor() {
     }
 }
 
-        function handleNativeVideoUpload(input) {
+// بزوێنەری پاشەکەوتکردنی ڤیدیۆ لەناو داتابەیسی وێبگەڕ (IndexedDB)
+        const VideoStore = (function() {
+            const DB_NAME = 'kf_video_cache_db', STORE = 'videos';
+
+            function openDB() {
+                return new Promise((resolve, reject) => {
+                    const req = indexedDB.open(DB_NAME, 1);
+                    req.onupgradeneeded = () => {
+                        req.result.createObjectStore(STORE, { keyPath: 'id' });
+                    };
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = () => reject(req.error);
+                });
+            }
+
+            async function save(file, subName) {
+                const key = subName || currentFileName || 'default_sub';
+                try {
+                    const db = await openDB();
+                    const tx = db.transaction(STORE, 'readwrite');
+                    tx.objectStore(STORE).put({
+                        id: key,
+                        fileName: file.name,
+                        blob: file,
+                        savedAt: Date.now()
+                    });
+                } catch(e) {
+                    console.warn('Failed to save video to cache:', e);
+                }
+            }
+
+            async function load(subName) {
+                const key = subName || currentFileName || 'default_sub';
+                try {
+                    const db = await openDB();
+                    return new Promise((resolve) => {
+                        const tx = db.transaction(STORE, 'readonly');
+                        const req = tx.objectStore(STORE).get(key);
+                        req.onsuccess = () => resolve(req.result || null);
+                        req.onerror = () => resolve(null);
+                    });
+                } catch(e) {
+                    return null;
+                }
+            }
+
+            async function remove(subName) {
+                const key = subName || currentFileName || 'default_sub';
+                try {
+                    const db = await openDB();
+                    const tx = db.transaction(STORE, 'readwrite');
+                    tx.objectStore(STORE).delete(key);
+                } catch(e) {}
+            }
+
+            return { save, load, remove };
+        })();
+
+        async function handleNativeVideoUpload(input) {
             if (input.files && input.files[0]) {
-                playVideoSource(URL.createObjectURL(input.files[0]));
+                const file = input.files[0];
+                playVideoSource(URL.createObjectURL(file));
                 showToast('ڤیدیۆکە بارکرا', 'success');
+                // پاشەکەوتکردن لە داتابەیسی مۆبایلەکەت
+                await VideoStore.save(file, currentFileName);
             }
         }
 
@@ -6984,6 +7210,13 @@ function resetVideoPlayer() {
 
     clearTimeout(playerControlsTimer);
 }
+
+async function userRemoveVideo() {
+            resetVideoPlayer();
+            // سڕینەوەی هەمیشەیی لە داتابەیس بۆ ئەم ژێرنووسە
+            await VideoStore.remove(currentFileName);
+            showToast('ڤیدیۆکە لابرا و چیتر نایەتەوە', 'info');
+        }
 
 // وەرگێڕانی دروستی هەموو جۆرە ڕەنگەکانی فایلی ASS (Hex, BGR, Decimal)
 function parseAssColor(str, defaultHex) {
@@ -11899,13 +12132,178 @@ function toggleAiStyleMenu(btn) {
     if (btnEl) btnEl.classList.toggle('open', isShowing);
 }
 
-function setAiChosenStyle(val, label) {
-    document.getElementById('aiSelectedStyleVal').value = val;
-    document.getElementById('aiCurrentStyleText').innerText = label;
+let selectedAiStyles = new Set(['ALL']);
+
+// سیستەمی جوڵاندن و ڕاکێشانی ناوی ستایلەکان بە دەست ڕێک وەک بەشی مێژوو
+function setupAiTextScroll() {
+    var el = document.getElementById('aiCurrentStyleText');
+    if (!el || el.__kfInit) return;
+    el.__kfInit = true;
+
+    // ستایلەکان بۆ سکرۆڵ و فەیدبوونی کەنارەکان وەک مێژوو
+    el.style.overflowX = 'auto';
+    el.style.overflowY = 'hidden';
+    el.style.whiteSpace = 'nowrap';
+    el.style.textOverflow = 'clip';
+    el.style.scrollbarWidth = 'none';
+    el.style.webkitOverflowScrolling = 'touch';
+    el.style.touchAction = 'pan-x pan-y';
+    el.style.overscrollBehaviorX = 'contain';
+    el.style.flex = '1';
+    el.style.minWidth = '0';
+    el.style.marginInlineEnd = '8px';
+    el.style.cursor = 'grab';
+
+    if (!document.getElementById('ai-scroll-css')) {
+        const st = document.createElement('style');
+        st.id = 'ai-scroll-css';
+        st.textContent = '#aiCurrentStyleText::-webkit-scrollbar { display: none !important; }';
+        document.head.appendChild(st);
+    }
+
+    function updateFade() {
+        var max = el.scrollWidth - el.clientWidth;
+        if (max <= 1) {
+            el.style.maskImage = 'none';
+            el.style.webkitMaskImage = 'none';
+            return;
+        }
+        var sl = el.scrollLeft;
+        var canL = sl > 1;
+        var canR = sl < max - 1;
+        var lPx = canL ? '14px' : '0px';
+        var rPx = canR ? '14px' : '0px';
+        var mask = 'linear-gradient(to right, transparent 0, #000 ' + lPx + ', #000 calc(100% - ' + rPx + '), transparent 100%)';
+        el.style.maskImage = mask;
+        el.style.webkitMaskImage = mask;
+    }
+
+    el.addEventListener('scroll', updateFade, { passive: true });
+
+    // ڕاکێشان بە ماوس یان پەنجە بەبێ ئەوەی مەنیوەکە لە کاتی سکرۆڵدا بکرێتەوە
+    var drag = null, moved = false;
+
+    el.addEventListener('pointerdown', function (e) {
+        if (e.pointerType === 'touch' || e.button > 0) return;
+        var max = el.scrollWidth - el.clientWidth;
+        if (max <= 1) return;
+        drag = { x: e.clientX, sl: el.scrollLeft };
+        moved = false;
+        try { el.setPointerCapture(e.pointerId); } catch (er) {}
+        el.style.cursor = 'grabbing';
+        el.style.userSelect = 'none';
+        el.style.webkitUserSelect = 'none';
+    });
+
+    el.addEventListener('pointermove', function (e) {
+        if (!drag) return;
+        var dx = e.clientX - drag.x;
+        if (Math.abs(dx) > 3) {
+            moved = true;
+            window.__aiTextScrolling = true;
+        }
+        el.scrollLeft = drag.sl - dx;
+    });
+
+    function endPointer() {
+        if (drag) {
+            drag = null;
+            el.style.cursor = 'grab';
+            el.style.userSelect = '';
+            el.style.webkitUserSelect = '';
+            if (moved) {
+                setTimeout(function () { window.__aiTextScrolling = false; }, 120);
+            } else {
+                window.__aiTextScrolling = false;
+            }
+        }
+    }
+
+    el.addEventListener('pointerup', endPointer);
+    el.addEventListener('pointercancel', endPointer);
+
+    el.addEventListener('click', function (e) {
+        if (moved) {
+            e.stopPropagation();
+            e.preventDefault();
+            moved = false;
+        }
+    });
+
+    el.__updateFade = updateFade;
+}
+
+function toggleAiStyleMenu(btn) {
+    if (window.__aiTextScrolling) return; // ئەگەر خەریکی سکرۆڵ و جوڵاندن بوویت مەنیوەکە ناکاتەوە
     var menu = document.getElementById('aiStyleMenu');
     var btnEl = document.getElementById('aiStyleSelectBtn');
-    if (menu) menu.classList.remove('show');
-    if (btnEl) btnEl.classList.remove('open');
+    if (!menu) return;
+    var isShowing = menu.classList.toggle('show');
+    if (btnEl) btnEl.classList.toggle('open', isShowing);
+}
+
+function toggleAiStyleItem(styleName, e) {
+    if (e) e.stopPropagation();
+    const lower = styleName.toLowerCase();
+
+    if (styleName === 'ALL') {
+        selectedAiStyles.clear();
+        selectedAiStyles.add('ALL');
+    } else {
+        selectedAiStyles.delete('ALL');
+        if (selectedAiStyles.has(lower)) {
+            selectedAiStyles.delete(lower);
+        } else {
+            selectedAiStyles.add(lower);
+        }
+        if (selectedAiStyles.size === 0) {
+            selectedAiStyles.add('ALL');
+        }
+    }
+    updateAiStyleSelectionUI();
+}
+
+function updateAiStyleSelectionUI() {
+    const btnText = document.getElementById('aiCurrentStyleText');
+    const items = document.querySelectorAll('#aiStyleMenu .custom-select-item');
+
+    items.forEach(item => {
+        const val = item.getAttribute('data-val');
+        const cb = item.querySelector('input[type="checkbox"]');
+        const isSelected = (val === 'ALL' && selectedAiStyles.has('ALL')) || 
+                           (val !== 'ALL' && selectedAiStyles.has(val.toLowerCase()));
+        if (cb) cb.checked = isSelected;
+        item.style.background = isSelected ? 'rgba(142, 182, 155, 0.15)' : 'transparent';
+        item.style.color = isSelected ? 'var(--primary)' : 'var(--text-main)';
+    });
+
+    if (selectedAiStyles.has('ALL')) {
+        if (btnText) {
+            btnText.innerText = '— هەموو دێڕەکان —';
+            btnText.title = '— هەموو دێڕەکان —';
+            btnText.style.direction = 'rtl';
+            btnText.style.textAlign = 'right';
+        }
+    } else {
+        // وەرگرتنی ناوی ستایلەکان بە پیتە ئەسڵییەکانیان
+        const labels = Array.from(selectedAiStyles).map(s => {
+            const el = document.querySelector(`#aiStyleMenu [data-val="${s}"] span`);
+            return el ? el.innerText : s;
+        });
+
+        // جیاکردنەوەی ناوی ستایلەکان بە کۆمای ئینگلیزی
+        const combinedText = labels.join(', ');
+        if (btnText) {
+            btnText.innerText = combinedText;
+            btnText.title = combinedText;
+            btnText.style.direction = 'ltr';
+            btnText.style.textAlign = 'left';
+        }
+    }
+
+    if (btnText && btnText.__updateFade) {
+        setTimeout(btnText.__updateFade, 10);
+    }
 }
 
 function openAiModal() {
@@ -11918,17 +12316,28 @@ function openAiModal() {
             styles.add(sName);
         });
 
-        var html = '<div class="custom-select-item" onclick="setAiChosenStyle(\'ALL\', \'— هەموو دێڕەکان —\')">— هەموو دێڕەکان —</div>';
+        var html = `
+            <div class="custom-select-item" data-val="ALL" onclick="toggleAiStyleItem('ALL', event)" style="display:flex; justify-content:space-between; align-items:center; padding:7px 10px; cursor:pointer;">
+                <span>— هەموو دێڕەکان —</span>
+                <input type="checkbox" style="accent-color:var(--primary); width:15px; height:15px; pointer-events:none;">
+            </div>`;
+
         styles.forEach(function(st) {
-            html += '<div class="custom-select-item" onclick="setAiChosenStyle(\'' + st.replace(/'/g, "\\'") + '\', \'' + st.replace(/'/g, "\\'") + '\')">' + st + '</div>';
+            html += `
+                <div class="custom-select-item" data-val="${st.toLowerCase()}" onclick="toggleAiStyleItem('${st.replace(/'/g, "\\'")}', event)" style="display:flex; justify-content:space-between; align-items:center; padding:7px 10px; cursor:pointer;">
+                    <span>${st}</span>
+                    <input type="checkbox" style="accent-color:var(--primary); width:15px; height:15px; pointer-events:none;">
+                </div>`;
         });
         menu.innerHTML = html;
+        setupAiTextScroll();
+        updateAiStyleSelectionUI();
     }
     document.getElementById('ai-modal').style.display = 'flex';
 }
 
 function copyFilteredForAI() {
-    var selStyle = document.getElementById('aiSelectedStyleVal').value;
+    var isAll = selectedAiStyles.has('ALL');
     var linesToCopy = [];
 
     for (var i = 0; i < originalData.length; i++) {
@@ -11936,7 +12345,8 @@ function copyFilteredForAI() {
         if (item.rawText && isHeavyTypesettingLine(item.rawText)) continue;
 
         var curStyle = (item.assMeta && item.assMeta.style) ? item.assMeta.style : 'Default';
-        if (selStyle !== 'ALL' && curStyle.toLowerCase() !== selStyle.toLowerCase()) {
+        
+        if (!isAll && !selectedAiStyles.has(curStyle.toLowerCase())) {
             continue;
         }
 
@@ -11945,13 +12355,17 @@ function copyFilteredForAI() {
     }
 
     if (linesToCopy.length === 0) {
-        showToast("هیچ دێڕێک بەم ستایلەوە نەدۆزرایەوە!", "warning");
+        showToast("هیچ دێڕێک بەم ستایلانەوە نەدۆزرایەوە!", "warning");
         return;
     }
 
     var text = linesToCopy.join('\n');
     navigator.clipboard.writeText(text).then(function() {
-        showToast(linesToCopy.length + " دێڕ کۆپیکرا لە ستایلی (" + selStyle + ")!", "success");
+        var names = isAll ? "هەموو دێڕەکان" : Array.from(selectedAiStyles).map(s => {
+            const el = document.querySelector(`#aiStyleMenu [data-val="${s}"] span`);
+            return el ? el.textContent.trim() : s;
+        }).join(' - ');
+        showToast(linesToCopy.length + " دێڕ کۆپیکرا (" + names + ")", "success");
     }).catch(function() {
         var ta = document.createElement("textarea");
         ta.value = text;

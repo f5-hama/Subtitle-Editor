@@ -7169,6 +7169,12 @@ initMainVideoGestures();
 
         function playVideoSource(src) {
     const video = document.getElementById('preview-video');
+    
+    // سڕینەوەی پەیوەندییە کۆنەکانی لیباس بۆ ئەوەی لەگەڵ ڤیدیۆ تازەکە نوێ بێتەوە
+    if (typeof LibassRenderer !== 'undefined') {
+        LibassRenderer.destroy();
+    }
+
     video.src = src;
     video.load();
     document.getElementById('video-source-selector').style.display = 'none';
@@ -7190,8 +7196,16 @@ initMainVideoGestures();
         clearTimeout(playerControlsTimer);
     };
 
+    // کاتێک ڤیدیۆکە تەواو لە مێژووەوە باربوو، پەیوەندی لیباس نوێ دەبێتەوە
+    video.onloadedmetadata = () => {
+        if (typeof LibassRenderer !== 'undefined' && LibassRenderer.isEnabled()) {
+            LibassRenderer.attach();
+        }
+        if (typeof renderSubtitlesNow === 'function') renderSubtitlesNow();
+    };
+
     setupVideoSync();
-    initMainVideoGestures(); // ئەوەتە لێرە زیادکرا بۆ چالاککردنی سیستەمی یوتیوب
+    initMainVideoGestures();
 }
 
 function resetVideoPlayer() {
@@ -7610,7 +7624,12 @@ var LibassRenderer = (function () {
         if (!enabled || failed) return;
         var video = document.getElementById('preview-video');
         if (!video || !video.src) return;
-        if (instance) { sync(true); return; }
+
+        // ئەگەر پەیوەندییەکی کۆن هەبوو، سەرەتا پاکی دەکاتەوە تا کێشەی ونبوون نەمێنێت
+        if (instance) {
+            try { instance.destroy(); } catch(e){}
+            instance = null;
+        }
         if (loadingPromise) return;
 
         notifyUi();
@@ -7618,7 +7637,6 @@ var LibassRenderer = (function () {
             JASSUB = JASSUB_CLASS;
             var scriptContent = buildScript();
 
-            // کۆکردنەوەی تەواوی فۆنتەکان
             var allFonts = extraFonts.slice();
             if (typeof FontStore !== 'undefined') {
                 FontStore.list().forEach(function(f) {
@@ -7644,12 +7662,12 @@ var LibassRenderer = (function () {
                 },
                 fallbackFont: 'noto sans arabic',
                 fonts: allFonts,
-                timeOffset: 0.05,        // کاتی زێڕین بۆ هاوسەنگکردنی تەواوەتی دەنگ و دەق
+                timeOffset: 0.05,
                 dropAllAnimations: false,
                 dropAllBlur: false,
-                targetFps: 24,           // ٢٤ فریم (سووک و بێ لاگ لەسەر مۆبایل)
-                prescaleFactor: 0.70,    // ڕێژەی کێشانی سووک و خێرا بۆ تەڵخی و تابلۆکان
-                offscreenRender: true,   // وێنەکێشان ڕاستەوخۆ بە کارتی گرافیک (GPU)
+                targetFps: 24,
+                prescaleFactor: 0.70,
+                offscreenRender: true,
                 useLocalFonts: true
             };
 
@@ -7680,7 +7698,13 @@ var LibassRenderer = (function () {
     function destroy() {
         try { if (instance) instance.destroy(); } catch (e) {}
         instance = null; loadingPromise = null; lastScript = '';
-        if (canvas && canvas.parentNode) canvas.parentNode.removeChild(canvas);
+        
+        // پاککردنەوەی هەر کەنڤاسێکی کۆن کە لەسەر ڤیدیۆکە مابێتەوە
+        var wrapper = document.getElementById('video-player-wrapper');
+        if (wrapper) {
+            var oldCanvases = wrapper.querySelectorAll('canvas.libassjs-canvas');
+            oldCanvases.forEach(function(c) { c.remove(); });
+        }
         canvas = null;
     }
 

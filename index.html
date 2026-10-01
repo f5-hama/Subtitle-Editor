@@ -3173,15 +3173,15 @@ window.onload = () => {
             }
         }
 
-// سیستەمی دووجار گەڕانەوە لەناو شاشەی ئیدیت
-        let lastEditorBackPressTime = 0;
+let lastEditorBackPressTime = 0;
         let lastAppExitPressTime = 0;
 
-        // دڵنیابوون لە دۆخی شاشەی سەرەکی
-        if (!history.state || history.state.page !== 'setup') {
-            history.replaceState({ page: 'setup' }, '', window.location.pathname);
+        // دڵنیابوون لەوەی دۆخی شاشەی سەرەکی دیاریکراوە
+        if (!history.state || !history.state.kf_page) {
+            history.replaceState({ kf_page: 'setup' }, '', window.location.pathname);
         }
 
+        // دۆزینەوەی هەر مۆداڵێکی کراوە
         function getActiveModal() {
             const overlays = document.querySelectorAll('.custom-modal-overlay');
             for (let i = overlays.length - 1; i >= 0; i--) {
@@ -3193,16 +3193,33 @@ window.onload = () => {
             return null;
         }
 
+        // چاودێری مۆداڵەکان (کە مێنیوەکانی چاک کرد)
+        const modalNavObserver = new MutationObserver((mutations) => {
+            mutations.forEach((m) => {
+                if (m.type === 'attributes' && m.attributeName === 'style') {
+                    const el = m.target;
+                    if (el.classList.contains('custom-modal-overlay')) {
+                        const isShown = el.style.display === 'flex' || el.style.display === 'block';
+                        if (isShown && (!history.state || history.state.kf_modal !== el.id)) {
+                            history.pushState({ kf_modal: el.id }, '');
+                        }
+                    }
+                }
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.custom-modal-overlay').forEach((modal) => {
+                modalNavObserver.observe(modal, { attributes: true, attributeFilter: ['style'] });
+            });
+        });
+
+        // بزوێنەری سەرەکی گەڕانەوەی مۆبایل
         window.addEventListener('popstate', (e) => {
-            // ١. ئەگەر هەر مۆداڵێک کراوە بێت، تەنها مۆداڵەکە دابخە
+            // ١. ئەگەر مۆداڵ کراوە بێت: تەنها مۆداڵەکە دابخە
             const activeModal = getActiveModal();
             if (activeModal) {
                 activeModal.style.display = 'none';
-                if (isEditing) {
-                    history.pushState({ page: 'editor' }, '', '#editor');
-                } else {
-                    history.pushState({ page: 'setup' }, '', window.location.pathname);
-                }
                 return;
             }
 
@@ -3210,42 +3227,46 @@ window.onload = () => {
             const searchPanel = document.getElementById('searchBarPanel');
             if (searchPanel && searchPanel.style.display === 'block') {
                 toggleSearchBar();
-                if (isEditing) history.pushState({ page: 'editor' }, '', '#editor');
                 return;
             }
 
-            // ٣. ئەگەر لەناو شاشەی دەستکاریکردنی ژێرنووس بوو (Editor):
+            // ٣. ئەگەر مێنیوی سێ خەتەکە کراوە بێت
+            const setupMenu = document.getElementById('setupMenuDropdown');
+            if (setupMenu && setupMenu.classList.contains('show')) {
+                setupMenu.classList.remove('show');
+                return;
+            }
+
+            // ٤. ئەگەر لەناو شاشەی ئیدیت بوویت:
             if (isEditing) {
                 const now = Date.now();
                 if (now - lastEditorBackPressTime < 2000) {
-                    // ئەگەر دووجار گەڕایەوە: دەچێتە شاشەی سەرەکی (دەرت ناکات!)
+                    // ئەگەر بۆ جاری دووەم گەڕایتەوە: دەگەڕێتەوە سەر شاشەی سەرەکی
+                    lastEditorBackPressTime = 0;
                     executeGoBack();
                 } else {
-                    // گەڕانەوەی یەکەم: ئاگاداری پیشان بدە و لەناو ئیدیت بیهێڵەوە
+                    // جاری یەکەمە: لەناو ئیدیت دەمێنێتەوە و ئاگاداری دەدات
                     lastEditorBackPressTime = now;
-                    history.pushState({ page: 'editor' }, '', '#editor');
+                    history.pushState({ kf_page: 'editor' }, '', '#editor');
                     showToast('بۆ گەڕانەوە بۆ شاشەی سەرەکی، جارێکی تر کرتە لە گەڕانەوە بکە', 'info');
                 }
                 return;
             }
 
-            // ٤. ئەگەر لە شاشەی سەرەکی بوو (دەرچوون لە ئەپ بە تەواوی بە دووجار داگرتن):
+            // ٥. ئەگەر لە شاشەی سەرەکی بوویت: دووجار گەڕانەوە بۆ دەرچوون لە ئەپ
             const nowApp = Date.now();
             if (nowApp - lastAppExitPressTime < 2000) {
-                history.back();
+                history.back(); // دەرچوون لە وێبگەڕ
             } else {
                 lastAppExitPressTime = nowApp;
-                history.pushState({ page: 'setup' }, '', window.location.pathname);
+                history.pushState({ kf_page: 'setup' }, '', window.location.pathname);
                 showToast('بۆ دەرچوون لە ئەپ، جارێکی تر کرتە لە گەڕانەوە بکە', 'info');
             }
         });
 
-        function confirmGoBack() {
-            executeGoBack(); // ڕاستەوخۆ دەگەڕێتەوە بێ پرسیار
-        }
-        
+        // فەنکشنی گەڕانەوە بۆ سەر شاشەی سەرەکی
         function executeGoBack() {
-            saveSession(); // دڵنیابوون لەوەی دواین دەستکاری بە تەواوی لە مێژوودا پاشەکەوت دەبێت
+            saveSession(); // پاشەکەوتکردنی کارەکەت و شوێنی دێڕەکە
             isEditing = false;
             const modal = document.getElementById('back-confirm-modal');
             if (modal) modal.style.display = 'none';
@@ -3254,8 +3275,28 @@ window.onload = () => {
             document.body.className = document.documentElement.classList.contains('dark-theme') ? 'startup-bg dark-theme' : 'startup-bg';
             resetVideoPlayer();
             clearSession(); 
-            history.replaceState(null, '', window.location.pathname);
-            showToast('کارەکەت لە مێژوودا سەیڤ کرا و گەڕایتەوە', 'info');
+            showToast('گەڕایتەوە بۆ شاشەی سەرەکی', 'info');
+        }
+
+        function confirmGoBack() {
+            executeGoBack();
+        }
+        
+        function executeGoBack() {
+            saveSession(); // پاشەکەوتکردنی کارەکەت و شوێنی دێڕەکە لە مێژوودا
+            isEditing = false;
+            const modal = document.getElementById('back-confirm-modal');
+            if (modal) modal.style.display = 'none';
+            document.getElementById('editor-screen').style.display = 'none';
+            document.getElementById('setup-screen').style.display = 'flex';
+            document.body.className = document.documentElement.classList.contains('dark-theme') ? 'startup-bg dark-theme' : 'startup-bg';
+            resetVideoPlayer();
+            clearSession(); 
+            // گەڕاندنەوەی مێژووی وێبگەڕ بۆ سەر شاشەی سەرەکی بەبێ دەرچوون
+            if (window.location.hash) {
+                history.replaceState({ kf: 'app' }, '', window.location.pathname);
+            }
+            showToast('گەڕایتەوە بۆ شاشەی سەرەکی', 'info');
         }
 
         function toggleSearchBar() {
@@ -5085,10 +5126,10 @@ function buildEditorUI(kurdishState = [], resetHistory = true) {
     updateProgress();
     saveSession(); 
     updateUndoRedoButtons();
-    
-    // ناساندنی شاشەی ئیدیت بۆ ئەوەی لە گەڕانەوەدا دەرت نەکات
+
+    // ئەم دێڕە وا دەکات وێبگەڕ بزانێت لەناو ئیدیتدایت تا لە گەڕانەوەدا دەرت نەکات
     if (window.location.hash !== '#editor') {
-        history.pushState({ page: 'editor' }, '', '#editor');
+        history.pushState({ kf_page: 'editor' }, '', '#editor');
     }
 }
 

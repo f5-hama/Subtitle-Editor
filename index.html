@@ -1902,7 +1902,7 @@ input[type="checkbox"], input[type="radio"] {
                 <div class="upload-icon"><svg style="width:24px;height:24px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 00-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg></div>
                 <label data-i18n="batchSelectLbl">فایلەکان هەڵبژێرە:</label>
                 <div class="file-name-display" id="batchCountDisplay" data-i18n="batchNoFile">هیچ فایلێک دیاری نەکراوە</div>
-                <input type="file" id="convertFileInput" accept=".srt,.ass,.vtt" multiple onchange="updateBatchCount(this)">
+                <input type="file" id="convertFileInput" accept=".srt,.ass,.vtt,.txt,text/plain" multiple onchange="updateBatchCount(this)">
             </div>
 
             <div style="margin-bottom: 12px; text-align: start;">
@@ -4217,7 +4217,6 @@ async function executeRtlFix() {
                 display.innerText = `${input.files.length} ${i18n[currentLang]['batchFilesSelected']}`; 
                 display.style.color = "var(--success)";
                 
-                shiftInput.value = "";
             } else { 
                 display.innerText = i18n[currentLang]['batchNoFile']; 
                 display.style.color = "var(--text-muted)"; 
@@ -4257,6 +4256,86 @@ async function executeRtlFix() {
             if (!text) return "";
             return text.replace(/\{[^}]+\}/g, '').replace(/<[^>]+>/g, '').trim();
         }
+        
+        // بزوێنەری زیرەکی گۆڕینەوەی تەکنیکەکان لە نێوان ASS و SRT و VTT
+        function universalTagConverter(rawText, targetFormat, tagOption) {
+            if (!rawText) return "";
+            let s = rawText;
+
+            // ١. ئەگەر بەکارهێنەر داوای پاککردنەوەی تەواوی کردبێت:
+            if (tagOption === 'clean') {
+                return s.replace(/\{[^}]*\}/g, '')
+                        .replace(/<[^>]*>/g, '')
+                        .replace(/\\[Nn]/g, '\n')
+                        .trim();
+            }
+
+            // ٢. ئەگەر فۆرماتی ئامانج ASS بێت:
+            if (targetFormat === 'ass') {
+                // گۆڕینی تاگەکانی HTML بۆ شێوازی فەرمی ASS
+                s = s.replace(/<i>/gi, '{\\i1}').replace(/<\/i>/gi, '{\\i0}')
+                     .replace(/<b>/gi, '{\\b1}').replace(/<\/b>/gi, '{\\b0}')
+                     .replace(/<u>/gi, '{\\u1}').replace(/<\/u>/gi, '{\\u0}')
+                     .replace(/<s>/gi, '{\\s1}').replace(/<\/s>/gi, '{\\s0}');
+
+                // گۆڕینی ڕەنگی HTML وەک <font color="#RRGGBB"> بۆ شێوازی ASS وەک {\c&HBBGGRR&}
+                s = s.replace(/<font\s+color=["']?#?([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})["']?>/gi, function(m, r, g, b) {
+                    return `{\\c&H${b.toUpperCase()}${g.toUpperCase()}${r.toUpperCase()}&}`;
+                }).replace(/<\/font>/gi, '{\\c}');
+
+                // سڕینەوەی هەر تاگێکی تری HTML کە لە ASS بەکارنایەت
+                s = s.replace(/<[^>]+>/g, '');
+                
+                // دڵنیابوون لەوەی دێڕی نوێ دەبێتە \N
+                s = s.replace(/\r?\n/g, '\\N');
+                return s.trim();
+            }
+
+            // ٣. ئەگەر فۆرماتی ئامانج SRT یان VTT بێت:
+            if (targetFormat === 'srt' || targetFormat === 'vtt') {
+                // کاتێک لە ASSـەوە دێت: گۆڕینی دێڕی نوێی \N بۆ ئینتەری ئاسایی
+                s = s.replace(/\\[Nn]/g, '\n').replace(/\\h/gi, ' ');
+
+                // گۆڕینی ستایلە سەرەکییەکان بۆ تاگی هاوتای HTML
+                s = s.replace(/\{\\i1\}/gi, '<i>').replace(/\{\\i0\}/gi, '</i>')
+                     .replace(/\{\\b1\}/gi, '<b>').replace(/\{\\b0\}/gi, '</b>')
+                     .replace(/\{\\u1\}/gi, '<u>').replace(/\{\\u0\}/gi, '</u>')
+                     .replace(/\{\\s1\}/gi, '<s>').replace(/\{\\s0\}/gi, '</s>');
+
+                // گۆڕینی ڕەنگی ASS {\c&HBBGGRR&} بۆ ڕەنگی هاوتای HTML <font color="#RRGGBB">
+                s = s.replace(/\{\\(?:1?c)&H([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})&?\}/gi, function(m, b, g, r) {
+                    return `<font color="#${r}${g}${b}">`;
+                }).replace(/\{\\c\}|\{\\r[^\}]*\}/gi, '</font>');
+
+                // سڕینەوەی هەموو کۆدە نەخوێندراوەکانی تر لە SRT/VTT (وەک \pos, \move, \an, \fad, \clip, \p1...)
+                s = s.replace(/\{[^}]*\}/g, '');
+
+                // پاککردنەوەی تاگی بەتاڵ و زیادە
+                s = s.replace(/<([ibus])>\s*<\/\1>/gi, '')
+                     .replace(/<font[^>]*>\s*<\/font>/gi, '');
+
+                // ئەگەر لە VTTـەوە هاتبوو: سڕینەوەی تاگی دەنگی <v Speaker>
+                s = s.replace(/<\/?[vV][^>]*>/g, '');
+
+                return s.trim();
+            }
+
+            return s;
+        }
+        
+        function convertAssTagsToSrt(rawText) {
+            if (!rawText) return "";
+            let s = rawText.replace(/\\[Nn]/g, '\n');
+            // گۆڕینی ئیتالیک، بۆڵد و ژێرهێڵی ASS بۆ شێوازی SRT/HTML
+            s = s.replace(/\{\\i1\}/gi, '<i>').replace(/\{\\i0\}/gi, '</i>')
+                 .replace(/\{\\b1\}/gi, '<b>').replace(/\{\\b0\}/gi, '</b>')
+                 .replace(/\{\\u1\}/gi, '<u>').replace(/\{\\u0\}/gi, '</u>');
+            // سڕینەوەی هەموو کۆدە تەکنیکی و شوێنگۆڕکێکانی تری ناو کەوانەی گەورە { ... }
+            s = s.replace(/\{[^}]*\}/g, '');
+            // پاککردنەوەی تاگە داخراوە بێسوودەکانی وەک <i></i> یان <b></b>
+            s = s.replace(/<([ibu])>\s*<\/\1>/gi, '');
+            return s.trim();
+        }
 
         async function prepareBatchProcess() {
             const files = document.getElementById('convertFileInput').files;
@@ -4275,9 +4354,13 @@ async function executeRtlFix() {
 
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
-                const isOrigAss = file.name.toLowerCase().endsWith('.ass');
-                const isOrigVtt = file.name.toLowerCase().endsWith('.vtt');
                 const text = await file.text();
+                const lowerName = file.name.toLowerCase();
+
+                // ناسینەوەی زیرەکانەی فۆرماتەکە تەنانەت ئەگەر پاشگرەکەی .txt بێت
+                const isOrigAss = lowerName.endsWith('.ass') || lowerName.endsWith('.ssa') || text.includes('[Events]') || text.includes('[Script Info]');
+                const isOrigVtt = !isOrigAss && (lowerName.endsWith('.vtt') || /^\uFEFF?WEBVTT/i.test(text.trim()));
+
                 if (isOrigAss && targetFormat === 'ass') {
                     // ASS -> ASS: هیچ شتێک لە دەست نادرێت (وێنەکێشان، Comment، فۆنت، ستایل...) — تەنها کات و تاگ
                     pendingBatchDownloads.push({
@@ -4300,7 +4383,8 @@ async function executeRtlFix() {
                 let finalContent = "";
                 if (targetFormat === 'srt') {
                     parsed.forEach((item, idx) => { 
-                        let textStr = (tagOption === 'clean' ? cleanSubtitleTags(item.text) : item.text);
+                        let base = item.rawText || item.text || "";
+                        let textStr = universalTagConverter(base, 'srt', tagOption);
                         let lines = textStr.split('\n').map(l => l.trim()).filter(l => l !== "");
                         if (lines.length === 0) lines = ['...'];
                         finalContent += `${idx + 1}\n${formatTimeSRT(item.startSec)} --> ${formatTimeSRT(item.endSec)}\n${lines.join('\n')}\n\n`; 
@@ -4308,33 +4392,23 @@ async function executeRtlFix() {
                 } else if (targetFormat === 'vtt') {
                     finalContent = "WEBVTT\n\n";
                     parsed.forEach(item => { 
-                        let textStr = (tagOption === 'clean' ? cleanSubtitleTags(item.text) : item.text);
+                        let base = item.rawText || item.text || "";
+                        let textStr = universalTagConverter(base, 'vtt', tagOption);
                         let lines = textStr.split('\n').map(l => l.trim()).filter(l => l !== "");
                         if (lines.length === 0) lines = ['...'];
                         finalContent += `${formatTimeVTT(item.startSec)} --> ${formatTimeVTT(item.endSec)}\n${lines.join('\n')}\n\n`; 
                     });
                 } else if (targetFormat === 'ass') {
                     let header = '';
-                    if (isOrigAss && assHeaderLines.length > 0) {
-                        // کاتێک ASS دەکرێتە ASS: هەموو ستایل و سەرەتای فایل وەک خۆی دەمێنێتەوە
-                        header = assHeaderLines.join('\n') + '\n\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n';
-                    } else {
-                        // کاتێک فایلی تر (وەک SRT/VTT) دەکرێتە ASS: تەنها ستایلی Default زیاد دەکرێت
-                        const assTitleName = file.name.replace(/\.[^/.]+$/, "") || 'Converted Subtitle';
-                        header = `[Script Info]\nTitle: ${assTitleName}\nScriptType: v4.00+\nWrapStyle: 0\nPlayResX: 1920\nPlayResY: 1080\nScaledBorderAndShadow: yes\n\n[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\nStyle: Default,Speda Bold,67,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,1.5,2.0,2,10,10,20,1\n\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n`;
-                    }
+                    const assTitleName = file.name.replace(/\.[^/.]+$/, "") || 'Converted Subtitle';
+                    header = `[Script Info]\nTitle: ${assTitleName}\nScriptType: v4.00+\nWrapStyle: 0\nPlayResX: 1920\nPlayResY: 1080\nScaledBorderAndShadow: yes\n\n[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\nStyle: Default,Speda Bold,67,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,1.5,2.0,2,10,10,20,1\n\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n`;
                     
                     finalContent = header;
                     parsed.forEach(item => { 
-                        let textStr = (tagOption === 'clean' ? cleanSubtitleTags(item.text) : (item.rawText || item.text));
-                        textStr = textStr.replace(/<i>/gi, '{\\i1}').replace(/<\/i>/gi, '{\\i0}')
-                                         .replace(/<b>/gi, '{\\b1}').replace(/<\/b>/gi, '{\\b0}')
-                                         .replace(/<u>/gi, '{\\u1}').replace(/<\/u>/gi, '{\\u0}');
-                        let lines = textStr.split('\n').map(l => l.trim()).filter(l => l !== "");
+                        let base = item.rawText || item.text || "";
+                        let textStr = universalTagConverter(base, 'ass', tagOption);
+                        let lines = textStr.split(/\\N|\n/).map(l => l.trim()).filter(l => l !== "");
                         if (lines.length === 0) lines = ['...'];
-
-                        // بە داواکاری بەکارهێنەر: لەکاتی گۆڕینی فۆرمات RTL چاک ناکرێت
-                        // (تەنها لە تێکەڵکردنی فایل و ئامرازی RTL Fix چاک دەکرێت)
 
                         let dStyle = (item.assMeta && item.assMeta.style) ? item.assMeta.style : 'Default';
                         let dLayer = (item.assMeta && item.assMeta.layer) ? item.assMeta.layer : '0';
@@ -4371,7 +4445,8 @@ async function executeRtlFix() {
 
         function timeToSeconds(str) {
             if(!str) return 0;
-            let cleaned = str.replace(',', '.').trim();
+            // بە زیرەکی تەنها بەشی یەکەمی کاتەکە دەهێڵێتەوە پێش هەر بۆشایی و دەقێکی وەک position یان align
+            let cleaned = str.replace(',', '.').trim().split(/\s+/)[0];
             let parts = cleaned.split(':');
             if (parts.length === 3) {
                 return (parseFloat(parts[0]) || 0) * 3600 + (parseFloat(parts[1]) || 0) * 60 + (parseFloat(parts[2]) || 0);
@@ -4561,7 +4636,8 @@ function parseSRTContent(data) {
         let timeLineIdx = lines.findIndex(x => x.includes('-->'));
         if (timeLineIdx !== -1) {
             let t = lines[timeLineIdx].split('-->');
-            let st = t[0] ? t[0].trim() : '0', en = t[1] ? t[1].trim() : '0';
+            let st = t[0] ? t[0].trim().split(/\s+/)[0] : '0';
+            let en = t[1] ? t[1].trim().split(/\s+/)[0] : '0';
             let textLines = lines.slice(timeLineIdx + 1);
             let rawText = textLines.join('\n');
             let pl = extLines(rawText.replace(/\n/g, '\\N'));

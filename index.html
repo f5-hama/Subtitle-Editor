@@ -12549,5 +12549,431 @@ function fixAllFspZero() {
     window.addEventListener('DOMContentLoaded', removeInstallBtnInsideApp);
     window.addEventListener('load', removeInstallBtnInsideApp);
 </script>
+
+<!-- ===== Glassmorphism theme (چینی دیزاین — هیچ لۆجیکێکی بەرنامەکە دەستکاری نەکراوە) ===== -->
+<style id="glassmorphism-theme">
+/* ===== تۆکنەکانی Glassmorphism ===== */
+:root {
+    --gl-fill: rgba(255, 255, 255, 0.12);
+    --gl-fill-2: rgba(255, 255, 255, 0.18);
+    --gl-fill-dark: rgba(8, 12, 20, 0.45);
+    --gl-panel: rgba(24, 31, 46, 0.80);
+    --gl-menu: rgba(28, 36, 53, 0.93);
+    --gl-border: rgba(255, 255, 255, 0.15);
+    --gl-border-soft: rgba(255, 255, 255, 0.09);
+    --gl-hi: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    --gl-blur: blur(22px) saturate(160%);
+    --gl-shadow: 0 10px 34px rgba(0, 0, 0, 0.38);
+    --gl-shadow-lg: 0 18px 54px rgba(0, 0, 0, 0.5);
+
+    --bg-color: rgba(8, 12, 20, 0.45);
+    --card-bg: var(--gl-fill);
+    --card-border: var(--gl-border);
+    --border-color: rgba(255, 255, 255, 0.13);
+    --text-main: #f1f5f9;
+    --text-muted: #a3adbf;
+    --shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.3);
+    --shadow-md: var(--gl-shadow);
+    --shadow-lg: var(--gl-shadow-lg);
+}
+
+/* ===== باکگراوند =====
+   هەمووی لەسەر html دانراوە و لەگەڵ لاپەڕەکە دەجوڵێت (نەک fixed)، تا کاتێک لاپەڕە
+   زیاتر لە کۆتایی دەکشێت هەمان ڕەنگ و شێوە درێژ ببێتەوە. لێوارەکانی سەرەوە و خوارەوە
+   دەچنە ناو ڕەنگی بنەڕەتی، بۆیە هیچ بڕینێک یان بەشێکی جیاواز دەرناکەوێت. */
+html:root,
+html:root body,
+html:root body.startup-bg,
+html:root body.editor-bg {
+    background-color: transparent !important;
+    animation: none !important;
+}
+html:root {
+    background-color: #0d1220 !important;
+    background-image:
+        linear-gradient(to bottom, #0d1220 0, rgba(13, 18, 32, 0) 80px, rgba(13, 18, 32, 0) calc(100% - 120px), #0d1220 100%),
+        radial-gradient(520px circle at 12% 12%, color-mix(in srgb, var(--primary) 42%, transparent), transparent 70%),
+        radial-gradient(480px circle at 92% 30%, rgba(99, 102, 241, 0.34), transparent 70%),
+        radial-gradient(560px circle at 60% 80%, rgba(56, 189, 248, 0.24), transparent 70%),
+        radial-gradient(420px circle at 5% 68%, rgba(217, 70, 239, 0.18), transparent 70%) !important;
+    background-repeat: no-repeat !important;
+    background-attachment: scroll !important;
+    background-size: 100% 100% !important;
+    background-position: 0 0 !important;
+}
+html:root body {
+    background: transparent !important;
+}
+html:root body::before {
+    display: none !important;
+}
+
+/* ===== ڕووبەرە شووشەییە گەورەکان ===== */
+html:root body .glass-card,
+html:root body .custom-modal-content,
+html:root body .header-tools-container,
+html:root body .floating-search-bar,
+html:root body .action-bar,
+html:root body #code-review-panel,
+html:root body #video-container {
+    background: var(--gl-panel) !important;
+    border: 1px solid var(--gl-border) !important;
+    box-shadow: var(--gl-shadow), var(--gl-hi) !important;
+    backdrop-filter: var(--gl-blur) !important;
+    -webkit-backdrop-filter: var(--gl-blur) !important;
+}
+html:root body .glass-card { animation: none !important; box-shadow: var(--gl-shadow-lg), var(--gl-hi) !important; }
+html:root body .custom-modal-content { box-shadow: var(--gl-shadow-lg), var(--gl-hi) !important; }
+html:root body .floating-search-bar { box-shadow: var(--gl-shadow-lg), var(--gl-hi) !important; border-color: var(--gl-border) !important; }
+html:root body .header-tools-container { overflow: hidden; }
+
+html:root body .custom-modal-overlay {
+    background: rgba(5, 8, 15, 0.62) !important;
+    backdrop-filter: blur(7px) !important;
+    -webkit-backdrop-filter: blur(7px) !important;
+}
+
+html:root body .menu-dropdown,
+html:root body .custom-select-menu {
+    background: var(--gl-menu) !important;
+    border: 1px solid var(--gl-border) !important;
+    box-shadow: var(--gl-shadow-lg), var(--gl-hi) !important;
+    backdrop-filter: var(--gl-blur) !important;
+    -webkit-backdrop-filter: var(--gl-blur) !important;
+}
+
+/* ===== لیستی دێڕەکان (بێ بلەر لەسەر هەر کارتێک، بۆ خێرایی) ===== */
+html:root body #subtitles-container {
+    background: rgba(255, 255, 255, 0.07) !important;
+    border: 1px solid var(--gl-border-soft) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+}
+html:root body .subtitle-card {
+    background: rgba(255, 255, 255, 0.11) !important;
+    border: 1px solid var(--gl-border-soft) !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25), var(--gl-hi) !important;
+}
+html:root body .subtitle-card.active-sub {
+    background: rgba(255, 255, 255, 0.16) !important;
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 1px var(--primary), 0 0 22px var(--primary-glow), var(--gl-hi) !important;
+}
+html:root body .subtitle-header {
+    background: rgba(0, 0, 0, 0.3) !important;
+    border-bottom: 1px solid var(--gl-border-soft) !important;
+}
+
+/* ===== خانەی نووسین ===== */
+html:root body .input-field,
+html:root body .floating-search-bar input,
+html:root body .tech-input,
+html:root body .kf-srv-ta,
+html:root body .subtitle-orig,
+html:root body .subtitle-kurd textarea,
+html:root body .subtitle-note textarea,
+html:root body .merge-source-line textarea,
+html:root body .merge-source-editor,
+html:root body .merge-source-line {
+    background: var(--gl-fill-dark) !important;
+    border: 1px solid var(--gl-border-soft) !important;
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.25) !important;
+    color: var(--text-main);
+}
+html:root body .subtitle-orig { border-inline-start: 3px solid var(--primary) !important; }
+html:root body .subtitle-note textarea { color: var(--text-muted); }
+html:root body .input-field:focus,
+html:root body .subtitle-kurd textarea:focus,
+html:root body .subtitle-note textarea:focus,
+html:root body .floating-search-bar input:focus,
+html:root body .tech-input:focus,
+html:root body .kf-srv-ta:focus,
+html:root body .merge-source-line textarea:focus {
+    border-color: var(--primary) !important;
+    background: rgba(8, 12, 20, 0.4) !important;
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.25), 0 0 0 3px var(--primary-glow) !important;
+}
+
+/* ===== شوێنی فایل ===== */
+html:root body .file-box {
+    background: var(--gl-fill) !important;
+    border: 1.5px dashed var(--gl-border) !important;
+    box-shadow: var(--gl-hi) !important;
+}
+html:root body .file-box:hover,
+html:root body .file-box.has-file {
+    background: color-mix(in srgb, var(--primary) 18%, transparent) !important;
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 20px var(--primary-glow), var(--gl-hi) !important;
+}
+
+/* ===== خانە ناوەکییەکانی مۆداڵ کە بە inline style دروستکراون ===== */
+html:root body .custom-modal-content [style*="rgba(142, 182, 155, 0.08)"],
+html:root body .custom-modal-content [style*="rgba(142,182,155,0.08)"],
+html:root body .custom-modal-content [style*="rgba(0,0,0,0.3)"],
+html:root body .custom-modal-content [style*="rgba(0, 0, 0, 0.3)"],
+html:root body .theme-horizontal-bar,
+html:root body .site-features-box,
+html:root body .v-nudge-panel,
+html:root body .v-zoom-header-bar {
+    background: var(--gl-fill) !important;
+    border: 1px solid var(--gl-border-soft) !important;
+    box-shadow: var(--gl-hi) !important;
+}
+html:root body .custom-modal-content textarea[style],
+html:root body .custom-modal-content input[style*="var(--bg-color)"] {
+    background: var(--gl-fill-dark) !important;
+    border: 1px solid var(--gl-border-soft) !important;
+}
+html:root body .custom-modal-content [style*="background:var(--border-color)"] {
+    background: var(--gl-fill-2) !important;
+    border: 1px solid var(--gl-border-soft);
+}
+
+/* ===== دوگمە سەرەکییەکان (شووشەی ڕەنگاو) ===== */
+html:root body .btn:not(.btn-outline),
+html:root body #install-app-btn {
+    background: linear-gradient(135deg,
+        color-mix(in srgb, var(--primary) 62%, transparent),
+        color-mix(in srgb, var(--primary-hover) 42%, transparent)) !important;
+    color: #ffffff !important;
+    border: 1px solid color-mix(in srgb, var(--primary) 70%, white 10%) !important;
+    box-shadow: 0 8px 22px color-mix(in srgb, var(--primary) 30%, transparent), var(--gl-hi) !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+html:root body .btn:not(.btn-outline):hover,
+html:root body #install-app-btn:hover {
+    background: linear-gradient(135deg,
+        color-mix(in srgb, var(--primary) 78%, transparent),
+        color-mix(in srgb, var(--primary-hover) 56%, transparent)) !important;
+    box-shadow: 0 10px 28px var(--primary-glow), var(--gl-hi) !important;
+}
+html:root body .btn:not(.btn-outline):active,
+html:root body #install-app-btn:active { transform: scale(0.98); }
+
+html:root body .btn-outline {
+    background: var(--gl-fill) !important;
+    color: var(--text-main) !important;
+    border: 1px solid var(--gl-border) !important;
+    box-shadow: var(--gl-hi) !important;
+}
+html:root body .btn-outline:hover,
+html:root body .btn-outline:active {
+    background: var(--gl-fill-2) !important;
+    color: var(--primary) !important;
+    border-color: var(--primary) !important;
+}
+html:root body .btn-outline[style*="ef4444"] { color: #fca5a5 !important; border-color: rgba(239, 68, 68, 0.5) !important; }
+
+/* ===== دوگمە بچووکەکان ===== */
+html:root body .top-btn,
+html:root body .back-btn,
+html:root body .fmt-btn,
+html:root body .search-btn,
+html:root body .custom-select-btn,
+html:root body .tech-toggle-btn,
+html:root body .pos-btn,
+html:root body .v-target-btn,
+html:root body .v-step-chip,
+html:root body .rtl-mode-opt,
+html:root body .logo-style-opt,
+html:root body .theme-card,
+html:root body .history-item,
+html:root body .play-sub-btn,
+html:root body .style-sub-btn,
+html:root body .delete-sub-btn,
+html:root body .v-align-btn,
+html:root body .v-nudge-btn.center,
+html:root body .clear-file-btn {
+    background: var(--gl-fill) !important;
+    border: 1px solid var(--gl-border) !important;
+    box-shadow: var(--gl-hi) !important;
+    color: var(--text-main);
+}
+html:root body .top-btn.primary-tool,
+html:root body .play-sub-btn,
+html:root body .style-sub-btn { color: var(--primary); }
+html:root body .top-btn.danger-tool,
+html:root body .search-btn.danger,
+html:root body .delete-sub-btn,
+html:root body .clear-file-btn { color: #fca5a5; border-color: rgba(239, 68, 68, 0.4) !important; }
+html:root body .top-btn:hover,
+html:root body .back-btn:hover,
+html:root body .fmt-btn:hover,
+html:root body .search-btn:hover,
+html:root body .custom-select-btn:hover,
+html:root body .tech-toggle-btn:hover,
+html:root body .pos-btn:hover,
+html:root body .v-target-btn:hover,
+html:root body .history-item:hover,
+html:root body .play-sub-btn:hover,
+html:root body .style-sub-btn:hover,
+html:root body .delete-sub-btn:hover,
+html:root body .theme-card:hover {
+    background: var(--gl-fill-2) !important;
+    border-color: color-mix(in srgb, var(--primary) 60%, transparent) !important;
+}
+html:root body .delete-sub-btn:hover { background: rgba(239, 68, 68, 0.2) !important; border-color: #ef4444 !important; }
+
+/* دۆخی هەڵبژێردراو */
+html:root body .fmt-btn.active,
+html:root body .tech-toggle-btn.active,
+html:root body .pos-btn.active,
+html:root body .v-target-btn.active,
+html:root body .v-step-chip.active,
+html:root body .rtl-mode-opt.active,
+html:root body .logo-style-opt:has(input:checked),
+html:root body .theme-card.active,
+html:root body .custom-select-btn.open {
+    background: color-mix(in srgb, var(--primary) 26%, transparent) !important;
+    color: #ffffff !important;
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 16px var(--primary-glow), var(--gl-hi) !important;
+}
+html:root body .v-nudge-btn { background: transparent !important; }
+html:root body .v-nudge-btn:active,
+html:root body .v-align-btn:active { background: color-mix(in srgb, var(--primary) 25%, transparent) !important; }
+html:root body .v-nudge-pad { border: 1px solid var(--gl-border) !important; background: var(--gl-fill-dark) !important; }
+html:root body .v-align-btn { border-color: transparent !important; box-shadow: none !important; background: transparent !important; }
+html:root body .v-align-btn svg { color: #e2e8f0; }
+
+html:root body .tool-divider { background: var(--gl-border) !important; }
+html:root body .top-nav,
+html:root body .setup-header { border-bottom: 1px solid var(--gl-border-soft) !important; }
+
+html:root body .custom-select-item:hover,
+html:root body .menu-btn-item:hover {
+    background: var(--gl-fill-2) !important;
+    color: var(--primary);
+}
+
+/* ===== ڕەنگەکان ===== */
+html:root body .theme-mini-box,
+html:root body .palette-btn { border: 1.5px solid rgba(255, 255, 255, 0.25); }
+html:root body .theme-mini-box.active,
+html:root body .palette-btn.active { border-color: #ffffff !important; box-shadow: 0 0 14px var(--primary) !important; }
+html:root body .install-sheet-icon {
+    background: linear-gradient(135deg,
+        color-mix(in srgb, var(--primary) 70%, transparent),
+        color-mix(in srgb, var(--primary-hover) 45%, transparent)) !important;
+    border: 1px solid var(--gl-border);
+    box-shadow: 0 8px 24px var(--primary-glow), var(--gl-hi) !important;
+}
+
+/* ===== پێشکەوتن و ئاگادارکردنەوە ===== */
+html:root body #progress-container { background: rgba(255, 255, 255, 0.1) !important; }
+html:root body .toast {
+    background: rgba(24, 31, 46, 0.92) !important;
+    border: 1px solid var(--gl-border) !important;
+    box-shadow: var(--gl-shadow), var(--gl-hi) !important;
+    backdrop-filter: var(--gl-blur) !important;
+    -webkit-backdrop-filter: var(--gl-blur) !important;
+}
+html:root body .toast.error { color: #fca5a5; border-color: rgba(239, 68, 68, 0.55) !important; }
+html:root body .toast.warning { color: #fde68a; border-color: rgba(245, 158, 11, 0.55) !important; }
+
+/* ===== ڤیدیۆ ===== */
+html:root body #video-container { overflow: hidden; }
+html:root body #video-source-selector { background: transparent !important; }
+html:root body .custom-player-container { border-radius: 14px; }
+
+/* مۆداڵی تێکەڵکردن: پەنجەرەیەکی fixed لەناویدایە، بۆیە بلەر لێرە دەکوژێنینەوە تا شوێنی نەگۆڕێت */
+html:root body #merge-modal .custom-modal-content {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(24, 31, 46, 0.94) !important;
+}
+
+/* =====================================================================
+   دیزاینی نوێ: لیستی دێڕەکان — تاریکی قووڵ، هێڵی تەنک، ڕەنگی ئەکسێنت تەنها بۆ دۆخی چالاک
+   ===================================================================== */
+html:root body #subtitles-container {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+html:root body .subtitle-card {
+    background: linear-gradient(160deg, rgba(19, 26, 42, 0.9) 0%, rgba(12, 17, 29, 0.92) 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.07) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.4) !important;
+}
+html:root body .subtitle-card.active-sub {
+    background: linear-gradient(160deg,
+        color-mix(in srgb, var(--primary) 16%, rgba(19, 26, 42, 0.94)) 0%,
+        rgba(12, 17, 29, 0.94) 100%) !important;
+    border-color: color-mix(in srgb, var(--primary) 75%, transparent) !important;
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary) 35%, transparent), 0 10px 28px var(--primary-glow) !important;
+}
+html:root body .subtitle-header {
+    background: transparent !important;
+    border-radius: 0 !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
+    padding-inline: 2px !important;
+}
+html:root body .subtitle-orig {
+    background: rgba(255, 255, 255, 0.045) !important;
+    border: none !important;
+    border-inline-start: 2px solid var(--primary) !important;
+    box-shadow: none !important;
+    border-radius: 10px !important;
+}
+html:root body .subtitle-kurd textarea,
+html:root body .subtitle-note textarea {
+    background: rgba(4, 7, 14, 0.6) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: none !important;
+    border-radius: 10px !important;
+}
+html:root body .subtitle-kurd textarea:focus,
+html:root body .subtitle-note textarea:focus {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 3px var(--primary-glow) !important;
+}
+html:root body .play-sub-btn,
+html:root body .style-sub-btn,
+html:root body .delete-sub-btn {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    box-shadow: none !important;
+}
+
+/* =====================================================================
+   دیزاینی نوێ: پەنجەرەی بینینی ستایلەکان — تەواو ماتە، هیچ شتێک لە پشتەوە دیار نابێت
+   ===================================================================== */
+html:root body #mergeStyleViewer {
+    background: rgba(3, 5, 10, 0.94) !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+}
+html:root body #mergeStyleViewerPanel {
+    background: linear-gradient(170deg, #161d30 0%, #0d121f 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 18px !important;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.75) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+html:root body #mergeStyleViewerPanel > div:first-child {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+html:root body #mergeStyleViewerList {
+    background: transparent !important;
+}
+html:root body #mergeStyleViewerList > div {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.07) !important;
+    border-radius: 12px !important;
+}
+html:root body #mergeStyleViewerList [style*="rgba(142,182,155"] {
+    background: color-mix(in srgb, var(--primary) 16%, transparent) !important;
+    border-color: color-mix(in srgb, var(--primary) 38%, transparent) !important;
+}
+
+</style>
 </body>
 </html>

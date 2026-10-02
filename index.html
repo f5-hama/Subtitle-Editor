@@ -3176,15 +3176,30 @@ window.onload = () => {
 // سیستەمی دووجار گەڕانەوە بۆ دەرچوون لە شاشەی سەرەکی
         let lastAppExitTime = 0;
 
-        function ensureHomeState() {
-            if (!history.state || history.state.page !== 'home') {
-                history.pushState({ page: 'home' }, '');
-            }
+        // دروستکردنی دەستبەجێی بەربەست هەر لە یەکەم چرکەی کردنەوەی ماڵپەڕدا
+        function initHomeHistory() {
+            try {
+                if (!history.state || history.state.page !== 'home') {
+                    history.replaceState({ page: 'root' }, '');
+                    history.pushState({ page: 'home' }, '');
+                }
+            } catch(e) {}
         }
-        window.addEventListener('DOMContentLoaded', () => {
-            history.replaceState({ page: 'root' }, '');
-            history.pushState({ page: 'home' }, '');
-        });
+
+        // ڕاستەوخۆ کار دەکات بەبێ چاوەڕوانی
+        initHomeHistory();
+
+        // هەروەها لەگەڵ یەکەم دەستلێدانی پەنجە لەسەر شاشە دڵنیایی دەداتەوە
+        window.addEventListener('pointerdown', function onFirstTouch() {
+            initHomeHistory();
+            window.removeEventListener('pointerdown', onFirstTouch);
+        }, { once: true, passive: true });
+
+        window.addEventListener('load', initHomeHistory);
+
+        function ensureHomeState() {
+            initHomeHistory();
+        }
 
         // دۆزینەوەی مۆداڵە کراوەکان
         function getActiveModal() {

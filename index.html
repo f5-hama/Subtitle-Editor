@@ -211,7 +211,7 @@ function deleteEmptySubtitleLines() {
         }
 
         /* باکگراوندی ڕەشی قووڵ لەگەڵ جووڵەی گڵۆوی نەرم */
-        body.startup-bg {
+                body.startup-bg {
             background: linear-gradient(-45deg, #050709, #0d1117, #090c10, #111720) !important;
             background-size: 400% 400%;
             animation: gradientBG 12s ease infinite;
@@ -220,7 +220,34 @@ function deleteEmptySubtitleLines() {
             justify-content: center;
             min-height: 100vh;
             min-height: 100dvh;
+            position: relative;
+            z-index: 1;
         }
+
+        /* ١. ڕووناکییەکەی سەرەوە (ئەوەی دیاریت کردووە کە ڕێک هەمان ڕەنگی ڕووکارە) */
+        body.startup-bg::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 0% 0%, var(--primary-glow) 0%, transparent 65%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* ٢. ڕووناکییەکانی تر (کە دەبنە ڕەنگێکی گونجاوی تر نەک هەمان ڕەنگ) */
+        body.startup-bg::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: 
+                radial-gradient(circle at 100% 40%, var(--primary-glow) 0%, transparent 55%),
+                radial-gradient(circle at 20% 100%, var(--primary-glow) 0%, transparent 55%);
+            /* ئەم فلتەرە ڕەنگەکە دەگۆڕێت بۆ ڕەنگێکی گونجاو. دەتوانیت ژمارەی 70 کەم و زیاد بکەیت */
+            filter: hue-rotate(70deg) opacity(0.85); 
+            z-index: -1;
+            pointer-events: none;
+        }
+
         
         body.editor-bg { 
             background-color: var(--bg-color) !important; 

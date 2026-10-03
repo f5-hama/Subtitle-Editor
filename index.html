@@ -2676,8 +2676,8 @@ input[type="checkbox"], input[type="radio"] {
                         </div>
                         <div style="flex-shrink:0;">
                             <button type="button" class="btn" ${dis} onclick="extractAudioTrack(${t.trackNumber})">
-                                داگرتن (.mka)
-                            </button>
+    داگرتن (${/A_AAC/i.test(t.codecId) ? '.aac' : (/A_AC3/i.test(t.codecId) ? '.ac3' : (/A_MPEG\/L3/i.test(t.codecId) ? '.mp3' : '.mka'))})
+</button>
                         </div>
                     </div>
                 `;

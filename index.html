@@ -3303,7 +3303,7 @@ input[type="checkbox"], input[type="radio"] {
                 </button>
                 <input type="hidden" id="selectedAlignVal" value="2">
             </div>
-            <button type="button" class="btn btn-outline" style="padding: 7px 10px; font-size: 11.5px; margin-top: 6px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; color: #ef4444; border-color: rgba(239, 68, 68, 0.4);" onclick="openCensorModal()">
+            <button type="button" class="btn btn-outline" style="padding: 7px 10px; font-size: 11.5px; margin-top: 6px; margin-bottom: 14px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; color: #ef4444; border-color: rgba(239, 68, 68, 0.4);" onclick="openCensorModal()">
     <svg style="width: 15px; height: 15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"></path></svg>
     <span>سانسۆرکردنی بەشێکی ڤیدیۆ (Censor Tool)</span>
 </button>
@@ -4168,7 +4168,7 @@ function restoreFromHistory(id) {
         // هێنانەوەی ڤیدیۆ تەنها ئەگەر بۆ ئەم فایلە لە مێژوودا مابێت و لانەبرابێت
         VideoStore.load(currentFileName).then(saved => {
             if (saved && saved.blob) {
-                playVideoSource(URL.createObjectURL(saved.blob));
+                playVideoSource(URL.createObjectURL(saved.blob), saved.blob);
                 showToast('ڤیدیۆکە بارکرایەوە: ' + saved.fileName, 'info');
             }
         });
@@ -6148,7 +6148,7 @@ function resumeSession() {
         // هێنانەوەی ڤیدیۆ لە بەردەوامبوون
             VideoStore.load(currentFileName).then(saved => {
                 if (saved && saved.blob) {
-                    playVideoSource(URL.createObjectURL(saved.blob));
+                    playVideoSource(URL.createObjectURL(saved.blob), saved.blob);
                     showToast('ڤیدیۆکە بارکرایەوە: ' + saved.fileName, 'info');
                 }
             });
@@ -8086,7 +8086,7 @@ function confirmVideoCanvasColor() {
         async function handleNativeVideoUpload(input) {
             if (input.files && input.files[0]) {
                 const file = input.files[0];
-                playVideoSource(URL.createObjectURL(file));
+                playVideoSource(URL.createObjectURL(file), file);
                 showToast('ڤیدیۆکە بارکرا', 'success');
                 // پاشەکەوتکردن لە داتابەیسی مۆبایلەکەت
                 await VideoStore.save(file, currentFileName);
@@ -8356,8 +8356,46 @@ initMainVideoGestures();
             return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
         }
 
-        function playVideoSource(src) {
+        var __tsPlayer = null;
+        function __destroyTsPlayer() {
+            if (__tsPlayer) { try { __tsPlayer.pause(); __tsPlayer.unload(); __tsPlayer.detachMediaElement(); __tsPlayer.destroy(); } catch (e) {} __tsPlayer = null; }
+        }
+        function __loadMpegtsLib() {
+            if (window.mpegts) return Promise.resolve(window.mpegts);
+            return new Promise(function (res, rej) {
+                var sc = document.createElement('script');
+                sc.src = 'https://cdn.jsdelivr.net/npm/mpegts.js@1.7.3/dist/mpegts.min.js';
+                sc.onload = function () { res(window.mpegts); };
+                sc.onerror = rej;
+                document.head.appendChild(sc);
+            });
+        }
+        async function __isMpegTs(blob) {
+            if (!blob) return false;
+            var name = (blob.name || '').toLowerCase();
+            if (/\.(ts|m2ts|mts|tsv|tsa|m2t)$/.test(name) || /mp2t/i.test(blob.type || '')) return true;
+            try {
+                var b = new Uint8Array(await blob.slice(0, 192 * 3).arrayBuffer());
+                if (b[0] === 0x47 && b[188] === 0x47 && b[376] === 0x47) return true;      // TS
+                if (b[4] === 0x47 && b[196] === 0x47 && b[388] === 0x47) return true;      // M2TS (192-byte packets)
+            } catch (e) {}
+            return false;
+        }
+        function playVideoSource(src, blob) {
     const video = document.getElementById('preview-video');
+    __destroyTsPlayer();
+    if (blob) {
+        __isMpegTs(blob).then(function (isTs) {
+            if (!isTs || video.canPlayType('video/mp2t')) return;
+            __loadMpegtsLib().then(function (mpegts) {
+                if (!mpegts || !mpegts.getFeatureList().mseLivePlayback) { showToast('ئەم وێبگەڕە پشتگیری MPEG-TS ناکات', 'error'); return; }
+                __destroyTsPlayer();
+                __tsPlayer = mpegts.createPlayer({ type: 'mpegts', isLive: false, url: src }, { enableWorker: true, lazyLoad: false, seekType: 'range' });
+                __tsPlayer.attachMediaElement(video);
+                __tsPlayer.load();
+            }).catch(function () { showToast('نەتوانرا پلەیەری MPEG-TS بار بکرێت (ئینتەرنێت پێویستە)', 'error'); });
+        });
+    }
     
     // سڕینەوەی پەیوەندییە کۆنەکانی لیباس بۆ ئەوەی لەگەڵ ڤیدیۆ تازەکە نوێ بێتەوە
     if (typeof LibassRenderer !== 'undefined') {
@@ -8400,6 +8438,7 @@ initMainVideoGestures();
 function resetVideoPlayer() {
     const video = document.getElementById('preview-video');
     video.pause();
+    if (typeof __destroyTsPlayer === 'function') __destroyTsPlayer();
     if (typeof LibassRenderer !== 'undefined') LibassRenderer.destroy();
     video.removeAttribute('src');
     video.load();
@@ -12623,6 +12662,73 @@ function crAnalyzeLine(idx, orig, trans) {
     return { n: n, errs: errs, warns: warns, status: status, cmp: cmp, cmpEff: cmp };
 }
 
+/* ===== چاککردنەوەی کۆدەکان لە شوێنی خۆیان (نەک بردنیان بۆ سەرەتا) ===== */
+function crLev(a, b) {
+    var m = a.length, n = b.length, prev = new Array(n + 1), cur = new Array(n + 1);
+    for (var j = 0; j <= n; j++) prev[j] = j;
+    for (var i = 1; i <= m; i++) {
+        cur[0] = i;
+        for (var j2 = 1; j2 <= n; j2++) {
+            cur[j2] = Math.min(prev[j2] + 1, cur[j2 - 1] + 1, prev[j2 - 1] + (a.charCodeAt(i - 1) === b.charCodeAt(j2 - 1) ? 0 : 1));
+        }
+        var t = prev; prev = cur; cur = t;
+    }
+    return prev[n];
+}
+function crRepairTagsInPlace(orig, trans) {
+    var re = /\{[^{}]*\}/g, m, blocks = [];
+    while ((m = re.exec(orig)) !== null) blocks.push({ v: m[0], at: m.index });
+    if (!blocks.length) return trans;
+    var cursor = 0;
+    for (var bi = 0; bi < blocks.length; bi++) {
+        var B = blocks[bi].v;
+        var exact = trans.indexOf(B, cursor);
+        // ئەگەر بە تەواوی هەیە و پێش ئەو هیچ کۆدێکی تێکچوو نییە
+        if (exact >= 0 && !/[{}\\]/.test(trans.slice(cursor, exact).replace(/\\N/g, ''))) { cursor = exact + B.length; continue; }
+        // گەڕان بە نزیکترین پارچەی تێکچوو
+        var k = Math.max(3, Math.ceil(B.length * 0.45)), best = null;
+        for (var p = cursor; p < trans.length; p++) {
+            for (var L = Math.max(1, B.length - k); L <= B.length + k && p + L <= trans.length; L++) {
+                var w = trans.substr(p, L);
+                if (!/[{}\\(]/.test(w)) continue;
+                if (trans.charAt(p - 1) === '\\' || /\\N/.test(w)) continue;
+                var d = crLev(w, B);
+                if (!best || d < best.d || (d === best.d && Math.abs(L - B.length) < Math.abs(best.L - B.length))) best = { p: p, L: L, d: d };
+            }
+        }
+        if (best && best.d <= Math.max(2, Math.floor(B.length * 0.5))) {
+            // ئەگەر بە تەواوی لە شوێنێکی دواتر هەیە و نزیکتر نییە، ئەوە بەکاربهێنە
+            if (exact >= 0 && best.p > exact) { cursor = exact + B.length; continue; }
+            trans = trans.slice(0, best.p) + B + trans.slice(best.p + best.L);
+            cursor = best.p + B.length;
+            continue;
+        }
+        if (exact >= 0) { cursor = exact + B.length; continue; }
+        // بە تەواوی ونە: لە شوێنی هاوتای خۆی دابنرێت
+        var before = orig.slice(0, blocks[bi].at), after = orig.slice(blocks[bi].at + B.length);
+        var pos;
+        if (!before.replace(/\{[^{}]*\}/g, '').length) pos = cursor;
+        else if (!after.replace(/\{[^{}]*\}/g, '').length) pos = trans.length;
+        else {
+            var nb = (before.match(/\\N/g) || []).length;
+            var tN = [], r2 = /\\N/g, mm;
+            while ((mm = r2.exec(trans)) !== null) tN.push(mm.index);
+            if (/\\N$/.test(before) && tN[nb - 1] != null) pos = tN[nb - 1] + 2;
+            else if (/^\\N/.test(after) && tN[nb] != null) pos = tN[nb];
+            else {
+                var ratio = blocks[bi].at / orig.length;
+                pos = Math.round(cursor + (trans.length - cursor) * ratio);
+                var sp = trans.lastIndexOf(' ', pos);
+                if (sp >= cursor) pos = sp + 1;
+            }
+            if (pos < cursor) pos = cursor;
+        }
+        trans = trans.slice(0, pos) + B + trans.slice(pos);
+        cursor = pos + B.length;
+    }
+    return trans.replace(/\{\}/g, '');
+}
+
 /* ================= فەنکشنی چاککردنی خۆکاری کۆدەکانی دێڕ ================= */
 function crAutoFixLine(idx) {
     const tas = document.querySelectorAll('.subtitle-kurd textarea');
@@ -12633,25 +12739,7 @@ function crAutoFixLine(idx) {
     const orig = (item.rawText || item.text || '').replace(/\n/g, '\\N');
     let trans = ta.value || '';
 
-    const cmp = crCompareTags(orig, trans);
-
-    // ١. چاککردنی ئەو کۆدانەی بەهاکەیان بە هەڵە نووسراوە (وەک هەڵەی پیتی ڕەنگەکە)
-    if (cmp.changed && cmp.changed.length > 0) {
-        cmp.changed.forEach(function (c) {
-            if (c.to && c.to.raw && c.from && c.from.raw) {
-                if (trans.includes(c.to.raw)) {
-                    trans = trans.replace(c.to.raw, c.from.raw);
-                }
-            }
-        });
-    }
-
-    // ٢. دانانی ئەو کۆدە ئەسڵییانەی کە لە وەرگێڕانەکەدا بە تەواوی لەبیرکراون
-    if (cmp.missing && cmp.missing.length > 0) {
-        const missingTags = cmp.missing.map(m => m.raw).join('');
-        trans = '{' + missingTags + '}' + trans;
-        trans = trans.replace(/\{([^{}]*)\}\{([^{}]*)\}/g, '{$1$2}').replace(/\{\}/g, '');
-    }
+    trans = crRepairTagsInPlace(orig, trans);
 
     // دانانەوەی دەقە چاککراوەکە لەناو بۆکسەکەی خۆی
     ta.value = trans;

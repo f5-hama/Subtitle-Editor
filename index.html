@@ -53,118 +53,6 @@
         }
     };
 
-    // ===== چاککردنی دەنگی ڤیدیۆ (کۆدەکی دەنگی نەپشتگیریکراو) =====
-    window.kfVideoFix = (function () {
-        let audio = null, offs = [], timer = null, asked = false, busy = false, blob = null, ff = null, mutedByUs = false, vid = null, badge = null;
-        const CDN = 'https://cdn.jsdelivr.net/npm/';
-        function loadScript(src) { return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error(src)); document.head.appendChild(s); }); }
-        // فایلی wasm: یان ffmpeg-core.wasm ی ئاسایی، یان ffmpeg-core.wasm.gz (بۆ گیت‌هەب کە ٢٥MB سنوورە)
-        async function localWasmURL(base) {
-            const isWasm = b => b.length > 4 && b[0] === 0 && b[1] === 0x61 && b[2] === 0x73 && b[3] === 0x6d;
-            const isGz = b => b.length > 2 && b[0] === 0x1f && b[1] === 0x8b;
-            for (const name of ['ffmpeg-core.wasm', 'ffmpeg-core.wasm.gz']) {
-                let r; try { r = await fetch(base + name); } catch (e) { continue; }
-                if (!r.ok) continue;
-                let buf = new Uint8Array(await r.arrayBuffer());
-                if (isGz(buf)) {
-                    if (typeof DecompressionStream === 'undefined') throw new Error('DecompressionStream unsupported');
-                    buf = new Uint8Array(await new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());
-                }
-                if (isWasm(buf)) return URL.createObjectURL(new Blob([buf], { type: 'application/wasm' }));
-            }
-            throw new Error('local ffmpeg-core.wasm not found');
-        }
-        async function getFF() {
-            if (ff) return ff;
-            // یەکەم: فایلە ناوخۆییەکان لە فۆڵدەری ./ffmpeg/ ، ئەگەر نەبوون: CDN
-            const LOCAL = new URL('./ffmpeg/', window.location.href).href;
-            const sources = [
-                { ffjs: LOCAL + 'ffmpeg.js', util: LOCAL + 'util.js', worker: LOCAL + '814.ffmpeg.js', core: LOCAL + 'ffmpeg-core.js', wasm: async () => localWasmURL(LOCAL) },
-                { ffjs: CDN + '@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js', util: CDN + '@ffmpeg/util@0.12.1/dist/umd/index.js', worker: CDN + '@ffmpeg/ffmpeg@0.12.10/dist/umd/814.ffmpeg.js', core: CDN + '@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js', wasm: null, wasmUrl: CDN + '@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm' }
-            ];
-            let lastErr;
-            for (const u of sources) {
-                try {
-                    if (!window.FFmpegWASM) await loadScript(u.ffjs);
-                    if (!window.FFmpegUtil) await loadScript(u.util);
-                    const tb = FFmpegUtil.toBlobURL;
-                    const f = new FFmpegWASM.FFmpeg();
-                    f.on('progress', ({ progress }) => { if (badge && progress >= 0 && progress <= 1) badge.textContent = 'چاککردنی دەنگ… ' + Math.round(progress * 100) + '%'; });
-                    await f.load({
-                        classWorkerURL: await tb(u.worker, 'text/javascript'),
-                        coreURL: await tb(u.core, 'text/javascript'),
-                        wasmURL: u.wasm ? await u.wasm() : await tb(u.wasmUrl, 'application/wasm')
-                    });
-                    return (ff = f);
-                } catch (e) { lastErr = e; console.warn('ffmpeg source failed:', u.core, e); }
-            }
-            throw lastErr;
-        }
-        function stopAudio() {
-            offs.forEach(fn => fn()); offs = [];
-            if (audio) { audio.pause(); URL.revokeObjectURL(audio.src); audio = null; }
-            if (vid && mutedByUs) { vid.muted = false; mutedByUs = false; }
-        }
-        function startAudio(url) {
-            stopAudio();
-            const v = vid; audio = new Audio(url); audio.preload = 'auto';
-            v.muted = true; mutedByUs = true;
-            const sync = () => { if (audio && Math.abs(audio.currentTime - v.currentTime) > 0.25) audio.currentTime = v.currentTime; };
-            const on = (ev, fn) => { v.addEventListener(ev, fn); offs.push(() => v.removeEventListener(ev, fn)); };
-            const go = () => { sync(); if (audio) audio.play().catch(() => {}); };
-            on('play', go); on('playing', go);
-            on('pause', () => audio && audio.pause());
-            on('waiting', () => audio && audio.pause());
-            on('seeking', () => { if (audio) audio.currentTime = v.currentTime; });
-            on('seeked', sync); on('timeupdate', sync);
-            on('ratechange', () => { if (audio) audio.playbackRate = v.playbackRate; });
-            on('volumechange', () => { if (audio) audio.volume = v.volume; });
-            audio.currentTime = v.currentTime; audio.playbackRate = v.playbackRate;
-            if (!v.paused) audio.play().catch(() => {});
-        }
-        async function fixAudio() {
-            if (busy || !blob) return; busy = true;
-            badge = document.createElement('div');
-            badge.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:99999;background:rgba(0,0,0,.85);color:#fff;padding:7px 16px;border-radius:20px;font-size:12.5px;font-weight:bold;';
-            badge.textContent = 'ئامادەکردنی چاککەر…'; document.body.appendChild(badge);
-            try {
-                const f = await getFF();
-                try { await f.createDir('/in'); } catch (e) {}
-                await f.mount('WORKERFS', { blobs: [{ name: 'src.bin', data: blob }] }, '/in');
-                const code = await f.exec(['-i', '/in/src.bin', '-map', '0:a:0', '-vn', '-sn', '-c:a', 'aac', '-b:a', '128k', '-ac', '2', 'out.m4a']);
-                try { await f.unmount('/in'); } catch (e) {}
-                if (code !== 0) throw new Error('ffmpeg exit ' + code);
-                const data = await f.readFile('out.m4a');
-                try { await f.deleteFile('out.m4a'); } catch (e) {}
-                startAudio(URL.createObjectURL(new Blob([data.buffer], { type: 'audio/mp4' })));
-                showToast('دەنگەکە چاککرا', 'success');
-            } catch (e) {
-                console.error(e);
-                showToast('نەتوانرا دەنگەکە چاک بکرێت (ئینتەرنێت پێویستە، یان ڤیدیۆکە دەنگی نییە)', 'error');
-            }
-            if (badge) { badge.remove(); badge = null; }
-            busy = false;
-        }
-        function onErr() { showToast('فۆرماتی ڤیدیۆکە یان کۆدەکی وێنەکەی (وەک HEVC یان AVI) لەم وێبگەڕە پشتگیری ناکرێت', 'error'); }
-        function detach() {
-            clearInterval(timer); timer = null; stopAudio();
-            if (vid) vid.removeEventListener('error', onErr);
-            blob = null; asked = false;
-        }
-        function attach(v, b) {
-            detach(); vid = v; blob = b || null;
-            v.addEventListener('error', onErr);
-            timer = setInterval(() => {
-                if (asked || audio || !v.videoWidth || v.paused || v.currentTime < 1.2) return;
-                if (v.webkitAudioDecodedByteCount === 0 && !v.muted && v.volume > 0) {
-                    asked = true;
-                    if (blob && confirm('دەنگی ئەم ڤیدیۆیە نایەت، ڕەنگە کۆدەکی دەنگەکەی لەم وێبگەڕە پشتگیری نەکرابێت.\nدەتەوێت دەنگەکە بگۆڕدرێت بۆ AAC؟ (ئینتەرنێت پێویستە و کەمێک کات دەخایەنێت)')) fixAudio();
-                }
-            }, 1000);
-        }
-        return { attach, detach, fixAudio };
-    })();
-
     function deleteSubtitleLine(index) {
         // ١. وەرگرتنی دەقەکان پێش سڕینەوە
         let currentTexts = Array.from(document.querySelectorAll('.subtitle-kurd textarea')).map(t => t.value);
@@ -8600,13 +8488,11 @@ initMainVideoGestures();
 
     setupVideoSync();
     initMainVideoGestures();
-    if (window.kfVideoFix) kfVideoFix.attach(video, blob);
 }
 
 function resetVideoPlayer() {
     const video = document.getElementById('preview-video');
     video.pause();
-    if (window.kfVideoFix) kfVideoFix.detach();
     if (typeof __destroyTsPlayer === 'function') __destroyTsPlayer();
     if (typeof LibassRenderer !== 'undefined') LibassRenderer.destroy();
     video.removeAttribute('src');

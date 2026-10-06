@@ -9696,8 +9696,11 @@ function viewMergeStyleLines(encodedName) {
     } else {
         listEl.innerHTML = rows.map(r => {
             // ڕەنگدانەوەی تاگە ناوەکییەکان بۆ ئەوەی بەدیار بکەون
-            let shown = esc(r.text).replace(/\\N/gi, '<br>').replace(/(\{[^}]*\})/g,
+            // هەر دێڕێک بە جیا ئاڕاستەی خۆی وەردەگرێت (dir=auto) — ئینگلیزی LTR، کوردی RTL
+            const lineHtml = (ln) => esc(ln).replace(/(\{[^}]*\})/g,
                 '<span style="color:var(--primary); font-size:10px; background:rgba(142,182,155,0.08); border-radius:4px; padding:0 3px;">$1</span>');
+            let shown = String(r.text || '').split(/\\N|\r?\n/i).map(ln =>
+                '<div dir="auto" style="unicode-bidi:plaintext; text-align:start;">' + (lineHtml(ln) || '&nbsp;') + '</div>').join('');
             const tags = detectTags(r.text);
             const badges = tags.length ? '<div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:5px;">' + tags.map(t =>
                 `<span style="font-size:9px; font-weight:bold; color:var(--primary); background:rgba(142,182,155,0.12); border:1px solid rgba(142,182,155,0.3); padding:1px 6px; border-radius:10px;">${esc(t)}</span>`
@@ -9712,7 +9715,7 @@ function viewMergeStyleLines(encodedName) {
                         </div>
                         <span style="font-size:9.5px; color:var(--text-muted); direction:ltr; white-space:nowrap;">${esc(r.start)} → ${esc(r.end)}</span>
                     </div>
-                    <div style="font-size:11.5px; color:var(--text-main); line-height:1.7; word-break:break-word;">${shown || '<span style="color:var(--text-muted);">(بەتاڵ)</span>'}</div>
+                    <div dir="auto" style="font-size:11.5px; color:var(--text-main); line-height:1.7; word-break:break-word; unicode-bidi:plaintext; text-align:start;">${shown || '<span style="color:var(--text-muted);">(بەتاڵ)</span>'}</div>
                     ${badges}
                 </div>
             `;

@@ -2264,14 +2264,70 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
     }
 
     // ---------- بزوێنەری فوق-خێرا بە بازی دەستبەجێ بەسەر فەریمەکانی ڤیدیۆدا ----------
-    async function mkvWalk(file, startPos, wanted, handler, myId, onProgress) {
+        function mkvUnlace(r, dataPos, hdr, dataLen, flags) {
+        const lacing = (flags >> 1) & 3;
+        const totalLen = dataLen - hdr;
+        if (lacing === 0) return [r.bytes(dataPos + hdr, totalLen)];
+        
+        const framesCount = r.u8At(dataPos + hdr) + 1;
+        let offset = hdr + 1;
+        const sizes = [];
+        
+        if (lacing === 2) { // Fixed-size
+            const size = Math.floor((totalLen - 1) / framesCount);
+            for (let i = 0; i < framesCount; i++) sizes.push(size);
+        } else if (lacing === 1) { // Xiph
+            let sum = 0;
+            for (let i = 0; i < framesCount - 1; i++) {
+                let size = 0, byte;
+                do {
+                    byte = r.u8At(dataPos + offset);
+                    size += byte;
+                    offset++;
+                } while (byte === 255);
+                sizes.push(size);
+                sum += size;
+            }
+            sizes.push(totalLen - (offset - hdr) - sum);
+        } else if (lacing === 3) { // EBML
+            let sum = 0;
+            for (let i = 0; i < framesCount - 1; i++) {
+                let size = 0;
+                let o = dataPos + offset;
+                const b = r.u8At(o);
+                let l = 1, mask = 0x80;
+                while (!(b & mask)) { l++; mask >>= 1; }
+                let v = b & (mask - 1);
+                for (let j = 1; j < l; j++) v = v * 256 + r.u8At(o + j);
+                offset += l;
+                
+                if (i === 0) {
+                    size = v;
+                } else {
+                    const diffBase = Math.pow(2, 7 * l - 1) - 1;
+                    size = sizes[i - 1] + (v - diffBase);
+                }
+                sizes.push(size);
+                sum += size;
+            }
+            sizes.push(totalLen - (offset - hdr) - sum);
+        }
+        
+        const frames = [];
+        for (let i = 0; i < framesCount; i++) {
+            frames.push(r.bytes(dataPos + offset, sizes[i]));
+            offset += sizes[i];
+        }
+        return frames;
+    }
+
+            async function mkvWalk(file, startPos, wanted, handler, myId, onProgress) {
         const r = new MkvFastReader(file, mkvChunkSize);
         const size = file.size;
         let pos = startPos || 0, cluTc = 0, cnt = 0, lastUi = Date.now(), resync = 0;
         let gActive = false, gEnd = 0, gItem = null, gDur = 0, gExtras = null;
         
         const singleTrack = (wanted && wanted.size === 1) ? [...wanted][0] : null;
-        // بایتە دیاریکراوەکەی تراک لە یەکەم نیگادا بۆ پشکنینی ١ نانۆچرکەیی
         const fastTrackByte = (singleTrack !== null && singleTrack >= 1 && singleTrack < 127) ? (0x80 | singleTrack) : null;
 
         const commit = () => {
@@ -2283,7 +2339,6 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
             if (gActive && pos >= gEnd) commit();
             if (!r.has(pos, 16) && !await r.ensure(pos, 16)) break;
 
-            // ١. تەکنیکی 1-Byte Skip بۆ ڤیدیۆ SimpleBlock (0xA3): ٩٥٪ی فایلی MKV یەکسەر تێدەپەڕێنێت
             const o = pos - r.cs;
             if (r.u8[o] === 0xA3 && fastTrackByte !== null) {
                 const b1 = r.u8[o + 1];
@@ -2296,7 +2351,6 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
                 if (sz > 3 && hl > 0) {
                     const bodyO = (pos + hl) - r.cs;
                     if (bodyO < r.u8.length && r.u8[bodyO] !== fastTrackByte) {
-                        // ڤیدیۆیە! یەکسەر بە بێ ئەڵقە باز دەدەین
                         pos = pos + hl + sz;
                         continue;
                     }
@@ -2310,11 +2364,15 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
             if (sz === -2) { if (++resync > 1048576) break; pos++; continue; }
             const hl = il + r.rl, body = pos + hl;
 
-            if ((++cnt & 4095) === 0 && Date.now() - lastUi > 250) {
-                lastUi = Date.now();
-                if (myId !== mkvScanId) throw new Error('cancelled');
-                if (onProgress) onProgress(pos / size);
-                await new Promise(res => setTimeout(res, 0));
+            // لێرەدا پشوو دەدات بە وێبگەڕەکە بۆ نوێکردنەوەی ژمارەکان
+            if ((++cnt & 511) === 0) {
+                const now = Date.now();
+                if (now - lastUi > 100) {
+                    lastUi = now;
+                    if (myId !== mkvScanId) throw new Error('cancelled');
+                    if (onProgress) onProgress(pos / size);
+                    await new Promise(res => setTimeout(res, 0));
+                }
             }
 
             switch (id) {
@@ -2345,12 +2403,13 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
                             const tl = r.rl;
                             if (!r.has(body, sz) && !await r.ensure(body, sz)) break loop;
                             const ev = {
-                                reader: r, track: tn, cluster: cluTc, rel: r.i16(body + tl), flags: r.u8At(body + tl + 2),
+                                reader: r, track: tn, cluster: cluTc, rel: r.i16(body + tl), 
+                                flags: r.u8At(body + tl + 2),
                                 hdr: tl + 3, tl, dataPos: body, dataLen: sz, isGroup: id === 0xA1 && gActive
                             };
-                            const item = handler.capture(ev);
-                            if (item) {
-                                if (ev.isGroup) gItem = item; else handler.done(item, 0, null);
+                            const items = handler.capture(ev);
+                            if (items) {
+                                if (ev.isGroup) gItem = items; else handler.done(items, 0, null);
                             }
                         }
                     }
@@ -2368,6 +2427,8 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
         if (onProgress) onProgress(1);
     }
 
+
+
     // ---------- ژێرنووس (MKVToolNix Engine) ----------
     function mkvEndTimes(blocks) {
         return blocks.map((b, i) => {
@@ -2381,10 +2442,9 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
         });
     }
 
-    function mkvBuildSubtitleFile(track, blocks, baseName) {
+        function mkvBuildSubtitleFile(track, blocks, baseName) {
         const times = mkvEndTimes(blocks);
 
-        // ١. دەرهێنانی وێنەیی PGS بۆ فایلی Blu-ray (.sup)
         if (mkvIsPgs(track)) {
             const chunks = [];
             blocks.forEach((b) => {
@@ -2400,12 +2460,9 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
                     if (offset + totalSeg > data.length) break;
 
                     const supHdr = new Uint8Array(10);
-                    supHdr[0] = 0x50; // 'P'
-                    supHdr[1] = 0x47; // 'G'
-                    supHdr[2] = (pts90k >>> 24) & 0xFF;
-                    supHdr[3] = (pts90k >>> 16) & 0xFF;
-                    supHdr[4] = (pts90k >>> 8) & 0xFF;
-                    supHdr[5] = pts90k & 0xFF;
+                    supHdr[0] = 0x50; supHdr[1] = 0x47;
+                    supHdr[2] = (pts90k >>> 24) & 0xFF; supHdr[3] = (pts90k >>> 16) & 0xFF;
+                    supHdr[4] = (pts90k >>> 8) & 0xFF; supHdr[5] = pts90k & 0xFF;
                     supHdr[6] = 0; supHdr[7] = 0; supHdr[8] = 0; supHdr[9] = 0;
 
                     chunks.push(supHdr);
@@ -2413,36 +2470,35 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
                     offset += totalSeg;
                 }
             });
-
             const finalBlob = new Blob(chunks, { type: 'application/octet-stream' });
             return { blob: finalBlob, ext: 'sup', count: blocks.length };
         }
 
-        // ٢. دەرهێنانی ASS بە شێوازی دەقاوودەقی MKVToolNix
         if (mkvIsAss(track)) {
             let header = '';
             if (track.codecPrivate && track.codecPrivate.length > 0) {
                 header = new TextDecoder('utf-8').decode(track.codecPrivate)
-                    .replace(/^\uFEFF/, '')
-                    .replace(/\r\n?/g, '\r\n')
-                    .trim();
+                    .replace(/^\uFEFF/, '').replace(/\r\n?/g, '\r\n').trim();
             }
 
             if (!header || !/\[Events\]/i.test(header)) {
-                if (!header) {
-                    header = `[Script Info]\r\nTitle: ${baseName}\r\nScriptType: v4.00+\r\nWrapStyle: 0\r\nScaledBorderAndShadow: yes`;
-                }
+                if (!header) header = `[Script Info]\r\nTitle: ${baseName}\r\nScriptType: v4.00+\r\nWrapStyle: 0\r\nScaledBorderAndShadow: yes`;
                 header += '\r\n\r\n[Events]\r\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text';
             } else if (!/Format:\s*Layer/i.test(header)) {
                 header += '\r\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text';
             }
 
-            const lines = [];
-            blocks.forEach((b, i) => {
-                const raw = b.text.replace(/\r/g, '').replace(/\n/g, '\\N');
-                const st = formatTimeASS(times[i][0]);
-                const en = formatTimeASS(times[i][1]);
+            const parsedBlocks = blocks.map((b, i) => {
+                const raw = b.text;
+                const commaIdx = raw.indexOf(',');
+                const ro = commaIdx > 0 ? parseInt(raw.slice(0, commaIdx), 10) : b.o;
+                return { raw, ro, st: formatTimeASS(times[i][0]), en: formatTimeASS(times[i][1]) };
+            });
+            parsedBlocks.sort((a, b) => a.ro - b.ro);
 
+            const lines = [];
+            parsedBlocks.forEach(item => {
+                const raw = item.raw.replace(/\r/g, '').replace(/\n/g, '\\N');
                 const f = [];
                 let p = 0, ok = true;
                 for (let k = 0; k < 8; k++) {
@@ -2454,20 +2510,15 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
 
                 if (ok) {
                     const layer = f[1].trim() || '0';
-                    lines.push(`Dialogue: ${layer},${st},${en},${f[2]},${f[3]},${f[4]},${f[5]},${f[6]},${f[7]},${raw.slice(p)}`);
-                } else if (raw.trim()) {
-                    lines.push(`Dialogue: 0,${st},${en},Default,,0,0,0,,${raw}`);
+                    lines.push(`Dialogue: ${layer},${item.st},${item.en},${f[2]},${f[3]},${f[4]},${f[5]},${f[6]},${f[7]},${raw.slice(p)}`);
+                } else if (item.raw.trim()) {
+                    lines.push(`Dialogue: 0,${item.st},${item.en},Default,,0,0,0,,${item.raw}`);
                 }
             });
 
-            return { 
-                content: '\uFEFF' + header + '\r\n' + lines.join('\r\n') + '\r\n', 
-                ext: 'ass', 
-                count: lines.length 
-            };
+            return { content: '\uFEFF' + header + '\r\n' + lines.join('\r\n') + '\r\n', ext: 'ass', count: lines.length };
         }
 
-        // ٣. دەرهێنانی WebVTT
         if (mkvIsVtt(track)) {
             const out = ['WEBVTT\r\n'];
             blocks.forEach((b, i) => {
@@ -2478,24 +2529,19 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
             return { content: '\uFEFF' + out.join('\r\n'), ext: 'vtt', count: blocks.length };
         }
 
-        // ٤. دەرهێنانی SRT بە ستانداردی تەواوی UTF-8 BOM
         const out = [];
         let n = 0;
         blocks.forEach((b, i) => {
-            const clean = b.text.replace(/\\N/g, '\r\n').replace(/\r/g, '').replace(/\n/g, '\r\n').trim();
+            const clean = b.text.replace(/\r/g, '').trim();
             if (!clean) return;
             n++;
             out.push(`${n}\r\n${formatTimeSRT(times[i][0])} --> ${formatTimeSRT(times[i][1])}\r\n${clean}\r\n`);
         });
 
-        return { 
-            content: '\uFEFF' + out.join('\r\n'), 
-            ext: 'srt', 
-            count: n 
-        };
+        return { content: '\uFEFF' + out.join('\r\n'), ext: 'srt', count: n };
     }
 
-    async function extractAndOpenSubtitle(targetTrackNumber, openInEditor = false) {
+            async function extractAndOpenSubtitle(targetTrackNumber, openInEditor = false) {
         if (!currentMkvFile) return;
         const track = mkvParsedTracks.find(t => t.trackNumber === targetTrackNumber);
         if (!track) return;
@@ -2520,35 +2566,37 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
 
             const handler = {
                 capture(ev) {
-                    const len = ev.dataLen - ev.hdr;
-                    if (len <= 0) return null;
-                    if (isPgs) {
-                        return {
+                    const frames = mkvUnlace(ev.reader, ev.dataPos, ev.hdr, ev.dataLen, ev.flags);
+                    if (!frames || frames.length === 0) return null;
+                    const items = [];
+                    for (const f of frames) {
+                        items.push({
                             tn: ev.track,
                             t: (ev.cluster + ev.rel) * scale,
                             d: 0,
                             o: order++,
-                            rawBytes: new Uint8Array(ev.reader.bytes(ev.dataPos + ev.hdr, len))
-                        };
-                    } else {
-                        if ((ev.flags >> 1) & 3) return null;
-                        return {
-                            tn: ev.track,
-                            t: (ev.cluster + ev.rel) * scale,
-                            d: 0,
-                            o: order++,
-                            text: dec.decode(ev.reader.bytes(ev.dataPos + ev.hdr, len))
-                        };
+                            [isPgs ? 'rawBytes' : 'text']: isPgs ? new Uint8Array(f) : dec.decode(f)
+                        });
                     }
+                    return items;
                 },
-                done(item, dur) {
-                    item.d = dur * scale;
-                    blocks.push(item);
+                done(items, dur) {
+                    if (Array.isArray(items)) {
+                        const d = (dur * scale) / items.length;
+                        items.forEach(item => {
+                            item.d = d;
+                            blocks.push(item);
+                        });
+                    } else {
+                        items.d = dur * scale;
+                        blocks.push(items);
+                    }
                 }
             };
 
             await mkvWalk(currentMkvFile, mkvSegmentDataStart, new Set([targetTrackNumber]), handler, myId, frac => {
-                setMkvProgress(Math.min(97, 5 + frac * 92), `دەرهێنان... (${blocks.length} ${isPgs ? 'وێنە' : 'دێڕ'})`);
+                const percent = Math.round(5 + frac * 92);
+                setMkvProgress(Math.min(97, percent), `دەرهێنان... (${blocks.length} ${isPgs ? 'وێنە' : 'دێڕ'})`);
             });
 
             if (myId !== mkvScanId) return;
@@ -2597,6 +2645,7 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
             if (prog) prog.style.display = 'none';
         }
     }
+
 
     // ---------- نووسەری EBML ----------
     function mkvConcat(arrs) {
@@ -2717,7 +2766,7 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
         return h;
     }
 
-    async function extractAudioTrack(targetTrackNumber) {
+            async function extractAudioTrack(targetTrackNumber) {
         if (!currentMkvFile) return;
         const track = mkvParsedTracks.find(t => t.trackNumber === targetTrackNumber);
         if (!track) return;
@@ -2729,7 +2778,6 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
         const isEac3 = /A_EAC3/i.test(codecId);
         const isMp3 = /A_MPEG\/L3/i.test(codecId);
 
-        // دیاریکردنی جۆری پاشگر (Extension)
         let outExt = 'mka';
         let mimeType = 'audio/x-matroska';
         if (isAac) { outExt = 'aac'; mimeType = 'audio/aac'; }
@@ -2749,30 +2797,29 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
 
             const handler = {
                 capture(ev) {
-                    const r = ev.reader;
-                    const len = ev.dataLen - ev.hdr;
-                    if (len <= 0) return null;
-                    const rawData = r.bytes(ev.dataPos + ev.hdr, len);
-
-                    if (isAac) {
-                        // دروستکردنی فایلی فەرمیی AAC لەگەڵ هێدەری ADTS وەک MKVToolNix
-                        const adts = makeAdtsHeader(len, aacCfg);
-                        const packet = new Uint8Array(7 + len);
-                        packet.set(adts, 0);
-                        packet.set(rawData, 7);
-                        audioChunks.push(packet);
-                    } else {
-                        // ئەگەر AC3 یان MP3 بێت، ڕاستەوخۆ دەخرێتە فایلەکەوە
-                        audioChunks.push(new Uint8Array(rawData));
+                    const frames = mkvUnlace(ev.reader, ev.dataPos, ev.hdr, ev.dataLen, ev.flags);
+                    if (!frames) return null;
+                    for (const f of frames) {
+                        if (isAac) {
+                            const adts = makeAdtsHeader(f.length, aacCfg);
+                            const packet = new Uint8Array(7 + f.length);
+                            packet.set(adts, 0);
+                            packet.set(f, 7);
+                            audioChunks.push(packet);
+                        } else {
+                            audioChunks.push(new Uint8Array(f));
+                        }
+                        blockCount++;
                     }
-                    blockCount++;
                     return null;
                 },
                 done() {}
             };
 
-            await mkvWalk(currentMkvFile, mkvSegmentDataStart, new Set([targetTrackNumber]), handler, myId,
-                frac => setMkvProgress(Math.min(97, 3 + frac * 93), `دەرهێنان... (${blockCount} فەریم)`));
+            await mkvWalk(currentMkvFile, mkvSegmentDataStart, new Set([targetTrackNumber]), handler, myId, frac => {
+                const percent = Math.round(3 + frac * 93);
+                setMkvProgress(Math.min(97, percent), `دەرهێنان... (${blockCount} فەریم)`);
+            });
 
             if (myId !== mkvScanId) return;
             if (blockCount === 0) {
@@ -2803,6 +2850,7 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
             if (prog) prog.style.display = 'none';
         }
     }
+
 
     // ---------- ڕووکار ----------
     function renderMkvTracksUI(tracks) {

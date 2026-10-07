@@ -4740,6 +4740,13 @@ window.onload = () => {
             updateSearchMatchInfo();
         }
 
+        // دوای گۆڕینی دەق بە کۆد (گەڕان و گۆڕین)، پێشبینینی ڤیدیۆ و libass دەستبەجێ نوێ دەکاتەوە
+        function kfRefreshPreviewAfterBulkEdit() {
+            try { if (typeof LibassRenderer !== 'undefined' && LibassRenderer.isEnabled()) LibassRenderer.sync(true); } catch (e) {}
+            try { if (typeof window.refreshLiveSubs === 'function') window.refreshLiveSubs(); } catch (e) {}
+            try { if (typeof renderSubtitlesNow === 'function') renderSubtitlesNow(); } catch (e) {}
+        }
+
         function replaceText() {
             const searchTerm = document.getElementById('searchInput').value;
             const replaceTerm = document.getElementById('replaceInput').value;
@@ -4758,6 +4765,7 @@ if (historyStack.length > 40) historyStack.shift();
 redoStack = [];
 updateUndoRedoButtons();
                     saveSession();
+                    kfRefreshPreviewAfterBulkEdit();
                     showToast('وشەکە گۆڕدرا', 'success');
                 } else {
                     showToast('ئەم وشەیە لەم دێڕەدا نەماوە', 'warning');
@@ -4787,6 +4795,7 @@ if (historyStack.length > 40) historyStack.shift();
 redoStack = [];
 updateUndoRedoButtons();
                 saveSession();
+                kfRefreshPreviewAfterBulkEdit();
                 showToast(i18n[currentLang]['msgDone'], 'success'); 
             } else { 
                 showToast(i18n[currentLang]['msgNotFound'], 'error'); 
@@ -8111,7 +8120,80 @@ function confirmDraggablePosition() {
 }
 
 // هەڵگرتنی ڕەنگ لەسەر ڤیدیۆ
-function pickColorFromScreen() {
+// ئایا وێنەکە بەتاڵ/ڕەشی تەواوە؟ (کاتێک ڤیدیۆ فرەیمی ئامادە نەبێت)
+function kfCanvasLooksBlank(c) {
+    try {
+        const t = document.createElement('canvas');
+        t.width = 24; t.height = 24;
+        const tc = t.getContext('2d');
+        tc.drawImage(c, 0, 0, 24, 24);
+        const d = tc.getImageData(0, 0, 24, 24).data;
+        for (let i = 0; i < d.length; i += 4) {
+            if (d[i + 3] > 0 && (d[i] + d[i + 1] + d[i + 2]) > 6) return false;
+        }
+        return true;
+    } catch (e) { return false; }
+}
+
+function kfWaitEvent(el, evs, ms) {
+    return new Promise(function (resolve) {
+        let done = false;
+        function fin() {
+            if (done) return; done = true;
+            evs.forEach(function (n) { el.removeEventListener(n, fin); });
+            clearTimeout(tm); resolve();
+        }
+        const tm = setTimeout(fin, ms);
+        evs.forEach(function (n) { el.addEventListener(n, fin); });
+    });
+}
+
+// وێنەی ئێستای ڤیدیۆ دەگرێت (بەبێ ژێرنووس) — ئەگەر فرەیمی ڤیدیۆکە ئامادە نەبێت چارەسەرێکی جێگرەوە بەکاردێنێت
+async function kfGrabVideoFrame(video, canvas) {
+    const ctx = canvas.getContext('2d');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    // ١. دڵنیابوون لەوەی فرەیمی ئێستا ئامادەیە
+    if (video.readyState < 2) {
+        try { video.currentTime = video.currentTime || 0; } catch (e) {}
+        await kfWaitEvent(video, ['loadeddata', 'canplay', 'seeked'], 2000);
+    }
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    if (!kfCanvasLooksBlank(canvas)) return ctx;
+
+    // ٢. هەوڵی دووەم: createImageBitmap
+    try {
+        if (typeof createImageBitmap === 'function') {
+            const bmp = await createImageBitmap(video);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+            if (bmp.close) bmp.close();
+            if (!kfCanvasLooksBlank(canvas)) return ctx;
+        }
+    } catch (e) {}
+
+    // ٣. هەوڵی سێیەم: ڤیدیۆیەکی کاتیی جیا لەسەر هەمان کات
+    try {
+        const src = video.currentSrc || video.src;
+        if (src) {
+            const tv = document.createElement('video');
+            tv.muted = true; tv.playsInline = true; tv.preload = 'auto';
+            if (video.crossOrigin) tv.crossOrigin = video.crossOrigin;
+            tv.src = src;
+            await kfWaitEvent(tv, ['loadeddata', 'error'], 4000);
+            try { tv.currentTime = video.currentTime || 0; } catch (e) {}
+            await kfWaitEvent(tv, ['seeked', 'error'], 4000);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(tv, 0, 0, canvas.width, canvas.height);
+            tv.removeAttribute('src');
+            try { tv.load(); } catch (e) {}
+        }
+    } catch (e) {}
+    return ctx;
+}
+
+async function pickColorFromScreen() {
     const video = document.getElementById('preview-video');
     if (!video || !video.videoWidth) {
         showToast("تکایە سەرەتا ڤیدیۆ لێبدە!", "warning");
@@ -8120,10 +8202,7 @@ function pickColorFromScreen() {
 
     const modal = document.getElementById('video-color-picker-modal');
     const canvas = document.getElementById('vPickerCanvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const ctx = await kfGrabVideoFrame(video, canvas);
 
     modal.style.display = 'flex';
     setupCanvasColorTouch(canvas, ctx);
@@ -14400,6 +14479,16 @@ html:root body .subtitle-card.highlight-restored {
     transition: all 0.3s ease !important;
 }
 
+
+/* دەقی درێژ بێ بۆشایی (وەک \h\h\h...) نابێت لە سنووری کارتەکە بچێتە دەرەوە */
+html:root body .subtitle-orig {
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    min-width: 0 !important;
+}
+html:root body .subtitle-card { min-width: 0; max-width: 100%; }
 </style>
 </body>
 </html>

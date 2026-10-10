@@ -6579,7 +6579,7 @@ function buildEditorUI(kurdishState = [], resetHistory = true) {
                 </div>
                 <div class="subtitle-time">${orig.time}</div>
             </div>
-            <div class="subtitle-orig" dir="auto">${orig.text.replace(/\n/g, '<br>')}</div>
+            <div class="subtitle-orig" dir="auto">${orig.text.split('\n').map(function (l) { return '<div dir="auto" style="unicode-bidi:plaintext;text-align:start;">' + (l === '' ? '&nbsp;' : l) + '</div>'; }).join('')}</div>
             <div class="subtitle-kurd"><textarea dir="auto" oninput="onUserType()">${kText}</textarea></div>
             <div class="sel-overlay" onclick="kfSel.toggleCard(${i})"><span class="sel-check"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg></span></div>
         </div>`;
@@ -6705,7 +6705,7 @@ function redo() {
         }
 
         function toggleDirection() { 
-            const tas = document.querySelectorAll('.subtitle-kurd textarea, .subtitle-orig');
+            const tas = document.querySelectorAll('.subtitle-kurd textarea');
             if (!tas.length) return;
             const currentDir = tas[0].getAttribute('dir') || 'auto';
             const newDir = currentDir === 'rtl' ? 'ltr' : (currentDir === 'ltr' ? 'auto' : 'rtl');
@@ -12828,7 +12828,7 @@ function kfSrvClear() {
     kfSrvEl('kfSrvInput').value = '';
     kfSrvEl('kfSrvStartEp').value = '';
     kfSrvUpdate();
-    kfSrvEl('kfSrvInput').focus();
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
     kfSrvToast('خانەکان پاک کرانەوە', 'info');
 }
 
@@ -14727,7 +14727,7 @@ html:root body .kf-bar-logo b { font-weight: 400; color: var(--primary); text-sh
 /* ---------- مێنیوی سڵایدی (مۆبایل) ---------- */
 #kf-scrim {
     position: fixed; inset: 0; z-index: 1970; background: rgba(2, 4, 10, 0.6);
-    opacity: 0; pointer-events: none; transition: opacity .42s ease, visibility 0s linear .42s; visibility: hidden;
+    opacity: 0; pointer-events: none; transition: opacity .65s ease, visibility 0s linear .65s; visibility: hidden;
 }
 #kf-scrim.show { opacity: 1; pointer-events: auto; visibility: visible; transition: opacity .42s ease, visibility 0s; }
 #kf-drawer {
@@ -14739,7 +14739,7 @@ html:root body .kf-bar-logo b { font-weight: 400; color: var(--primary); text-sh
     border-left: 1px solid rgba(255, 255, 255, 0.12);
     box-shadow: -18px 0 50px rgba(0, 0, 0, 0.6);
     transform: translateX(calc(100% + 90px)); visibility: hidden;
-    transition: transform .42s cubic-bezier(.22, .9, .3, 1), visibility 0s linear .42s;
+    transition: transform .65s cubic-bezier(.22, .9, .3, 1), visibility 0s linear .65s;
 }
 #kf-drawer.open { transform: none; visibility: visible; transition: transform .42s cubic-bezier(.22, .9, .3, 1), visibility 0s; }
 .kf-drawer-head {
@@ -14875,10 +14875,15 @@ html:root body.editor-bg #subtitles-container {
     max-height: calc(calc(var(--kf-dvh, 1dvh) * 100) - 360px) !important; min-height: 270px !important; height: auto;
 }
 html:root body.editor-bg .subtitle-card { padding: 12px !important; border-radius: 14px !important; }
-html:root body.editor-bg .subtitle-orig { font-size: 15px; }
-html:root body.editor-bg .subtitle-kurd textarea { font-size: 16px; min-height: 96px; }
+html:root body.editor-bg .subtitle-orig { font-size: 13px; }
+html:root body.editor-bg .subtitle-kurd textarea { font-size: 14px; min-height: 96px; }
 /* دوگمەکانی خوارەوە: هەمان شێوەی ئەسڵی (٢ + ١ + ١ ڕیز، ٣٠px لە سەرەوە، ٤٠px لە خوارەوە)، تەنها بۆشایی ٢ لای */
-html:root body.editor-bg #editor-screen > .action-bar { margin: 30px 12px 40px 12px !important; }
+html:not(.kf-wide):root body.editor-bg #editor-screen > .action-bar {
+    margin: 30px 0 40px 0 !important; border-radius: 0 !important; border-width: 1px 0 !important; width: 100% !important; box-sizing: border-box;
+}
+html:not(.kf-wide):root body.editor-bg #code-review-panel {
+    margin: 10px 0 24px 0 !important; border-radius: 0 !important; border-width: 1px 0 !important; width: 100% !important; box-sizing: border-box;
+}
 
 /* ---------- شاشەی دیاریکردنی شوێنی دەق (grid40): کامل شاشە، بێ قەوسی، شاشەی ڤیدیۆ گەورە و تەواو ---------- */
 html:root body #grid40-modal {

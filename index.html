@@ -4,6 +4,56 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#080a0d">
+
+    <style id="kf-shell-critical">
+    /* مێنیو و شریتی سەرەوە تا ئامادە نەبن نابینرێن (ڕێگری لە تروسکەی مێنیو لە کاتی کردنەوەی ماڵپەڕ) */
+    #kf-shell { display: none !important; }
+    html.kf-ready body.startup-bg #kf-shell { display: block !important; }
+    #kf-drawer { position: fixed; top: 0; bottom: 0; right: 0; width: min(calc(var(--kf-vw, 1vw) * 84), 330px); transform: translateX(calc(100% + 90px)); visibility: hidden; }
+    #kf-scrim { position: fixed; top: 0; left: 0; right: 0; bottom: 0; opacity: 0; pointer-events: none; }
+    </style>
+    <script id="kf-layout-boot">
+    (function () {
+        var root = document.documentElement;
+        var uad = navigator.userAgentData, ua = navigator.userAgent || '';
+        // وێبگەڕ بە UAی مۆبایل کراوەتەوە؟ (کاتێک Desktop site ناچالاکە)
+        var mobileUA = (uad && typeof uad.mobile === 'boolean') ? uad.mobile : /Mobi|iPhone|iPod|Android.*Mobile/i.test(ua);
+        var lastZoom = 1, innerScaled = false;
+        window.__kfZoom = 1;
+        function apply() {
+            var sw = screen.width || 0, sh = screen.height || 0;
+            var rawW = window.innerWidth || root.clientWidth, ih = window.innerHeight || root.clientHeight;
+            var iw = innerScaled ? rawW * lastZoom : rawW;
+            var smallDevice = sw > 0 && Math.min(sw, sh) < 600;
+            var zoom = 1;
+            // مۆبایلی بچووک + سایتی مۆبایل: هەمیشە شێوازی مۆبایل. ئەگەر وێبگەڕ لە هەر هۆکارێکەوە ڕووپەڕی فراوان کرد، بە zoom دەگەڕێتەوە بۆ پانی ڕاستەقینەی شاشە
+            if (mobileUA && smallDevice && iw > sw * 1.15) zoom = iw / sw;
+            if (zoom > 1) {
+                root.style.zoom = String(zoom);
+                var u = (ih / 100 / zoom) + 'px';
+                root.style.setProperty('--kf-vh', u); root.style.setProperty('--kf-dvh', u);
+                root.style.setProperty('--kf-vw', (iw / 100 / zoom) + 'px');
+                if (!innerScaled && lastZoom === 1 && Math.abs((window.innerWidth || 0) - iw / zoom) < 4) innerScaled = true;
+            } else {
+                if (root.style.zoom) root.style.zoom = '';
+                ['--kf-vh', '--kf-dvh', '--kf-vw'].forEach(function (k) { root.style.removeProperty(k); });
+                innerScaled = false;
+            }
+            lastZoom = zoom; window.__kfZoom = zoom;
+            var w = iw / zoom;
+            root.classList.toggle('kf-wide', w >= 768);
+            root.classList.toggle('kf-mid', w >= 768 && w < 1100);
+            root.classList.toggle('kf-narrow', w <= 520);
+            root.classList.toggle('kf-xl', w >= 1100);
+        }
+        var t = null;
+        function sched() { if (t) cancelAnimationFrame(t); t = requestAnimationFrame(apply); }
+        apply();
+        window.addEventListener('resize', sched);
+        window.addEventListener('orientationchange', function () { setTimeout(apply, 250); });
+    })();
+    </script>
+
     <title data-i18n="pageTitle">دەستکاریکەری ژێرنووس</title>
 
 <!-- ١. ئایکۆنی ڕەسمی ئەپەکە بە شێوەی ڕاستەوخۆ (Inline Data URI) بۆ وێبگەڕ و مۆبایل -->
@@ -232,8 +282,8 @@ function deleteEmptySubtitleLines() {
             color: var(--text-main);
             margin: 0;
             padding: 0;
-            min-height: 100vh;
-            min-height: 100dvh;
+            min-height: calc(var(--kf-vh, 1vh) * 100);
+            min-height: calc(var(--kf-dvh, 1dvh) * 100);
             width: 100%;
             overflow-x: clip;
         }
@@ -251,8 +301,8 @@ function deleteEmptySubtitleLines() {
             display: flex;
             align-items: center;
             justify-content: center;
-            min-height: 100vh;
-            min-height: 100dvh;
+            min-height: calc(var(--kf-vh, 1vh) * 100);
+            min-height: calc(var(--kf-dvh, 1dvh) * 100);
             position: relative;
             z-index: 1;
         }
@@ -994,18 +1044,9 @@ function deleteEmptySubtitleLines() {
             color: var(--primary);
         }
 
-        @media (min-width: 768px) {
-            #editor-screen { max-width: 960px; padding-bottom: 85px; }
-            .floating-search-bar { left: 50%; transform: translateX(-50%); max-width: 550px; bottom: 80px; }
-            .subtitle-card { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto 1fr; gap: 0 16px; padding: 16px; }
-            .subtitle-header { grid-column: 1 / -1; margin-bottom: 12px; }
-            .subtitle-orig { margin-bottom: 0; height: 100%; }
-            .subtitle-kurd { display: flex; flex-direction: column; height: 100%; }
-            .subtitle-kurd textarea { flex-grow: 1; height: 100%; min-height: 100px; }
-            .action-bar { display: flex; justify-content: center; flex-direction: row; gap: 12px; padding: 12px 24px; }
-            .action-bar .btn, .action-bar .btn-outline { width: auto; min-width: 170px; padding: 11px 16px; }
-            #preview-video { max-height: 320px; }
-        }
+        html.kf-wide #editor-screen { max-width: 960px; padding-bottom: 85px; }html.kf-wide .floating-search-bar { left: 50%; transform: translateX(-50%); max-width: 550px; bottom: 80px; }html.kf-wide .subtitle-card { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto 1fr; gap: 0 16px; padding: 16px; }html.kf-wide .subtitle-header { grid-column: 1 / -1; margin-bottom: 12px; }html.kf-wide .subtitle-orig { margin-bottom: 0; height: 100%; }html.kf-wide .subtitle-kurd { display: flex; flex-direction: column; height: 100%; }html.kf-wide .subtitle-kurd textarea { flex-grow: 1; height: 100%; min-height: 100px; }html.kf-wide .action-bar { display: flex; justify-content: center; flex-direction: row; gap: 12px; padding: 12px 24px; }html.kf-wide .action-bar .btn,
+html.kf-wide .action-bar .btn-outline { width: auto; min-width: 170px; padding: 11px 16px; }html.kf-wide #preview-video { max-height: 320px; }
+        
 /* ستایلی چوارگۆشەی قەوسی ڕەنگەکان */
 .theme-grid {
     display: grid;
@@ -1262,7 +1303,7 @@ function deleteEmptySubtitleLines() {
 }
 #subtitles-container {
     width: 100% !important;
-    max-height: calc(100dvh - 360px) !important;
+    max-height: calc(calc(var(--kf-dvh, 1dvh) * 100) - 360px) !important;
     min-height: 270px;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
@@ -1481,15 +1522,15 @@ input[type="checkbox"], input[type="radio"] {
 </style>
 
 <style>
-#code-review-panel { margin: 10px 12px 24px; padding: 12px; border-radius: 14px; background: var(--card-bg, rgba(255,255,255,.04)); border: 1px solid var(--border, rgba(255,255,255,.12)); text-align: right; direction: rtl; max-height: 45vh; overflow-y: auto; }
+#code-review-panel { margin: 10px 12px 24px; padding: 12px; border-radius: 14px; background: var(--card-bg, rgba(255,255,255,.04)); border: 1px solid var(--border, rgba(255,255,255,.12)); text-align: right; direction: rtl; max-height: calc(var(--kf-vh, 1vh) * 45); overflow-y: auto; }
 .svg-ic { width:1em; height:1em; vertical-align:-0.14em; display:inline-block; flex:none; stroke:currentColor; fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
 #code-review-panel .cr-head { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px; font-weight:700; }
 #code-review-panel .cr-close { cursor:pointer; opacity:.7; background:none; border:none; color:inherit; font-size:18px; }
 /* Merge tool mobile fixes and editable source lines */
 .merge-style-eye-btn { flex:0 0 38px!important; width:38px!important; height:30px!important; min-width:38px!important; padding:0!important; margin:0!important; display:inline-flex!important; align-items:center!important; justify-content:center!important; line-height:0!important; direction:ltr!important; }
 .merge-style-eye-btn svg { display:block!important; width:16px!important; height:16px!important; margin:0!important; transform: translateX(0.45px) !important; }
-#mergeStyleViewer { width:100vw; height:100vh; height:100dvh; overflow:hidden; overscroll-behavior:contain; }
-#mergeStyleViewerPanel { max-height:calc(100vh - 24px); max-height:calc(100dvh - 24px); min-height:0; }
+#mergeStyleViewer { width:calc(var(--kf-vw, 1vw) * 100); height:calc(var(--kf-vh, 1vh) * 100); height:calc(var(--kf-dvh, 1dvh) * 100); overflow:hidden; overscroll-behavior:contain; }
+#mergeStyleViewerPanel { max-height:calc(calc(var(--kf-vh, 1vh) * 100) - 24px); max-height:calc(calc(var(--kf-dvh, 1dvh) * 100) - 24px); min-height:0; }
 #mergeStyleViewerList { min-height:0; flex:1 1 auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; background:var(--card-bg); }
 .merge-source-editor { display:none; margin:0 0 10px; padding:8px; background:rgba(0,0,0,.3); border:1px solid var(--border-color); border-radius:10px; }
 .merge-source-editor-head { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:7px; }
@@ -1498,7 +1539,7 @@ input[type="checkbox"], input[type="radio"] {
 .merge-source-line-meta { display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:5px; color:var(--text-muted); font-size:9.5px; }
 .merge-source-line textarea { width:100%; min-height:58px; resize:vertical; box-sizing:border-box; border:1px solid var(--border-color); border-radius:7px; padding:7px 8px; background:var(--bg-color); color:var(--text-main); font:inherit; font-size:11.5px; line-height:1.7; direction:rtl; text-align:right; }
 .merge-source-line textarea:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 2px rgba(142,182,155,.13); }
-@media (max-width:520px) { #mergeStyleViewer { padding:8px!important; align-items:stretch!important; } #mergeStyleViewerPanel { max-height:calc(100dvh - 16px); margin:0; } .merge-source-editor-list { max-height:220px; } }
+html.kf-narrow #mergeStyleViewer { padding:8px!important; align-items:stretch!important; }html.kf-narrow #mergeStyleViewerPanel { max-height:calc(calc(var(--kf-dvh, 1dvh) * 100) - 16px); margin:0; }html.kf-narrow .merge-source-editor-list { max-height:220px; } 
 .cr-item { border-radius:10px; padding:8px 10px; margin-bottom:8px; font-size:13px; line-height:1.8; border:1px solid transparent; }
 .cr-item.err { background: rgba(255,80,80,.10); border-color: rgba(255,80,80,.35); }
 .cr-item.warn { background: rgba(255,190,60,.10); border-color: rgba(255,190,60,.35); }
@@ -1547,7 +1588,7 @@ html:root body .kf-logo {
     white-space: nowrap;
     font-family: 'KFMichroma', 'Michroma', system-ui, sans-serif;
     font-weight: 400;
-    font-size: clamp(15px, 4.6vw, 19px);
+    font-size: clamp(15px, calc(var(--kf-vw, 1vw) * 4.6), 19px);
     line-height: 1;
     letter-spacing: .3em;
     padding-left: .3em;              /* بەرانبەر بە بۆشایی کۆتایی پیتەکان، تا ڕێک لە ناوەڕاست بێت */
@@ -1592,18 +1633,18 @@ html:root body .kf-logo b { text-shadow: 0 0 22px var(--primary-glow); }
     color: #f1f5f9;
 }
 /* گەورە و زۆر لێڵ */
-.kf-mark.m1 { top: 5%;  right: -7%; font-size: clamp(34px, 9.5vw, 128px); letter-spacing: .12em; opacity: .13; filter: blur(7px);   transform: rotate(-7deg); }
+.kf-mark.m1 { top: 5%;  right: -7%; font-size: clamp(34px, calc(var(--kf-vw, 1vw) * 9.5), 128px); letter-spacing: .12em; opacity: .13; filter: blur(7px);   transform: rotate(-7deg); }
 /* بچووک و ڕوون */
 .kf-mark.m2 { top: 17%; left: 5%;   font-size: 11px; letter-spacing: .34em; opacity: .30; }
 /* ناوەند و تۆزێ لێڵ */
-.kf-mark.m3 { bottom: 9%; left: -5%; font-size: clamp(28px, 6.5vw, 86px); letter-spacing: .16em; opacity: .12; filter: blur(3px);   transform: rotate(5deg); }
+.kf-mark.m3 { bottom: 9%; left: -5%; font-size: clamp(28px, calc(var(--kf-vw, 1vw) * 6.5), 86px); letter-spacing: .16em; opacity: .12; filter: blur(3px);   transform: rotate(5deg); }
 /* بچووک و ڕوون */
 .kf-mark.m4 { bottom: 6%; right: 7%; font-size: 12px; letter-spacing: .3em;  opacity: .26; }
 /* ستوونی لای چەپ */
 .kf-mark.m5 { top: 50%; left: 1.4%; font-size: 10px; letter-spacing: .42em; opacity: .24; filter: blur(.6px);
               writing-mode: vertical-rl; transform: translateY(-50%) rotate(180deg); }
 /* ناوەند، لێڵێکی کەم */
-.kf-mark.m6 { top: 42%; right: -3%; font-size: clamp(18px, 3.6vw, 46px); letter-spacing: .2em; opacity: .10; filter: blur(1.6px); transform: rotate(11deg); }
+.kf-mark.m6 { top: 42%; right: -3%; font-size: clamp(18px, calc(var(--kf-vw, 1vw) * 3.6), 46px); letter-spacing: .2em; opacity: .10; filter: blur(1.6px); transform: rotate(11deg); }
 
 /* ٣. لۆگۆی بچووک لە شاشەی دەستکاریکردن (لای چەپی هێڵی سەرەوە) */
 html:root body .kf-logo-mini {
@@ -1633,7 +1674,7 @@ html:root body .kf-logo-mini b { color: var(--primary); transition: color .4s ea
 /* ٤. نامەکان (toast): ناوی فایلی زۆر درێژ دەشکێت بۆ چەند دێڕ و لە شاشە دەرناچێت */
 html:root body #toast-container {
     width: max-content;
-    max-width: calc(100vw - 24px);
+    max-width: calc(calc(var(--kf-vw, 1vw) * 100) - 24px);
     box-sizing: border-box;
 }
 html:root body #toast-container .toast {
@@ -1652,16 +1693,31 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
 
 </head>
 <body class="startup-bg">
-    <!-- نوسینی KURD FOREST لە باکگراوند (تەنها ڕازاندنەوە) -->
-    <div id="kf-bg-marks" aria-hidden="true">
-        <div class="kf-mark m1">KURD <b>FOREST</b></div>
-        <div class="kf-mark m2">KURD <b>FOREST</b></div>
-        <div class="kf-mark m3">KURD <b>FOREST</b></div>
-        <div class="kf-mark m4">KURD <b>FOREST</b></div>
-        <div class="kf-mark m5">KURD <b>FOREST</b></div>
-        <div class="kf-mark m6">KURD <b>FOREST</b></div>
-    </div>
 
+
+
+    <div id="kf-bg" aria-hidden="true"></div>
+    <!-- ===== شریتی سەرەوە + مێنیوی سڵایدی ڕاست (KF Shell) ===== -->
+    <div id="kf-shell">
+        <header id="kf-bar">
+            <button type="button" id="kf-menu-btn" class="kf-bar-btn" aria-label="مێنیو" aria-expanded="false" onclick="kfNav.toggleDrawer()">
+                <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
+            <div class="kf-bar-center"><span id="kf-sec-title"></span></div>
+            <nav id="kf-tabs" aria-label="بەشەکان"></nav>
+            <div class="kf-bar-logo" dir="ltr">KURD <b>FOREST</b></div>
+        </header>
+        <div id="kf-scrim" onclick="kfNav.closeDrawer()"></div>
+        <aside id="kf-drawer" aria-hidden="true">
+            <div class="kf-drawer-head">
+                <div class="kf-drawer-title">مێنیو</div>
+                <button type="button" class="kf-bar-btn" aria-label="داخستن" onclick="kfNav.closeDrawer()">
+                    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <nav id="kf-drawer-list"></nav>
+        </aside>
+    </div>
 
     <!-- شاشەی دەستپێک و سێتەپ بە تەواوی لە ناوەڕاست -->
     <div id="setup-screen" class="glass-card">
@@ -1763,8 +1819,6 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
             <div class="theme-mini-box" id="theme-mini-sand" onclick="applyCustomTheme('sand')" title="لمی" style="background: linear-gradient(135deg, #d4b483, #a07c45);"></div>
         </div>
 
-        <!-- لۆگۆی KURD FOREST: KURD ڕەنگی ئاسایی، FOREST ڕەنگی ڕووکارەکە -->
-        <div class="kf-logo" dir="ltr" role="img" aria-label="Kurd Forest">KURD <b>FOREST</b></div>
     </div>
     
     <!-- مۆداڵی گۆڕینی وێنە بۆ لینک بە هەموو زمانەکان -->
@@ -1863,14 +1917,14 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
                         <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>
                         <span>ژێرنووس</span>
                         <span id="mkvSubCountBadge" style="font-size:10px; background:rgba(0,0,0,0.35); padding:1px 5px; border-radius:8px;">0</span>
-                        <span id="mkvSubArrow" style="font-size:9px;">▼</span>
+                        <span id="mkvSubArrow" style="display:inline-flex; align-items:center;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
                     </button>
 
                     <button type="button" id="mkvToggleBtnAudio" class="fmt-btn" onclick="toggleMkvSection('audio')" style="display:flex; align-items:center; justify-content:center; gap:5px; padding:8px 4px;">
                         <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M11 5L6 9H2v6h4l5 4V5z"></path></svg>
                         <span>دەنگ (Audio)</span>
                         <span id="mkvAudioCountBadge" style="font-size:10px; background:rgba(0,0,0,0.35); padding:1px 5px; border-radius:8px;">0</span>
-                        <span id="mkvAudioArrow" style="font-size:9px;">▶</span>
+                        <span id="mkvAudioArrow" style="display:inline-flex; align-items:center;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
                     </button>
                 </div>
 
@@ -1945,6 +1999,12 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
         if (tit) tit.style.display = 'none';
     }
 
+    function mkvSetArrow(el, open) {
+        if (!el) return;
+        el.innerHTML = open
+            ? '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>'
+            : '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>';
+    }
     function toggleMkvSection(section) {
         const subPanel = document.getElementById('mkvSubtitlePanel');
         const audioPanel = document.getElementById('mkvAudioPanel');
@@ -1957,30 +2017,30 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
             if (mkvActiveSection === 'sub' && subPanel.style.display === 'block') {
                 subPanel.style.display = 'none';
                 subBtn.classList.remove('active');
-                if (subArrow) subArrow.innerText = '▶';
+                mkvSetArrow(subArrow, false);
                 mkvActiveSection = null;
             } else {
                 subPanel.style.display = 'block';
                 audioPanel.style.display = 'none';
                 subBtn.classList.add('active');
                 audioBtn.classList.remove('active');
-                if (subArrow) subArrow.innerText = '▼';
-                if (audioArrow) audioArrow.innerText = '▶';
+                mkvSetArrow(subArrow, true);
+                mkvSetArrow(audioArrow, false);
                 mkvActiveSection = 'sub';
             }
         } else if (section === 'audio') {
             if (mkvActiveSection === 'audio' && audioPanel.style.display === 'block') {
                 audioPanel.style.display = 'none';
                 audioBtn.classList.remove('active');
-                if (audioArrow) audioArrow.innerText = '▶';
+                mkvSetArrow(audioArrow, false);
                 mkvActiveSection = null;
             } else {
                 audioPanel.style.display = 'block';
                 subPanel.style.display = 'none';
                 audioBtn.classList.add('active');
                 subBtn.classList.remove('active');
-                if (audioArrow) audioArrow.innerText = '▼';
-                if (subArrow) subArrow.innerText = '▶';
+                mkvSetArrow(audioArrow, true);
+                mkvSetArrow(subArrow, false);
                 mkvActiveSection = 'audio';
             }
         }
@@ -2541,6 +2601,30 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
         return { content: '\uFEFF' + out.join('\r\n'), ext: 'srt', count: n };
     }
 
+    function mkvFinishExtract(res, fileName, openInEditor, isPgs, track) {
+        if (openInEditor && !isPgs) {
+            closeMkvExtractorModal();
+            currentFileName = fileName;
+            isAssFormat = mkvIsAss(track);
+            isVttFormat = mkvIsVtt(track);
+            originalData = isAssFormat ? parseASSContent(res.content, true) : (isVttFormat ? parseVTTContent(res.content) : parseSRTContent(res.content));
+            buildEditorUI([]);
+            showToast(`${res.count} دێڕی ژێرنووس دەرهێنرا و لە ئەدیتۆر کرایەوە!`, 'success');
+        } else {
+            if (res.blob) {
+                const url = URL.createObjectURL(res.blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 60000);
+            } else {
+                triggerDownload(res.content, fileName);
+            }
+            showToast(`فایلەکە بە سەرکەوتوویی دابەزێندرا (${res.count} دانە)`, 'success');
+        }
+    }
             async function extractAndOpenSubtitle(targetTrackNumber, openInEditor = false) {
         if (!currentMkvFile) return;
         const track = mkvParsedTracks.find(t => t.trackNumber === targetTrackNumber);
@@ -2550,6 +2634,14 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
         const isPgs = mkvIsPgs(track);
         if (openInEditor && isPgs) {
             showToast('ژێرنووسی وێنەیی (PGS) تەنها دادەبەزێت و ناکرێت لە ئەدیتۆری دەق بکرێتەوە.', 'warning');
+            return;
+        }
+
+        window.__mkvCache = window.__mkvCache || {};
+        const cacheKey = mkvScanId + ':' + targetTrackNumber;
+        if (window.__mkvCache[cacheKey]) {
+            const c = window.__mkvCache[cacheKey];
+            mkvFinishExtract(c.res, c.fileName, openInEditor, isPgs, track);
             return;
         }
 
@@ -2615,29 +2707,8 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
 
             setMkvProgress(100, 'تەواو بوو!');
             if (prog) prog.style.display = 'none';
-
-            if (openInEditor && !isPgs) {
-                closeMkvExtractorModal();
-                currentFileName = fileName;
-                isAssFormat = mkvIsAss(track);
-                isVttFormat = mkvIsVtt(track);
-                originalData = isAssFormat ? parseASSContent(res.content, true) : (isVttFormat ? parseVTTContent(res.content) : parseSRTContent(res.content));
-                buildEditorUI([]);
-                showToast(`${res.count} دێڕی ژێرنووس دەرهێنرا و لە ئەدیتۆر کرایەوە!`, 'success');
-            } else {
-                if (res.blob) {
-                    const url = URL.createObjectURL(res.blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = fileName;
-                    document.body.appendChild(a);
-                    a.click();
-                    setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 60000);
-                } else {
-                    triggerDownload(res.content, fileName);
-                }
-                showToast(`فایلەکە بە سەرکەوتوویی دابەزێندرا (${res.count} دانە)`, 'success');
-            }
+            window.__mkvCache[cacheKey] = { res: res, fileName: fileName };
+            mkvFinishExtract(res, fileName, openInEditor, isPgs, track);
         } catch (err) {
             if (err && err.message === 'cancelled') return;
             console.error('Extract error:', err);
@@ -2989,7 +3060,7 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
 .kf-srv-opt input[type=checkbox]{accent-color:var(--primary);width:15px;height:15px;}
 </style>
 <div id="kf-servers-modal" class="custom-modal-overlay">
-    <div class="custom-modal-content" style="max-width: 520px; padding: 14px; max-height: 94vh; overflow-y: auto; overflow-x: hidden; text-align: right;">
+    <div class="custom-modal-content" style="max-width: 520px; padding: 14px; max-height: calc(var(--kf-vh, 1vh) * 94); overflow-y: auto; overflow-x: hidden; text-align: right;">
         <h3 style="color:var(--primary); margin:0 0 6px 0; font-size:15px;">کۆدی سێرڤەرەکان</h3>
         <p style="font-size:11.5px; line-height:1.75; color:var(--text-muted); margin:0 0 10px 0;">
             لینکی سێرڤەرەکان و <b>تەنها ژمارەی ئەڵقە</b> لێرە دابنێ، بە هەر شێوازێک: ژمارە پێش لینکەکان یان دوایان یان لەسەر هەمان دێڕ.
@@ -3465,6 +3536,8 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
                 </div>
              </div>
         
+        </div><!-- /video-container -->
+
         <!-- چوارچێوەی تایبەت بە دێڕەکان لەگەڵ سەهمی دەستەڕاست -->
         <div class="subtitles-scroll-frame">
             <div id="subtitles-container"></div>
@@ -3480,7 +3553,6 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
             <button class="btn btn-outline" style="grid-column: span 2;" onclick="runCodeReview()"><span style="display:inline-flex;align-items:center;gap:6px;"><svg class="svg-ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg> پێداچوونەوەی کۆدەکان</span></button>
         </div>
         <div id="code-review-panel" style="display:none;"></div>
-    </div>
 
     <div id="ai-modal" class="custom-modal-overlay">
         <div class="custom-modal-content" style="max-width: 440px;">
@@ -3516,7 +3588,7 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
 
     <!-- مۆداڵی تەکنیک و ستایل بە دیزاینی تەواو هاوسەنگ بۆ مۆبایل -->
     <div id="sub-style-modal" class="custom-modal-overlay">
-        <div class="custom-modal-content" style="max-width: 390px; width: 100%; max-height: 90vh; overflow-y: auto; overflow-x: hidden; padding: 14px; box-sizing: border-box;">
+        <div class="custom-modal-content" style="max-width: 390px; width: 100%; max-height: calc(var(--kf-vh, 1vh) * 90); overflow-y: auto; overflow-x: hidden; padding: 14px; box-sizing: border-box;">
             <h3 style="margin: 0 0 10px 0; color: var(--primary); font-size: 15px;">تەکنیک و دیزاینی دێڕی <span id="styleModalLineNum">#</span></h3>
             
             <!-- ١. شوێنی دێڕ لەسەر شاشە -->
@@ -3713,7 +3785,7 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
             <div style="margin-bottom: 10px; background: rgba(142, 182, 155, 0.08); border-radius: 10px; padding: 8px 10px; border: 1px solid var(--border-color); text-align: start;">
                 <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom: 5px;">
                     <label style="font-size: 11px; font-weight: bold; color: var(--primary);">تێبینی (دەچێتە خواری ڕستەکە لە فایلەکە):</label>
-                    <button type="button" onclick="clearNoteBox()" style="flex-shrink:0; font-size:10.5px; font-weight:bold; padding:3px 8px; border-radius:8px; cursor:pointer; background: rgba(239, 68, 68, 0.08); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.4);">سڕینەوەی تێبینی</button>
+                    <div style="display:flex; gap:6px; flex-shrink:0;"><button type="button" onclick="clearNoteStyles()" title="سڕینەوەی ستایلی تێبینی" style="flex-shrink:0; font-size:10.5px; font-weight:bold; padding:3px 8px; border-radius:8px; cursor:pointer; background: rgba(239, 68, 68, 0.08); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.4);">سڕینەوەی ستایل</button><button type="button" onclick="clearNoteBox()" style="flex-shrink:0; font-size:10.5px; font-weight:bold; padding:3px 8px; border-radius:8px; cursor:pointer; background: rgba(239, 68, 68, 0.08); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.4);">سڕینەوەی تێبینی</button></div>
                 </div>
 
                 <textarea id="modalNoteText" dir="auto" placeholder="تێبینی لێرە بنووسە..." style="width: 100%; min-height: 42px; max-height: 80px; padding: 7px 9px; border-radius: 8px; border: 1.5px solid var(--border-color); background: var(--bg-color); color: var(--text-main); font-size: 12.5px; line-height: 1.4; resize: vertical; outline: none; direction: auto; text-align: start; box-sizing: border-box; margin-bottom: 6px;"></textarea>
@@ -3813,7 +3885,7 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
 </style>
 <!-- بەڕێوەبەری فۆنتەکان -->
 <div id="kf-fonts-modal" class="custom-modal-overlay">
-    <div class="custom-modal-content" style="max-width: 420px; padding: 14px; max-height: 92vh; overflow-y: auto; overflow-x: hidden; text-align: right;">
+    <div class="custom-modal-content" style="max-width: 420px; padding: 14px; max-height: calc(var(--kf-vh, 1vh) * 92); overflow-y: auto; overflow-x: hidden; text-align: right;">
         <h3 style="color:var(--primary); margin:0 0 6px 0; font-size:15px;">فۆنتەکانی ژێرنووس</h3>
         <p style="font-size:11.5px; line-height:1.7; color:var(--text-muted); margin:0 0 10px 0;">
             بۆ ئەوەی پێشبینین و شوێنی دەق <b>ڕێک وەک پلەیەر و هارد سەب</b> بێت، فایلی فۆنتەکانی ناو ئەم ژێرنووسە (TTF / OTF) لێرە زیاد بکە.
@@ -3847,7 +3919,7 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
 
 <!-- پەنجەرەی دیاریکردنی شوێن بە مەگنەتیک و هێڵی ڕێنمایی ناوەڕاست -->
 <div id="grid40-modal" class="custom-modal-overlay">
-    <div class="custom-modal-content" style="max-width: 440px; padding: 14px; max-height: 92vh; overflow-y: auto; overflow-x: hidden;">
+    <div class="custom-modal-content" style="max-width: 440px; padding: 14px; max-height: calc(var(--kf-vh, 1vh) * 92); overflow-y: auto; overflow-x: hidden;">
         <h3 style="color:var(--primary); margin:0 0 8px 0; font-size:14px;">شوێنی دەقەکە بە دەست لەسەر شاشە ڕابکێشە:</h3>
         
         <!-- بەشی قەبارە و نیشاندانی شوێن و سووڕانەوە -->
@@ -4016,7 +4088,7 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
 
 <!-- مۆداڵی تایبەت بە سانسۆرکردنی ڤیدیۆ (کۆنترۆڵی نەرم بێ وەستان + کاتی دەقیق) -->
 <div id="censor-modal" class="custom-modal-overlay">
-    <div class="custom-modal-content" style="max-width: 460px; width: 100%; max-height: 94vh; overflow-y: auto; text-align: start; padding: 14px;">
+    <div class="custom-modal-content" style="max-width: 460px; width: 100%; max-height: calc(var(--kf-vh, 1vh) * 94); overflow-y: auto; text-align: start; padding: 14px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
             <h3 style="margin:0; color:var(--primary); font-size:15px;">ئامرازی سانسۆرکردنی ڤیدیۆ</h3>
             <button type="button" class="btn btn-outline" style="width:auto; padding:3px 8px; font-size:11px;" onclick="closeCensorModal()">داخستن</button>
@@ -4692,6 +4764,7 @@ window.onload = () => {
             } else {
                 panel.style.display = 'none';
                 currentSearchIndex = 0;
+                document.querySelectorAll('.subtitle-card.search-hit').forEach(c => c.classList.remove('search-hit'));
                 const info = document.getElementById('searchMatchInfo');
                 if (info) info.style.display = 'none';
                 panel.style.bottom = '';
@@ -4746,7 +4819,7 @@ window.onload = () => {
             const vv = window.visualViewport;
             if (!vv) return;
             const gap = Math.max(0, window.innerHeight - (vv.height + vv.offsetTop));
-            panel.style.bottom = (gap + 12) + 'px';
+            panel.style.bottom = (gap / (window.__kfZoom || 1) + 12) + 'px';
         }
 
         if (window.visualViewport) {
@@ -4772,11 +4845,11 @@ window.onload = () => {
                 if (text.indexOf(searchTerm) !== -1) {
                     currentSearchIndex = idx + 1;
                     const card = textareas[idx].closest('.subtitle-card');
+                    document.querySelectorAll('.subtitle-card.search-hit').forEach(c => c.classList.remove('search-hit'));
                     card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    card.style.transition = 'box-shadow 0.3s, transform 0.3s';
-                    card.style.boxShadow = '0 0 16px var(--primary)';
-                    card.style.transform = 'scale(1.02)';
-                    setTimeout(() => { card.style.boxShadow = ''; card.style.transform = ''; }, 1200);
+                    card.classList.add('search-hit');
+                    clearTimeout(window.__kfSearchHitTimer);
+                    window.__kfSearchHitTimer = setTimeout(() => card.classList.remove('search-hit'), 1500);
                     found = true; 
                     break;
                 }
@@ -7631,6 +7704,28 @@ function setNoteTextColor(hex, el) {
     }
 }
 
+function clearNoteStyles() {
+    var ta = document.getElementById('modalNoteText');
+    if (ta) {
+        ta.value = ta.value
+            .replace(/\{[^}]*\}/g, '')
+            .replace(/[\u266A|\u200F\u200E]/g, '')
+            .replace(/\\h/gi, ' ')
+            .replace(/\\N/g, '\n')
+            .replace(/[ \t]{2,}/g, ' ')
+            .trim();
+        try { ta.dispatchEvent(new Event('input', { bubbles: true })); } catch (e) {}
+    }
+    var sym = document.getElementById('noteSymbolColorChoice'); if (sym) sym.value = '#FFF200';
+    var txt = document.getElementById('noteTextColorChoice'); if (txt) txt.value = '#FFFFFF';
+    var box = sym ? sym.parentElement : null;
+    if (box) {
+        box.querySelectorAll('div[style*="rgba(0,0,0,0.3)"]').forEach(function (row) {
+            row.querySelectorAll('.palette-btn').forEach(function (b, i) { b.classList.toggle('active', i === 0); });
+        });
+    }
+    if (typeof showToast === 'function') showToast('ستایلی تێبینی سڕایەوە', 'success');
+}
 function clearNoteBox() {
     const noteTa = document.getElementById('modalNoteText');
     if (noteTa) noteTa.value = '';
@@ -7942,7 +8037,7 @@ function setDragElementPosition(assX, assY) {
     fscy: currentDragFscy || 100,
     fax: currentDragFax || 0,
     fay: currentDragFay || 0
-});
+}, { sy: (m && currentDragResY) ? (m.height / currentDragResY) : 1 });
 
     if (display) display.innerText = `X: ${assX}, Y: ${assY} [${currentDragResX}×${currentDragResY}]`;
 }
@@ -9647,6 +9742,8 @@ async function handleMergeBaseFileSelect(input) {
     mergeDeletedStyles.clear();
     
     if (!file) {
+        mergeBaseRawText = ''; mergeFonts = [];
+        try { refreshMergeFontTargets(); renderMergeFonts(); } catch (e) {}
         if (container) container.style.display = 'none';
         if (nameEl) { nameEl.style.display = 'none'; nameEl.innerText = ''; }
         if (totalEl) { totalEl.style.display = 'none'; totalEl.innerText = ''; }
@@ -11356,7 +11453,7 @@ var AssLayout = (function () {
 
     function transformCss(p, ctx) {
         var tf = [];
-        if (p.frx || p.fry) tf.push('perspective(' + Math.max(50, cfg.perspK * ((ctx && ctx.sy) || 1)).toFixed(1) + 'px)');
+        if (p.frx || p.fry) tf.push('perspective(' + Math.max(18, cfg.perspK * ((ctx && ctx.sy) || 1)).toFixed(1) + 'px)');
         if (p.frx) tf.push('rotateX(' + (cfg.frxSign * p.frx) + 'deg)');
         if (p.fry) tf.push('rotateY(' + (cfg.frySign * p.fry) + 'deg)');
         if (p.frz) tf.push('rotate(' + (-p.frz) + 'deg)');
@@ -13106,7 +13203,12 @@ function runCodeReview() {
     var html = '', errCount = 0, warnCount = 0;
     var st = { linesWithCodes: 0, complete: 0, partial: 0, none: 0, skippedEmpty: 0, origTags: 0, writtenTags: 0, missingAfterExport: 0 };
     
-    for (var i = 0; i < tas.length; i++) {
+    panel.innerHTML = '<div class="cr-item ok">... تکایە چاوەڕێ بکە</div>';
+    panel.style.display = 'block';
+    var i = 0;
+    function crStep() {
+      var end = Math.min(i + 25, tas.length);
+      for (; i < end; i++) {
         var item = originalData[i] || {};
         var orig = (item.rawText || item.text || '').replace(/\n/g, '\\N');
         var trans = tas[i].value || '';
@@ -13137,8 +13239,11 @@ function runCodeReview() {
             '</div>' +
             body +
             '<div style="margin-top:6px;"><span style="opacity:.75">کۆدی ئەسڵی: </span><code style="direction:ltr;">' + crEsc(orig || '—') + '</code></div></div>';
+      }
+      if (i < tas.length) { setTimeout(crStep, 0); return; }
+      crFinish();
     }
-
+    function crFinish() {
     var summary = '<div class="cr-item ' + (st.partial + st.none ? 'warn' : 'ok') + '" data-cr="summary">' +
         '<div><b>لە فایلە ئەسڵەکەدا:</b> ' + st.origTags + ' کۆدی تەکنیکی لە ' + st.linesWithCodes + ' ڕستەدا</div>' +
         '<div><b>لە وەرگێڕانەکەدا:</b> <span style="color:#22c55e">' + st.complete + ' ڕستە بە تەواوی نووسراون</span> · ' +
@@ -13152,8 +13257,10 @@ function runCodeReview() {
     panel.innerHTML = '<div class="cr-head"><span>پێداچوونەوەی کۆدە تەکنیکییەکان — ' + errCount + ' کێشە / ' + warnCount + ' ئاگادارکردنەوە</span>' +
         '<button class="cr-close" onclick="document.getElementById(\'code-review-panel\').style.display=\'none\'">' + SVG_ICONS.close + '</button></div>' + summary + html;
     panel.style.display = 'block';
-    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    panel.scrollIntoView({ block: 'nearest' });
     showToast(errCount ? (errCount + ' کێشە دۆزرایەوە') : 'پێداچوونەوە تەواو بوو', errCount ? 'error' : 'success');
+    }
+    crStep();
 }
 
 /* ---------------- ٣. گۆڕینی فایل: ASS -> ASS بێ لەدەستدانی هیچ شتێک ---------------- */
@@ -14538,5 +14645,652 @@ html:root body .subtitle-orig {
 }
 html:root body .subtitle-card { min-width: 0; max-width: 100%; }
 </style>
+
+<style id="kf-shell-css">
+/* =====================================================================
+   KF Shell: شاشەی تەواو، شریتی سەرەوە، مێنیوی سڵایدی ڕاست، ڕێکخستنی نوێی ئیدیتەر
+   ===================================================================== */
+:root { --kf-bar-h: 56px; }
+
+/* ---------- گەڕان و گۆڕین: دیاریکردنی دێڕی دۆزراوە بە ڕەنگ ---------- */
+html:root body .subtitle-card.search-hit {
+    border-color: var(--primary) !important;
+    background: linear-gradient(160deg, color-mix(in srgb, var(--primary) 26%, rgba(19, 26, 42, 0.95)) 0%, rgba(12, 17, 29, 0.95) 100%) !important;
+    box-shadow: 0 0 0 2px var(--primary), 0 0 28px var(--primary-glow) !important;
+    transform: scale(1.02) !important;
+    transition: all 0.3s ease !important;
+    position: relative;
+    z-index: 3;
+}
+
+/* ---------- شریتی سەرەوە ---------- */
+#kf-shell { display: none; }
+body.startup-bg #kf-shell { display: block; }
+
+#kf-bar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 1960;
+    box-sizing: border-box;
+    height: calc(var(--kf-bar-h) + env(safe-area-inset-top, 0px));
+    padding: env(safe-area-inset-top, 0px) 12px 0;
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(11, 16, 28, 0.88);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.kf-bar-btn {
+    width: 42px; height: 42px; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 12px; cursor: pointer; padding: 0;
+    color: var(--primary);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+}
+.kf-bar-btn:active { transform: scale(0.92); }
+.kf-bar-btn .icon { width: 22px; height: 22px; }
+.kf-bar-center {
+    flex: 1; min-width: 0; text-align: center;
+    display: flex; align-items: center; justify-content: center;
+}
+#kf-sec-title { display: none; font-size: 15px; font-weight: bold; color: var(--primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html.kf-in-section #kf-sec-title { display: block; }
+html.kf-in-section .kf-bar-center #welcome-msg { display: none !important; }
+.kf-bar-center #welcome-msg {
+    position: static !important; left: auto !important; right: auto !important;
+    pointer-events: none; font-size: 15px; font-weight: bold; color: var(--primary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+html:root body .kf-bar-logo {
+    flex-shrink: 0; direction: ltr; unicode-bidi: isolate; white-space: nowrap;
+    font-family: 'KFMichroma', 'Michroma', system-ui, sans-serif !important;
+    font-weight: 400; font-size: 10.5px; line-height: 1; letter-spacing: .2em;
+    color: var(--text-main, #e2e8f0); user-select: none; -webkit-user-select: none;
+}
+html:root body .kf-bar-logo b { font-weight: 400; color: var(--primary); text-shadow: 0 0 16px var(--primary-glow); transition: color .4s ease; }
+#kf-tabs { display: none; }
+
+/* ---------- دوگمەی بەشەکان (هەم مێنیو هەم تابەکان) ---------- */
+.kf-item {
+    display: flex; align-items: center; gap: 10px;
+    background: transparent; border: 1px solid transparent; color: #e2e8f0;
+    font-family: inherit; font-weight: bold; cursor: pointer; text-align: start;
+    transition: background .2s, color .2s, border-color .2s;
+}
+.kf-item .icon { width: 19px; height: 19px; flex-shrink: 0; }
+.kf-item:hover { background: rgba(255, 255, 255, 0.07); }
+.kf-item.active {
+    color: #fff;
+    background: color-mix(in srgb, var(--primary) 24%, transparent);
+    border-color: color-mix(in srgb, var(--primary) 70%, transparent);
+    box-shadow: 0 0 14px var(--primary-glow);
+}
+.kf-item.active .icon { color: var(--primary); }
+
+/* ---------- مێنیوی سڵایدی (مۆبایل) ---------- */
+#kf-scrim {
+    position: fixed; inset: 0; z-index: 1970; background: rgba(2, 4, 10, 0.6);
+    opacity: 0; pointer-events: none; transition: opacity .42s ease, visibility 0s linear .42s; visibility: hidden;
+}
+#kf-scrim.show { opacity: 1; pointer-events: auto; visibility: visible; transition: opacity .42s ease, visibility 0s; }
+#kf-drawer {
+    position: fixed; top: 0; bottom: 0; right: 0; z-index: 1980;
+    width: min(calc(var(--kf-vw, 1vw) * 84), 330px); box-sizing: border-box;
+    display: flex; flex-direction: column;
+    padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
+    background: linear-gradient(170deg, #161d30 0%, #0b101c 100%);
+    border-left: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: -18px 0 50px rgba(0, 0, 0, 0.6);
+    transform: translateX(calc(100% + 90px)); visibility: hidden;
+    transition: transform .42s cubic-bezier(.22, .9, .3, 1), visibility 0s linear .42s;
+}
+#kf-drawer.open { transform: none; visibility: visible; transition: transform .42s cubic-bezier(.22, .9, .3, 1), visibility 0s; }
+.kf-drawer-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 14px; height: var(--kf-bar-h); box-sizing: border-box; flex-shrink: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+#kf-drawer-list { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 4px; -webkit-overflow-scrolling: touch; }
+#kf-drawer-list .kf-item { width: 100%; padding: 12px 12px; border-radius: 12px; font-size: 14px; }
+#kf-drawer-list .kf-sep { height: 1px; background: rgba(255, 255, 255, 0.1); margin: 6px 4px; flex-shrink: 0; }
+
+/* ---------- شاشەی سەرەکی: تەواوی شاشە ---------- */
+html:root body.startup-bg {
+    padding: 0 !important; display: block !important; align-items: stretch !important; justify-content: flex-start !important;
+}
+html:root body.startup-bg #setup-screen {
+    width: 100% !important; max-width: none !important; min-height: calc(var(--kf-vh, 1vh) * 100); min-height: calc(var(--kf-dvh, 1dvh) * 100);
+    margin: 0 !important; border-radius: 0 !important; border: 0 !important;
+    background: transparent !important; box-shadow: none !important; animation: none !important;
+    backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+    box-sizing: border-box !important; justify-content: center; gap: 16px !important;
+    padding: calc(var(--kf-bar-h) + env(safe-area-inset-top, 0px) + 18px) max(16px, calc((100% - 680px) / 2)) calc(24px + env(safe-area-inset-bottom, 0px)) !important;
+}
+html:root body.startup-bg #setup-screen > .setup-header { display: none !important; }
+
+/* ---------- گۆڕینی بەشەکان بێ تروسکە: ئەنیمەیشن نییە و شاشەی سەرەکی لەژێر بەشەکە دەشاردرێتەوە ---------- */
+html.kf-in-section body.startup-bg #setup-screen { display: none !important; }
+html.kf-in-section body.startup-bg::before,
+html.kf-in-section body.startup-bg::after { display: none !important; }
+html:root body.startup-bg #converter-modal,
+html:root body.startup-bg #rtl-fix-modal,
+html:root body.startup-bg #merge-modal,
+html:root body.startup-bg #sdh-modal,
+html:root body.startup-bg #shortcuts-modal,
+html:root body.startup-bg #img-upload-modal,
+html:root body.startup-bg #mkv-extractor-modal,
+html:root body.startup-bg #kf-servers-modal,
+html:root body.startup-bg #history-modal {
+    animation: none !important; transition: none !important;
+}
+html:root body.startup-bg #converter-modal > .custom-modal-content,
+html:root body.startup-bg #rtl-fix-modal > .custom-modal-content,
+html:root body.startup-bg #merge-modal > .custom-modal-content,
+html:root body.startup-bg #sdh-modal > .custom-modal-content,
+html:root body.startup-bg #shortcuts-modal > .custom-modal-content,
+html:root body.startup-bg #img-upload-modal > .custom-modal-content,
+html:root body.startup-bg #mkv-extractor-modal > .custom-modal-content,
+html:root body.startup-bg #kf-servers-modal > .custom-modal-content,
+html:root body.startup-bg #history-modal > .custom-modal-content { animation: none !important; transition: none !important; }
+
+/* ---------- بەشەکان (مۆداڵەکان): تەواوی شاشە ---------- */
+html:root body.startup-bg #converter-modal,
+html:root body.startup-bg #rtl-fix-modal,
+html:root body.startup-bg #merge-modal,
+html:root body.startup-bg #sdh-modal,
+html:root body.startup-bg #shortcuts-modal,
+html:root body.startup-bg #img-upload-modal,
+html:root body.startup-bg #mkv-extractor-modal,
+html:root body.startup-bg #kf-servers-modal,
+html:root body.startup-bg #history-modal {
+    z-index: 1950 !important;
+    padding: calc(var(--kf-bar-h) + env(safe-area-inset-top, 0px)) 0 0 0 !important;
+    align-items: stretch !important; justify-content: flex-start !important;
+    background: transparent !important;
+    backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+}
+html:root body.startup-bg #converter-modal > .custom-modal-content,
+html:root body.startup-bg #rtl-fix-modal > .custom-modal-content,
+html:root body.startup-bg #merge-modal > .custom-modal-content,
+html:root body.startup-bg #sdh-modal > .custom-modal-content,
+html:root body.startup-bg #shortcuts-modal > .custom-modal-content,
+html:root body.startup-bg #img-upload-modal > .custom-modal-content,
+html:root body.startup-bg #mkv-extractor-modal > .custom-modal-content,
+html:root body.startup-bg #kf-servers-modal > .custom-modal-content,
+html:root body.startup-bg #history-modal > .custom-modal-content {
+    width: 100% !important; max-width: none !important; max-height: none !important;
+    min-height: calc(calc(var(--kf-dvh, 1dvh) * 100) - var(--kf-bar-h) - env(safe-area-inset-top, 0px)) !important;
+    margin: 0 !important; border-radius: 0 !important; border: 0 !important; box-shadow: none !important;
+    background: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+    overflow: visible !important; box-sizing: border-box !important; flex: 1 0 auto;
+    padding: 20px max(16px, calc((100% - 880px) / 2)) calc(32px + env(safe-area-inset-bottom, 0px)) !important;
+}
+html:root body.startup-bg #history-modal .history-list { max-height: none !important; }
+html:root body.startup-bg #mkv-extractor-modal #mkvSubtitlePanel,
+html:root body.startup-bg #mkv-extractor-modal #mkvAudioPanel { max-height: none !important; }
+
+/* ---------- مۆبایل: مێنیو تەنها لە شاشەی بچووک ---------- */
+html.kf-wide #kf-menu-btn,
+html.kf-wide #kf-scrim,
+html.kf-wide #kf-drawer { display: none !important; }html.kf-wide .kf-bar-center { display: none; }html.kf-wide #kf-bar { padding-inline: 16px; gap: 14px; }html.kf-wide #kf-tabs {
+        display: flex; flex: 1; min-width: 0; align-items: center; gap: 4px;
+        overflow-x: auto; scrollbar-width: none; padding: 4px 0;
+    }html.kf-wide #kf-tabs::-webkit-scrollbar { display: none; }html.kf-wide #kf-tabs .kf-item { padding: 8px 12px; border-radius: 10px; font-size: 13px; white-space: nowrap; flex-shrink: 0; gap: 7px; }html.kf-wide #kf-tabs .kf-item .icon { width: 17px; height: 17px; }html.kf-wide #kf-tabs .kf-sep { width: 1px; height: 22px; background: rgba(255, 255, 255, 0.14); margin: 0 4px; flex-shrink: 0; }html.kf-wide:root body.startup-bg #setup-screen {
+        padding-inline: max(24px, calc((100% - 760px) / 2)) !important; gap: 20px !important;
+    }html.kf-wide:root body.startup-bg #converter-modal > .custom-modal-content,
+html.kf-wide:root body.startup-bg #rtl-fix-modal > .custom-modal-content,
+html.kf-wide:root body.startup-bg #merge-modal > .custom-modal-content,
+html.kf-wide:root body.startup-bg #sdh-modal > .custom-modal-content,
+html.kf-wide:root body.startup-bg #shortcuts-modal > .custom-modal-content,
+html.kf-wide:root body.startup-bg #img-upload-modal > .custom-modal-content,
+html.kf-wide:root body.startup-bg #mkv-extractor-modal > .custom-modal-content,
+html.kf-wide:root body.startup-bg #kf-servers-modal > .custom-modal-content,
+html.kf-wide:root body.startup-bg #history-modal > .custom-modal-content {
+        flex: 0 0 auto !important; margin: auto !important; min-height: 0 !important;
+        max-width: 920px !important; padding: 32px 28px 44px !important;
+    }
+
+
+/* ---------- ئیدیتەر (مۆبایل): هەمان بۆشایی و شێوازی دوگمەکانی کۆدی ئەسڵی، بەڵام کامل شاشە (لێوار بە لێوار) ---------- */
+html:root body.editor-bg { padding: 0 !important; }
+html:root body.editor-bg #editor-screen {
+    width: 100% !important; max-width: none !important; margin: 0 !important;
+    padding: env(safe-area-inset-top, 0px) 0 0 0 !important; box-sizing: border-box;
+}
+html:root body.editor-bg #editor-screen[style*="block"] {
+    display: block !important; height: auto; overflow: visible;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px)) !important;
+}
+/* سەرەوە: 10px بۆشایی لە ژێرەوە، وەک ئەسڵی */
+html:root body.editor-bg #editor-screen > .header-tools-container {
+    margin: 0 0 10px 0 !important; border-radius: 0 !important; border-width: 0 0 1px 0 !important; width: 100%; box-sizing: border-box;
+}
+/* ڤیدیۆ: ٨px دوور لە لێوارەکان (وەک پێشتر)، 14px بۆشایی لە ژێرەوە */
+html:root body.editor-bg #editor-screen > #video-container {
+    width: auto !important; margin: 0 8px 14px 8px !important; border-width: 0 !important; border-radius: 0 !important; box-sizing: border-box;
+}
+/* بۆکسی دێڕەکان: 6px لە سەرەوە و 14px لە ژێرەوە، بەرزی وەک ئەسڵی (calc(var(--kf-dvh, 1dvh) * 100) - 360px)، لێوار بە لێوار */
+html:root body.editor-bg #editor-screen > .subtitles-scroll-frame {
+    width: 100% !important; margin: 6px 0 14px 0 !important; min-height: 0; display: block;
+}
+html:root body.editor-bg #subtitles-container {
+    padding: 10px 18px 10px 10px !important; border-width: 1.5px 0 !important; border-radius: 0 !important;
+    max-height: calc(calc(var(--kf-dvh, 1dvh) * 100) - 360px) !important; min-height: 270px !important; height: auto;
+}
+html:root body.editor-bg .subtitle-card { padding: 12px !important; border-radius: 14px !important; }
+html:root body.editor-bg .subtitle-orig { font-size: 15px; }
+html:root body.editor-bg .subtitle-kurd textarea { font-size: 16px; min-height: 96px; }
+/* دوگمەکانی خوارەوە: هەمان شێوەی ئەسڵی (٢ + ١ + ١ ڕیز، ٣٠px لە سەرەوە، ٤٠px لە خوارەوە)، تەنها بۆشایی ٢ لای */
+html:root body.editor-bg #editor-screen > .action-bar { margin: 30px 12px 40px 12px !important; }
+
+/* ---------- شاشەی دیاریکردنی شوێنی دەق (grid40): کامل شاشە، بێ قەوسی، شاشەی ڤیدیۆ گەورە و تەواو ---------- */
+html:root body #grid40-modal {
+    padding: 0 !important; align-items: stretch !important; justify-content: center !important;
+    background: radial-gradient(circle 48vmax at 100% 0%, color-mix(in srgb, var(--primary) 20%, transparent) 0%, transparent 100%), radial-gradient(circle 42vmax at 0% 100%, color-mix(in srgb, var(--primary) 14%, transparent) 0%, transparent 100%), #0a0e17 !important;
+    backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+    animation: none !important; transition: none !important;
+}
+html:root body #grid40-modal > .custom-modal-content {
+    width: 100% !important; max-width: none !important; max-height: none !important; min-height: calc(var(--kf-dvh, 1dvh) * 100);
+    margin: 0 !important; border-radius: 0 !important; border: 0 !important; box-shadow: none !important;
+    background: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+    overflow-y: auto !important; overflow-x: hidden !important; box-sizing: border-box !important;
+    padding: calc(14px + env(safe-area-inset-top, 0px)) 14px calc(96px + env(safe-area-inset-bottom, 0px)) !important;
+    animation: none !important;
+}
+html.kf-wide:root body #grid40-modal > .custom-modal-content { max-width: 920px !important; margin: 0 auto !important; padding-inline: 24px !important; }
+html:root body #grid40-modal #vDragScreenBox {
+    max-height: none !important; border-radius: 0 !important; border: 0 !important; overflow: hidden;
+    margin: 0 -6px; width: calc(100% + 12px) !important;
+}
+html.kf-wide:root body #grid40-modal #vDragScreenBox { margin: 0; width: 100% !important; }
+html:root body #grid40-modal #grid40Canvas { max-height: calc(var(--kf-dvh, 1dvh) * 56) !important; width: 100% !important; }
+
+/* ---------- تەکنیک و دیزاین + فۆنتەکان + سانسۆر + هەڵگرتنی ڕەنگ: هەموو کامل شاشە، بێ قەوسی ---------- */
+html:root body #sub-style-modal,
+html:root body #kf-fonts-modal,
+html:root body #censor-modal,
+html:root body #video-color-picker-modal {
+    padding: 0 !important; align-items: stretch !important; justify-content: center !important;
+    background: radial-gradient(circle 48vmax at 100% 0%, color-mix(in srgb, var(--primary) 20%, transparent) 0%, transparent 100%), radial-gradient(circle 42vmax at 0% 100%, color-mix(in srgb, var(--primary) 14%, transparent) 0%, transparent 100%), #0a0e17 !important;
+    backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+    animation: none !important; transition: none !important;
+}
+html:root body #sub-style-modal > .custom-modal-content,
+html:root body #kf-fonts-modal > .custom-modal-content,
+html:root body #censor-modal > .custom-modal-content,
+html:root body #video-color-picker-modal > .custom-modal-content {
+    width: 100% !important; max-width: none !important; max-height: none !important; min-height: calc(var(--kf-dvh, 1dvh) * 100);
+    margin: 0 !important; border-radius: 0 !important; border: 0 !important; box-shadow: none !important;
+    background: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+    overflow-y: auto !important; overflow-x: hidden !important; box-sizing: border-box !important;
+    padding: calc(14px + env(safe-area-inset-top, 0px)) 14px calc(96px + env(safe-area-inset-bottom, 0px)) !important;
+    animation: none !important;
+}
+html.kf-wide:root body #sub-style-modal > .custom-modal-content,
+html.kf-wide:root body #kf-fonts-modal > .custom-modal-content,
+html.kf-wide:root body #censor-modal > .custom-modal-content,
+html.kf-wide:root body #video-color-picker-modal > .custom-modal-content { max-width: 920px !important; margin: 0 auto !important; padding-inline: 24px !important; }
+/* شاشەی ڤیدیۆ لەناو سانسۆر و هەڵگرتنی ڕەنگ: بێ قەوسی و بێ چوارچێوە */
+html:root body #censorVideoBox, html:root body #vPickerCanvasBox {
+    max-height: none !important; border-radius: 0 !important; border: 0 !important;
+    margin: 0 -6px; width: calc(100% + 12px) !important;
+}
+html.kf-wide:root body #censorVideoBox, html.kf-wide:root body #vPickerCanvasBox { margin: 0; width: 100% !important; }
+html:root body #censorVideoPlayer { max-height: calc(var(--kf-dvh, 1dvh) * 56) !important; }
+html:root body #vPickerCanvas { max-height: none !important; height: auto !important; }
+
+/* ---------- دانانی وەرگێڕانی AI: کامل شاشە، بێ قەوسی ---------- */
+html:root body #ai-modal {
+    padding: 0 !important; align-items: stretch !important; justify-content: center !important;
+    background: radial-gradient(circle 48vmax at 100% 0%, color-mix(in srgb, var(--primary) 20%, transparent) 0%, transparent 100%), radial-gradient(circle 42vmax at 0% 100%, color-mix(in srgb, var(--primary) 14%, transparent) 0%, transparent 100%), #0a0e17 !important;
+    backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+    animation: none !important; transition: none !important;
+}
+html:root body #ai-modal > .custom-modal-content {
+    width: 100% !important; max-width: none !important; max-height: none !important; min-height: calc(var(--kf-dvh, 1dvh) * 100);
+    margin: 0 !important; border-radius: 0 !important; border: 0 !important; box-shadow: none !important;
+    background: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+    overflow-y: auto !important; overflow-x: hidden !important; box-sizing: border-box !important;
+    padding: calc(14px + env(safe-area-inset-top, 0px)) 14px calc(96px + env(safe-area-inset-bottom, 0px)) !important;
+    animation: none !important;
+}
+html.kf-wide:root body #ai-modal > .custom-modal-content { max-width: 920px !important; margin: 0 auto !important; padding-inline: 24px !important; }
+
+/* ---------- یەک باکگراوندی سادە بۆ هەموو شوێنەکان: دوو بازنەی نەرم (ڕاست-سەرەوە و چەپ-خوارەوە) بە ڕەنگی ڕووکار ---------- */
+html:root { background: #0a0e17 !important; }
+html:root body.startup-bg::before, html:root body.startup-bg::after { display: none !important; }
+.kf-bar-logo, .kf-logo-mini { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.kf-bar-logo:active, .kf-logo-mini:active { opacity: .7; }
+
+/* ---------- ناوی بەش لە شریتی سەرەوە: ئەگەر درێژ بوو بە پەنجە دەجوڵێت (نەک سێ خاڵ) ---------- */
+html:root body .kf-bar-center {
+    justify-content: flex-start; overflow-x: auto; overflow-y: hidden; scrollbar-width: none;
+    -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain;
+}
+html:root body .kf-bar-center::-webkit-scrollbar { display: none; }
+html:root body #kf-sec-title,
+html:root body .kf-bar-center #welcome-msg {
+    flex: 0 0 auto; margin-inline: auto; overflow: visible; text-overflow: clip; max-width: none; padding-inline: 6px;
+}
+.kf-drawer-title { font-size: 17px; font-weight: 800; color: var(--primary); letter-spacing: 0; }
+
+/* ---------- دووگمەی ڕاکێشانی دێڕەکان: تۆزێک نزیک لە دێڕەکان ---------- */
+html:root body.editor-bg #fast-scrub-track { right: 6px !important; width: 14px; }
+
+/* ---------- دیاریکردنی دێڕ لە مێژوو و گەڕان: هەمان شێوازی ئەو دێڕەی لەسەر ڤیدیۆ پیشان دەدرێت (سووکەکە) ---------- */
+html:root body .subtitle-card.search-hit,
+html:root body .subtitle-card.highlight-restored {
+    background: linear-gradient(160deg, color-mix(in srgb, var(--primary) 16%, rgba(19, 26, 42, 0.94)) 0%, rgba(12, 17, 29, 0.94) 100%) !important;
+    border-color: color-mix(in srgb, var(--primary) 75%, transparent) !important;
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary) 35%, transparent), 0 10px 28px var(--primary-glow) !important;
+    transform: none !important;
+}
+
+/* ---------- ڕوونی بەش و دووگمەکان لەگەڵ باکگراوند ---------- */
+:root {
+    --gl-fill: rgba(255, 255, 255, 0.15);
+    --gl-fill-2: rgba(255, 255, 255, 0.22);
+    --gl-fill-dark: rgba(7, 10, 18, 0.7);
+    --gl-border: rgba(255, 255, 255, 0.26);
+    --gl-border-soft: rgba(255, 255, 255, 0.16);
+    --card-border: rgba(255, 255, 255, 0.26);
+    --border-color: rgba(255, 255, 255, 0.22);
+}
+
+/* ---------- باکگراوند: چینێکی جێگیر کە لەگەڵ سکرۆڵ و شریتی ناونیشانی وێبگەڕ ناشکێتەوە ---------- */
+#kf-bg {
+    position: fixed; left: 0; top: 0; width: 100%; height: calc(var(--kf-vh, 1vh) * 100); height: 100lvh; z-index: -1; pointer-events: none;
+    background-color: #0a0e17;
+    background-image: radial-gradient(circle 48vmax at 100% 0%, color-mix(in srgb, var(--primary) 20%, transparent) 0%, transparent 100%), radial-gradient(circle 42vmax at 0% 100%, color-mix(in srgb, var(--primary) 14%, transparent) 0%, transparent 100%);
+    background-repeat: no-repeat; transform: translateZ(0); will-change: transform; contain: strict;
+}
+
+/* ---------- فایلەکان لە بەشەکان: ناو + دوگمەی لابردن ---------- */
+.kf-file-names { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin-top: 8px; position: relative; z-index: 1; pointer-events: none; width: 100%; box-sizing: border-box; padding: 0 6px; }
+.kf-file-chip {
+    max-width: 100%; box-sizing: border-box; padding: 5px 10px; border-radius: 12px; font-size: 11.5px; font-weight: bold; direction: ltr; text-align: center; line-height: 1.45;
+    background: color-mix(in srgb, var(--primary) 20%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 55%, transparent);
+    color: var(--text-main, #f1f5f9); white-space: normal; overflow-wrap: anywhere; word-break: break-all; overflow: visible;
+}
+.file-box > .clear-file-btn { z-index: 10; }
+
+/* ---------- ئیدیتەر (کۆمپیوتەر و تابلێت): تەواوی شاشە، ڤیدیۆ لە ڕاست، دێڕەکان لە چەپ ---------- */
+html.kf-wide:root body.editor-bg { padding: 0 !important; }html.kf-wide:root body.editor-bg #editor-screen[style*="block"] {
+        display: grid !important; width: 100% !important; max-width: none !important; margin: 0 !important;
+        height: calc(var(--kf-dvh, 1dvh) * 100); padding: 0 !important; box-sizing: border-box; overflow: hidden; animation: none !important;
+        grid-template-columns: minmax(400px, 56%) minmax(0, 1fr);
+        grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+        align-items: start;
+    }html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > * { grid-column: 1 / -1; grid-row: 1; }html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > .header-tools-container {
+        grid-column: 1 / -1; grid-row: 1; margin: 0 !important; border-radius: 0 !important; border-width: 0 0 1px 0 !important; width: 100%; box-sizing: border-box;
+    }html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-container {
+        grid-column: 1; grid-row: 2; width: auto !important; margin: 12px 12px 0 12px !important; min-width: 0;
+    }html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > .action-bar {
+        grid-column: 1; grid-row: 3; width: auto !important; margin: 12px !important; box-sizing: border-box;
+    }html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > .subtitles-scroll-frame {
+        grid-column: 2; grid-row: 2 / 5; align-self: stretch; margin: 12px 0 12px 12px !important; min-width: 0; min-height: 0;
+        display: flex; flex-direction: column;
+    }html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #code-review-panel { grid-column: 1 / -1; grid-row: 5; margin: 0 12px 12px !important; overflow: auto; }html.kf-wide:root body.editor-bg #subtitles-container {
+        display: flex !important; flex-direction: column; align-items: stretch; justify-content: flex-start;
+        flex: 1 1 auto; height: auto; min-height: 0 !important; max-height: none !important;
+        padding: 8px 22px !important;
+    }html.kf-wide:root body.editor-bg .subtitle-card { flex: 0 0 auto !important; margin: 0 0 8px 0 !important; padding: 12px !important; height: auto !important; }html.kf-wide:root body.editor-bg .subtitle-kurd textarea { height: auto; flex: none; min-height: 84px; }html.kf-wide:root body.editor-bg #preview-video { max-height: calc(calc(var(--kf-dvh, 1dvh) * 100) - 340px); min-height: 0; }
+
+/* تابلێتی بچووک: هەر کارتێک لە یەک ستوون بێت تا تەنگ نەبێت */
+html.kf-mid:root body.editor-bg .subtitle-card { display: block !important; }html.kf-mid:root body.editor-bg .subtitle-orig { margin-bottom: 10px !important; height: auto !important; }html.kf-mid:root body.editor-bg .subtitle-kurd { display: block !important; height: auto !important; }
+
+/* ---------- شاشەی ڤیدیۆ: بێ قەوسی، تا هەموو لێوارەکانی ڤیدیۆکە دەربکەون ---------- */
+html:root body #video-container,
+html:root body .custom-player-container { border-radius: 0 !important; }
+html:root body .custom-player-container video { max-height: calc(var(--kf-dvh, 1dvh) * 46); }
+
+/* ---------- ئیدیتەری کۆمپیوتەر (شێوازی Subtitle Edit): ڕیزی چڕ، ژمارە | دەقی ئەسڵی | دەقی وەرگێڕدراو ---------- */
+html.kf-xl:root body.editor-bg #editor-screen[style*="block"] { grid-template-columns: minmax(420px, 46%) minmax(0, 1fr); }html.kf-xl:root body.editor-bg .subtitle-card {
+        display: grid !important; grid-template-columns: 118px minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto;
+        column-gap: 10px; row-gap: 6px; align-items: stretch; padding: 8px 10px !important; border-radius: 10px !important;
+    }html.kf-xl:root body.editor-bg .subtitle-card > .subtitle-header {
+        grid-column: 1; grid-row: 1; flex-direction: column; align-items: flex-start; justify-content: flex-start;
+        gap: 6px; margin: 0 !important; padding: 2px 4px !important; border-bottom: 0 !important; background: transparent !important;
+    }html.kf-xl:root body.editor-bg .subtitle-card .subtitle-time { font-size: 10.5px; line-height: 1.35; white-space: normal; word-break: break-all; }html.kf-xl:root body.editor-bg .subtitle-card > .subtitle-orig { grid-column: 2; grid-row: 1; margin: 0 !important; height: auto !important; font-size: 13px; padding: 6px 9px !important; }html.kf-xl:root body.editor-bg .subtitle-card > .subtitle-kurd { grid-column: 3; grid-row: 1; display: block !important; height: auto !important; }html.kf-xl:root body.editor-bg .subtitle-card > .subtitle-kurd textarea { min-height: 52px; font-size: 14px; padding: 6px 9px; }html.kf-xl:root body.editor-bg .subtitle-card > .subtitle-note { grid-column: 2 / -1; grid-row: 2; margin-top: 0; }
+
+html:root body.startup-bg .kf-hide-close { display: none !important; }
+</style>
+
+<script id="kf-shell-js">
+(function () {
+    'use strict';
+    var SECS = [
+        { k: 'converter', fn: 'openConverterModal',   id: 'converter-modal',      label: 'گۆڕینی فایل' },
+        { k: 'rtl',       fn: 'openRtlFixModal',      id: 'rtl-fix-modal',        label: 'چاککردنی RTL' },
+        { k: 'merge',     fn: 'openMergeModal',       id: 'merge-modal',          label: 'تێکەڵکردنی دوو فایل' },
+        { k: 'sdh',       fn: 'openSdhModal',         id: 'sdh-modal',            label: 'پاککردنەوەی دەنگەکان (SDH)' },
+        { k: 'shortcuts', fn: 'openShortcutsModal',   id: 'shortcuts-modal',      label: 'کورتکراوەکانی کیبۆرد' },
+        { k: 'img',       fn: 'openImgUploaderModal', id: 'img-upload-modal',     label: 'گۆڕینی وێنە بۆ لینک' },
+        { k: 'mkv',       fn: 'openMkvExtractorModal',id: 'mkv-extractor-modal',  label: 'دەرهێنەری فایل لە MKV' },
+        { k: 'servers',   fn: 'openServersModal',     id: 'kf-servers-modal',     label: 'کۆدی سێرڤەرەکان' },
+        { k: 'history',   fn: 'openHistoryModal',     id: 'history-modal',        label: 'مێژووی کارەکان' }
+    ];
+    var HOME_ICON = '<svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 11l9-8 9 8M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10"></path></svg>';
+    var root = document.documentElement;
+    var oldMenu = document.getElementById('setupMenuDropdown');
+    var tabs = document.getElementById('kf-tabs');
+    var list = document.getElementById('kf-drawer-list');
+    var drawer = document.getElementById('kf-drawer');
+    var scrim = document.getElementById('kf-scrim');
+    var menuBtn = document.getElementById('kf-menu-btn');
+    var titleEl = document.getElementById('kf-sec-title');
+    if (!tabs || !list || !drawer) return;
+
+    // ئایکۆن و ناوی بەشەکان لە مێنیوی کۆنەوە وەردەگیرێن تا یەکسان بن
+    function findOld(fn) {
+        if (!oldMenu) return null;
+        var bs = oldMenu.querySelectorAll('.menu-btn-item');
+        for (var i = 0; i < bs.length; i++) {
+            if ((bs[i].getAttribute('onclick') || '').indexOf(fn + '(') > -1) return bs[i];
+        }
+        return null;
+    }
+    SECS.forEach(function (s) {
+        var b = findOld(s.fn);
+        s.icon = '';
+        if (b) {
+            var svg = b.querySelector('svg'); var sp = b.querySelector('span');
+            if (svg) s.icon = svg.outerHTML;
+            if (sp && sp.textContent.trim()) s.label = sp.textContent.trim();
+        }
+    });
+    var installOld = document.getElementById('install-app-btn');
+    var INSTALL = null;
+    if (installOld) {
+        var isvg = installOld.querySelector('svg'), isp = installOld.querySelector('span');
+        INSTALL = { k: 'install', icon: isvg ? isvg.outerHTML : '', label: isp ? isp.textContent.trim() : 'دابەزاندنی ئەپ' };
+    }
+
+    function mk(k, icon, label) {
+        var b = document.createElement('button');
+        b.type = 'button'; b.className = 'kf-item'; b.setAttribute('data-k', k);
+        b.innerHTML = icon + '<span>' + label + '</span>';
+        b.addEventListener('click', function () { nav.go(k); });
+        return b;
+    }
+    function sep() { var d = document.createElement('div'); d.className = 'kf-sep'; return d; }
+
+    // دووگمەی سەرەکی لە سەرەوەی هەموو بەشەکان
+    [tabs, list].forEach(function (host) {
+        host.appendChild(mk('home', HOME_ICON, 'سەرەکی'));
+        host.appendChild(sep());
+        SECS.forEach(function (s) { host.appendChild(mk(s.k, s.icon, s.label)); });
+        if (INSTALL) { host.appendChild(sep()); host.appendChild(mk('install', INSTALL.icon, INSTALL.label)); }
+    });
+
+    // دووگمەی «داخستن» لەناو بەشەکان لادەبرێت (مێنیو/تابەکان جێگای دەگرنەوە)
+    SECS.forEach(function (s) {
+        var el = document.getElementById(s.id); if (!el) return;
+        el.querySelectorAll('button').forEach(function (b) {
+            var oc = b.getAttribute('onclick') || '';
+            if (oc.indexOf("'" + s.id + "').style.display='none'") > -1 || /close(?:Mkv\w*|Servers)Modal\(/.test(oc)) b.classList.add('kf-hide-close');
+        });
+        el.querySelectorAll('.custom-modal-actions').forEach(function (a) {
+            var any = false;
+            for (var i = 0; i < a.children.length; i++) if (!a.children[i].classList.contains('kf-hide-close')) any = true;
+            if (!any) a.classList.add('kf-hide-close');
+        });
+    });
+
+    // «بەخێربێیت!» دەچێتە ناو شریتی سەرەوە
+    var wm = document.getElementById('welcome-msg');
+    var center = document.querySelector('.kf-bar-center');
+    if (wm && center) center.insertBefore(wm, center.firstChild);
+
+    var KEEP = { converter: 1, rtl: 1, merge: 1, sdh: 1, img: 1, mkv: 1 }, visited = {};
+    var nav = window.kfNav = {
+        secs: SECS,
+        isHome: function () { return document.body.classList.contains('startup-bg'); },
+        visibleSec: function () {
+            for (var i = 0; i < SECS.length; i++) {
+                var el = document.getElementById(SECS[i].id);
+                if (el && el.style.display && el.style.display !== 'none') return SECS[i];
+            }
+            return null;
+        },
+        closeSections: function (except) {
+            SECS.forEach(function (s) {
+                if (except && s.id === except) return;
+                var el = document.getElementById(s.id);
+                if (el && el.style.display && el.style.display !== 'none') el.style.display = 'none';
+            });
+        },
+        openDrawer: function () {
+            drawer.classList.add('open'); scrim.classList.add('show');
+            drawer.setAttribute('aria-hidden', 'false'); menuBtn.setAttribute('aria-expanded', 'true');
+        },
+        closeDrawer: function () {
+            drawer.classList.remove('open'); scrim.classList.remove('show');
+            drawer.setAttribute('aria-hidden', 'true'); menuBtn.setAttribute('aria-expanded', 'false');
+        },
+        toggleDrawer: function () { drawer.classList.contains('open') ? this.closeDrawer() : this.openDrawer(); },
+        go: function (k) {
+            if (!this.isHome()) return;
+            this.closeDrawer();
+            if (k === 'install') { if (typeof installApp === 'function') installApp(); return; }
+            if (k === 'home') { this.closeSections(); this.sync(); window.scrollTo(0, 0); return; }
+            var s = null; SECS.forEach(function (x) { if (x.k === k) s = x; });
+            if (!s) return;
+            var cur = this.visibleSec();
+            if (cur && cur.k === k) { this.sync(); return; }
+            var ovn = document.getElementById(s.id);
+            if (KEEP[s.k] && visited[s.k] && ovn) {
+                ovn.style.display = 'flex';          // پێشتر کراوەتەوە: فایل و ڕێکخستنەکان وەک خۆیان دەمێنن
+            } else {
+                var f = window[s.fn];
+                if (typeof f === 'function') { try { f(); } catch (e) { console.error(e); } }
+                visited[s.k] = true;
+            }
+            this.closeSections(s.id);   // یەکەم نوێ دەکرێتەوە، پاشان کۆنەکە دادەخرێت: هیچ کاتێک شاشەکە بەتاڵ نابێت
+            this.sync();
+            var ov = document.getElementById(s.id); if (ov) ov.scrollTop = 0;
+        },
+        sync: function () {
+            var cur = this.visibleSec();
+            root.classList.toggle('kf-in-section', !!cur);
+            if (titleEl) titleEl.textContent = cur ? cur.label : '';
+            var items = document.querySelectorAll('#kf-shell .kf-item');
+            for (var i = 0; i < items.length; i++) {
+                var k = items[i].getAttribute('data-k');
+                var on = cur ? (k === cur.k) : (k === 'home');
+                items[i].classList.toggle('active', on);
+                if (on && items[i].parentNode === tabs && tabs.scrollWidth > tabs.clientWidth) {
+                    var it = items[i], tr = tabs.getBoundingClientRect(), ir = it.getBoundingClientRect();
+                    if (ir.left < tr.left) tabs.scrollLeft -= (tr.left - ir.left + 12);
+                    else if (ir.right > tr.right) tabs.scrollLeft += (ir.right - tr.right + 12);
+                }
+            }
+        }
+    };
+
+    // هەر کاتێک بەشێک کرایەوە/داخرا (بە دووگمەی خۆی یان دووگمەی گەڕانەوە) دۆخی مێنیو نوێ دەبێتەوە
+    var mo = new MutationObserver(function () { nav.sync(); });
+    SECS.forEach(function (s) {
+        var el = document.getElementById(s.id);
+        if (el) mo.observe(el, { attributes: true, attributeFilter: ['style'] });
+    });
+    new MutationObserver(function () { if (!nav.isHome()) nav.closeDrawer(); nav.sync(); })
+        .observe(document.body, { attributes: true, attributeFilter: ['class'] });
+
+    // سواپی بۆ ڕاست = داخستنی مێنیو، Esc = داخستن
+    var tx = null;
+    drawer.addEventListener('touchstart', function (e) { tx = e.touches[0].clientX; }, { passive: true });
+    drawer.addEventListener('touchend', function (e) {
+        if (tx !== null && e.changedTouches[0].clientX - tx > 55) nav.closeDrawer();
+        tx = null;
+    }, { passive: true });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') nav.closeDrawer(); });
+    window.addEventListener('resize', function () { if (window.innerWidth >= 768) nav.closeDrawer(); });
+    window.addEventListener('appinstalled', function () {
+        document.querySelectorAll('#kf-shell .kf-item[data-k="install"]').forEach(function (b) {
+            var p = b.previousElementSibling; if (p && p.classList.contains('kf-sep')) p.remove(); b.remove();
+        });
+    });
+    // ---- هەڵبژاردنی فایل لە بەشەکان: ناوی فایل + دوگمەی لابردن (لای ڕاستی سەرەوە) ----
+    (function () {
+        var tpl = document.querySelector('.clear-file-btn svg');
+        var xIcon = tpl ? tpl.outerHTML : '<span style="font-size:16px;line-height:1">×</span>';
+        function resetImg() {
+            var d = document.getElementById('imgNameDisplay');
+            if (d) d.innerText = (window.i18n && window.currentLang && i18n[currentLang] && i18n[currentLang].imgNoFile) || 'هیچ وێنەیەک دیاری نەکراوە';
+            var rb = document.getElementById('imgResultBox'); if (rb) rb.style.display = 'none';
+            var ld = document.getElementById('imgUploadLoader'); if (ld) ld.style.display = 'none';
+        }
+        var PICK = [
+            { id: 'convertFileInput', chips: true, reset: function (i) { if (typeof updateBatchCount === 'function') updateBatchCount(i); } },
+            { id: 'rtlFixFileInput', chips: true, reset: function (i) { if (typeof updateRtlFixCount === 'function') updateRtlFixCount(i); } },
+            { id: 'sdhFileInput', chips: true, reset: function (i) { if (typeof updateSdhCount === 'function') updateSdhCount(i); } },
+            { id: 'mergeBaseFile', reset: function (i) { if (typeof handleMergeBaseFileSelect === 'function') handleMergeBaseFileSelect(i); } },
+            { id: 'mergeSourceFile', reset: function (i) { if (typeof handleMergeSourceFileSelect === 'function') handleMergeSourceFileSelect(i); } },
+            { id: 'imageFileInput', reset: resetImg }
+        ];
+        PICK.forEach(function (c) {
+            var inp = document.getElementById(c.id); if (!inp) return;
+            var box = inp.closest('.file-box'); if (!box) return;
+            if (getComputedStyle(box).position === 'static') box.style.position = 'relative';
+            var btn = document.createElement('button');
+            btn.type = 'button'; btn.className = 'clear-file-btn'; btn.style.display = 'none';
+            btn.setAttribute('aria-label', 'لابردنی فایل'); btn.innerHTML = xIcon;
+            box.insertBefore(btn, box.firstChild);
+            var chips = null;
+            if (c.chips) { chips = document.createElement('div'); chips.className = 'kf-file-names'; box.appendChild(chips); }
+            function render() {
+                var n = inp.files ? inp.files.length : 0;
+                btn.style.display = n ? 'flex' : 'none';
+                box.classList.toggle('has-file', n > 0);
+                if (chips) {
+                    chips.textContent = '';
+                    for (var i = 0; i < Math.min(n, 8); i++) {
+                        var s = document.createElement('span'); s.className = 'kf-file-chip'; s.textContent = inp.files[i].name; chips.appendChild(s);
+                    }
+                    if (n > 8) { var m = document.createElement('span'); m.className = 'kf-file-chip'; m.textContent = '+' + (n - 8); chips.appendChild(m); }
+                }
+            }
+            inp.addEventListener('change', render);
+            btn.addEventListener('click', function (e) {
+                e.preventDefault(); e.stopPropagation();
+                inp.value = '';
+                try { c.reset(inp); } catch (err) { console.error(err); }
+                render();
+            });
+        });
+    })();
+
+    // لۆگۆی KURD FOREST: گەڕانەوە بۆ بەشی سەرەکی
+    document.querySelectorAll('#kf-shell .kf-bar-logo').forEach(function (lg) {
+        lg.setAttribute('role', 'button'); lg.setAttribute('aria-label', 'بەشی سەرەکی');
+        lg.addEventListener('click', function () { nav.go('home'); });
+    });
+    document.querySelectorAll('.kf-logo-mini').forEach(function (lg) {
+        lg.setAttribute('role', 'button');
+        lg.addEventListener('click', function () { if (typeof confirmGoBack === 'function') confirmGoBack(); });
+    });
+    nav.sync();
+    root.classList.add('kf-ready');
+})();
+</script>
 </body>
 </html>

@@ -10,7 +10,7 @@ self.addEventListener('activate', (event) => {
     event.waitUntil(self.clients.claim());
 });
 
-// لایڤ کاش: هەمیشە نوێترین فایل لە خەت وەردەگرێت، ئەگەر خەت نەبوو پەنا بۆ کاش دەبات
+// گۆڕدرا بۆ سیستەمی (Cache First): یەکەم جار لە کاش وەردەگرێت بۆ ئەوەی خۆکارانە نوێ نەبێتەوە
 self.addEventListener('fetch', (event) => {
     // بۆ ئەوەی بەشی بارکردنی وێنە (POST) تێکنەچێت
     if (event.request.method !== 'GET' || !event.request.url.startsWith('http')) {
@@ -18,20 +18,24 @@ self.addEventListener('fetch', (event) => {
     }
 
     event.respondWith(
-        fetch(event.request)
-            .then((networkResponse) => {
-                // ئەگەر فایلەکە بە سەرکەوتوویی هات، کۆپییەکی نوێ لەناو مۆبایلەکە سەیڤ بکە
-                if (networkResponse && networkResponse.status === 200) {
-                    const clonedResponse = networkResponse.clone();
-                    caches.open(CACHE_NAME).then((cache) => {
-                        cache.put(event.request, clonedResponse);
-                    });
+        caches.match(event.request)
+            .then((cachedResponse) => {
+                // ئەگەر فایلەکە لەناو مۆبایلەکەدا هەبوو (کاش)، ڕاستەوخۆ ئەوە بەکاربهێنە و مەچۆ بۆ خەت
+                if (cachedResponse) {
+                    return cachedResponse;
                 }
-                return networkResponse;
-            })
-            .catch(() => {
-                // ئەگەر ئینتەرنێت پچڕا، کۆپییە پاشەکەوتکراوەکەی ناو مۆبایلەکە بکەرەوە
-                return caches.match(event.request);
+
+                // ئەگەر فایلەکە بۆ یەکەم جار بوو و لە کاش نەبوو، ئینجا لە ئینتەرنێتەوە وەریبگرە
+                return fetch(event.request).then((networkResponse) => {
+                    // دوای وەرگرتنی، کۆپییەکی نوێ لەناو مۆبایلەکە سەیڤ بکە بۆ جارانەکانی داهاتوو
+                    if (networkResponse && networkResponse.status === 200) {
+                        const clonedResponse = networkResponse.clone();
+                        caches.open(CACHE_NAME).then((cache) => {
+                            cache.put(event.request, clonedResponse);
+                        });
+                    }
+                    return networkResponse;
+                });
             })
     );
 });

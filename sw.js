@@ -12,26 +12,33 @@ self.addEventListener('activate', (event) => {
 
 // لایڤ کاش: هەمیشە نوێترین فایل لە خەت وەردەگرێت، ئەگەر خەت نەبوو پەنا بۆ کاش دەبات
 self.addEventListener('fetch', (event) => {
-    // بۆ ئەوەی بەشی بارکردنی وێنە (POST) تێکنەچێت
-    if (event.request.method !== 'GET' || !event.request.url.startsWith('http')) {
+    const req = event.request;
+
+    // POST (وەک بارکردنی وێنە) و داواکاری ناHTTP و Range (ڤیدیۆ) دەستکاری نەکرێن
+    if (req.method !== 'GET' || !req.url.startsWith('http') || req.headers.has('range')) {
         return;
     }
 
-    event.respondWith(
-        fetch(event.request)
-            .then((networkResponse) => {
-                // ئەگەر فایلەکە بە سەرکەوتوویی هات، کۆپییەکی نوێ لەناو مۆبایلەکە سەیڤ بکە
-                if (networkResponse && networkResponse.status === 200) {
-                    const clonedResponse = networkResponse.clone();
-                    caches.open(CACHE_NAME).then((cache) => {
-                        cache.put(event.request, clonedResponse);
-                    });
-                }
-                return networkResponse;
-            })
-            .catch(() => {
-                // ئەگەر ئینتەرنێت پچڕا، کۆپییە پاشەکەوتکراوەکەی ناو مۆبایلەکە بکەرەوە
-                return caches.match(event.request);
-            })
-    );
+    event.respondWith((async () => {
+        try {
+            const networkResponse = await fetch(req);
+            if (networkResponse && networkResponse.status === 200) {
+                const cloned = networkResponse.clone();
+                // waitUntil: دڵنیابوون لەوەی سەیڤکردنەکە تەواو دەبێت
+                event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.put(req, cloned)));
+            }
+            return networkResponse;
+        } catch (err) {
+            // ئینتەرنێت پچڕا: کۆپییە پاشەکەوتکراوەکە بەکاربهێنە
+            const cached = await caches.match(req);
+            if (cached) return cached;
+
+            // ئەگەر پەڕە بوو و کاش نەبوو، index.html بگەڕێنەرەوە
+            if (req.mode === 'navigate') {
+                const page = (await caches.match('./')) || (await caches.match('./index.html'));
+                if (page) return page;
+            }
+            return Response.error();
+        }
+    })());
 });

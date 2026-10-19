@@ -1,12 +1,67 @@
 <!DOCTYPE html>
 <html id="html-tag" lang="ckb" dir="rtl">
 <head>
+
+
     <meta charset="UTF-8">
+<script>
+window.KF_ASSETS = {"AdobeArabic-Regular.ttf": "./jassub/AdobeArabic-Regular.ttf", "default.woff2": "./jassub/default.woff2", "jassub-worker-modern.wasm": "./jassub/jassub-worker-modern.wasm", "jassub-worker.wasm": "./jassub/jassub-worker.wasm"};
+for (const key of Object.keys(window.KF_ASSETS)) window.KF_ASSETS[key] = new URL(window.KF_ASSETS[key], window.location.href).href;
+
+// Load bundled fonts before libass renders a paused frame. Its asynchronous
+// availableFonts downloads do not repaint an already-paused subtitle.
+function createRendererFontLoader(urls, fetchFile = fetch) {
+  let pending;
+  return () => {
+    if (!pending) {
+      pending = Promise.all(urls.map(async url => {
+        const response = await fetchFile(url);
+        if (!response.ok) throw new Error(`Subtitle font request failed (${response.status})`);
+        return new Uint8Array(await response.arrayBuffer());
+      })).catch(error => {
+        pending = undefined;
+        throw error;
+      });
+    }
+    return pending;
+  };
+}
+</script>
+<style>
+:root { --kf-fixed-surface: oklch(0.2 0.02 260); --kf-fixed-ink: oklch(0.96 0.01 260); }
+.kf-jump.btn { width: auto; margin: 0; padding: 4px 9px; font-size: 11px; flex-shrink: 0; }
+.kf-time-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+.kf-time-actions .btn { margin: 0; }
+.kf-time-note { font-size: 12px; color: var(--text-muted); line-height: 1.8; margin: 8px 0; text-align: center; }
+.kf-first-time { direction: ltr; text-align: center; font-size: 13px; color: var(--primary); margin: 8px 0; }
+.kf-font-suggestions { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.kf-font-suggestions .btn { width: auto; margin: 0; padding: 5px 10px; font-size: 12px; }
+.kf-audit-target { outline: 2px solid var(--primary); outline-offset: -2px; }
+.kf-codec-help { margin: 10px; padding: 10px; border: 1px solid var(--border-color); background: var(--kf-fixed-surface); color: var(--kf-fixed-ink); border-radius: 8px; font-size: 13px; line-height: 1.8; }
+.kf-codec-help code { display: block; direction: ltr; white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; font-size: 12px; }
+.kf-codec-help .btn { margin: 8px 0 0; }
+#kf-exact-drag { position: absolute; pointer-events: none; z-index: 4; }
+.kf-exact #vDraggableSubText .ass-blk { visibility: hidden; }
+.kf-exact #vDraggableSubText::after { content: '+'; position: absolute; top: -12px; left: -8px; color: var(--primary); font-size: 24px; }
+html:root body #code-review-panel { position: static; width: 100%; margin: 10px 0 0; max-height: 42vh; box-sizing: border-box; grid-column: 1 / -1; }
+html:root body #searchBarPanel { position: fixed !important; left: 50% !important; right: auto !important; transform: translateX(-50%) !important; width: min(520px, calc(100% - 24px)) !important; box-sizing: border-box; }
+@media (min-width: 768px) {
+  html.kf-wide:root body.editor-bg #editor-screen[style*="block"] { grid-template-columns: minmax(0, 58%) minmax(0, 42%); grid-template-rows: auto auto minmax(0, 1fr); }
+  html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > .action-bar { grid-row: 3; max-height: 100%; overflow-y: auto; }
+  html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > .subtitles-scroll-frame { grid-row: 2 / 4; }
+  html.kf-wide:root body.editor-bg #preview-video { width: 100%; height: auto; max-height: 58vh !important; min-height: 0; object-fit: contain; }
+  html.kf-wide:root body #kf-fonts-modal > .custom-modal-content,
+  html.kf-wide:root body #censor-modal > .custom-modal-content { display: flex; flex-direction: column; justify-content: safe center; padding-bottom: 24px !important; }
+  #kf-tabs { min-width: 0; overflow-x: auto; scroll-behavior: auto; }
+}
+</style>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#080a0d">
 
     <style id="kf-shell-critical">
     /* مێنیو و شریتی سەرەوە تا ئامادە نەبن نابینرێن (ڕێگری لە تروسکەی مێنیو لە کاتی کردنەوەی ماڵپەڕ) */
+    html:not(.kf-ready) { background: #0a0e17 !important; }
+    html:not(.kf-ready) body { visibility: hidden !important; }
     #kf-shell { display: none !important; }
     html.kf-ready body.startup-bg #kf-shell { display: block !important; }
     #kf-drawer { position: fixed; top: 0; bottom: 0; right: 0; width: min(calc(var(--kf-vw, 1vw) * 84), 330px); transform: translateX(calc(100% + 90px)); visibility: hidden; }
@@ -15,6 +70,9 @@
     <script id="kf-layout-boot">
     (function () {
         var root = document.documentElement;
+        function kfReveal() { root.classList.add('kf-ready'); }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', kfReveal); else kfReveal();
+        setTimeout(kfReveal, 3500);
         var uad = navigator.userAgentData, ua = navigator.userAgent || '';
         // وێبگەڕ بە UAی مۆبایل کراوەتەوە؟ (کاتێک Desktop site ناچالاکە)
         var mobileUA = (uad && typeof uad.mobile === 'boolean') ? uad.mobile : /Mobi|iPhone|iPod|Android.*Mobile/i.test(ua);
@@ -57,9 +115,9 @@
     <title data-i18n="pageTitle">دەستکاریکەری ژێرنووس</title>
 
 <!-- ١. ئایکۆنی ڕەسمی ئەپەکە بە شێوەی ڕاستەوخۆ (Inline Data URI) بۆ وێبگەڕ و مۆبایل -->
-    <link rel="icon" type="image/svg+xml" href="./icon.svg">
-    <link rel="apple-touch-icon" href="./icon.svg">
-    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" type="image/svg+xml" href="/favicon.ico">
+    <link rel="apple-touch-icon" href="/favicon.ico">
+    
     
     <script>
         if (window.location.pathname.slice(-1) !== '/' && !window.location.pathname.endsWith('.html')) {
@@ -200,7 +258,7 @@ function deleteEmptySubtitleLines() {
             --primary-hover: ${pal.hover} !important;
             --primary-glow: ${pal.glow} !important;
         }
-        .btn:not(.btn-outline), body.dark-theme .btn:not(.btn-outline), #install-app-btn, body.dark-theme #install-app-btn {
+        .btn:not(.btn-outline), body.dark-theme .btn:not(.btn-outline) {
             background: linear-gradient(135deg, ${pal.primary} 0%, ${pal.hover} 100%) !important;
             box-shadow: 0 4px 14px ${pal.glow} !important;
             color: #ffffff !important;
@@ -245,7 +303,7 @@ function deleteEmptySubtitleLines() {
         /* ١. ناساندنی ڕاستەوخۆی فۆنت لەناو خودی ئیندێکس */
         @font-face {
             font-family: 'KurdForest';
-            src: url('./KurdForest.ttf') format('truetype');
+            src: url('./jassub/AdobeArabic-Regular.ttf') format('truetype');
             font-weight: normal;
             font-style: normal;
             font-display: swap;
@@ -399,39 +457,10 @@ function deleteEmptySubtitleLines() {
             border-color: #20262e;
         }
 
-        #install-app-btn { 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 6px; 
-            padding: 8px 14px; 
-            border-radius: 10px; 
-            border: none; 
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%) !important; 
-            color: #ffffff !important; 
-            font-size: 12.5px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            box-shadow: 0 4px 12px var(--primary-glow) !important;
-            transition: all 0.2s ease; 
-            white-space: nowrap; 
-            width: 100%;
-        }
-        #install-app-btn:hover {
-            transform: translateY(-1px);
-        }
+        
+        
 
-        @media all and (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
-            #install-app-btn {
-                display: none !important;
-                visibility: hidden !important;
-                height: 0 !important;
-                padding: 0 !important;
-                margin: 0 !important;
-                opacity: 0 !important;
-                pointer-events: none !important;
-            }
-        }
+        
 
         @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
         @keyframes slideUpFade { from { opacity: 0; } to { opacity: 1; } }
@@ -673,29 +702,10 @@ function deleteEmptySubtitleLines() {
             text-align: start; 
         }
         .subtitle-kurd textarea:focus { border-color: var(--primary); }
-        .subtitle-note { margin-top: 8px; }
-        .subtitle-note-label {
-            display: flex; align-items: center; gap: 5px;
-            font-size: 11px; font-weight: bold; color: var(--text-muted);
-            margin-bottom: 4px; text-align: start;
-        }
-        .subtitle-note textarea {
-            width: 100%;
-            min-height: 38px;
-            padding: 7px 10px;
-            border-radius: 8px;
-            border: 1.5px dashed var(--border-color);
-            background: transparent;
-            color: var(--text-muted);
-            font-size: 12.5px;
-            line-height: 1.5;
-            resize: vertical;
-            outline: none;
-            direction: auto;
-            unicode-bidi: plaintext;
-            text-align: start;
-        }
-        .subtitle-note textarea:focus { border-color: var(--primary); color: var(--text-main); }
+        
+        
+        
+        
         .play-sub-btn { background: var(--bg-color); border: 1px solid var(--primary); color: var(--primary); border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s; }
         .play-sub-btn:hover { transform: scale(1.1); }
         
@@ -916,7 +926,7 @@ function deleteEmptySubtitleLines() {
         .custom-select-item { padding: 6px 10px; font-size: 12px; cursor: pointer; color: var(--text-main); text-align: center; font-weight: bold; border-radius: 6px; transition: background 0.15s; }
         .custom-select-item:hover { background: var(--bg-color); color: var(--primary); }
 
-        .install-sheet { max-width: 360px; padding: 20px 16px; border-radius: 18px; }
+        
 
 /* ستایلی شریتی ئاسۆیی ڕەنگەکان لە خوارەوە */
 .theme-horizontal-bar {
@@ -952,154 +962,24 @@ function deleteEmptySubtitleLines() {
 }
 
         /* ستایلی تایبەتمەندییەکان لە خوارەوە */
-        .site-features-box {
-            margin-top: 14px;
-            background: rgba(142, 182, 155, 0.05);
-            border: 1px solid rgba(142, 182, 155, 0.2);
-            border-radius: 14px;
-            padding: 12px;
-            text-align: start;
-        }
-        .site-features-title {
-            font-size: 13px;
-            font-weight: bold;
-            color: var(--primary);
-            margin: 0 0 8px 0;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .site-features-box ul {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    max-height: 150px; /* بەرزیی جێگیر */
-    overflow-y: auto;  /* دەتوانیت بۆ خوارەوە بیبەیت */
-    padding-inline-end: 4px;
-}
-        .site-features-box li {
-            font-size: 12px;
-            color: var(--text-muted);
-            display: flex;
-            align-items: flex-start;
-            gap: 8px;
-            line-height: 1.4;
-        }
-        .site-features-box li svg {
-            width: 15px;
-            height: 15px;
-            color: var(--primary);
-            flex-shrink: 0;
-            margin-top: 2px;
-        }
-
-        /* ستایلی سەرەوە و مێنیوی سێتەپ */
-        .setup-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
-            position: relative;
-            padding-bottom: 6px;
-            border-bottom: 1px dashed var(--border-color);
-        }
-        .menu-dropdown {
-            display: none;
-            position: absolute;
-            top: calc(100% + 6px);
-            inset-inline-start: 0;
-            width: 220px;
-            background: var(--card-bg);
-            border: 1.5px solid var(--border-color);
-            border-radius: 14px;
-            box-shadow: var(--shadow-lg);
-            z-index: 1000;
-            padding: 8px;
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
-            animation: slideUpFade 0.2s ease;
-        }
-        .menu-dropdown.show { display: block; }
-        .menu-btn-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            width: 100%;
-            padding: 9px 10px;
-            background: transparent;
-            border: none;
-            border-radius: 8px;
-            color: var(--text-main);
-            font-size: 13px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background 0.2s;
-            text-align: start;
-        }
-        .menu-btn-item:hover {
-            background: rgba(142, 182, 155, 0.15);
-            color: var(--primary);
-        }
+        
+        
+        
+        
+        
 
         html.kf-wide #editor-screen { max-width: 960px; padding-bottom: 85px; }html.kf-wide .floating-search-bar { left: 50%; transform: translateX(-50%); max-width: 550px; bottom: 80px; }html.kf-wide .subtitle-card { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto 1fr; gap: 0 16px; padding: 16px; }html.kf-wide .subtitle-header { grid-column: 1 / -1; margin-bottom: 12px; }html.kf-wide .subtitle-orig { margin-bottom: 0; height: 100%; }html.kf-wide .subtitle-kurd { display: flex; flex-direction: column; height: 100%; }html.kf-wide .subtitle-kurd textarea { flex-grow: 1; height: 100%; min-height: 100px; }html.kf-wide .action-bar { display: flex; justify-content: center; flex-direction: row; gap: 12px; padding: 12px 24px; }html.kf-wide .action-bar .btn,
 html.kf-wide .action-bar .btn-outline { width: auto; min-width: 170px; padding: 11px 16px; }html.kf-wide #preview-video { max-height: 320px; }
         
 /* ستایلی چوارگۆشەی قەوسی ڕەنگەکان */
-.theme-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    margin: 14px 0;
-}
-.theme-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    padding: 10px 6px;
-    background: rgba(142, 182, 155, 0.08);
-    border: 1.5px solid var(--border-color);
-    border-radius: 14px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-.theme-card:hover {
-    transform: translateY(-2px);
-    border-color: var(--primary);
-}
-.theme-card.active {
-    border-color: var(--primary);
-    background: var(--primary-glow);
-    box-shadow: 0 0 14px var(--primary-glow);
-}
-.theme-box-shape {
-    width: 38px;
-    height: 38px;
-    border-radius: 10px; /* چوارگۆشەی قەوس */
-    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
-    transition: transform 0.2s ease;
-}
-.theme-name {
-    font-size: 11.5px;
-    font-weight: bold;
-    color: var(--text-main);
-}
+
+
+
+
+
+
 /* ستایلی چوارگۆشەی قەوسی ئایکۆنی دابەزاندنی ئەپ */
-.install-sheet-icon { 
-    width: 64px; 
-    height: 64px; 
-    margin: 0 auto 14px auto; 
-    border-radius: 20px; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%) !important; 
-    color: #ffffff !important; 
-    box-shadow: 0 6px 20px var(--primary-glow) !important;
-}
+
 
 /* دوگمەی تەکنیک لەناو کارتی دێڕەکان */
 .style-sub-btn {
@@ -1376,14 +1256,7 @@ html.kf-wide .action-bar .btn-outline { width: auto; min-width: 170px; padding: 
     object-fit: contain;
     display: block;
 }
-.v-color-preview-badge {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    border: 2px solid #fff;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-    flex-shrink: 0;
-}
+
 
 /* شاشەی جێگیری زوومکەری ٢ هێندە لە سەرەوە */
 .v-zoom-header-bar {
@@ -1576,76 +1449,6 @@ html.kf-narrow #mergeStyleViewer { padding:8px!important; align-items:stretch!im
     font-display: swap;
 }
 
-/* ١. لۆگۆی ژێر بۆکسی ڕەنگەکان — FOREST ڕەنگی ڕووکارەکە وەردەگرێت */
-html:root body .kf-logo {
-    position: relative;
-    align-self: stretch;
-    margin-top: 6px;
-    padding: 18px 0 2px;
-    direction: ltr;
-    unicode-bidi: isolate;
-    text-align: center;
-    white-space: nowrap;
-    font-family: 'KFMichroma', 'Michroma', system-ui, sans-serif;
-    font-weight: 400;
-    font-size: clamp(15px, calc(var(--kf-vw, 1vw) * 4.6), 19px);
-    line-height: 1;
-    letter-spacing: .3em;
-    padding-left: .3em;              /* بەرانبەر بە بۆشایی کۆتایی پیتەکان، تا ڕێک لە ناوەڕاست بێت */
-    color: var(--text-main);
-    user-select: none;
-    -webkit-user-select: none;
-}
-html:root body .kf-logo::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 12%; right: 12%;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--primary), transparent);
-    opacity: .45;
-}
-html:root body .kf-logo b,
-html:root body .kf-mark b {
-    font-weight: 400;
-    color: var(--primary);
-    transition: color .4s ease, text-shadow .4s ease;
-}
-html:root body .kf-logo b { text-shadow: 0 0 22px var(--primary-glow); }
-
-/* ٢. نوسینی ناو باکگراوند — چەند قەبارە و لێڵی جیاواز */
-#kf-bg-marks {
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    overflow: hidden;
-    pointer-events: none;
-    user-select: none;
-    -webkit-user-select: none;
-}
-.kf-mark {
-    position: absolute;
-    direction: ltr;
-    unicode-bidi: isolate;
-    white-space: nowrap;
-    font-family: 'KFMichroma', 'Michroma', system-ui, sans-serif;
-    font-weight: 400;
-    line-height: 1;
-    color: #f1f5f9;
-}
-/* گەورە و زۆر لێڵ */
-.kf-mark.m1 { top: 5%;  right: -7%; font-size: clamp(34px, calc(var(--kf-vw, 1vw) * 9.5), 128px); letter-spacing: .12em; opacity: .13; filter: blur(7px);   transform: rotate(-7deg); }
-/* بچووک و ڕوون */
-.kf-mark.m2 { top: 17%; left: 5%;   font-size: 11px; letter-spacing: .34em; opacity: .30; }
-/* ناوەند و تۆزێ لێڵ */
-.kf-mark.m3 { bottom: 9%; left: -5%; font-size: clamp(28px, calc(var(--kf-vw, 1vw) * 6.5), 86px); letter-spacing: .16em; opacity: .12; filter: blur(3px);   transform: rotate(5deg); }
-/* بچووک و ڕوون */
-.kf-mark.m4 { bottom: 6%; right: 7%; font-size: 12px; letter-spacing: .3em;  opacity: .26; }
-/* ستوونی لای چەپ */
-.kf-mark.m5 { top: 50%; left: 1.4%; font-size: 10px; letter-spacing: .42em; opacity: .24; filter: blur(.6px);
-              writing-mode: vertical-rl; transform: translateY(-50%) rotate(180deg); }
-/* ناوەند، لێڵێکی کەم */
-.kf-mark.m6 { top: 42%; right: -3%; font-size: clamp(18px, calc(var(--kf-vw, 1vw) * 3.6), 46px); letter-spacing: .2em; opacity: .10; filter: blur(1.6px); transform: rotate(11deg); }
-
 /* ٣. لۆگۆی بچووک لە شاشەی دەستکاریکردن (لای چەپی هێڵی سەرەوە) */
 html:root body .kf-logo-mini {
     flex: 0 0 auto;
@@ -1686,11 +1489,23 @@ html:root body #toast-container .toast {
     line-height: 1.7;
 }
 
-/* لە شاشەی دەستکاریکردنیش نوسینەکانی باکگراوند دەمێنن، تەنها کەمێک کاڵتر */
-html:root body.editor-bg #kf-bg-marks { opacity: .8; }
-@media print { #kf-bg-marks { display: none; } }
 </style>
 
+<style id="kf-early">
+/* دیزاینی نوێ لە سەرەتای <head>
+
+: تەنانەت یەکەم دەرکەوتنیش ڕێک وەک شاشەی نوێ بێت */
+html:root { background: #0a0e17 !important; }
+html:root body.startup-bg { padding: 0 !important; display: block !important; align-items: stretch !important; }
+html:root body.startup-bg #setup-screen {
+    width: 100% !important; max-width: none !important; min-height: calc(var(--kf-vh, 1vh) * 100); margin: 0 !important; border-radius: 0 !important; border: 0 !important;
+    background: transparent !important; box-shadow: none !important; animation: none !important;
+    backdrop-filter: none !important; -webkit-backdrop-filter: none !important; box-sizing: border-box !important;
+    justify-content: center; gap: 16px !important;
+    padding: calc(56px + env(safe-area-inset-top, 0px) + 18px) max(16px, calc((100% - 680px) / 2)) calc(24px + env(safe-area-inset-bottom, 0px)) !important;
+}
+html:root body.startup-bg::before, html:root body.startup-bg::after { display: none !important; }
+</style>
 </head>
 <body class="startup-bg">
 
@@ -1703,7 +1518,7 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
             <button type="button" id="kf-menu-btn" class="kf-bar-btn" aria-label="مێنیو" aria-expanded="false" onclick="kfNav.toggleDrawer()">
                 <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
             </button>
-            <div class="kf-bar-center"><span id="kf-sec-title"></span></div>
+            <div class="kf-bar-center"><div id="welcome-msg">بەخێربێیت!</div><span id="kf-sec-title"></span></div>
             <nav id="kf-tabs" aria-label="بەشەکان"></nav>
             <div class="kf-bar-logo" dir="ltr">KURD <b>FOREST</b></div>
         </header>
@@ -1721,59 +1536,6 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
 
     <!-- شاشەی دەستپێک و سێتەپ بە تەواوی لە ناوەڕاست -->
     <div id="setup-screen" class="glass-card">
-        <div class="setup-header">
-            <div style="position: relative;">
-                <button class="top-btn" onclick="toggleSetupMenu(event)">
-                    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                </button>
-
-                <!-- مێنیوی سێ خەتەکە -->
-                <div id="setupMenuDropdown" class="menu-dropdown">
-                    <button class="menu-btn-item" onclick="openConverterModal(); toggleSetupMenu();">
-                        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
-                        <span>گۆڕینی فایل</span>
-                    </button>
-                    <button class="menu-btn-item" onclick="openRtlFixModal(); toggleSetupMenu();">
-                        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
-                        <span>چاککردنی RTL</span>
-                    </button>
-                    <button class="menu-btn-item" onclick="openMergeModal(); toggleSetupMenu();">
-                        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 00-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
-                        <span>تێکەڵکردنی دوو فایل</span>
-                    </button>
-                    <button class="menu-btn-item" onclick="openSdhModal(); toggleSetupMenu();">
-                        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
-                        <span>پاککردنەوەی دەنگەکان (SDH)</span>
-                    </button>
-                    <button class="menu-btn-item" onclick="openShortcutsModal(); toggleSetupMenu();">
-                        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
-                        <span>کورتکراوەکانی کیبۆرد</span>
-                    </button>
-                    <button class="menu-btn-item" onclick="openImgUploaderModal(); toggleSetupMenu();">
-                        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                        <span>گۆڕینی وێنە بۆ لینک</span>
-                    </button>
-                    <button type="button" class="menu-btn-item" onclick="openMkvExtractorModal();">
-                        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                        <span>دەرهێنەری فایل لە MKV</span>
-                    </button>
-                    <button class="menu-btn-item" onclick="openServersModal(); toggleSetupMenu();">
-                        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
-                        <span>کۆدی سێرڤەرەکان</span>
-                    </button>
-                    <button class="menu-btn-item" onclick="openHistoryModal(); toggleSetupMenu();">
-                        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        <span>مێژووی کارەکان</span>
-                    </button>
-                    <button id="install-app-btn" class="menu-btn-item" onclick="installApp(); toggleSetupMenu(event);">
-                        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                        <span>دابەزاندنی ئەپ</span>
-                    </button>
-                </div>
-            </div>
-
-            <div id="welcome-msg" style="position: absolute; left: 0; right: 0; text-align: center; font-size: 15px; color: var(--primary); font-weight: bold; pointer-events: none;">بەخێربێیت!</div>
-        </div>
         
         <div class="file-box" id="boxOriginal">
             <button type="button" class="clear-file-btn" onclick="clearFile('fileOriginal', 'boxOriginal')" style="display: none;"><svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
@@ -1959,9 +1721,6 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
     let mkvChunkSize = 32 * 1024 * 1024; // ٣٢ مێگابایت بۆ خێراترین کێشانی داتا
 
     function openMkvExtractorModal() {
-        const menu = document.getElementById('setupMenuDropdown');
-        if (menu) menu.classList.remove('show');
-
         const modal = document.getElementById('mkv-extractor-modal');
         if (modal) {
             modal.style.display = 'flex';
@@ -2080,7 +1839,6 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
     function mkvIsAss(t) { return /ASS|SSA/i.test(t.codecId); }
     function mkvIsVtt(t) { return /WEBVTT/i.test(t.codecId); }
     function mkvIsPgs(t) { return /HDMV\/PGS|PG/i.test(t.codecId); }
-    function mkvIsTextSub(t) { return !mkvIsPgs(t) && !/VOBSUB|DVBSUB/i.test(t.codecId); }
     function mkvLangTag(track, sameKind) {
         const lang = mkvCleanName(track.lang) || 'und';
         const dup = mkvParsedTracks.some(o => o !== track && sameKind(o) && (o.lang || 'und') === (track.lang || 'und'));
@@ -2756,50 +2514,6 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
             mkvEl([0xB7], mkvConcat([mkvEl([0xF7], mkvUint(1)), mkvEl([0xF1], mkvUint(offsets[i], 4))]))
         ])));
         return mkvEl([0x1C, 0x53, 0xBB, 0x6B], mkvConcat(pts));
-    }
-
-    function mkvBuildMkaHead(track, clusters, lastTick) {
-        const ebml = mkvEl([0x1A, 0x45, 0xDF, 0xA3], mkvConcat([
-            mkvEl([0x42, 0x86], mkvUint(1)), mkvEl([0x42, 0xF7], mkvUint(1)),
-            mkvEl([0x42, 0xF2], mkvUint(4)), mkvEl([0x42, 0xF3], mkvUint(8)),
-            mkvEl([0x42, 0x82], mkvStr('matroska')),
-            mkvEl([0x42, 0x87], mkvUint(4)), mkvEl([0x42, 0x85], mkvUint(2))
-        ]));
-        const durTicks = mkvDurationTicks > 0 ? mkvDurationTicks : lastTick;
-        const info = mkvEl([0x15, 0x49, 0xA9, 0x66], mkvConcat([
-            mkvEl([0x2A, 0xD7, 0xB1], mkvUint(mkvTimecodeScale)),
-            mkvEl([0x44, 0x89], mkvFloat64(durTicks)),
-            mkvEl([0x4D, 0x80], mkvStr('KurdForest MKV Extractor')),
-            mkvEl([0x57, 0x41], mkvStr('KurdForest MKV Extractor'))
-        ]));
-
-        const audio = [
-            mkvEl([0x9F], mkvUint(Math.max(1, track.channels))),
-            mkvEl([0xB5], mkvFloat64(track.sampling))
-        ];
-        if (track.outSampling) audio.push(mkvEl([0x78, 0xB5], mkvFloat64(track.outSampling)));
-        if (track.bitDepth) audio.push(mkvEl([0x62, 0x64], mkvUint(track.bitDepth)));
-        const entry = [
-            mkvEl([0xD7], mkvUint(1)), mkvEl([0x73, 0xC5], mkvUint(1)), mkvEl([0x83], mkvUint(2)),
-            mkvEl([0x9C], mkvUint(0)),
-            mkvEl([0x22, 0xB5, 0x9C], mkvStr(track.lang || 'und')),
-            mkvEl([0x86], mkvStr(track.codecId)),
-            mkvEl([0xE1], mkvConcat(audio))
-        ];
-        if (track.name) entry.push(mkvEl([0x53, 0x6E], mkvStr(track.name)));
-        if (track.codecPrivate && track.codecPrivate.length) entry.push(mkvEl([0x63, 0xA2], track.codecPrivate));
-        if (track.codecDelay) entry.push(mkvEl([0x56, 0xAA], mkvUint(track.codecDelay)));
-        if (track.seekPreRoll) entry.push(mkvEl([0x56, 0xBB], mkvUint(track.seekPreRoll)));
-        const tracks = mkvEl([0x16, 0x54, 0xAE, 0x6B], mkvEl([0xAE], mkvConcat(entry)));
-
-        const cuesLen = mkvBuildCues(clusters, clusters.map(() => 0)).length;
-        const offsets = []; let off = info.length + tracks.length + cuesLen;
-        for (const c of clusters) { offsets.push(off); off += c.size; }
-        const cues = mkvBuildCues(clusters, offsets);
-
-        const segPayloadLen = off;
-        const segHead = mkvConcat([Uint8Array.from([0x18, 0x53, 0x80, 0x67]), mkvSizeBytes(segPayloadLen, 8)]);
-        return mkvConcat([ebml, segHead, info, tracks, cues]);
     }
 
 // خشتەی فەرمیی فریکوێنسییەکانی AAC
@@ -4303,18 +4017,7 @@ html:root body.editor-bg #kf-bg-marks { opacity: .8; }
             }
         });
 
-        function toggleSetupMenu(e) {
-            if (e) e.stopPropagation();
-            if (typeof removeInstallButton === 'function') removeInstallButton();
-            const menu = document.getElementById('setupMenuDropdown');
-            if (menu) menu.classList.toggle('show');
-        }
-
         document.addEventListener('click', (e) => {
-            const menu = document.getElementById('setupMenuDropdown');
-            if (menu && !menu.contains(e.target)) {
-                menu.classList.remove('show');
-            }
             if (!e.target.closest('.custom-select-wrapper')) {
                 document.querySelectorAll('.custom-select-menu.show').forEach(m => m.classList.remove('show'));
                 document.querySelectorAll('.custom-select-btn.open').forEach(b => b.classList.remove('open'));
@@ -4554,7 +4257,7 @@ function applyCustomTheme(themeKey) {
             --primary-hover: ${pal.hover} !important;
             --primary-glow: ${pal.glow} !important;
         }
-        .btn:not(.btn-outline), body.dark-theme .btn:not(.btn-outline), #install-app-btn, body.dark-theme #install-app-btn {
+        .btn:not(.btn-outline), body.dark-theme .btn:not(.btn-outline) {
             background: linear-gradient(135deg, ${pal.primary} 0%, ${pal.hover} 100%) !important;
             box-shadow: 0 4px 14px ${pal.glow} !important;
             color: #ffffff !important;
@@ -4687,13 +4390,6 @@ window.onload = () => {
                 return;
             }
 
-            // ٣. مێنیوی سێ خەتەکە
-            const setupMenu = document.getElementById('setupMenuDropdown');
-            if (setupMenu && setupMenu.classList.contains('show')) {
-                setupMenu.classList.remove('show');
-                return;
-            }
-
             // ٤. لەناو شاشەی ئیدیت: بە یەک گەڕانەوە بە سەلامەتی دەگەڕێتەوە شاشەی سەرەکی
             if (isEditing) {
                 executeGoBack();
@@ -4713,24 +4409,6 @@ window.onload = () => {
                 showToast('بۆ دەرچوون لە ئەپ، جارێکی تر کرتە لە گەڕانەوە بکە', 'info');
             }
         });
-
-        // فەنکشنی گەڕانەوە
-        function executeGoBack() {
-            saveSession();
-            isEditing = false;
-            const modal = document.getElementById('back-confirm-modal');
-            if (modal) modal.style.display = 'none';
-            document.getElementById('editor-screen').style.display = 'none';
-            document.getElementById('setup-screen').style.display = 'flex';
-            document.body.className = document.documentElement.classList.contains('dark-theme') ? 'startup-bg dark-theme' : 'startup-bg';
-            resetVideoPlayer();
-            clearSession(); 
-            if (window.location.hash) {
-                history.replaceState({ page: 'root' }, '', window.location.pathname);
-            }
-            ensureHomeState();
-            showToast('گەڕایتەوە بۆ شاشەی سەرەکی', 'info');
-        }
 
         function confirmGoBack() {
             executeGoBack();
@@ -5838,10 +5516,6 @@ async function executeRtlFix() {
         }
         
 
-        function cleanSubtitleTags(text) {
-            if (!text) return "";
-            return text.replace(/\{[^}]+\}/g, '').replace(/<[^>]+>/g, '').trim();
-        }
         
 // فەنکشنی داخستنی دروستی تاگەکان بۆ هەر دێڕێک
         function assLineToHtml(lineStr) {
@@ -5980,20 +5654,6 @@ async function executeRtlFix() {
             return s;
         }
         
-        function convertAssTagsToSrt(rawText) {
-            if (!rawText) return "";
-            let s = rawText.replace(/\\[Nn]/g, '\n');
-            // گۆڕینی ئیتالیک، بۆڵد و ژێرهێڵی ASS بۆ شێوازی SRT/HTML
-            s = s.replace(/\{\\i1\}/gi, '<i>').replace(/\{\\i0\}/gi, '</i>')
-                 .replace(/\{\\b1\}/gi, '<b>').replace(/\{\\b0\}/gi, '</b>')
-                 .replace(/\{\\u1\}/gi, '<u>').replace(/\{\\u0\}/gi, '</u>');
-            // سڕینەوەی هەموو کۆدە تەکنیکی و شوێنگۆڕکێکانی تری ناو کەوانەی گەورە { ... }
-            s = s.replace(/\{[^}]*\}/g, '');
-            // پاککردنەوەی تاگە داخراوە بێسوودەکانی وەک <i></i> یان <b></b>
-            s = s.replace(/<([ibu])>\s*<\/\1>/gi, '');
-            return s.trim();
-        }
-
         async function prepareBatchProcess() {
             const files = document.getElementById('convertFileInput').files;
             const targetFormat = document.getElementById('convertFormatValue').value;
@@ -7060,11 +6720,11 @@ function openSubStyleModal(index) {
     if (modalTa) {
         let displayText = text
             .replace(/\\(?:pos|move)\([^)]*\)/gi, '')
-            .replace(/\\frz-?[\d\.]+/gi, '')
+            .replace(/\\fr[xyz]-?[\d\.]+/gi, '')
             .replace(/\\frx-?[\d\.]+/gi, '')
             .replace(/\\fry-?[\d\.]+/gi, '')
             .replace(/\\fsc[xy][\d\.]+/gi, '')
-            .replace(/\\fax-?[\d\.]+/gi, '')
+            .replace(/\\fa[xy]-?[\d\.]+/gi, '')
             .replace(/\\fay-?[\d\.]+/gi, '')
             .replace(/\\fs\d+(?:\.\d+)?/gi, '')
             .replace(/\\an\d/gi, '')
@@ -7285,9 +6945,9 @@ function applySubStyleToLine() {
             .replace(/\\pos\([^)]+\)/gi, '')
             .replace(/\{\\move\([^)]+\)\}/gi, '')
             .replace(/\\move\([^)]+\)/gi, '')
-            .replace(/\\frz-?[\d\.]+/gi, '')
+            .replace(/\\fr[xyz]-?[\d\.]+/gi, '')
             .replace(/\\fsc[xy][\d\.]+/gi, '')
-            .replace(/\\fax-?[\d\.]+/gi, '')
+            .replace(/\\fa[xy]-?[\d\.]+/gi, '')
             .replace(/\{\\an\d\}/gi, '')
             .replace(/\\an\d/gi, '')
             .replace(/\\fad\(\d+,\s*\d+\)/gi, '')
@@ -8221,10 +7881,10 @@ function confirmDraggablePosition() {
             .replace(/\\move\([^)]*\)/gi, '')
             .replace(/\\an\d/gi, '')
             .replace(/\\fs\d+(?:\.\d+)?/gi, '')
-            .replace(/\\frz-?[\d\.]+/gi, '')
+            .replace(/\\fr[xyz]-?[\d\.]+/gi, '')
             .replace(/\\fscx[\d\.]+/gi, '')
             .replace(/\\fscy[\d\.]+/gi, '')
-            .replace(/\\fax-?[\d\.]+/gi, '')
+            .replace(/\\fa[xy]-?[\d\.]+/gi, '')
             .replace(/\{\s*\}/g, '')
             .trim();
     }
@@ -8240,10 +7900,10 @@ function confirmDraggablePosition() {
                     .replace(/\\move\([^)]*\)/gi, '')
                     .replace(/\\an\d/gi, '')
                     .replace(/\\fs\d+(?:\.\d+)?/gi, '')
-                    .replace(/\\frz-?[\d\.]+/gi, '')
+                    .replace(/\\fr[xyz]-?[\d\.]+/gi, '')
                     .replace(/\\fscx[\d\.]+/gi, '')
                     .replace(/\\fscy[\d\.]+/gi, '')
-                    .replace(/\\fax-?[\d\.]+/gi, '')
+                    .replace(/\\fa[xy]-?[\d\.]+/gi, '')
                     .replace(/\{\s*\}/g, '')
                     .trim();
                 
@@ -9112,6 +8772,18 @@ var LibassRenderer = (function () {
     var lastScript = '', lastSyncAt = 0, enabled = false, failed = false;
     var lastError = '';
     var extraFonts = [];
+    var bundledFontsLoader = null;
+
+    async function loadFonts() {
+        if (!bundledFontsLoader) {
+            
+            bundledFontsLoader = createRendererFontLoader([
+                window.KF_ASSETS['AdobeArabic-Regular.ttf'],
+                window.KF_ASSETS['default.woff2']
+            ]);
+        }
+        return bundledFontsLoader();
+    }
 
     // ڕێڕەوی لۆکاڵی فۆڵدەری jassub
     var CDN = new URL('./jassub/', window.location.href).href;
@@ -9278,11 +8950,12 @@ var LibassRenderer = (function () {
         if (loadingPromise) return;
 
         notifyUi();
-        loadingPromise = loadJassub().then(function (JASSUB_CLASS) {
+        loadingPromise = Promise.all([loadJassub(), loadFonts()]).then(function (loaded) {
+            var JASSUB_CLASS = loaded[0];
             JASSUB = JASSUB_CLASS;
             var scriptContent = buildScript();
 
-            var allFonts = extraFonts.slice();
+            var allFonts = extraFonts.concat(loaded[1]);
             if (typeof FontStore !== 'undefined') {
                 FontStore.list().forEach(function(f) {
                     if (f.bytes && f.ok) {
@@ -9298,25 +8971,31 @@ var LibassRenderer = (function () {
                 video: video,
                 subContent: scriptContent,
                 workerUrl: CDN + 'jassub-worker.js',
-                wasmUrl: CDN + 'jassub-worker.wasm',
-                modernWasmUrl: CDN + 'jassub-worker-modern.wasm',
+                wasmUrl: window.KF_ASSETS['jassub-worker.wasm'],
+                modernWasmUrl: window.KF_ASSETS['jassub-worker-modern.wasm'],
                 legacyWasmUrl: CDN + 'jassub-worker.wasm.js',
                 availableFonts: {
-                    'liberation sans': CDN + 'default.woff2',
-                    'adobe arabic': CDN + 'AdobeArabic-Regular.ttf'
+                    'liberation sans': window.KF_ASSETS['default.woff2'],
+                    'noto sans arabic': window.KF_ASSETS['AdobeArabic-Regular.ttf']
                 },
-                fallbackFont: 'adobe arabic',
+                fallbackFont: 'noto sans arabic',
                 fonts: allFonts,
-                timeOffset: 0.05,
+                timeOffset: 0,
                 dropAllAnimations: false,
                 dropAllBlur: false,
                 targetFps: 24,
-                prescaleFactor: 0.70,
+                prescaleFactor: 1,
+                onDemandRender: false,
                 offscreenRender: true,
-                useLocalFonts: true
+                useLocalFonts: false
             };
 
             instance = new JASSUB(opts);
+            instance.addEventListener('ready', function () {
+                if (!instance) return;
+                instance.resize();
+                instance.setCurrentTime(video.paused, video.currentTime, video.playbackRate);
+            });
             lastScript = scriptContent;
             failed = false;
             loadingPromise = null;
@@ -9400,7 +9079,7 @@ var LibassRenderer = (function () {
     return { 
         attach: attach, sync: sync, destroy: destroy, isActive: isActive, 
         isEnabled: isEnabled, status: status, lastError: lastError_, 
-        toggle: toggle, buildScript: buildScript, addFont: addFont 
+        toggle: toggle, buildScript: buildScript, addFont: addFont, loadFonts: loadFonts
     };
 })();
 
@@ -9854,7 +9533,7 @@ const MERGE_TAG_LABELS = {
     'pos': 'جێگۆڕکێ', 'move': 'جوڵان', 'org': 'خاڵی سووڕان', 'fad': 'دیاربوون/وانەبوون',
     'fade': 'دیاربوون/وانەبوون', 't': 'گۆڕانکاری کاتی', 'an': 'جێگای هێڵ',
     'fr': 'سووڕان', 'frx': 'سووڕان', 'fry': 'سووڕان', 'frz': 'سووڕان', 'p': 'وێنەکێشان',
-    'bord': 'لێواری دەق', 'shd': 'سێبەر', 'blur': 'تاڕکردنەوە', 'r': 'گەڕانەوە بۆ ستایل',
+    'shad': 'سێبەر', 'fscx': 'پانی', 'fscy': 'بەرزی', 'fay': 'لاری ستوونی', 'be': 'نەرمی لێوار', 'iclip': 'بڕینی پێچەوانە', '1c': 'ڕەنگی سەرەکی', '2c': 'ڕەنگی دووەم', '3c': 'ڕەنگی لێوار', '4c': 'ڕەنگی سێبەر', '1a': 'ڕوونی سەرەکی', '2a': 'ڕوونی دووەم', '3a': 'ڕوونی لێوار', '4a': 'ڕوونی سێبەر', 'xbord': 'لێواری ئاسۆیی', 'ybord': 'لێواری ستوونی', 'xshad': 'سێبەری ئاسۆیی', 'yshad': 'سێبەری ستوونی', 'bord': 'لێواری دەق', 'shd': 'سێبەر', 'blur': 'تاڕکردنەوە', 'r': 'گەڕانەوە بۆ ستایل',
     'fe': 'کۆدکردنی فۆنت', 'fax': 'ئەستووری لار', 'fsp': 'بۆشایی پیت', 'k': 'کەرۆکی',
     'clip': 'بڕین', 'q': 'شێوازی پێچانەوە'
 };
@@ -9894,7 +9573,7 @@ function viewMergeStyleLines(encodedName) {
     const detectTags = (text) => {
         const tags = [];
         (text.match(/\{[^}]*\}/g) || []).forEach(block => {
-            (block.match(/\\([a-zA-Z]+)/g) || []).forEach(t => {
+            (block.match(/\\((?:[1-4][ca])|[a-zA-Z]+)/g) || []).forEach(t => {
                 const key = t.slice(1).toLowerCase();
                 const lbl = MERGE_TAG_LABELS[key] || ('\\' + key);
                 if (!tags.includes(lbl)) tags.push(lbl);
@@ -12869,23 +12548,17 @@ function kfSrvClear() {
             return false;
         }
 
-        function removeInstallButton() {
+        function markStandaloneSession() {
             if (isAppMode()) {
                 try { sessionStorage.setItem('is_standalone', 'true'); } catch(e) {}
-                const btn = document.getElementById('install-app-btn');
-                if (btn) {
-                    btn.remove();
-                }
             }
         }
 
-        removeInstallButton();
-        document.addEventListener('DOMContentLoaded', removeInstallButton);
-        window.addEventListener('load', removeInstallButton);
+        markStandaloneSession();
+        document.addEventListener('DOMContentLoaded', markStandaloneSession);
+        window.addEventListener('load', markStandaloneSession);
         window.addEventListener('appinstalled', () => {
             try { localStorage.setItem('app_installed_subedit', 'true'); } catch(e) {}
-            const btn = document.getElementById('install-app-btn');
-            if (btn) btn.remove();
         });
     </script>
 <script id="kf-overrides">
@@ -13225,13 +12898,14 @@ function runCodeReview() {
         errCount += r.errs.length; warnCount += r.warns.length;
 
         var body = r.errs.concat(r.warns).map(function (m) {
-            return m.indexOf('__HTML__' === 0) ? m.slice(8) : ((r.errs.indexOf(m) >= 0 ? SVG_ICONS.error : SVG_ICONS.warn) + ' ' + m);
+            return m.indexOf('__HTML__') === 0 ? m.slice(8) : ((r.errs.indexOf(m) >= 0 ? SVG_ICONS.error : SVG_ICONS.warn) + ' ' + m);
         }).join('');
 
         // دروستکردنی کارتی دێڕەکە بە دوگمەی چاککردن لە تەنیشت ژمارەی دێڕەکە (وەک ناو وێنەکەت)
         html += '<div class="cr-item ' + (r.errs.length ? 'err' : 'warn') + '">' +
             '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; direction:rtl;">' +
                 '<span class="cr-line" style="font-weight:bold; font-size:13px;">دێڕی #' + r.n + '</span>' +
+                '<button type="button" class="btn btn-outline kf-jump" onclick="kfJumpToLine(' + i + ')">↗ بڕۆ بۆ دێڕ</button>' +
                 '<button type="button" class="btn btn-outline" style="width:auto; padding:3px 9px; font-size:11px; color:#22c55e; border-color:rgba(34,197,94,0.4); display:inline-flex; align-items:center; gap:4px; margin:0;" onclick="crAutoFixLine(' + i + ')">' +
                     '<svg style="width:12px;height:12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M5 13l4 4L19 7"/></svg>' +
                     '<span>چاککردنی خۆکار</span>' +
@@ -13857,14 +13531,6 @@ function removeCensorItem(id) {
     }
 }
 
-function toggleAiStyleMenu(btn) {
-    var menu = document.getElementById('aiStyleMenu');
-    var btnEl = document.getElementById('aiStyleSelectBtn');
-    if (!menu) return;
-    var isShowing = menu.classList.toggle('show');
-    if (btnEl) btnEl.classList.toggle('open', isShowing);
-}
-
 let selectedAiStyles = new Set(['ALL']);
 
 // سیستەمی جوڵاندن و ڕاکێشانی ناوی ستایلەکان بە دەست ڕێک وەک بەشی مێژوو
@@ -14179,26 +13845,12 @@ function fixAllFspZero() {
     // تۆمارکردنی sw.js
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js')
+            Promise.resolve({ scope: 'standalone' })
                 .then(() => console.log('SW Registered'))
                 .catch(err => console.error('SW Error:', err));
         });
     }
 
-    // شاردنەوەی دوگمەی دابەزاندن کاتێک لەناو بەرنامەکەدا دەکرێتەوە
-    function removeInstallBtnInsideApp() {
-        const isInsideApp = window.matchMedia('(display-mode: standalone)').matches 
-                         || window.matchMedia('(display-mode: fullscreen)').matches
-                         || window.navigator.standalone === true;
-        
-        if (isInsideApp) {
-            const btn = document.getElementById('install-app-btn');
-            if (btn) btn.remove();
-        }
-    }
-    removeInstallBtnInsideApp();
-    window.addEventListener('DOMContentLoaded', removeInstallBtnInsideApp);
-    window.addEventListener('load', removeInstallBtnInsideApp);
 </script>
 
 <!-- ===== Glassmorphism theme (چینی دیزاین — هیچ لۆجیکێکی بەرنامەکە دەستکاری نەکراوە) ===== -->
@@ -14284,7 +13936,6 @@ html:root body .custom-modal-overlay {
     -webkit-backdrop-filter: blur(7px) !important;
 }
 
-html:root body .menu-dropdown,
 html:root body .custom-select-menu {
     background: var(--gl-menu) !important;
     border: 1px solid var(--gl-border) !important;
@@ -14323,7 +13974,6 @@ html:root body .tech-input,
 html:root body .kf-srv-ta,
 html:root body .subtitle-orig,
 html:root body .subtitle-kurd textarea,
-html:root body .subtitle-note textarea,
 html:root body .merge-source-line textarea,
 html:root body .merge-source-editor,
 html:root body .merge-source-line {
@@ -14333,10 +13983,9 @@ html:root body .merge-source-line {
     color: var(--text-main);
 }
 html:root body .subtitle-orig { border-inline-start: 3px solid var(--primary) !important; }
-html:root body .subtitle-note textarea { color: var(--text-muted); }
+
 html:root body .input-field:focus,
 html:root body .subtitle-kurd textarea:focus,
-html:root body .subtitle-note textarea:focus,
 html:root body .floating-search-bar input:focus,
 html:root body .tech-input:focus,
 html:root body .kf-srv-ta:focus,
@@ -14365,7 +14014,6 @@ html:root body .custom-modal-content [style*="rgba(142,182,155,0.08)"],
 html:root body .custom-modal-content [style*="rgba(0,0,0,0.3)"],
 html:root body .custom-modal-content [style*="rgba(0, 0, 0, 0.3)"],
 html:root body .theme-horizontal-bar,
-html:root body .site-features-box,
 html:root body .v-nudge-panel,
 html:root body .v-zoom-header-bar {
     background: var(--gl-fill) !important;
@@ -14383,8 +14031,7 @@ html:root body .custom-modal-content [style*="background:var(--border-color)"] {
 }
 
 /* ===== دوگمە سەرەکییەکان (شووشەی ڕەنگاو) ===== */
-html:root body .btn:not(.btn-outline),
-html:root body #install-app-btn {
+html:root body .btn:not(.btn-outline) {
     background: linear-gradient(135deg,
         color-mix(in srgb, var(--primary) 62%, transparent),
         color-mix(in srgb, var(--primary-hover) 42%, transparent)) !important;
@@ -14393,15 +14040,13 @@ html:root body #install-app-btn {
     box-shadow: 0 8px 22px color-mix(in srgb, var(--primary) 30%, transparent), var(--gl-hi) !important;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
-html:root body .btn:not(.btn-outline):hover,
-html:root body #install-app-btn:hover {
+html:root body .btn:not(.btn-outline):hover {
     background: linear-gradient(135deg,
         color-mix(in srgb, var(--primary) 78%, transparent),
         color-mix(in srgb, var(--primary-hover) 56%, transparent)) !important;
     box-shadow: 0 10px 28px var(--primary-glow), var(--gl-hi) !important;
 }
-html:root body .btn:not(.btn-outline):active,
-html:root body #install-app-btn:active { transform: scale(0.98); }
+html:root body .btn:not(.btn-outline):active { transform: scale(0.98); }
 
 html:root body .btn-outline {
     background: var(--gl-fill) !important;
@@ -14429,7 +14074,6 @@ html:root body .v-target-btn,
 html:root body .v-step-chip,
 html:root body .rtl-mode-opt,
 html:root body .logo-style-opt,
-html:root body .theme-card,
 html:root body .history-item,
 html:root body .play-sub-btn,
 html:root body .style-sub-btn,
@@ -14460,8 +14104,7 @@ html:root body .v-target-btn:hover,
 html:root body .history-item:hover,
 html:root body .play-sub-btn:hover,
 html:root body .style-sub-btn:hover,
-html:root body .delete-sub-btn:hover,
-html:root body .theme-card:hover {
+html:root body .delete-sub-btn:hover {
     background: var(--gl-fill-2) !important;
     border-color: color-mix(in srgb, var(--primary) 60%, transparent) !important;
 }
@@ -14475,7 +14118,6 @@ html:root body .v-target-btn.active,
 html:root body .v-step-chip.active,
 html:root body .rtl-mode-opt.active,
 html:root body .logo-style-opt:has(input:checked),
-html:root body .theme-card.active,
 html:root body .custom-select-btn.open {
     background: color-mix(in srgb, var(--primary) 26%, transparent) !important;
     color: #ffffff !important;
@@ -14490,11 +14132,9 @@ html:root body .v-align-btn { border-color: transparent !important; box-shadow: 
 html:root body .v-align-btn svg { color: #e2e8f0; }
 
 html:root body .tool-divider { background: var(--gl-border) !important; }
-html:root body .top-nav,
-html:root body .setup-header { border-bottom: 1px solid var(--gl-border-soft) !important; }
+html:root body .top-nav { border-bottom: 1px solid var(--gl-border-soft) !important; }
 
-html:root body .custom-select-item:hover,
-html:root body .menu-btn-item:hover {
+html:root body .custom-select-item:hover {
     background: var(--gl-fill-2) !important;
     color: var(--primary);
 }
@@ -14504,13 +14144,7 @@ html:root body .theme-mini-box,
 html:root body .palette-btn { border: 1.5px solid rgba(255, 255, 255, 0.25); }
 html:root body .theme-mini-box.active,
 html:root body .palette-btn.active { border-color: #ffffff !important; box-shadow: 0 0 14px var(--primary) !important; }
-html:root body .install-sheet-icon {
-    background: linear-gradient(135deg,
-        color-mix(in srgb, var(--primary) 70%, transparent),
-        color-mix(in srgb, var(--primary-hover) 45%, transparent)) !important;
-    border: 1px solid var(--gl-border);
-    box-shadow: 0 8px 24px var(--primary-glow), var(--gl-hi) !important;
-}
+
 
 /* ===== پێشکەوتن و ئاگادارکردنەوە ===== */
 html:root body #progress-container { background: rgba(255, 255, 255, 0.1) !important; }
@@ -14572,15 +14206,13 @@ html:root body .subtitle-orig {
     box-shadow: none !important;
     border-radius: 10px !important;
 }
-html:root body .subtitle-kurd textarea,
-html:root body .subtitle-note textarea {
+html:root body .subtitle-kurd textarea {
     background: rgba(4, 7, 14, 0.6) !important;
     border: 1px solid rgba(255, 255, 255, 0.08) !important;
     box-shadow: none !important;
     border-radius: 10px !important;
 }
-html:root body .subtitle-kurd textarea:focus,
-html:root body .subtitle-note textarea:focus {
+html:root body .subtitle-kurd textarea:focus {
     border-color: var(--primary) !important;
     box-shadow: 0 0 0 3px var(--primary-glow) !important;
 }
@@ -15075,7 +14707,6 @@ html:root body.startup-bg .kf-hide-close { display: none !important; }
     ];
     var HOME_ICON = '<svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 11l9-8 9 8M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10"></path></svg>';
     var root = document.documentElement;
-    var oldMenu = document.getElementById('setupMenuDropdown');
     var tabs = document.getElementById('kf-tabs');
     var list = document.getElementById('kf-drawer-list');
     var drawer = document.getElementById('kf-drawer');
@@ -15084,30 +14715,17 @@ html:root body.startup-bg .kf-hide-close { display: none !important; }
     var titleEl = document.getElementById('kf-sec-title');
     if (!tabs || !list || !drawer) return;
 
-    // ئایکۆن و ناوی بەشەکان لە مێنیوی کۆنەوە وەردەگیرێن تا یەکسان بن
-    function findOld(fn) {
-        if (!oldMenu) return null;
-        var bs = oldMenu.querySelectorAll('.menu-btn-item');
-        for (var i = 0; i < bs.length; i++) {
-            if ((bs[i].getAttribute('onclick') || '').indexOf(fn + '(') > -1) return bs[i];
-        }
-        return null;
-    }
+    // ئایکۆن و ناوی بەشەکان (بەستراوەتەوە بە کۆدەکەوە، پێویست بە مێنیوی کۆن نییە)
+    var DATA = {"converter": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4\"></path></svg>", "label": "گۆڕینی فایل"}, "rtl": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6\"></path></svg>", "label": "چاککردنی RTL"}, "merge": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 00-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2\"></path></svg>", "label": "تێکەڵکردنی دوو فایل"}, "sdh": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z\"></path></svg>", "label": "پاککردنەوەی دەنگەکان (SDH)"}, "shortcuts": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4\"></path></svg>", "label": "کورتکراوەکانی کیبۆرد"}, "img": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z\"></path></svg>", "label": "گۆڕینی وێنە بۆ لینک"}, "mkv": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z\"></path></svg>", "label": "دەرهێنەری فایل لە MKV"}, "servers": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1\"></path></svg>", "label": "کۆدی سێرڤەرەکان"}, "history": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z\"></path></svg>", "label": "مێژووی کارەکان"}, "install": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4\"></path></svg>", "label": "دابەزاندنی ئەپ"}};
     SECS.forEach(function (s) {
-        var b = findOld(s.fn);
-        s.icon = '';
-        if (b) {
-            var svg = b.querySelector('svg'); var sp = b.querySelector('span');
-            if (svg) s.icon = svg.outerHTML;
-            if (sp && sp.textContent.trim()) s.label = sp.textContent.trim();
-        }
+        var d = DATA[s.k];
+        s.icon = d ? d.icon : '';
+        if (d && d.label) s.label = d.label;
     });
-    var installOld = document.getElementById('install-app-btn');
     var INSTALL = null;
-    if (installOld) {
-        var isvg = installOld.querySelector('svg'), isp = installOld.querySelector('span');
-        INSTALL = { k: 'install', icon: isvg ? isvg.outerHTML : '', label: isp ? isp.textContent.trim() : 'دابەزاندنی ئەپ' };
-    }
+    var inApp = false;
+    try { inApp = (typeof isAppMode === 'function') && isAppMode(); } catch (e) {}
+    if (!inApp && DATA.install) INSTALL = { k: 'install', icon: DATA.install.icon, label: DATA.install.label };
 
     function mk(k, icon, label) {
         var b = document.createElement('button');
@@ -15296,6 +14914,264 @@ html:root body.startup-bg .kf-hide-close { display: none !important; }
     nav.sync();
     root.classList.add('kf-ready');
 })();
+</script>
+<script type="module">
+function shiftSeconds(seconds, amount, direction) {
+  const delta = Math.abs(Number(amount) || 0) * (direction === 'earlier' ? -1 : 1);
+  return Math.max(0, Math.round((Number(seconds) + delta) * 1000) / 1000);
+}
+function accumulateShift(total, amount, direction) {
+  const delta = Math.abs(Number(amount) || 0) * (direction === 'earlier' ? -1 : 1);
+  return Math.round((Number(total) + delta) * 1000) / 1000;
+}
+function firstDialogueSeconds(text) {
+  const source = String(text).replace(/^\uFEFF/, '');
+  const seconds = time => time.replace(',', '.').split(':').map(Number).reduce((sum, part) => sum * 60 + part, 0);
+  if (/^\s*\[Events\]/im.test(source)) {
+    for (const line of source.split(/\r?\n/)) {
+      const match = line.match(/^\s*Dialogue:\s*[^,]*,(\d+:\d{2}:\d{2}\.\d+),[^,]*,[^,]*,[^,]*,[^,]*,[^,]*,[^,]*,[^,]*,(.*)$/i);
+      if (match && !/KURD\s*FOREST/i.test(match[2].replace(/\{[^}]*\}/g, ''))) return seconds(match[1]);
+    }
+    return null;
+  }
+  const match = source.match(/((?:\d+:)?\d{2}:\d{2}[.,]\d+)\s*-->/);
+  return match ? seconds(match[1]) : null;
+}
+function zeroInlineSpacing(text) {
+  let count = 0;
+  const content = String(text || '').replace(/\{[^}]*\}/g, block => block.replace(/\\fsp([+-]?(?:\d+(?:\.\d*)?|\.\d+))/gi, (tag, value) => {
+    if (Number(value) === 0) return tag;
+    count++;
+    return '\\fsp0';
+  }));
+  return { content, count };
+}
+function zeroStyleSpacing(lines) {
+  let inStyles = false, spacingIndex = -1, count = 0;
+  const content = lines.map(line => {
+    const trimmed = line.trim();
+    if (/^\[/.test(trimmed)) { inStyles = /^\[V4\+? Styles\]/i.test(trimmed); spacingIndex = -1; }
+    if (inStyles && /^Format:/i.test(trimmed)) spacingIndex = trimmed.slice(trimmed.indexOf(':') + 1).split(',').findIndex(x => x.trim().toLowerCase() === 'spacing');
+    if (inStyles && /^Style:/i.test(trimmed) && spacingIndex >= 0) {
+      const colon = line.indexOf(':');
+      const parts = line.slice(colon + 1).split(',');
+      const value = Number(parts[spacingIndex]);
+      if (parts[spacingIndex] !== undefined && Number.isFinite(value) && value !== 0) {
+        parts[spacingIndex] = '0'; count++;
+        return line.slice(0, colon + 1) + parts.join(',');
+      }
+    }
+    return line;
+  });
+  return { content, count };
+}
+function assToFrame(x, y, resX, resY, frame) {
+  return { x: frame.offsetLeft + x / resX * frame.width, y: frame.offsetTop + y / resY * frame.height };
+}
+function frameToAss(x, y, resX, resY, frame) {
+  return { x: (x - frame.offsetLeft) / frame.width * resX, y: (y - frame.offsetTop) / frame.height * resY };
+}
+function detectAssTechniques(text) {
+  const tags = new Set();
+  for (const block of String(text).match(/\{[^}]*\}/g) || []) {
+    for (const match of block.matchAll(/\\((?:[1-4][ca])|[a-zA-Z]+)/g)) tags.add(match[1].toLowerCase());
+  }
+  return [...tags];
+}
+function retainSelection(previous, next, explicitlyCleared = false) {
+  return next?.length ? Array.from(next) : explicitlyCleared ? [] : previous;
+}
+
+const el = id => document.getElementById(id);
+const toast = (text, type = 'info') => window.showToast(text, type);
+
+window.kfJumpToLine = function(index) {
+  const card = document.querySelector(`.subtitle-card[data-index="${index}"]`);
+  if (!card) return;
+  card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  document.activeElement?.blur?.();
+  card.classList.add('kf-audit-target');
+  setTimeout(() => card.classList.remove('kf-audit-target'), 2200);
+  const video = el('preview-video');
+  if (video?.src && originalData[index]) video.currentTime = originalData[index].startSec;
+};
+
+// The original fixed column was ScaleX, NOT Spacing; discover it from Format.
+window.fixAllFspZero = function() {
+  if (!isEditing || !originalData.length) return toast('سەرەتا فایلی ژێرنووس بکەرەوە.', 'info');
+  const previous = getCurrentSnapshot();
+  const tas = [...document.querySelectorAll('.subtitle-kurd textarea')];
+  let lineCount = 0;
+  originalData.forEach((item, i) => {
+    let changed = false;
+    for (const key of ['rawText', 'text']) {
+      if (typeof item[key] !== 'string') continue;
+      const result = zeroInlineSpacing(item[key]);
+      if (result.count) { item[key] = result.content; changed = true; }
+    }
+    if (tas[i]) {
+      const result = zeroInlineSpacing(tas[i].value);
+      if (result.count) { tas[i].value = result.content; changed = true; }
+    }
+    if (changed) lineCount++;
+  });
+  const styles = zeroStyleSpacing(assHeaderLines);
+  assHeaderLines = styles.content;
+  let techCount = 0;
+  if (typeof rawAssMasterEvents !== 'undefined') {
+    rawAssMasterEvents.forEach(event => {
+      if (!event.isTech || !event.rawLine) return;
+      const result = zeroInlineSpacing(event.rawLine);
+      if (result.count) { event.rawLine = result.content; techCount++; }
+    });
+  }
+  if (!lineCount && !styles.count && !techCount) return toast('هیچ fsp یان Spacing ـێکی ناسفر نییە؛ هیچ شتێک نەگۆڕدرا.');
+  historyStack.push(previous); historyStack.push(getCurrentSnapshot());
+  if (historyStack.length > 40) historyStack.splice(0, historyStack.length - 40);
+  redoStack = []; updateUndoRedoButtons(); saveSession();
+  kfRefreshPreviewAfterBulkEdit();
+  toast(`${lineCount} دێڕی fsp · ${styles.count} ستایلی Spacing · ${techCount} دێڕی تەکنیکی چاککران.`, 'success');
+};
+
+// File-picker cancellation must not invalidate a visible previous selection.
+document.querySelectorAll('input[type="file"]').forEach(input => {
+  let files = [];
+  const restore = () => {
+    if (!files.length || input.files.length) return;
+    const transfer = new DataTransfer(); files.forEach(f => transfer.items.add(f)); input.files = transfer.files;
+  };
+  input.addEventListener('change', () => {
+    files = retainSelection(files, input.files);
+    restore();
+  }, true);
+  input.addEventListener('cancel', restore);
+  input.closest('.file-box')?.querySelector('.clear-file-btn')?.addEventListener('click', () => { files = []; }, true);
+});
+
+// Keep audit in the right-hand action area, directly under its trigger.
+el('code-review-panel') && document.querySelector('.action-bar')?.appendChild(el('code-review-panel'));
+
+const shift = el('batchTimeShift');
+let total = 0, firstTime = null, previewSequence = 0;
+if (shift) {
+  const amountBox = shift; const actions = document.createElement('div'); actions.className = 'kf-time-actions';
+  actions.innerHTML = '<button type="button" class="btn btn-outline" data-direction="earlier">− پێشخستن</button><button type="button" class="btn btn-outline" data-direction="later">+ دواخستن</button>';
+  const note = document.createElement('p'); note.className = 'kf-time-note';
+  note.textContent = 'ژمارەی چرکە بنووسە؛ هەر جارێک پێشخستن دابگریت کات کەم دەبێتەوە، هەر جارێک دواخستن زیاد دەبێت.';
+  const time = document.createElement('div'); time.className = 'kf-first-time'; time.hidden = true;
+  const hidden = document.createElement('input'); hidden.type = 'hidden';
+  amountBox.after(actions, note, time);
+  // The original converter reads #batchTimeShift; keep the typed step separate from the accumulated total.
+  amountBox.id = 'kfShiftStep'; hidden.id = 'batchTimeShift'; hidden.value = '0'; amountBox.after(hidden);
+  if (!amountBox.value || amountBox.value === '0') amountBox.value = '1';
+  function update() {
+    hidden.value = String(Math.round(total * 1000) / 1000);
+    if (firstTime === null) { time.hidden = true; return; }
+    time.hidden = false;
+    const sign = total > 0 ? '+' : total < 0 ? '−' : '';
+    time.textContent = total ? `کاتی دێڕی یەکەم: ${formatTimeSRT(firstTime)} → ${formatTimeSRT(shiftSeconds(firstTime, Math.abs(total), total < 0 ? 'earlier' : 'later'))} (${sign}${Math.abs(Math.round(total*1000)/1000)} چرکە)` : `کاتی دێڕی یەکەم: ${formatTimeSRT(firstTime)}`;
+  }
+  actions.addEventListener('click', e => {
+    const button = e.target.closest('[data-direction]'); if (!button) return;
+    const step = Math.abs(parseFloat(amountBox.value) || 0); if (!step) return toast('ژمارەی چرکە بنووسە.');
+    total = accumulateShift(total, step, button.dataset.direction); update();
+  });
+  el('convertFileInput').addEventListener('change', async e => {
+    const seq = ++previewSequence, file = e.target.files[0]; firstTime = null; total = 0; update();
+    if (!file) return;
+    const text = await file.text(); if (seq !== previewSequence) return;
+    firstTime = firstDialogueSeconds(text); update();
+  });
+}
+
+// Font names are local device preferences, not shared project records.
+const fontInput = el('mergeFontInput');
+if (fontInput) {
+  let saved = []; try { saved = JSON.parse(localStorage.getItem('kf_font_name_suggestions') || '[]'); } catch {}
+  const names = new Set(['Speda Bold', 'KurdForest', ...saved.filter(x => typeof x === 'string')]);
+  const list = document.createElement('datalist'); list.id = 'kf-saved-fonts';
+  fontInput.setAttribute('list', list.id); fontInput.setAttribute('autocomplete', 'off');
+  fontInput.parentElement.after(list);
+  function render() {
+    list.replaceChildren();
+    [...names].forEach(name => {
+      const option = document.createElement('option'); option.value = name; list.appendChild(option);
+    });
+  }
+  const add = window.addMergeFont;
+  window.addMergeFont = function() {
+    fontInput.value.split(/[,;\n]+/).map(x => x.trim()).filter(Boolean).forEach(name => names.add(name));
+    try { localStorage.setItem('kf_font_name_suggestions', JSON.stringify([...names])); } catch {}
+    render(); return add();
+  }; render();
+}
+
+const tabs = el('kf-tabs');
+if (tabs) {
+  tabs.addEventListener('wheel', e => {
+    if (tabs.scrollWidth <= tabs.clientWidth) return;
+    e.preventDefault(); const delta = (e.deltaX || e.deltaY) * (e.deltaMode === 1 ? 16 : 1);
+    tabs.scrollLeft += getComputedStyle(tabs).direction === 'rtl' ? -delta : delta;
+  }, { passive: false });
+  let edgeSpeed = 0, raf = 0, last = 0;
+  function step(now) { if (!edgeSpeed) { raf = 0; return; } tabs.scrollLeft += edgeSpeed * Math.min((now - last) / 1000, .05); last = now; raf = requestAnimationFrame(step); }
+  tabs.addEventListener('mousemove', e => { const rect = tabs.getBoundingClientRect(); edgeSpeed = e.clientX < rect.left + 45 ? -180 : e.clientX > rect.right - 45 ? 180 : 0; if (edgeSpeed && !raf) { last = performance.now(); raf = requestAnimationFrame(step); } });
+  tabs.addEventListener('mouseleave', () => { edgeSpeed = 0; });
+}
+
+const video = el('preview-video');
+// Exact libass rendering is always used so 3D/position tags match the final output.
+const ensureLibass = () => { if (video?.src && LibassRenderer.status() === 'off') LibassRenderer.toggle(); };
+['loadedmetadata', 'loadeddata', 'play'].forEach(n => video.addEventListener(n, ensureLibass));
+window.toggleLibassPreview = function() { if (LibassRenderer.status() !== 'off' && LibassRenderer.isEnabled()) return toast('ڕەندەری libass هەمیشە چالاکە.'); LibassRenderer.toggle(); kfLibassRefresh?.(); };
+
+// Exact ASS rendering on the position tool shares the main engine and fonts.
+let exact = null, exactTrack = '', scheduled = 0, exactFonts = null, exactFontsLoading = false;
+function updateExact() {
+  scheduled = 0;
+  const modal = el('grid40-modal'); if (modal.style.display !== 'flex') { if (exact) { exact.destroy(); exact = null; } el('vDragScreenBox').classList.remove('kf-exact'); return; }
+  if (!window.JASSUB) return;
+  if (!exactFonts) {
+    if (!exactFontsLoading) {
+      exactFontsLoading = true;
+      LibassRenderer.loadFonts().then(fonts => { exactFonts = fonts; exactFontsLoading = false; scheduleExact(); }).catch(error => {
+        exactFontsLoading = false; console.error(error);
+        toast('فۆنتەکانی پێشبینین بار نەبوون؛ دووبارە هەوڵ بدەرەوە.', 'error');
+      });
+    }
+    return;
+  }
+  const metrics = getDragFrameMetrics(); if (!metrics) return;
+  const box = el('vDragScreenBox');
+  let canvas = el('kf-exact-drag');
+  if (!canvas) { canvas = document.createElement('canvas'); canvas.id = 'kf-exact-drag'; box.appendChild(canvas); }
+  canvas.style.left = metrics.offsetLeft + 'px'; canvas.style.top = metrics.offsetTop + 'px'; canvas.style.width = metrics.width + 'px'; canvas.style.height = metrics.height + 'px';
+  const item = originalData[currentStylingIndex]; if (!item) return;
+  const raw = currentDragRawText || item.rawText || '';
+  const clean = raw.replace(/\\(?:pos|move)\([^)]*\)/gi, '').replace(/\\(?:an\d|fs[+-]?[\d.]+|fr[xyz][+-]?[\d.]+|fsc[xy][+-]?[\d.]+|fa[xy][+-]?[\d.]+)/gi, '').replace(/\{\s*\}/g, '');
+  const fs = Number(el('vDragFontSizeInput').value) || 45;
+  const tags = `\\an${currentDragAlign}\\pos(${currentDragAssX},${currentDragAssY})\\fs${fs}\\frx${currentDragFrx}\\fry${currentDragFry}\\frz${currentDragFrz}\\fscx${currentDragFscx}\\fscy${currentDragFscy}\\fax${currentDragFax}\\fay${currentDragFay}`;
+  const header = LibassRenderer.buildScript().split('[Events]')[0];
+  const track = header + '[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n' + `Dialogue: 0,0:00:00.00,9:59:59.00,${item.assMeta?.style || 'Default'},,${item.assMeta?.marginL || 0},${item.assMeta?.marginR || 0},${item.assMeta?.marginV || 0},,{${tags}}${clean.replace(/\r?\n/g, '\\N')}\n`;
+  try {
+    if (!exact) {
+      const fonts = exactFonts.concat(FontStore.list().filter(f => f.ok && f.bytes).map(f => new Uint8Array(f.bytes)));
+      exact = new window.JASSUB({ canvas, subContent: track, workerUrl: new URL('./jassub/jassub-worker.js', window.location.href).href, wasmUrl: KF_ASSETS['jassub-worker.wasm'], modernWasmUrl: KF_ASSETS['jassub-worker-modern.wasm'], fonts, availableFonts: { 'noto sans arabic': KF_ASSETS['AdobeArabic-Regular.ttf'] }, fallbackFont: 'noto sans arabic', onDemandRender: false, offscreenRender: false, useLocalFonts: false, prescaleFactor: 1 });
+      exact.addEventListener('error', () => { box.classList.remove('kf-exact'); toast('پێشبینینی ورد بار نەبوو؛ پێشبینینی سادە چالاکە.', 'error'); });
+    } else if (track !== exactTrack) exact.setTrack(track);
+    exactTrack = track;
+    // JASSUB 1.8.8 resize() dereferences a video even in canvas-only mode.
+    // Use its canvas message with the actual video aspect ratio instead.
+    exact.sendMessage('canvas', { width: Math.round(metrics.width * devicePixelRatio), height: Math.round(metrics.height * devicePixelRatio), videoWidth: video.videoWidth || currentDragResX, videoHeight: video.videoHeight || currentDragResY });
+    exact.setCurrentTime(true, 1); box.classList.add('kf-exact');
+  } catch (error) { box.classList.remove('kf-exact'); console.error(error); }
+}
+function scheduleExact() { if (!scheduled) scheduled = requestAnimationFrame(updateExact); }
+for (const name of ['setDragElementPosition', 'renderDragPreviewStyled']) {
+  const original = window[name]; window[name] = function(...args) { const result = original(...args); scheduleExact(); return result; };
+}
+new MutationObserver(scheduleExact).observe(el('grid40-modal'), { attributes: true, attributeFilter: ['style'] });
+window.addEventListener('resize', scheduleExact);
 </script>
 </body>
 </html>

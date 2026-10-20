@@ -9,10 +9,16 @@
   "theme_color": "#080a0d",
   "icons": [
     {
-      "src": "icon.svg",
+      "src": "https://raw.githubusercontent.com/f5-hama/SubEdit/main/icon.svg",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://raw.githubusercontent.com/f5-hama/SubEdit/main/icon.svg",
       "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

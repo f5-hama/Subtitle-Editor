@@ -6791,6 +6791,12 @@ function openSubStyleModal(index) {
     let out4c = text.match(/\\4c&H([0-9A-Fa-f]{6})&?/i);
     setStrokeColor(outAlpha ? 'NONE' : (out3c ? bgrToHex(out3c[1]) : 'KEEP'), null);
     setShadowColor(shadAlpha ? 'NONE' : (out4c ? bgrToHex(out4c[1]) : 'KEEP'), null);
+    // بەهای سەرەتایی ڕەنگی لێوار/شادۆ: بۆ ئەوەی لە «جێبەجێکردن»دا بزانرێت بەکارهێنەر گۆڕیویەتی یان نا
+    if (window.__styleModalBase) {
+        const _sp = document.getElementById('strokeColorPicker'), _hp = document.getElementById('shadowColorPicker');
+        window.__styleModalBase.strokeInit = _sp ? _sp.value : 'KEEP';
+        window.__styleModalBase.shadowInit = _hp ? _hp.value : 'KEEP';
+    }
 
     let textColors = getExistingTextColors(text);
     let primaryColorHex = 'KEEP';
@@ -6944,20 +6950,38 @@ function kfStripTags(text, groups) {
            ئەگەر \bord=0 بێت، خودی نووسین (و شادۆکەی) تەڵخ دەبێت.
    بۆیە:  «شادۆ و ستڕۆک» = دڵنیابوون لەوەی لێوار>0 ـە (ئەگەر نەبوو لێوارێکی نادیار دادەنرێت)
           «نووسین»        = دڵنیابوون لەوەی لێوار=0 ـە */
-function kfFixBlurTarget(text, mode, styleBord, touched) {
-    var res = { text: text, changed: false, droppedBorder: false };
+function kfFixBlurTarget(text, mode, styleBord, touched, restoreBord, forceInvisible) {
+    var res = { text: text, changed: false, droppedBorder: false, droppedValue: 0 };
     if (!touched) return res;
     var L = AssTags.lastLeading(text);
     var blurNow = Math.max(AssTags.num(L.blur, 0), AssTags.num(L.be, 0));
     if (!(blurNow > 0)) return res;
     var effBord = L.bord ? AssTags.num(L.bord, 0) : (parseFloat(styleBord) || 0);
     if (mode === 'text') {
-        if (effBord > 0) { res.text = kfMergeTechTags(text, '\\bord0', null); res.changed = true; res.droppedBorder = true; }
+        if (effBord > 0) { res.text = kfMergeTechTags(text, '\\bord0', null); res.changed = true; res.droppedBorder = true; res.droppedValue = effBord; }
     } else if (effBord <= 0) {
-        res.text = kfMergeTechTags(text, '\\bord0.1' + (L['3a'] ? '' : '\\3a&HFF&'), null);
+        var rb = parseFloat(restoreBord) || 0;
+        if (rb > 0) {
+            // گەڕانەوەی ژمارەی ستڕۆکی پێشوو (کە لە دۆخی «نووسین» لابرابوو)
+            res.text = kfMergeTechTags(text, '\\bord' + rb, null);
+        } else {
+            res.text = kfMergeTechTags(text, '\\bord0.1' + ((L['3a'] && !forceInvisible) ? '' : '\\3a&HFF&'), null);
+        }
         res.changed = true;
     }
     return res;
+}
+
+// کاتێک تەڵخی لادەبرێت: ئەو گۆڕانکارییانەی بۆ تەڵخی کرابوون (لێواری نادیاری 0.1 یان لێواری سفر) دەگەڕێنرێنەوە
+function kfUndoBlurBorder(text, restoreBord) {
+    var L = AssTags.lastLeading(text);
+    if (Math.max(AssTags.num(L.blur, 0), AssTags.num(L.be, 0)) > 0) return text;
+    var rb = parseFloat(restoreBord) || 0;
+    var curB = L.bord ? AssTags.num(L.bord, NaN) : NaN;
+    if (rb > 0 && curB === 0) return kfMergeTechTags(text, '\\bord' + rb, null);
+    var a3 = L['3a'] ? String(L['3a'].arg).replace(/[&Hh]/g, '').toUpperCase() : '';
+    if (curB === 0.1 && a3 === 'FF') return kfMergeTechTags(text, '', null, ['bord', '3a']);
+    return text;
 }
 
 function applySubStyleToLine() {
@@ -7050,8 +7074,16 @@ function applySubStyleToLine() {
             if (fayMatch && !advancedTags.includes('\\fay')) advancedTags += fayMatch[0];
         }
 
-        const strokeCol = document.getElementById('strokeColorPicker') ? document.getElementById('strokeColorPicker').value : 'KEEP';
-        const shadowCol = document.getElementById('shadowColorPicker') ? document.getElementById('shadowColorPicker').value : 'KEEP';
+        // ڕەنگی لێوار/شادۆ: تەنها ئەگەر بەکارهێنەر گۆڕیبێتی وەک کردار حیساب دەکرێت (نەک ئەو بەهایەی لە فایلەکەوە هاتووە)
+        const strokeRaw = document.getElementById('strokeColorPicker') ? document.getElementById('strokeColorPicker').value : 'KEEP';
+        const shadowRaw = document.getElementById('shadowColorPicker') ? document.getElementById('shadowColorPicker').value : 'KEEP';
+        const strokeChanged = !B || B.strokeInit === undefined || strokeRaw !== B.strokeInit;
+        const shadowChanged = !B || B.shadowInit === undefined || shadowRaw !== B.shadowInit;
+        const strokeCol = strokeChanged ? strokeRaw : 'KEEP';
+        const shadowCol = shadowChanged ? shadowRaw : 'KEEP';
+        // ئەگەر ستڕۆک/شادۆ نادیار بوو (\3a/\4a=FF) و بەکارهێنەر ژمارەی >0 نووسی، دەبێت دیار بێت
+        const strokeMakeVisible = !!B && !strokeChanged && B.strokeInit === 'NONE' && chBord && parseFloat(bordVal) > 0;
+        const shadowMakeVisible = !!B && !shadowChanged && B.shadowInit === 'NONE' && chShad && parseFloat(shadVal) > 0;
 
         let cleanText = rawVal
             .replace(/\{\\pos\([^)]+\)\}/gi, '')
@@ -7113,12 +7145,14 @@ function applySubStyleToLine() {
         }
 
         if (chBord && bordVal !== '') tags += `\\bord${bordVal}`;
+        if (strokeMakeVisible) tags += '\\3a&H00&';
         if (strokeCol !== 'KEEP') {
             if (strokeCol === 'NONE') tags += '\\bord0\\3a&HFF&';
             else tags += `\\3a&H00&\\3c&H${hexToAssBgr(strokeCol)}&`;
         }
 
         if (chShad && shadVal !== '') tags += `\\shad${shadVal}`;
+        if (shadowMakeVisible) tags += '\\4a&H00&';
         if (shadowCol !== 'KEEP') {
             if (shadowCol === 'NONE') tags += '\\shad0\\4a&HFF&';
             else tags += `\\4a&H00&\\4c&H${hexToAssBgr(shadowCol)}&`;
@@ -7132,11 +7166,30 @@ function applySubStyleToLine() {
         //   «نووسین»        = لێوار=0 ـە، بۆیە خودی نووسینەکە تەڵخ دەبێت
         // هەر کاتێک تەڵخی، لێوار، ڕەنگی لێوار/شادۆ یان جۆری تەڵخی گۆڕدرا، ئەمە دووبارە دەسەلمێنرێت
         {
+            const idx = currentStylingIndex;
+            const memoMap = (window.__kfBordMemo = window.__kfBordMemo || {});
+            // ژمارەی ستڕۆکی پێشوو بۆ گەڕانەوە: یەکەم ئەوەی لە دۆخی «نووسین» لابرا، دواتر ستایل/تاگی ئەسڵی فایلەکە (ئەگەر دێڕەکە لە دۆخی «نووسین» بوو)
+            const prevBord = memoMap[idx] > 0 ? memoMap[idx] : (window.__kfBlurModeInit === 'text' ? kfOriginalBord(idx) : 0);
+            const userSetBord = chBord || strokeCol === 'NONE';
+            const restore = userSetBord ? 0 : prevBord;
+
             const beChanged = !!(window.__kfMore && /\\be/.test(window.__kfMore.tags));
             const touched = chBlur || chBord || beChanged || strokeCol !== 'KEEP' || shadowCol !== 'KEEP' || !!window.__kfBlurModeDirty;
-            const fx = kfFixBlurTarget(finalText, window.__kfBlurMode || 'stroke', sBord.val, touched);
+            // ئەگەر بەکارهێنەر ژمارەی ستڕۆکی کرد بە ٠ (و ڕەنگێکی دیاری نەکرد)، ستڕۆکە بچووکەکە دەبێت نادیار بێت
+            const forceInvisible = chBord && parseFloat(bordVal) <= 0 && (strokeCol === 'KEEP' || strokeCol === 'NONE');
+            const fx = kfFixBlurTarget(finalText, window.__kfBlurMode || 'stroke', sBord.val, touched, restore, forceInvisible);
             finalText = fx.text;
-            if (fx.droppedBorder) showToast('تەڵخی نووسین: لێوار لابرا، چونکە لە ASS نووسینی تەڵخ و لێواری ڕوون پێکەوە نابن', 'info');
+            if (fx.droppedBorder) {
+                memoMap[idx] = fx.droppedValue;
+                showToast('تەڵخی نووسین: لێوار لابرا، چونکە لە ASS نووسینی تەڵخ و لێواری ڕوون پێکەوە نابن', 'info');
+            } else if (fx.changed && restore > 0) {
+                delete memoMap[idx];
+            }
+            // ئەگەر تەڵخی بە تەواوی لابرا، لێوارەکە بگەڕێتەوە سەر ئەوەی پێشتر بوو
+            if (chBlur && !userSetBord) {
+                const undone = kfUndoBlurBorder(finalText, prevBord);
+                if (undone !== finalText) { finalText = undone; if (prevBord > 0) delete memoMap[idx]; }
+            }
         }
 
         // چاککردنی لکانی پیتەکان و ڕێگریکردن لە پێچەوانەبوونەوەی وشە جیاوازەکان
@@ -7191,15 +7244,30 @@ function toggleBlurMode() {
     kfSyncBlurModeBtn();
     showToast(window.__kfBlurMode === 'stroke' ? 'تەڵخی: تەنها شادۆ و ستڕۆک (نووسین ڕوون دەمێنێتەوە)' : 'تەڵخی: خودی نووسینەکە (بێ لێوار)', 'info');
 }
+// ژمارەی ستڕۆکی ئەسڵی دێڕەکە: تاگی \bord ی فایلەکە، یان Outline ی ستایل
+function kfOriginalBord(index) {
+    try {
+        const it = originalData[index];
+        const raw = it ? (it.rawText || it.text || '') : '';
+        const t = AssTags.first(raw, 'bord');
+        if (t && isFinite(parseFloat(t.arg))) return parseFloat(t.arg);
+        const st = kfLineStyle(index);
+        return st ? (parseFloat(st.outline) || 0) : 0;
+    } catch (e) { return 0; }
+}
 // کاتێک مۆداڵ دەکرێتەوە: ئەگەر دێڕەکە پێشتر تەڵخی هەبوو، جۆرەکەی لەسەر ڕاستییەکەی (لێوار>0 یان نا) دیاری دەکرێت
 function kfInferBlurMode(text, styleBord) {
     window.__kfBlurModeDirty = false;
+    window.__kfBlurModeInit = null;
     try {
         const L = AssTags.lastLeading(text);
         const blurNow = Math.max(AssTags.num(L.blur, 0), AssTags.num(L.be, 0));
         if (blurNow > 0) {
             const eff = L.bord ? AssTags.num(L.bord, 0) : (parseFloat(styleBord) || 0);
             window.__kfBlurMode = eff > 0 ? 'stroke' : 'text';
+            window.__kfBlurModeInit = window.__kfBlurMode;
+        } else {
+            window.__kfBlurMode = 'stroke';   // دێڕی بێ تەڵخی: هەمیشە لە «شادۆ و ستڕۆک» دەستپێدەکات، جۆری دێڕی پێشوو نامێنێتەوە
         }
     } catch (e) {}
     kfSyncBlurModeBtn();

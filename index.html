@@ -3103,6 +3103,7 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M7 12h10M9 18h6"/>
     </svg>
 </button>
+                <button class="top-btn" id="btn-rtl-toggle" onclick="kfToggleEditorRtl()" title="RTL (\\fe-1) — داگیرساندن/کوژاندنەوە" aria-pressed="false" style="font-size:11px;font-weight:900;letter-spacing:.3px;"><span dir="ltr">RTL</span></button>
                 <button class="top-btn" id="btn-select-mode" onclick="kfSel.toggleMode()" title="دیاریکردنی دێڕەکان">
                     <svg class="icon" style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
                 </button>
@@ -3333,6 +3334,10 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
             <button type="button" class="btn btn-outline" style="padding: 7px 10px; font-size: 11.5px; margin-top: 6px; margin-bottom: 14px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; color: #ef4444; border-color: rgba(239, 68, 68, 0.4);" onclick="openCensorModal()">
     <svg style="width: 15px; height: 15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"></path></svg>
     <span>سانسۆرکردنی بەشێکی ڤیدیۆ (Censor Tool)</span>
+</button>
+<button type="button" class="btn btn-outline" id="btnOpenMove" style="padding: 7px 10px; font-size: 11.5px; margin-top: -8px; margin-bottom: 14px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;" onclick="openMoveModal()">
+    <svg style="width: 15px; height: 15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m0 0l-5-5m5 5l-5 5"></path><circle cx="5" cy="12" r="1.6" fill="currentColor"></circle></svg>
+    <span>جوڵاندنی دەق لەسەر ڤیدیۆ (Move)</span>
 </button>
 
             <!-- ٢. Fade In و Fade Out -->
@@ -3759,6 +3764,128 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
         <div class="custom-modal-actions" style="margin-top:10px;">
             <button class="btn" onclick="confirmDraggablePosition()">دانان و جێبەجێکردن</button>
             <button class="btn btn-outline" onclick="document.getElementById('grid40-modal').style.display='none'">داخستن</button>
+        </div>
+    </div>
+</div>
+<!-- ===== پەنجەرەی جوڵاندنی دەق لەسەر ڤیدیۆ (\move) ===== -->
+<style id="kf-move-css">
+#move-modal .mv-txt { position:absolute; left:0; top:0; width:0; height:0; transform-origin:0 0; pointer-events:none; z-index:18; }
+#move-modal .mv-handle { position:absolute; width:16px; height:16px; margin:-8px 0 0 -8px; border-radius:50%; font-size:0; display:block; border:2px solid rgba(0,0,0,.75); box-shadow:0 2px 8px rgba(0,0,0,.55); z-index:30; cursor:grab; touch-action:none; direction:ltr; }
+#move-modal .kf-exact-mv .mv-txt { visibility:hidden; }
+/* ---------- جوڵاندنی دەق: کامل شاشە، بێ قەوسی، شاشەی ڤیدیۆ هەمان گەورەیی و شێوەی «دیاریکردنی شوێن» ---------- */
+html:root body #move-modal {
+    padding: 0 !important; align-items: stretch !important; justify-content: center !important;
+    background: radial-gradient(circle 48vmax at 100% 0%, color-mix(in srgb, var(--primary) 20%, transparent) 0%, transparent 100%), radial-gradient(circle 42vmax at 0% 100%, color-mix(in srgb, var(--primary) 14%, transparent) 0%, transparent 100%), #0a0e17 !important;
+    backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+    animation: none !important; transition: none !important;
+}
+html:root body #move-modal > .custom-modal-content {
+    width: 100% !important; max-width: none !important; max-height: none !important; min-height: calc(var(--kf-dvh, 1dvh) * 100);
+    margin: 0 !important; border-radius: 0 !important; border: 0 !important; box-shadow: none !important;
+    background: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+    overflow-y: auto !important; overflow-x: hidden !important; box-sizing: border-box !important;
+    padding: calc(14px + env(safe-area-inset-top, 0px)) 14px calc(96px + env(safe-area-inset-bottom, 0px)) !important;
+    animation: none !important; text-align: right;
+}
+html.kf-wide:root body #move-modal > .custom-modal-content { max-width: 920px !important; margin: 0 auto !important; padding-inline: 24px !important; }
+html:root body #move-modal #mvBox {
+    max-height: none !important; border-radius: 0 !important; border: 0 !important; overflow: hidden;
+    margin: 0 -6px; width: calc(100% + 12px) !important;
+}
+html.kf-wide:root body #move-modal #mvBox { margin: 0; width: 100% !important; }
+
+#move-modal .mv-handle { display:none !important; }
+#move-modal #mvGhostB, #move-modal #mvGhostB * { color:#22c55e !important; -webkit-text-fill-color:#22c55e !important; }
+#move-modal #mvGhostB { opacity:.85 !important; }
+#move-modal .kf-exact-mv #mvGhostB { visibility:visible; }
+#move-modal .mv-handle.sel { outline:3px solid rgba(250,204,21,.9); outline-offset:2px; }
+#move-modal .mv-row { display:flex; align-items:center; justify-content:space-between; gap:6px; font-size:11px; margin-top:6px; direction:ltr; }
+#move-modal .mv-row label { display:flex; align-items:center; gap:4px; }
+#move-modal .mv-row .tech-input { width:58px; }
+</style>
+<div id="move-modal" class="custom-modal-overlay">
+    <div class="custom-modal-content" style="max-width: 440px; padding: 14px; max-height: calc(var(--kf-vh, 1vh) * 92); overflow-y: auto; overflow-x: hidden;">
+        <h3 style="color:var(--primary); margin:0 0 8px 0; font-size:14px;">جوڵاندنی دەق لەسەر ڤیدیۆ:</h3>
+        <div style="font-size:10.5px; color:var(--text-muted); margin-bottom:8px; line-height:1.6;">دەقی <b style="color:#ffffff;">سپی</b> شوێنی سەرەکییە و دەقی <b style="color:#22c55e;">سەوز</b> ئەو شوێنەیە کە دەقەکە بۆی دەڕوات. ڕایانبکێشە، یان یەکێکیان هەڵبژێرە و لەسەر شاشە بدە.</div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; background: rgba(142,182,155,0.08); border:1px solid var(--border-color); padding:6px 10px; border-radius:8px;">
+            <div id="mvCoordDisplay" style="font-size:11px; font-weight:bold; color:var(--primary); direction:ltr;"></div>
+            <button type="button" class="btn btn-outline" style="padding:3px 8px; font-size:10px; width:auto; margin:0;" onclick="mvReset()">گەڕاندنەوە (Reset)</button>
+        </div>
+
+        <div id="mvBox" style="position:relative; width:100%; background:#000; border-radius:10px; overflow:hidden; border:1.5px solid var(--border-color); display:flex; align-items:center; justify-content:center; touch-action:none; user-select:none; -webkit-user-select:none;">
+        <div id="mvScreen" style="position:relative; width:100%; aspect-ratio:16/9; background:#0f1318; overflow:hidden; touch-action:none; user-select:none; -webkit-user-select:none;">
+            <video id="mvVideo" playsinline preload="auto" style="position:absolute; inset:0; width:100%; height:100%; object-fit:fill; pointer-events:none;"></video>
+            <svg id="mvSvg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:20; overflow:visible;">
+                <defs><marker id="mvArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#facc15"/></marker></defs>
+                <line id="mvLine" x1="0" y1="0" x2="0" y2="0" stroke="#facc15" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#mvArrow)"/>
+            </svg>
+            <div id="mvGhostA" class="mv-txt" style="opacity:.42;"></div>
+            <div id="mvGhostB" class="mv-txt" style="opacity:.42;"></div>
+            <div id="mvLive" class="mv-txt" style="z-index:22;"></div>
+            <div id="mvHA" class="mv-handle" style="background:#ffffff;"></div>
+            <div id="mvHB" class="mv-handle" style="background:#22c55e;"></div>
+        </div>
+        </div>
+        <div id="mvEngine" style="font-size:10px; margin-top:4px; text-align:center; color:var(--text-muted);"></div>
+        <div id="mvNoVideo" style="display:none; font-size:10.5px; color:#f59e0b; margin-top:4px;">ڤیدیۆ هەڵنەبژێردراوە؛ جوڵەکە بەبێ ڤیدیۆ پیشان دەدرێت.</div>
+
+        <div style="display:flex; align-items:center; gap:8px; margin-top:8px; direction:ltr;">
+            <button type="button" id="mvPlayBtn" class="btn btn-outline" style="width:auto; margin:0; padding:6px 14px; display:flex; align-items:center; justify-content:center;" onclick="mvTogglePlay()"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.52.85l10.4-6.5a1 1 0 0 0 0-1.7L9.52 4.65A1 1 0 0 0 8 5.5z"/></svg></button>
+            <input type="range" id="mvScrub" min="0" max="3000" step="10" value="0" style="flex:1;" oninput="mvScrubInput(this.value)">
+            <span id="mvTimeLbl" style="font-size:10.5px; min-width:78px; text-align:right; color:var(--text-muted);">0.00 / 3.00 s</span>
+        </div>
+
+        <div style="display:flex; gap:6px; margin-top:8px; align-items:center; justify-content:center;">
+            <button type="button" id="mvChipA" class="v-step-chip active" style="padding:4px 12px;" onclick="mvSelect('A')"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#fff;border:1px solid #000;vertical-align:-1px;margin-inline-end:5px;"></span>شوێنی سەرەکی</button>
+            <button type="button" id="mvChipB" class="v-step-chip" style="padding:4px 12px;" onclick="mvSelect('B')"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#22c55e;border:1px solid #000;vertical-align:-1px;margin-inline-end:5px;"></span>شوێنی ڕۆیشتوو</button>
+            <button type="button" class="v-step-chip" style="padding:4px 12px;" onclick="mvSwap()"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px; margin-inline-end:4px;" aria-hidden="true"><path d="M4 8h14"/><path d="M14 4l4 4-4 4"/><path d="M20 16H6"/><path d="M10 12l-4 4 4 4"/></svg>گۆڕینەوە</button>
+        </div>
+
+        <div class="v-nudge-panel" style="margin-top:8px;">
+            <div class="v-nudge-col">
+                <div class="v-nudge-title">
+                    <span>جوڵاندن</span>
+                    <div class="v-step-chips" id="mvStepChips">
+                        <button type="button" class="v-step-chip active" onclick="mvSetStep(1, this)">1x</button>
+                        <button type="button" class="v-step-chip" onclick="mvSetStep(2, this)">2x</button>
+                        <button type="button" class="v-step-chip" onclick="mvSetStep(5, this)">5x</button>
+                        <button type="button" class="v-step-chip" onclick="mvSetStep(10, this)">10x</button>
+                    </div>
+                </div>
+                <div class="v-nudge-pad">
+                    <button type="button" class="v-nudge-btn up" onclick="mvNudge(0,-1)" aria-label="سەرەوە"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg></button>
+                    <button type="button" class="v-nudge-btn down" onclick="mvNudge(0,1)" aria-label="خوارەوە"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+                    <button type="button" class="v-nudge-btn left" onclick="mvNudge(-1,0)" aria-label="چەپ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+                    <button type="button" class="v-nudge-btn right" onclick="mvNudge(1,0)" aria-label="ڕاست"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+                    <button type="button" class="v-nudge-btn center" onclick="mvAlign('center'); mvAlign('middle')" aria-label="ناوەڕاست"></button>
+                </div>
+            </div>
+            <div class="v-nudge-col">
+                <div class="v-nudge-title"><span>ڕێکخستنی شوێن</span></div>
+                <div class="v-align-grid">
+                    <button type="button" class="v-align-btn" onclick="mvAlign('left')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M3 4v16"/><rect x="6" y="6.5" width="13" height="4" rx="1"/><rect x="6" y="13.5" width="8" height="4" rx="1"/></svg><span>چەپ</span></button>
+                    <button type="button" class="v-align-btn" onclick="mvAlign('center')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 3v18"/><rect x="4" y="6.5" width="16" height="4" rx="1"/><rect x="7.5" y="13.5" width="9" height="4" rx="1"/></svg><span>ناوەڕاست</span></button>
+                    <button type="button" class="v-align-btn" onclick="mvAlign('right')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M21 4v16"/><rect x="5" y="6.5" width="13" height="4" rx="1"/><rect x="10" y="13.5" width="8" height="4" rx="1"/></svg><span>ڕاست</span></button>
+                    <button type="button" class="v-align-btn" onclick="mvAlign('top')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 3h16"/><rect x="6.5" y="6" width="4" height="13" rx="1"/><rect x="13.5" y="6" width="4" height="8" rx="1"/></svg><span>سەرەوە</span></button>
+                    <button type="button" class="v-align-btn" onclick="mvAlign('middle')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M3 12h18"/><rect x="6.5" y="4" width="4" height="16" rx="1"/><rect x="13.5" y="7.5" width="4" height="9" rx="1"/></svg><span>ناوەند</span></button>
+                    <button type="button" class="v-align-btn" onclick="mvAlign('bottom')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 21h16"/><rect x="6.5" y="5" width="4" height="13" rx="1"/><rect x="13.5" y="10" width="4" height="8" rx="1"/></svg><span>خوارەوە</span></button>
+                </div>
+            </div>
+        </div>
+
+        <div style="background: rgba(142,182,155,0.08); border:1px solid var(--border-color); border-radius:8px; padding:6px 10px; margin-top:8px;">
+            <div class="mv-row"><label>A: X <input type="number" id="mvAx" class="tech-input" oninput="mvNumInput()"></label><label>Y <input type="number" id="mvAy" class="tech-input" oninput="mvNumInput()"></label></div>
+            <div class="mv-row"><label>B: X <input type="number" id="mvBx" class="tech-input" oninput="mvNumInput()"></label><label>Y <input type="number" id="mvBy" class="tech-input" oninput="mvNumInput()"></label></div>
+            <div class="mv-row" title="کاتی دەستپێکردن و کۆتایی جوڵەکە بە میلیچرکە، لە سەرەتای دێڕەوە (t1, t2)">
+                <label>دەستپێک (ms) <input type="number" id="mvT1" class="tech-input" min="0" step="50" oninput="mvNumInput()"></label>
+                <label>کۆتایی (ms) <input type="number" id="mvT2" class="tech-input" min="0" step="50" oninput="mvNumInput()"></label>
+            </div>
+            <div id="mvCode" style="font-size:10.5px; direction:ltr; text-align:left; margin-top:6px; color:var(--primary); word-break:break-all;"></div>
+        </div>
+
+        <div class="custom-modal-actions" style="margin-top:10px;">
+            <button class="btn" onclick="confirmMoveModal()">دانانی جوڵە</button>
+            <button class="btn btn-outline" onclick="closeMoveModal()">داخستن</button>
         </div>
     </div>
 </div>
@@ -6207,6 +6334,8 @@ async function startEditing() {
             return transRaw ? smartApplyTags(orig.rawText || orig.text, transRaw) : '';
         });
         
+        // ئەوەی لە فایلەکەوە هاتووە (بۆ «سڕینەوەی ستایل»: تەنها ئەوەی خۆمان زیادمان کردووە دەسڕێتەوە)
+        originalData.forEach((o, i) => { o.kfInitText = state[i] || ''; });
         buildEditorUI(state);
     } catch (err) {
         console.error("Start editing error:", err);
@@ -6664,7 +6793,7 @@ function toggleFadeInputs(enabled) {
 }
 
 // کردنەوەی پەنجەرەی تەکنیک و خوێندنەوەی ستایلەکانی پێشووی سەر دێڕەکە
-function openSubStyleModal(index) {
+function openSubStyleModal(index, overrideText) {
     currentStylingIndex = index;
     const numEl = document.getElementById('styleModalLineNum');
     if (numEl) numEl.innerText = '#' + (index + 1);
@@ -6672,6 +6801,7 @@ function openSubStyleModal(index) {
     const card = document.querySelector(`.subtitle-card[data-index="${index}"]`);
     const ta = card ? card.querySelector('textarea') : null;
     let text = ta ? ta.value : ((originalData[index] && originalData[index].rawText) || (originalData[index] && originalData[index].text) || '');
+    if (typeof overrideText === 'string') text = overrideText;
 
     // جیاکردنەوەی بەشی تێبینی
     let notePart = subtitleNotes[index] || '';
@@ -7280,46 +7410,78 @@ function clearTechFontName() {
     showToast('فۆنتی دێڕەکە بەتاڵ کرا (وەک خۆی) — بۆ تۆمارکردن «جێبەجێکردن» دابگرە', 'info');
 }
 
-function clearLineStyles() {
-    const modalTa = document.getElementById('modalSubtitleLiveText');
-    if (modalTa) {
-        modalTa.value = modalTa.value
-            .replace(/\{[^}]*\}/g, '')          // سڕینەوەی هەموو تاگەکان
-            .replace(/[♪\|\u200F\u200E]/g, '')  // سڕینەوەی نیشانەی گۆرانی و تابلۆ و هێمای شاراوە
-            .replace(/\\h/gi, ' ')               // گۆڕینی بۆشاییەکان
-            .replace(/\\N/g, '\n')
-            .replace(/\s{2,}/g, ' ')             // لابردنی بۆشایی زیادە
-            .trim();
-    }
-
-    // ڕێکخستنەوەی هەموو کۆنترۆڵەکانی پەنجەرەکە
-    window.__styleModalBase = null;
-    resetTaSelection('modalSubtitleLiveText');
-    const fnClr = document.getElementById('techFontName');
-    if (fnClr) fnClr.value = '';
-    ['techBlurVal','techOutlineVal','techShadowVal','techFontSizeVal'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = '';
+/* ===== «سڕینەوەی ستایل»: تەنها ئەوەی ئێمە زیادمان کردووە دەسڕێتەوە، ئەوەی لە فایلەکە هەیە دەمێنێتەوە =====
+   بنەما = ئەو تاگانەی کاتی بارکردنی فایل لە دێڕەکەدا بوون (kfInitText) + تاگەکانی سەرەتای دێڕی ئەسڵی.
+   - هەر تاگێک کە لەو بنەمایەدا نییە (دەستکاریکراو یان نوێ) دەسڕدرێتەوە
+   - ئەو تاگانەی فایلەکە کە گۆڕدرابوون یان سڕدرابوونەوە دەگەڕێنرێنەوە
+   - ♪ و | و نیشانەکانی ئاراستە تەنها ئەگەر لە فایلەکەدا نەبوون دەسڕدرێنەوە */
+function kfFileBaseline(index) {
+    var it = (typeof originalData !== 'undefined') ? originalData[index] : null;
+    var initText = (it && typeof it.kfInitText === 'string') ? it.kfInitText : '';
+    var rawText = it ? (it.rawText || '') : '';
+    var plainText = it ? (it.text || '') : '';
+    // تۆکنەکانی فایلەکە: هەموو تاگەکانی دەقی بارکراو + تاگەکانی سەرەتای دێڕی ئەسڵی
+    var toks = [], fileLead = [];
+    var addAll = function (txt, leadOnly) {
+        var src = leadOnly ? AssTags.leading(txt).raw : txt;
+        var re = /\{([^{}]*)\}/g, m;
+        while ((m = re.exec(src)) !== null) AssTags.tokenize(m[1]).forEach(function (t) { if (t.name) toks.push(t); });
+    };
+    addAll(initText, false);
+    addAll(rawText, true);
+    // تاگەکانی سەرەتا کە دەبێت هەبن (یەکەم تاگی هەر گروپێک)
+    var seen = {};
+    [AssTags.leading(initText).raw, AssTags.leading(rawText).raw].forEach(function (raw) {
+        var re = /\{([^{}]*)\}/g, m;
+        while ((m = re.exec(raw)) !== null) AssTags.tokenize(m[1]).forEach(function (t) {
+            if (!t.name) return;
+            var g = AssTags.groupOf(t.name);
+            if (!(g in seen)) { seen[g] = 1; fileLead.push(t); }
+        });
     });
-    const boldBtn = document.getElementById('btnTechBold');
-    const italicBtn = document.getElementById('btnTechItalic');
-    if (boldBtn) boldBtn.classList.remove('active');
-    if (italicBtn) italicBtn.classList.remove('active');
-    const chkFade = document.getElementById('chkEnableFade');
-    if (chkFade) { chkFade.checked = false; toggleFadeInputs(false); }
-    const alignEl = document.getElementById('selectedAlignVal');
-    if (alignEl) alignEl.value = '2';
-    const extraTagsEl = document.getElementById('modalExtraLineTags');
-    if (extraTagsEl) extraTagsEl.value = '';
-    setStrokeColor('KEEP', null);
-    setShadowColor('KEEP', null);
-    const valInput = document.getElementById('selectedSubColorVal');
-    if (valInput) valInput.value = 'KEEP';
-    const textDisplay = document.getElementById('selectedColorCodeText');
-    if (textDisplay) textDisplay.innerText = 'وەک خۆی';
-    document.querySelectorAll('.custom-palette-grid .palette-btn').forEach(b => b.classList.remove('active'));
+    return { tokens: toks, lead: fileLead, hasChar: function (ch) { return (initText + rawText + plainText).indexOf(ch) !== -1; } };
+}
 
-    showToast("ستایل و نیشانەکان سڕانەوە — بۆ تۆمارکردن «جێبەجێکردن» دابگرە", "success");
+function kfStripAddedTags(text, base) {
+    var left = {};
+    base.tokens.forEach(function (t) { left[t.raw] = (left[t.raw] || 0) + 1; });
+    return String(text || '').replace(/\{([^{}]*)\}/g, function (all, inner) {
+        var kept = AssTags.tokenize(inner).filter(function (t) {
+            if (!t.name) return true;
+            if (left[t.raw] > 0) { left[t.raw]--; return true; }
+            return false;
+        });
+        var out = kept.map(function (t) { return t.raw; }).join('');
+        return out.trim() === '' ? '' : '{' + out + '}';
+    });
+}
+
+function clearLineStyles() {
+    const idx = currentStylingIndex;
+    const modalTa = document.getElementById('modalSubtitleLiveText');
+    if (idx == null || idx < 0 || !modalTa) return;
+    const base = kfFileBaseline(idx);
+
+    // ١. تاگەکانی زیادکراو دەسڕدرێنەوە (ئەوانەی فایلەکە دەمێنن)
+    let cur = kfStripAddedTags(modalTa.value, base);
+
+    // ٢. نیشانەکان: تەنها ئەگەر لە فایلەکەدا نەبوون
+    let removedSymbol = false;
+    ['\u266A', '|', '\u200F', '\u200E'].forEach(function (ch) {
+        if (cur.indexOf(ch) !== -1 && !base.hasChar(ch)) { cur = cur.split(ch).join(''); removedSymbol = true; }
+    });
+    if (removedSymbol) cur = cur.replace(/\\h/gi, ' ').replace(/[ \t]{2,}/g, ' ');
+    cur = cur.replace(/\{\s*\}/g, '').trim();
+
+    // ٣. تاگەکانی سەرەتای فایلەکە کە گۆڕدرابوون یان نەمابوون دەگەڕێنرێنەوە (لە شوێنی دروست)
+    const L = AssTags.lastLeading(cur);
+    const missing = base.lead.filter(function (t) { return !(AssTags.groupOf(t.name) in L); }).map(function (t) { return t.raw; }).join('');
+    if (missing) cur = kfMergeTechTags(cur, missing, null);
+
+    // ٤. مۆداڵەکە لەسەر ئەم دەقە نوێیە دووبارە دەکرێتەوە، بۆ ئەوەی هەموو کۆنترۆڵەکان لەگەڵ فایلەکە بگونجێن
+    const note = (typeof subtitleNotes !== 'undefined' && subtitleNotes[idx]) ? subtitleNotes[idx] : '';
+    openSubStyleModal(idx, note ? cur + '\\N' + note : cur);
+    showToast("ئەوەی خۆمان زیادمان کردبوو سڕایەوە و تاگەکانی فایلەکە ماونەتەوە — بۆ تۆمارکردن «جێبەجێکردن» دابگرە", "success");
 }
 
 
@@ -13225,7 +13387,7 @@ function runCodeReview() {
         html += '<div class="cr-item ' + (r.errs.length ? 'err' : 'warn') + '">' +
             '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; direction:rtl;">' +
                 '<span class="cr-line" style="font-weight:bold; font-size:13px;">دێڕی #' + r.n + '</span>' +
-                '<button type="button" class="btn btn-outline kf-jump" onclick="kfJumpToLine(' + i + ')">↗ بڕۆ بۆ دێڕ</button>' +
+                '<button type="button" class="btn btn-outline kf-jump" onclick="kfJumpToLine(' + i + ')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px"><path d="M7 17L17 7M9 7h8v8"/></svg> بڕۆ بۆ دێڕ</button>' +
                 '<button type="button" class="btn btn-outline" style="width:auto; padding:3px 9px; font-size:11px; color:#22c55e; border-color:rgba(34,197,94,0.4); display:inline-flex; align-items:center; gap:4px; margin:0;" onclick="crAutoFixLine(' + i + ')">' +
                     '<svg style="width:12px;height:12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M5 13l4 4L19 7"/></svg>' +
                     '<span>چاککردنی خۆکار</span>' +
@@ -13378,17 +13540,6 @@ function kfMoreApply(clean) {
     });
     return { clean: clean, tags: tags };
 }
-
-// «سڕینەوەی ستایل» کۆنترۆڵە نوێیەکانیش خاڵی دەکاتەوە
-(function () {
-    var orig = clearLineStyles;
-    clearLineStyles = function () {
-        var r = orig.apply(this, arguments);
-        ['techSpacingVal', 'techBeVal', 'techAlphaVal'].forEach(function (id) { var e = kfEl(id); if (e) e.value = ''; });
-        ['btnTechUnder', 'btnTechStrike'].forEach(function (id) { var e = kfEl(id); if (e) e.classList.remove('active'); });
-        return r;
-    };
-})();
 
 /* ================= بزوێنەری سانسۆر (نەرم و بێ وەستان + هاوکاتکردنی دەقیقی کات) ================= */
 let censorAddedList = [];
@@ -14158,6 +14309,41 @@ function fixAllFspZero() {
         showToast("هیچ بۆشاییەکی پیت (fsp) نەدۆزرایەوە، هەمووی ئاساییە!", "info");
     }
 }
+
+// ---------- دووگمەی RTL لە ئیدیتەر (هەمان سیستەمی RTL Fix — {\fe-1}) ----------
+function kfEditorRtlIsOn() {
+    if (typeof originalData === 'undefined' || !originalData.length) return false;
+    return originalData.some(it => /\\fe-1(?!\d)/.test(it && it.rawText || '')) ||
+        Array.prototype.some.call(document.querySelectorAll('.subtitle-kurd textarea'), ta => /\\fe-1(?!\d)/.test(ta.value));
+}
+function kfSyncRtlBtn() {
+    const b = document.getElementById('btn-rtl-toggle'); if (!b) return;
+    const on = kfEditorRtlIsOn();
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    b.classList.toggle('kf-rtl-on', on);
+    b.style.background = ''; b.style.color = '';
+}
+function kfToggleEditorRtl() {
+    if (!isEditing || !originalData.length) { showToast("تکایە سەرەتا فایلێکی ژێرنووس بکەرەوە!", "warning"); return; }
+    const turnOn = !kfEditorRtlIsOn();
+    const mode = turnOn ? 'hardsub' : 'clean';
+    const fx = t => (t && t.trim()) ? RtlEngine.fixAssText(t, mode) : t;
+    const tas = document.querySelectorAll('.subtitle-kurd textarea');
+    tas.forEach(ta => { const v = fx(ta.value); if (v !== ta.value) ta.value = v; });
+    originalData.forEach(it => { if (it && it.rawText) it.rawText = fx(it.rawText); });
+    historyStack.push(getCurrentSnapshot());
+    if (historyStack.length > 40) historyStack.shift();
+    redoStack = [];
+    updateUndoRedoButtons();
+    saveSession();
+    if (typeof renderSubtitlesNow === 'function') renderSubtitlesNow();
+    kfSyncRtlBtn();
+    showToast(turnOn ? "RTL داگیرسا — {\\fe-1} بۆ هەموو دێڕەکان دانرا" : "RTL کوژایەوە — {\\fe-1} لابرا", turnOn ? "success" : "info");
+}
+document.addEventListener('DOMContentLoaded', () => {
+    const scr = document.getElementById('editor-screen');
+    if (scr) new MutationObserver(() => { if (scr.style.display === 'block') setTimeout(kfSyncRtlBtn, 300); }).observe(scr, { attributes: true, attributeFilter: ['style'] });
+});
 
 </script>
 
@@ -15493,5 +15679,702 @@ for (const name of ['setDragElementPosition', 'renderDragPreviewStyled']) {
 new MutationObserver(scheduleExact).observe(el('grid40-modal'), { attributes: true, attributeFilter: ['style'] });
 window.addEventListener('resize', scheduleExact);
 </script>
+<script id="kf-move-modal">
+/* =====================================================================
+   جوڵاندنی دەق لەسەر ڤیدیۆ — دەنووسێتە \move(x1,y1,x2,y2[,t1,t2])
+   - ڤیدیۆکە لە کاتی ئەو دێڕەوە پیشان دەدرێت و لەگەڵ جوڵەی دەقەکە کار دەکات
+   - A = شوێنی دەستپێک ، B = شوێنی کۆتایی (بە یەکەی ڕێزۆلوشنی فایلەکە)
+   - ئاڕاستە (\an) وەک ئەوەی لە مۆداڵی تەکنیک هەڵبژێردراوە
+   ===================================================================== */
+(function () {
+    var mv = null, raf = 0;
+    var ICON_PLAY = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.52.85l10.4-6.5a1 1 0 0 0 0-1.7L9.52 4.65A1 1 0 0 0 8 5.5z"/></svg>', ICON_PAUSE = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4.2" height="14" rx="1.2"/><rect x="13.8" y="5" width="4.2" height="14" rx="1.2"/></svg>';
+    function el(id) { return document.getElementById(id); }
+    function num(v, d) { var n = parseFloat(v); return isFinite(n) ? n : d; }
+    function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+
+    /* ===== ڕەندەری ورد بە libass (JASSUB) — هەمان ڕێگای مۆداڵی دیاریکردنی شوێن ===== */
+    var exact = null, exactTrack = '', exactOn = false, exactFonts = null, exactFontsLoading = false, exactTries = 0, exactSched = 0;
+
+    function fmtTime(sec) {
+        var cs = Math.max(0, Math.round(sec * 100)), h = Math.floor(cs / 360000); cs -= h * 360000;
+        var m = Math.floor(cs / 6000); cs -= m * 6000; var s2 = Math.floor(cs / 100); cs -= s2 * 100;
+        return h + ':' + String(m).padStart(2, '0') + ':' + String(s2).padStart(2, '0') + '.' + String(cs).padStart(2, '0');
+    }
+    function buildTrack() {
+        var it = originalData[mv.idx] || {}, meta = it.assMeta || {};
+        var header = LibassRenderer.buildScript().split('[Events]')[0];
+        var clean = kfStripTags(mv.rawText || '', KF_POS_SIZE_GROUPS);
+        var tags = '\\an' + mv.align + '\\move(' + Math.round(mv.ax) + ',' + Math.round(mv.ay) + ',' + Math.round(mv.bx) + ',' + Math.round(mv.by) + ',' + Math.round(mv.t1) + ',' + Math.round(mv.t2) + ')';
+        if (mv.fsTag > 0) tags += '\\fs' + mv.fsTag;
+        var r = mv.rot;
+        if (r.frx) tags += '\\frx' + r.frx; if (r.fry) tags += '\\fry' + r.fry; if (r.frz) tags += '\\frz' + r.frz;
+        if (r.fscx !== 100) tags += '\\fscx' + r.fscx; if (r.fscy !== 100) tags += '\\fscy' + r.fscy;
+        if (r.fax) tags += '\\fax' + r.fax; if (r.fay) tags += '\\fay' + r.fay;
+        return header + '[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n' +
+            'Dialogue: 0,0:00:00.00,' + fmtTime(mv.dur + 5) + ',' + (meta.style || 'Default') + ',,' + (meta.marginL || 0) + ',' + (meta.marginR || 0) + ',' + (meta.marginV || 0) + ',,{' + tags + '}' + clean.replace(/\r?\n/g, '\\N') + '\n';
+    }
+    function setEngineLabel() {
+        var e = el('mvEngine'); if (!e) return;
+        e.textContent = exactOn ? 'ڕەندەری ورد: libass (JASSUB) — وەک هاردسەبی کۆتایی' : 'پێشبینینی سادە (libass ئامادە نییە یان بار نەبووە)';
+        e.style.color = exactOn ? 'var(--primary)' : '#f59e0b';
+    }
+    function exactFail() { stopKeepAlive(); exactOn = false; var b = el('mvScreen'); if (b) b.classList.remove('kf-exact-mv'); setEngineLabel(); }
+    function renderExactAt(t) {
+        if (!exact || !exactOn || !mv) return;
+        try { exact.setCurrentTime(true, Math.max(0, Math.min(t / 1000, mv.dur))); } catch (e) { }
+    }
+    function syncExact() {
+        if (!exact || !exactOn || !mv) return;
+        var track = buildTrack();
+        if (track !== exactTrack) {
+            if (exactSched) return;
+            exactSched = requestAnimationFrame(function () {
+                exactSched = 0; if (!exact || !mv) return;
+                var tr = buildTrack();
+                try { exact.setTrack(tr); exactTrack = tr; } catch (e) { console.error(e); }
+                renderExactAt(mv.t);
+            });
+        } else renderExactAt(mv.t);
+    }
+    function ensureExact() {
+        if (!mv) return;
+        if (!window.JASSUB || typeof LibassRenderer === 'undefined') {
+            setEngineLabel();
+            if (exactTries++ < 20) setTimeout(function () { if (mv) ensureExact(); }, 400); else setEngineLabel();
+            return;
+        }
+        if (!exactFonts) {
+            if (!exactFontsLoading) {
+                exactFontsLoading = true;
+                LibassRenderer.loadFonts().then(function (f) { exactFonts = f; exactFontsLoading = false; if (mv) ensureExact(); })
+                    .catch(function (e) { exactFontsLoading = false; console.error(e); setEngineLabel(); });
+            }
+            return;
+        }
+        var box = el('mvScreen'), W = box.clientWidth, H = box.clientHeight;
+        if (!W || !H) return;
+        var canvas = el('kf-exact-move');
+        if (!canvas) { canvas = document.createElement('canvas'); canvas.id = 'kf-exact-move'; canvas.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:4;'; box.insertBefore(canvas, el('mvSvg')); }
+        var track = buildTrack();
+        try {
+            if (!exact) {
+                var fonts = exactFonts.concat(FontStore.list().filter(function (f) { return f.ok && f.bytes; }).map(function (f) { return new Uint8Array(f.bytes); }));
+                exact = new window.JASSUB({ canvas: canvas, subContent: track, workerUrl: new URL('./jassub/jassub-worker.js', window.location.href).href, wasmUrl: KF_ASSETS['jassub-worker.wasm'], modernWasmUrl: KF_ASSETS['jassub-worker-modern.wasm'], fonts: fonts, availableFonts: { 'noto sans arabic': KF_ASSETS['AdobeArabic-Regular.ttf'] }, fallbackFont: 'noto sans arabic', onDemandRender: false, offscreenRender: false, useLocalFonts: false, prescaleFactor: 1 });
+                exact.addEventListener('error', function () { exactFail(); });
+            } else if (track !== exactTrack) exact.setTrack(track);
+            exactTrack = track;
+            var dpr = window.devicePixelRatio || 1;
+            exact.sendMessage('canvas', { width: Math.round(W * dpr), height: Math.round(H * dpr), videoWidth: mv.vw || mv.resX, videoHeight: mv.vh || mv.resY });
+            exactOn = true; box.classList.add('kf-exact-mv'); setEngineLabel();
+            renderExactAt(mv.t); startKeepAlive();
+        } catch (e) { console.error(e); exactFail(); }
+    }
+
+    // JASSUB لەوانەیە یەکەم نامە لەکار بکەوێت پێش ئامادەبوونی worker؛ بۆیە چەند جارێک دووبارە دەکرێتەوە
+    // و ئەگەر canvas بەتاڵ مایەوە، خۆکار دەگەڕێتەوە سەر پێشبینینی سادە (بۆ ئەوەی دەق هەرگیز ون نەبێت)
+    var keepTimer = 0, keepCount = 0, exactVerified = false;
+    function canvasHasInk() {
+        var c = el('kf-exact-move'); if (!c || !c.width || !c.height) return false;
+        try {
+            var ctx = c.getContext('2d'); if (!ctx) return true;       // ناتوانرێت بپشکنرێت: وەک ڕاست وەریدەگرین
+            var d = ctx.getImageData(0, 0, c.width, c.height).data;
+            for (var i = 3; i < d.length; i += 16) if (d[i] > 8) return true;
+            return false;
+        } catch (e) { return true; }
+    }
+    function startKeepAlive() {
+        stopKeepAlive(); keepCount = 0; exactVerified = false;
+        keepTimer = setInterval(function () {
+            if (!mv || !exact || !exactOn) { stopKeepAlive(); return; }
+            if (!mv.playing) renderExactAt(mv.t);
+            keepCount++;
+            if (!exactVerified) {
+                if (canvasHasInk()) { exactVerified = true; stopKeepAlive(); }
+                else if (keepCount >= 12) {       // ~٣.٦ چرکە
+                    stopKeepAlive(); exactFail();
+                    var e = el('mvEngine'); if (e) e.textContent = 'libass شتێکی نەکێشا؛ پێشبینینی سادە پیشان دەدرێت';
+                }
+            }
+        }, 300);
+    }
+    function stopKeepAlive() { if (keepTimer) { clearInterval(keepTimer); keepTimer = 0; } }
+    function destroyExact() {
+        stopKeepAlive();
+        if (exactSched) { cancelAnimationFrame(exactSched); exactSched = 0; }
+        if (exact) { try { exact.destroy(); } catch (e) { } exact = null; }
+        exactOn = false; exactTrack = ''; exactTries = 0;
+        var c = el('kf-exact-move'); if (c && c.parentNode) c.parentNode.removeChild(c);
+        var b = el('mvScreen'); if (b) b.classList.remove('kf-exact-mv');
+    }
+
+    function screenSize() { var b = el('mvScreen'); return { W: b.clientWidth || 1, H: b.clientHeight || 1 }; }
+
+    // شوێنی دەق لە کاتی t (ms) — هەمان یاسای libass
+    function posAt(t) {
+        var p;
+        if (mv.t2 <= mv.t1) p = (t >= mv.t2) ? 1 : 0;
+        else p = clamp((t - mv.t1) / (mv.t2 - mv.t1), 0, 1);
+        return { x: mv.ax + (mv.bx - mv.ax) * p, y: mv.ay + (mv.by - mv.ay) * p };
+    }
+
+    function place(node, x, y) {
+        var s = screenSize();
+        node.style.left = (x / mv.resX * s.W).toFixed(2) + 'px';
+        node.style.top = (y / mv.resY * s.H).toFixed(2) + 'px';
+    }
+
+    function render() {
+        if (!mv) return;
+        var s = screenSize();
+        place(el('mvGhostA'), mv.ax, mv.ay);
+        place(el('mvGhostB'), mv.bx, mv.by);
+        place(el('mvHA'), mv.ax, mv.ay);
+        place(el('mvHB'), mv.bx, mv.by);
+        var ln = el('mvLine');
+        ln.setAttribute('x1', (mv.ax / mv.resX * s.W).toFixed(1)); ln.setAttribute('y1', (mv.ay / mv.resY * s.H).toFixed(1));
+        ln.setAttribute('x2', (mv.bx / mv.resX * s.W).toFixed(1)); ln.setAttribute('y2', (mv.by / mv.resY * s.H).toFixed(1));
+        var q = posAt(mv.t);
+        place(el('mvLive'), q.x, q.y);
+        el('mvHA').classList.toggle('sel', mv.active === 'A');
+        el('mvHB').classList.toggle('sel', mv.active === 'B');
+        el('mvChipA').classList.toggle('active', mv.active === 'A');
+        el('mvChipB').classList.toggle('active', mv.active === 'B');
+        el('mvAx').value = Math.round(mv.ax); el('mvAy').value = Math.round(mv.ay);
+        el('mvBx').value = Math.round(mv.bx); el('mvBy').value = Math.round(mv.by);
+        el('mvT1').value = Math.round(mv.t1); el('mvT2').value = Math.round(mv.t2);
+        el('mvCode').textContent = moveTag();
+        var cd = el('mvCoordDisplay'); if (cd) { var ck = mv.active === 'A' ? [mv.ax, mv.ay] : [mv.bx, mv.by]; cd.innerHTML = '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;margin-inline-end:5px;background:' + (mv.active === 'A' ? '#e5e7eb' : '#22c55e') + '"></span>' + 'X: ' + Math.round(ck[0]) + ', Y: ' + Math.round(ck[1]) + ' [' + mv.resX + '×' + mv.resY + ']'; }
+        el('mvScrub').value = mv.t;
+        el('mvTimeLbl').textContent = (mv.t / 1000).toFixed(2) + ' / ' + mv.dur.toFixed(2) + ' s';
+        syncExact();
+    }
+
+    function moveTag() {
+        var base = '\\move(' + Math.round(mv.ax) + ',' + Math.round(mv.ay) + ',' + Math.round(mv.bx) + ',' + Math.round(mv.by);
+        var full = Math.round(mv.t1) <= 0 && Math.round(mv.t2) >= Math.round(mv.dur * 1000);
+        return base + (full ? '' : ',' + Math.round(mv.t1) + ',' + Math.round(mv.t2)) + ')';
+    }
+
+    // دەقەکە بە ستایلی ڕاستەقینەی فایلەکە (هەمان ڕێگای مۆداڵی ڕاکێشان)
+    function buildText() {
+        var s = screenSize(), W = s.W, H = s.H;
+        var style0 = (typeof getDragLineStyle === 'function') ? getDragLineStyle() : { fontname: 'KurdForest', fontsize: 45, primaryColor: '#FFFFFF', outlineColor: '#000000', shadowColor: '#000000', outline: 1.5, shadow: 1, alignment: '2', marginL: 10, marginR: 10, marginV: 18, scaleX: 100, scaleY: 100, spacing: 0 };
+        var st = Object.assign({}, style0);
+        if (mv.fs > 0) st.fontsize = mv.fs;
+        var scaleRatio = H / mv.resY;
+        var bordScale = AssLayout.isScaledBorder() ? scaleRatio : (H / (mv.vh || mv.resY));
+        var meta = (originalData[mv.idx] && originalData[mv.idx].assMeta) || {};
+        var p = AssLayout.eventParams(mv.text, style0, meta);
+        var out = {};
+        var runs = AssLayout.runsHtml(mv.text, st, scaleRatio, { bordScale: bordScale, out: out });
+        var maxW = (mv.resX - p.mL - p.mR) * (W / mv.resX);
+        var html = '<div class="ass-blk" dir="auto" style="' + AssLayout.blockCss(mv.align, out.L, maxW, out.font) + '">' + runs + '</div>';
+        var tf = AssLayout.transformCss(mv.rot, { sy: H / mv.resY });
+        ['mvGhostA', 'mvGhostB', 'mvLive'].forEach(function (id) { el(id).innerHTML = html; el(id).style.transform = tf; });
+    }
+
+    function layout() {
+        var outer = el('mvBox'), box = el('mvScreen');
+        var aspect = (mv.vw && mv.vh) ? (mv.vw / mv.vh) : (mv.resX / mv.resY);
+        var availW = Math.max(120, outer.clientWidth || 360);
+        var maxH = Math.max(160, window.innerHeight * 0.56);          // هەمان سنووری «دیاریکردنی شوێن»: ٥٦٪ی بەرزی شاشە
+        var h = Math.min(availW / aspect, maxH), w = h * aspect;
+        box.style.width = w.toFixed(1) + 'px';
+        box.style.height = h.toFixed(1) + 'px';
+        box.style.aspectRatio = String(aspect);
+    }
+
+    function seekVideo(t) {
+        var v = el('mvVideo');
+        if (!mv.hasVideo || !v) return;
+        var target = mv.start + t / 1000;
+        if (isFinite(v.duration)) target = clamp(target, 0, v.duration);
+        try { v.currentTime = target; } catch (e) { }
+    }
+
+    function setT(t, seek) {
+        mv.t = clamp(t, 0, mv.dur * 1000);
+        if (seek) seekVideo(mv.t);
+        render();
+    }
+
+    function stopPlay() {
+        if (!mv) return;
+        mv.playing = false;
+        cancelAnimationFrame(raf);
+        var v = el('mvVideo'); if (v && mv.hasVideo) { try { v.pause(); } catch (e) { } }
+        el('mvPlayBtn').innerHTML = ICON_PLAY;
+    }
+
+    function tick() {
+        if (!mv || !mv.playing) return;
+        var v = el('mvVideo'), t;
+        if (mv.clock) t = mv.tBase + (performance.now() - mv.t0);
+        else t = (v.currentTime - mv.start) * 1000;
+        if (t >= mv.dur * 1000 - 8 || (!mv.clock && v.ended)) { setT(mv.dur * 1000, false); stopPlay(); return; }
+        setT(t, false);
+        raf = requestAnimationFrame(tick);
+    }
+
+    window.mvTogglePlay = function () {
+        if (!mv) return;
+        if (mv.playing) { stopPlay(); return; }
+        if (mv.t >= mv.dur * 1000 - 8) setT(0, true);
+        mv.playing = true;
+        el('mvPlayBtn').innerHTML = ICON_PAUSE;
+        var v = el('mvVideo');
+        mv.clock = !mv.hasVideo;
+        mv.tBase = mv.t; mv.t0 = performance.now();
+        if (mv.hasVideo) {
+            seekVideo(mv.t);
+            var pr = null;
+            try { pr = v.play(); } catch (e) { }
+            if (pr && pr.catch) pr.catch(function () { mv.clock = true; mv.tBase = mv.t; mv.t0 = performance.now(); });
+        }
+        raf = requestAnimationFrame(tick);
+    };
+    window.mvScrubInput = function (val) { if (!mv) return; if (mv.playing) stopPlay(); setT(num(val, 0), true); };
+    var mvStep = 1;
+    window.mvSetStep = function (n, btn) {
+        mvStep = n;
+        var w = el('mvStepChips'); if (w) w.querySelectorAll('.v-step-chip').forEach(function (b) { b.classList.toggle('active', b === btn); });
+    };
+    function mvSetActive(x, y) {
+        x = clamp(Math.round(x), -mv.resX, mv.resX * 2); y = clamp(Math.round(y), -mv.resY, mv.resY * 2);
+        if (mv.active === 'A') { mv.ax = x; mv.ay = y; } else { mv.bx = x; mv.by = y; }
+        render();
+    }
+    window.mvNudge = function (dx, dy) {
+        if (!mv) return;
+        var cx = mv.active === 'A' ? mv.ax : mv.bx, cy = mv.active === 'A' ? mv.ay : mv.by;
+        mvSetActive(cx + dx * mvStep, cy + dy * mvStep);
+    };
+    window.mvAlign = function (w) {
+        if (!mv) return;
+        var cx = mv.active === 'A' ? mv.ax : mv.bx, cy = mv.active === 'A' ? mv.ay : mv.by;
+        var mx = Math.round(mv.resX * 0.08), my = Math.round(mv.resY * 0.08);
+        if (w === 'left') cx = mx; else if (w === 'center') cx = mv.resX / 2; else if (w === 'right') cx = mv.resX - mx;
+        else if (w === 'top') cy = my; else if (w === 'middle') cy = mv.resY / 2; else if (w === 'bottom') cy = mv.resY - my;
+        mvSetActive(cx, cy);
+    };
+    window.mvReset = function () {
+        if (!mv || !mv.orig) return;
+        if (mv.playing) stopPlay();
+        var o = mv.orig; mv.ax = o.ax; mv.ay = o.ay; mv.bx = o.bx; mv.by = o.by; mv.t1 = o.t1; mv.t2 = o.t2;
+        setT(0, true);
+    };
+    window.mvSelect = function (k) { if (!mv) return; mv.active = k; render(); };
+    window.mvSwap = function () {
+        if (!mv) return;
+        var ax = mv.ax, ay = mv.ay; mv.ax = mv.bx; mv.ay = mv.by; mv.bx = ax; mv.by = ay; render();
+    };
+    window.mvNumInput = function () {
+        if (!mv) return;
+        mv.ax = clamp(num(el('mvAx').value, mv.ax), -mv.resX, mv.resX * 2); mv.ay = clamp(num(el('mvAy').value, mv.ay), -mv.resY, mv.resY * 2);
+        mv.bx = clamp(num(el('mvBx').value, mv.bx), -mv.resX, mv.resX * 2); mv.by = clamp(num(el('mvBy').value, mv.by), -mv.resY, mv.resY * 2);
+        var maxT = Math.round(mv.dur * 1000);
+        mv.t1 = clamp(num(el('mvT1').value, 0), 0, maxT); mv.t2 = clamp(num(el('mvT2').value, maxT), 0, maxT);
+        // بێ دووبارە نووسینەوەی خانەی ئێستا (بۆ ئەوەی نووسین ئاسان بێت)
+        var s = screenSize();
+        place(el('mvGhostA'), mv.ax, mv.ay); place(el('mvGhostB'), mv.bx, mv.by);
+        place(el('mvHA'), mv.ax, mv.ay); place(el('mvHB'), mv.bx, mv.by);
+        var ln = el('mvLine');
+        ln.setAttribute('x1', (mv.ax / mv.resX * s.W).toFixed(1)); ln.setAttribute('y1', (mv.ay / mv.resY * s.H).toFixed(1));
+        ln.setAttribute('x2', (mv.bx / mv.resX * s.W).toFixed(1)); ln.setAttribute('y2', (mv.by / mv.resY * s.H).toFixed(1));
+        var q = posAt(mv.t); place(el('mvLive'), q.x, q.y);
+        el('mvCode').textContent = moveTag();
+        syncExact();
+    };
+
+    // ڕاکێشان و کلیک لەسەر شاشە
+    var drag = null;
+    function toScript(e) {
+        var r = el('mvScreen').getBoundingClientRect();
+        return { x: clamp(Math.round((e.clientX - r.left) / r.width * mv.resX), 0, mv.resX), y: clamp(Math.round((e.clientY - r.top) / r.height * mv.resY), 0, mv.resY) };
+    }
+    function bindScreen() {
+        var box = el('mvScreen');
+        if (box.__kfBound) return; box.__kfBound = true;
+        box.addEventListener('pointerdown', function (e) {
+            if (!mv) return;
+            var k = mv.active;
+            if (e.target && e.target.id === 'mvHA') k = 'A'; else if (e.target && e.target.id === 'mvHB') k = 'B';
+            mv.active = k; drag = k;
+            try { box.setPointerCapture(e.pointerId); } catch (_) { }
+            var p = toScript(e);
+            if (k === 'A') { mv.ax = p.x; mv.ay = p.y; } else { mv.bx = p.x; mv.by = p.y; }
+            render(); e.preventDefault();
+        });
+        box.addEventListener('pointermove', function (e) {
+            if (!mv || !drag) return;
+            var p = toScript(e);
+            if (drag === 'A') { mv.ax = p.x; mv.ay = p.y; } else { mv.bx = p.x; mv.by = p.y; }
+            render();
+        });
+        var end = function () { drag = null; };
+        box.addEventListener('pointerup', end); box.addEventListener('pointercancel', end);
+    }
+
+    window.openMoveModal = function () {
+        var idx = (typeof currentStylingIndex !== 'undefined') ? currentStylingIndex : -1;
+        if (idx < 0 || !originalData[idx]) { showToast('تکایە سەرەتا دێڕێک هەڵبژێرە', 'warning'); return; }
+        var it = originalData[idx];
+        var start = num(it.startSec, 0), end = num(it.endSec, start + 3);
+        if (end <= start) end = start + 3;
+        var dur = end - start;
+        var res = getActiveScriptResolution();
+        var modalTa = el('modalSubtitleLiveText'), extraIn = el('modalExtraLineTags'), fsIn = el('techFontSizeVal');
+        var card = document.querySelector('.subtitle-card[data-index="' + idx + '"]');
+        var lineTa = card ? card.querySelector('textarea') : null;
+        var fullLine = lineTa ? assEffectiveLineText(idx, lineTa.value) : '';
+        var extra = extraIn ? extraIn.value : '';
+        var source = extra + ' ' + (it.rawText || '') + ' ' + fullLine + ' ' + (modalTa ? modalTa.value : '');
+
+        // ئاڕاستە
+        var alignCtl = el('selectedAlignVal');
+        var align = (alignCtl && /^[1-9]$/.test(alignCtl.value)) ? alignCtl.value : getDragLineAlignment(source);
+
+        // شوێنی پێشوو: \move یان \pos یان شوێنی ئاسایی
+        var num_ = '(-?[\\d.]+)';
+        var mm = new RegExp('\\\\move\\(\\s*' + num_ + '\\s*,\\s*' + num_ + '\\s*,\\s*' + num_ + '\\s*,\\s*' + num_ + '(?:\\s*,\\s*' + num_ + '\\s*,\\s*' + num_ + ')?\\s*\\)').exec(source);
+        var pm = new RegExp('\\\\pos\\(\\s*' + num_ + '\\s*,\\s*' + num_ + '\\s*\\)').exec(source);
+        var ax, ay, bx, by, t1 = 0, t2 = Math.round(dur * 1000);
+        if (mm) {
+            ax = parseFloat(mm[1]); ay = parseFloat(mm[2]); bx = parseFloat(mm[3]); by = parseFloat(mm[4]);
+            if (mm[5] != null) { t1 = parseFloat(mm[5]); t2 = parseFloat(mm[6]); }
+        } else {
+            if (pm) { ax = parseFloat(pm[1]); ay = parseFloat(pm[2]); }
+            else {
+                try {
+                    var dStyle = getDragLineStyle();
+                    var dp = AssLayout.eventParams(source, dStyle, it.assMeta || {});
+                    var da = AssLayout.anchorFor(dp.align || align || '2', null, dp, { resX: res.resX, resY: res.resY, left: 0, top: 0, sx: 1, sy: 1 });
+                    ax = da.resX; ay = da.resY;
+                } catch (e) { ax = res.resX / 2; ay = res.resY * 0.88; }
+            }
+            bx = ax; by = (ay > res.resY * 0.5) ? ay - res.resY * 0.22 : ay + res.resY * 0.22;
+        }
+        var fsv = fsIn ? parseFloat(fsIn.value) : 0;
+        var rot = {
+            frx: num((/\\frx(-?[\d.]+)/.exec(source) || [])[1], 0), fry: num((/\\fry(-?[\d.]+)/.exec(source) || [])[1], 0), frz: num((/\\frz(-?[\d.]+)/.exec(source) || [])[1], 0),
+            fscx: num((/\\fscx([\d.]+)/.exec(source) || [])[1], 100), fscy: num((/\\fscy([\d.]+)/.exec(source) || [])[1], 100),
+            fax: num((/\\fax(-?[\d.]+)/.exec(source) || [])[1], 0), fay: num((/\\fay(-?[\d.]+)/.exec(source) || [])[1], 0)
+        };
+        var raw = (modalTa ? modalTa.value : fullLine) || '';
+        var text = raw.replace(/\\fs\d+(?:\.\d+)?/gi, '').replace(/[♪\|]/g, '');
+        if (!text.replace(/\{[^}]*\}/g, '').trim()) text += 'دەقی ژێرنووس';
+
+        var Bd0 = window.__styleModalBase || null;
+        var fsTag = (fsv > 0 && (!Bd0 || !Bd0.fs || String(fsv) !== Bd0.fs.val || Bd0.fs.had)) ? fsv : 0;
+        mv = { rawText: raw, fsTag: fsTag, idx: idx, start: start, dur: dur, resX: res.resX, resY: res.resY, align: align, ax: ax, ay: ay, bx: bx, by: by, t1: t1, t2: t2,
+            orig: { ax: ax, ay: ay, bx: bx, by: by, t1: t1, t2: t2 },
+            t: 0, active: 'A', playing: false, hasVideo: false, vw: 0, vh: 0, fs: fsv > 0 ? fsv : 0, rot: rot, text: text };
+
+        var vid = el('mvVideo'), main = el('preview-video');
+        mv.hasVideo = !!(main && main.src);
+        el('mvNoVideo').style.display = mv.hasVideo ? 'none' : 'block';
+        vid.style.display = mv.hasVideo ? 'block' : 'none';
+        el('mvScrub').max = Math.round(dur * 1000);
+        el('move-modal').style.display = 'flex';
+        bindScreen();
+
+        var finish = function () {
+            if (!mv) return;
+            if (mv.hasVideo) { mv.vw = vid.videoWidth || 0; mv.vh = vid.videoHeight || 0; }
+            layout(); buildText(); setT(0, true); ensureExact();
+        };
+        if (mv.hasVideo) {
+            vid.muted = false; vid.defaultMuted = false; vid.removeAttribute('muted');
+            try { vid.volume = (main.muted ? 1 : (main.volume || 1)); } catch (e) { }
+            if (vid.src !== main.src) { vid.src = main.src; }
+            if (vid.readyState >= 1) finish(); else { vid.onloadedmetadata = finish; setTimeout(function () { if (mv && !mv.vw && vid.readyState >= 1) finish(); }, 800); }
+        } else {
+            vid.removeAttribute('src');
+            finish();
+        }
+        window.addEventListener('resize', onResize);
+    };
+    function onResize() { if (!mv || el('move-modal').style.display === 'none') return; layout(); buildText(); render(); if (exactOn) ensureExact(); }
+
+    window.closeMoveModal = function () {
+        stopPlay();
+        var v = el('mvVideo'); if (v) { try { v.pause(); } catch (e) { } }
+        el('move-modal').style.display = 'none';
+        window.removeEventListener('resize', onResize);
+        destroyExact();
+        mv = null;
+    };
+
+    window.confirmMoveModal = function () {
+        if (!mv) return;
+        stopPlay();
+        var tag = moveTag();
+        var extraIn = el('modalExtraLineTags');
+        var rest = (extraIn ? extraIn.value : '').replace(/\\(?:pos|move)\([^)]*\)/gi, '').replace(/\\an\d/gi, '');
+        var newAdv = '\\an' + mv.align + tag + rest;
+        if (extraIn) extraIn.value = newAdv;
+        selectAlignment(mv.align);
+        if (window.__styleModalBase) window.__styleModalBase.hadAn = true;
+
+        var modalTa = el('modalSubtitleLiveText');
+        if (modalTa) modalTa.value = kfStripTags(modalTa.value, KF_POS_SIZE_GROUPS);
+
+        var idx = mv.idx;
+        var card = document.querySelector('.subtitle-card[data-index="' + idx + '"]');
+        var ta = card ? card.querySelector('textarea') : null;
+        if (ta) {
+            var baseTxt = kfStripTags(modalTa ? modalTa.value : ta.value, KF_POS_SIZE_GROUPS);
+            var fsIn = el('techFontSizeVal'), chosenFs = fsIn ? parseFloat(fsIn.value) : 0;
+            var Bd = window.__styleModalBase || null;
+            var includeFs = chosenFs > 0 && (!Bd || String(chosenFs) !== Bd.fs.val || Bd.fs.had);
+            ta.value = kfMergeTechTags(baseTxt, newAdv + (includeFs ? '\\fs' + chosenFs : ''), null);
+            notifySubtitleChange(ta);
+            saveSession();
+        }
+        closeMoveModal();
+        showToast('جوڵەی دەق دانرا: ' + tag, 'success');
+    };
+})();
+</script>
+
+<style id="kf-rtl-btn-css">
+#btn-rtl-toggle{opacity:.45;color:var(--text-muted,#94a3b8);transition:all .2s}
+#btn-rtl-toggle.kf-rtl-on{opacity:1;color:var(--primary);border-color:var(--primary);background:color-mix(in srgb,var(--primary) 18%,transparent);box-shadow:0 0 12px var(--primary-glow,rgba(0,0,0,0))}
+</style>
+<style id="kf-guide-css">
+#kf-guide{position:fixed;inset:0;z-index:2100;display:none;flex-direction:column;background:linear-gradient(170deg,#121a2c 0%,#090d17 100%);color:#e2e8f0;direction:rtl;font-family:inherit}
+#kf-guide.show{display:flex}
+.kg-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 10px) 14px 10px;border-bottom:1px solid rgba(255,255,255,.1);flex-shrink:0}
+.kg-head h2{margin:0;font-size:17px;font-weight:800;color:var(--primary)}
+.kg-tabs{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;padding:10px 12px;flex-shrink:0;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scrollbar-width:none;border-bottom:1px solid rgba(255,255,255,.08);overscroll-behavior-x:contain}
+.kg-tabs::-webkit-scrollbar{display:none}
+.kg-tab{flex:0 0 auto;scroll-snap-align:start;white-space:nowrap;padding:9px 14px;border-radius:999px;font:inherit;font-size:13px;font-weight:bold;cursor:pointer;color:#cbd5e1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14)}
+.kg-tab.on{color:#fff;background:color-mix(in srgb,var(--primary) 28%,transparent);border-color:var(--primary);box-shadow:0 0 14px var(--primary-glow)}
+.kg-body{flex:1;overflow-y:auto;padding:14px 14px calc(30px + env(safe-area-inset-bottom,0px));-webkit-overflow-scrolling:touch}
+.kg-wrap{max-width:720px;margin:0 auto}
+.kg-title{font-size:19px;font-weight:800;color:var(--primary);margin:2px 0 6px}
+.kg-intro{font-size:13.5px;line-height:1.9;color:#cbd5e1;margin:0 0 12px}
+.kg-feat{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:10px 14px;margin-bottom:16px}
+.kg-feat h4{margin:0 0 6px;font-size:14px;color:var(--primary)}
+.kg-feat ul{margin:0;padding-inline-start:18px;font-size:13px;line-height:1.9}
+.kg-step{margin-bottom:22px}
+.kg-step h3{font-size:15px;margin:0 0 8px;display:flex;gap:8px;align-items:center}
+.kg-step h3 span{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;border-radius:8px;background:var(--primary);color:#0a0e17;font-size:12px}
+.kg-mock{position:relative;background:#0d1322;border:1px solid rgba(255,255,255,.16);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:9px;box-shadow:inset 0 0 30px rgba(0,0,0,.4)}
+.kg-row{display:flex;gap:7px;flex-wrap:wrap;align-items:stretch}
+.kg-el{position:relative;flex:1 1 auto;min-width:34px;display:flex;align-items:center;justify-content:center;text-align:center;gap:4px;padding:8px 9px;border-radius:10px;font-size:11.5px;font-weight:bold;color:#e2e8f0;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);line-height:1.5}
+.kg-el.btn{background:color-mix(in srgb,var(--primary) 22%,transparent);border-color:color-mix(in srgb,var(--primary) 60%,transparent)}
+.kg-el svg{flex-shrink:0;vertical-align:middle}
+.kg-tip svg{vertical-align:-3px;margin-inline-end:4px;color:#facc15}
+.kg-el.ico{flex:0 0 auto;width:34px;padding:8px 0}
+.kg-el.box{border-style:dashed;min-height:54px}
+.kg-el.vid{min-height:110px;background:linear-gradient(135deg,#1e293b,#0f172a);color:#94a3b8}
+.kg-el.txt{justify-content:flex-start;text-align:start;font-weight:normal;color:#cbd5e1;background:rgba(0,0,0,.25)}
+.kg-el.lbl{background:none;border:0;justify-content:flex-start;color:#94a3b8;padding:2px 4px}
+.kg-el.hl{border-color:#facc15;box-shadow:0 0 0 2px rgba(250,204,21,.35);animation:kgPulse 1.8s ease-in-out infinite}
+.kg-n{position:absolute;top:-9px;inset-inline-start:-7px;z-index:2;width:20px;height:20px;border-radius:50%;background:#facc15;color:#111;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.6);border:2px solid #0d1322}
+@keyframes kgPulse{50%{box-shadow:0 0 0 5px rgba(250,204,21,.12)}}
+.kg-cap{font-size:11px;color:#64748b;text-align:center;margin-top:6px}
+.kg-notes{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.kg-notes li{display:flex;gap:10px;font-size:13.3px;line-height:1.85;background:rgba(255,255,255,.04);border-radius:12px;padding:8px 10px;border:1px solid rgba(255,255,255,.08)}
+.kg-notes li b.n{flex:0 0 22px;height:22px;border-radius:50%;background:#facc15;color:#111;font-size:11px;display:flex;align-items:center;justify-content:center;margin-top:3px}
+.kg-notes li .t b{color:var(--primary)}
+.kg-tip{font-size:12.5px;line-height:1.85;padding:9px 12px;border-radius:12px;background:color-mix(in srgb,var(--primary) 12%,transparent);border:1px solid color-mix(in srgb,var(--primary) 40%,transparent);margin-top:10px}
+.kg-nav{display:flex;justify-content:space-between;gap:10px;margin-top:10px}
+.kg-nav button{flex:1;padding:11px;border-radius:12px;font:inherit;font-weight:bold;font-size:13px;cursor:pointer;color:#e2e8f0;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16)}
+.kg-el svg.kgx{max-width:100%;height:auto}.kg-notes .t svg,.kg-feat li svg,.kg-intro svg{vertical-align:-3px;margin:0 2px}
+</style>
+
+<div id="kf-guide" aria-hidden="true">
+  <div class="kg-head">
+    <h2>فێرکاری بەکارهێنانی ماڵپەڕ</h2>
+    <button type="button" class="kf-bar-btn" aria-label="داخستن" onclick="kfGuide.close()"><svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+  </div>
+  <div class="kg-tabs" id="kg-tabs"></div>
+  <div class="kg-body" id="kg-body"><div class="kg-wrap" id="kg-content"></div></div>
+</div>
+
+<script id="kf-guide-js">
+(function(){
+'use strict';
+/* شێوازی ڕەسم: هەر ڕیزێک = لیستی توخم. توخم: [جۆر, نووسین, ژمارەی نیشانە(ئارەزوومەندانە)]
+   جۆرەکان: btn ico box vid txt lbl el */
+function E(t,l,n){return {t:t,l:l,n:n};}
+var G=[
+{k:'start',name:'دەستپێکردن',intro:'ئەمە شاشەی سەرەکییە. لێرەوە فایلی ژێرنووس دەکەیتەوە بۆ وەرگێڕان و دەستکاریکردن، و لە ڕێگەی مێنیوەوە دەچیتە هەموو بەشەکانی تر.',
+ feats:['کردنەوەی فایلی SRT / ASS / VTT بۆ وەرگێڕان','دانانی فایلی وەرگێڕدراوی پێشوو بۆ بەردەوامبوون لەسەری','گۆڕینی ڕەنگی ڕووکاری ماڵپەڕ','بەردەوامبوون لە کاری تەواونەکراو بە شێوەی خۆکار','دابەزاندنی ماڵپەڕ وەک ئەپ لەسەر مۆبایل'],
+ steps:[
+ {h:'شریتی سەرەوە و مێنیو',rows:[[E('ico','☰',1),E('lbl','بەخێربێیت!',2),E('el','KURD FOREST',3)]],
+  notes:['دوگمەی <b>مێنیو</b>: دەستی لێ بدە تا لیستی هەموو بەشەکان لە لای ڕاستەوە بکرێتەوە. بۆ داخستنی، دەست لە دەرەوەی بدە یان پەنجە بۆ ڕاست ڕابکێشە.','ناوی ئەو بەشەی ئێستا تێیدایت لێرە دەردەکەوێت. ئەگەر ناوەکە درێژ بوو، بە پەنجە دەیجوڵێنیت.','لۆگۆ: دەستی لێ بدەیت دەگەڕێیتەوە شاشەی سەرەکی.']},
+ {h:'کردنەوەی فایل و دەستپێکردن',rows:[[E('box','فایلی ئەسڵی (ئینگلیزی / عەرەبی / ...)\nکرتە بکە بۆ هەڵبژاردن',1)],[E('box','فایلی وەرگێڕدراو (ئارەزوومەندانە)',2)],[E('btn','دەستپێکردن',3)],[E('el','dots5',4)]],
+  notes:['دەست لەسەر ئەم سندووقە بدە و فایلی ژێرنووسە ئەسڵییەکە هەڵبژێرە (SRT یان ASS یان VTT). ناوی فایلەکە لە ناو سندووقەکە دەردەکەوێت و بە دوگمەی <b>✕</b> لای سەرەوە لای دەبەیت.','ئەگەر پێشتر بەشێکت وەرگێڕابوو، فایلە وەرگێڕدراوەکە لێرە دابنێ تا هەر دێڕێک بچێتە بەرامبەر دێڕە ئەسڵییەکەی. ئەگەر بەتاڵی بهێڵیت، لە سفرەوە دەست پێدەکەیت.','دوگمەی <b>دەستپێکردن</b>: ئیدیتەر دەکاتەوە.','بازنە ڕەنگاوڕەنگەکان ڕەنگی ڕووکاری ماڵپەڕ دەگۆڕن (دارستان، زەریایی، مۆر...). ڕەنگەکە بیر دەمێنێت.'],
+  tip:'ئەگەر کارێکت تەواو نەکردبێت، کاتی کردنەوە پرسیارت لێ دەکرێت <b>«دەتەوێت بەردەوام بیت؟»</b>. «بەردەوامبوون» لەو شوێنەی وەستابوویت دەستپێدەکاتەوە، «دەستپێکردنەوە» کارێکی نوێ دەکاتەوە.'}
+ ]},
+{k:'editor',name:'ئیدیتەر',intro:'ئیدیتەر شوێنی سەرەکیی کارکردنە: ڤیدیۆ لە سەرەوەیە، دێڕەکانی ژێرنووس لە خوارەوە، و دوگمەکانی کۆنترۆڵ لە شریتی سەرەوە و خوارەوەن.',
+ feats:['بینینی ڤیدیۆ و ژێرنووس پێکەوە بە شێوەی ڕاستەوخۆ','پاشگەزبوونەوە و چوونەپێش (Undo / Redo)','دیاریکردن و سڕینەوەی چەند دێڕێک پێکەوە','سڕینەوەی هەموو دێڕە بەتاڵەکان بە یەک دەست لێدان','گەڕان و گۆڕینی وشە','سەیڤکردنی خۆکار و داگرتنی فایلی کۆتایی','دانانی RTL بۆ هەموو دێڕەکان بە یەک دەست لێدان','دەستلێدان لەسەر ڤیدیۆ: دووجار دەست بۆ ١٠ چرکە، ڕاگرتن بۆ 2x','پێداچوونەوەی کۆدەکان لەگەڵ چوونە سەر دێڕ و چاککردنی خۆکار'],
+ steps:[
+ {h:'شریتی ئامرازەکانی سەرەوە',rows:[[E('btn','گەڕانەوە',1),E('ico','↶',2),E('ico','↷',3),E('ico','fsp',4),E('ico','RTL',5)],[E('ico','☑',6),E('ico','trashN',7),E('ico','🗑',8),E('ico','F',9),E('ico','🔍',10),E('ico','✕▶',11)]],
+  notes:['<b>گەڕانەوە</b>: دەگەڕێیتەوە شاشەی سەرەکی؛ پرسیاری دڵنیابوونەوەت لێ دەکرێت چونکە ئەگەر داونلۆدت نەکردبێت، کارەکەت دەڕوات.','<b>پاشگەزبوونەوە</b>: دوایین گۆڕانکاری هەڵدەوەشێنێتەوە (Ctrl+Z).','<b>چوونەپێش</b>: گۆڕانکارییە هەڵوەشاوەکە دەگەڕێنێتەوە (Ctrl+Y).','<b>fsp 0</b>: پچڕانی نێوان پیتەکانی کوردی/عەرەبی لە هەموو فایلەکەدا لادەبات.','<b>RTL</b>: کۆدی {\\fe-1} بۆ هەموو دێڕەکان دادەنێت تا خاڵ و نیشانەکان لە شوێنی ڕاست بن. جارێکی تر دەستی لێ بدەیت کۆدەکە لادەبات. کاتێک چالاک بێت ڕەنگی دوگمەکە ڕوون دەبێتەوە.','<b>دیاریکردنی دێڕەکان</b>: دۆخی هەڵبژاردن دەکاتەوە؛ دەست لە هەر دێڕێک بدە تا نیشانەی ✓ بگرێت.','<b>سڕینەوەی دیاریکراوەکان</b>: هەموو ئەو دێڕانەی ✓یان گرتووە دەسڕێتەوە.','<b>سڕینەوەی دێڕە بەتاڵەکان</b>: هەر دێڕێک دەقی تێدا نەبێت لادەبات (Ctrl+Shift+E).','<b>فۆنتەکان</b>: پەنجەرەی فۆنتەکان و ڕەندەری libass دەکاتەوە (لە بەشی «فۆنتەکان» ڕوونکراوەتەوە).','<b>گەڕان</b>: شریتی گەڕان و گۆڕین دەکاتەوە.','<b>لابردنی ڤیدیۆ</b>: ڤیدیۆکە لادەبات تا ڤیدیۆیەکی تر دابنێیت.']},
+ {h:'پلەیەری ڤیدیۆ',rows:[[E('vid','فایل لە ئامێرەکەت هەڵبژێرە',1)],[E('el','seekbar',2)],[E('btn','-10s',3),E('ico','▶',4),E('btn','+10s',3),E('el','00:00 / 00:00',5),E('btn','1x',6),E('ico','vol',7)]],
+  notes:['دەست لێ بدە و ڤیدیۆی فیلمەکە لە ئامێرەکەت هەڵبژێرە. ڤیدیۆکە بۆ هیچ شوێنێک نانێردرێت، تەنها لەسەر ئامێرەکەت کار دەکات. ژێرنووسەکە ڕاستەوخۆ لەسەری دەردەکەوێت.','هێڵی پێشکەوتن: دەستی لێ بدە یان ڕایبکێشە بۆ چوون بۆ هەر شوێنێکی ڤیدیۆ.','١٠ چرکە بۆ دواوە یان بۆ پێشەوە.','کارپێکردن / ڕاگرتن (Ctrl+Space).','کاتی ئێستا و کۆی کاتی ڤیدیۆ.','خێرایی کارپێکردن: هەر جارێک دەستی لێ بدەیت دەگۆڕێت (1x، 1.5x، 2x...).','دەنگ: دەنگی ڤیدیۆکە بێدەنگ یان دەنگدار دەکات.']},
+ {h:'دەستلێدان لەسەر ڤیدیۆ',rows:[[E('vid','gest',1)]],
+  notes:['شاشەی ڤیدیۆ سێ بەش دەبێت: چەپ، ناوەڕاست و ڕاست. <b>دووجار دەستلێدان</b> لە لای چەپ: ١٠ چرکە دەگەڕێتەوە دواوە. لە ناوەڕاست: ڤیدیۆ دەوەستێنێت یان کار دەکات. لە لای ڕاست: ١٠ چرکە دەچێتە پێشەوە.','<b>ڕاگرتنی پەنجە</b> (نزیکەی نیو چرکە): لە لای ڕاست ڤیدیۆ بە 2x کار دەکات، لە لای چەپ بە 2x بۆ دواوە دەگەڕێتەوە. کاتێک پەنجەت هەڵگرت، دەگەڕێتەوە دۆخی پێشوو (کارپێکردن یان ڕاگرتن).'],
+  tip:'یەک دەستلێدان لەسەر ڤیدیۆ کۆنترۆڵەکانی خوارەوەی ڤیدیۆ پیشان دەدات یان دەیانشارێتەوە.'},
+ {h:'شریتی پێشکەوتنی وەرگێڕان',rows:[[E('el','progress',1)]],
+  notes:['هێڵە باریکەکەی سەرەوەی ئیدیتەر ڕێژەی ئەو دێڕانە پیشان دەدات کە وەرگێڕانیان تێدا نووسراوە (دێڕی بەتاڵ ناژمێردرێت). هەر کاتێک دێڕێک پڕ بکەیتەوە درێژتر دەبێت.']},
+ {h:'شریتی خوارەوە',rows:[[E('btn','دانانی وەرگێڕان',1),E('btn','ئاڕاستەی نووسین',2)],[E('btn','سەیڤکردن و داگرتن',3),E('btn','پێداچوونەوەی کۆدەکان',4)]],
+  notes:['<b>دانانی وەرگێڕان</b>: پەنجەرەی AI دەکاتەوە بۆ کۆپیکردنی دەقی ئەسڵی و دانانی وەرگێڕان بە یەکجار.','<b>ئاڕاستەی نووسین</b>: ئاڕاستەی خانەکانی نووسین لە نێوان ڕاست-بۆ-چەپ و چەپ-بۆ-ڕاست دەگۆڕێت.','<b>سەیڤکردن و داگرتن</b>: فایلی کۆتایی دروست دەکات و دای دەبەزێنێت (Ctrl+S). کارەکەش لە «مێژووی کارەکان» پاشەکەوت دەبێت.','<b>پێداچوونەوەی کۆدەکان</b>: کۆدە ASSەکانی هەموو دێڕەکان دەپشکنێت و هەڵە و ئاگادارییەکان لە خوارەوە پیشان دەدات (لە بەشی «پێداچوونەوەی کۆدەکان» ڕوونکراوەتەوە).'],
+  tip:'دێڕەکانی خوارەوە بە دوگمەی ڕاکێشانی لای ڕاست بە خێرایی سکرۆڵ دەکرێن. کاتی کارپێکردنی ڤیدیۆ، ئەو دێڕەی ئێستا دەخوێنرێتەوە ڕووناک دەبێتەوە.'},
+ {h:'پێداچوونەوەی کۆدەکان',rows:[[E('el','دێڕی #12',1),E('btn','بڕۆ بۆ دێڕ',2),E('btn','چاککردنی خۆکار',3)],[E('txt','کۆدی ئەسڵی: {\\an8}{\\i1}',4)]],
+  notes:['ژمارەی دێڕێک کە هەڵە یان ئاگاداریی تێدایە، لەگەڵ ڕوونکردنەوەی کێشەکە.','<b>بڕۆ بۆ دێڕ</b>: دەتباتە ئەو دێڕە لە لیستەکە و بۆ ساتێک دەوری دەدرێت بە هێڵ.','<b>چاککردنی خۆکار</b>: هەوڵ دەدات کۆدی ئەو دێڕە ڕاست بکاتەوە.','کۆدی ئەسڵیی دێڕەکە، بۆ بەراوردکردن لەگەڵ وەرگێڕانەکەت.']}
+ ]},
+{k:'card',name:'کارتی دێڕ',intro:'هەر دێڕێکی ژێرنووس کارتێکی تایبەتی هەیە کە دەقی ئەسڵی و خانەی وەرگێڕانی تێدایە.',
+ feats:['ژمارە و کاتی هەر دێڕێک','چوونە سەر کاتی دێڕەکە لە ڤیدیۆ','کردنەوەی پەنجەرەی تەکنیک بۆ هەمان دێڕ','سڕینەوەی دێڕ'],
+ steps:[
+ {h:'پێکهاتەی کارت',rows:[[E('el','#12',1),E('ico','▶',2),E('ico','🎨',3),E('ico','🗑',4),E('el','00:01:22,410 --> 00:01:25,000',5)],[E('txt','I will never leave you.',6)],[E('txt','هەرگیز بەجێت ناهێڵم.',7)]],
+  notes:['ژمارەی دێڕ.','<b>کارپێکردن</b>: ڤیدیۆ دەچێتە سەرەتای ئەم دێڕە و کار دەکات (Ctrl+J).','<b>تەکنیک و ڕەنگ</b>: پەنجەرەی تەکنیک و دیزاینی ئەم دێڕە دەکاتەوە (Ctrl+Enter).','<b>سڕینەوە</b>: ئەم دێڕە دەسڕێتەوە (Alt+Delete).','کاتی دەستپێک و کۆتایی دێڕەکە.','دەقی ئەسڵی (تەنها بۆ خوێندنەوە).','خانەی وەرگێڕان: وەرگێڕانەکەت لێرە بنووسە. Tab دەتباتە دێڕی دواتر. بۆ ئەستوورکردن وشەکە دیاری بکە و Ctrl+B، بۆ لار Ctrl+I، بۆ نیشانەی گۆرانی ♪ Ctrl+M.']}
+ ]},
+{k:'tech',name:'تەکنیک و دیزاین',intro:'پەنجەرەی «تەکنیک و دیزاینی دێڕ» هەموو ئامرازەکانی شێوە و شوێن و جوڵەی یەک دێڕی تێدایە. لە کارتی دێڕ دەستی لە دوگمەی 🎨 بدە.',
+ feats:['دانانی شوێنی دێڕ لە ٩ شوێنی جیاواز یان بە ڕاکێشان','سانسۆر، جوڵاندنی دەق، Fade','فۆنت، ئەستوور، لار، ژێرهێڵ، هێڵی سەر وشە','ئاوتڵاین، شادۆ، تەڵخی، قەبارە، شاراوەیی','ڕەنگی نووسین و Outline و Shadow، و هەڵگرتنی ڕەنگ لە ڤیدیۆ','دیاریکردنی وشەیەک بۆ ستایلی جیا','نیشانەی گۆرانی و تابلۆ، و تێبینی خوارەوەی ڕستە'],
+ steps:[
+ {h:'شوێنی دێڕ',rows:[[E('el','سەرەوە چەپ'),E('el','سەرەوە ناوەڕاست'),E('el','سەرەوە ڕاست')],[E('el','ناوەڕاست چەپ'),E('el','ناوەڕاست',1),E('el','ناوەڕاست ڕاست')],[E('el','خوارەوە چەپ'),E('el','خوارەوە ناوەڕاست'),E('el','خوارەوە ڕاست')],[E('btn','دیاریکردنی شوێن بە ڕاکێشان لەسەر ڤیدیۆ',2)]],
+  notes:['یەکێک لە ٩ شوێنەکە هەڵبژێرە تا دێڕەکە لەو شوێنەی شاشە دەربکەوێت (کۆدی \\an).','پەنجەرەیەک دەکاتەوە کە دەتوانیت دەقەکە بە پەنجە بۆ هەر شوێنێک ڕابکێشیت؛ هەروەها قەبارە، سووڕانەوەی Z، سووڕانەوەی 3D، پانی، بەرزی و لاری دەگۆڕیت. دوگمەکانی 1x / 2x / 5x / 10x خێرایی جوڵاندنی وردن. «گەڕاندنەوە» هەمووی سفر دەکاتەوە، «دانان و جێبەجێکردن» دایدەنێت.']},
+ {h:'ئامرازە تایبەتەکان',rows:[[E('btn','سانسۆرکردنی بەشێکی ڤیدیۆ (Censor Tool)',1)],[E('btn','جوڵاندنی دەق لەسەر ڤیدیۆ (Move)',2)],[E('lbl','Fade — دەرکەوتن:'),E('el','300 ms',3),E('lbl','دیارنەمان:'),E('el','300 ms',3)]],
+  notes:['ئامرازی سانسۆر دەکاتەوە (لە بەشی «سانسۆر» ڕوونکراوەتەوە).','ئامرازی جوڵە دەکاتەوە تا دەقەکە لە خاڵێکەوە بڕوات بۆ خاڵێکی تر (لە بەشی «جوڵاندن» ڕوونکراوەتەوە).','کاتی کاڵبوونەوە بە میلیچرکە: ژمارەی یەکەم = چەند خێرا دەردەکەوێت، دووەم = چەند خێرا ون دەبێت. ١٠٠٠ = یەک چرکە.']},
+ {h:'فۆنت و شێوەی نووسین',rows:[[E('el','فۆنتی ئەم دێڕە: وەک خۆی',1)],[E('btn','Bold',2),E('btn','Italic',2),E('btn','ژێرهێڵ',2),E('btn','هێڵی سەر وشە',2)],[E('el','ئاوتڵاین',3),E('el','شادۆ',3),E('el','تەڵخی',4),E('el','قەبارە',5),E('el','شاراوەیی %',6),E('el','نەرمکردنی لێوار',7)]],
+  notes:['فۆنتێکی تایبەت بۆ تەنها ئەم دێڕە؛ بەتاڵ = فۆنتی ستایلەکە. دەتوانیت ناوی فۆنت بە دەست بنووسیت ({\\fn...}).','ئەستوور، لار، ژێرهێڵ و هێڵ بەسەر وشەدا.','ئەستووری هێڵی دەوری پیت (Outline) و قەبارەی سێبەر (Shadow).','تەڵخی: لێواری پیتەکان تەڵخ دەکات. دەستی لێ بدە بۆ گۆڕینی جۆری تەڵخی (\\be یان \\blur).','قەبارەی فۆنت.','شاراوەیی: ٠ = ئاسایی، ١٠٠ = نادیار.','نەرمکردنی لێواری Outline.']},
+ {h:'ڕەنگ و وشەی دیاریکراو',rows:[[E('lbl','ڕەنگی نووسین:'),E('el','dots5',1)],[E('lbl','ڕەنگی Outline:'),E('el','dots2',2),E('lbl','Shadow:'),E('el','dots2',2)],[E('btn','لە ڤیدیۆ وەربگرە',3),E('btn','سەیڤکردنی ڕەنگ',4),E('btn','سڕینەوەی ڕەنگ',4)],[E('txt','هەرگیز [بەجێت] ناهێڵم',5)],[E('btn','گۆرانی',6),E('btn','تابلۆ',6)],[E('txt','تێبینی: ...',7)],[E('btn','جێبەجێکردن',8)]],
+  notes:['ڕەنگی پیتەکان هەڵبژێرە؛ «وەک خۆی» یانی دەستکاری مەکە.','ڕەنگی هێڵی دەوری پیت و سێبەر؛ «بێ ڕەنگ» لایان دەبات.','ڕەنگێک ڕاستەوخۆ لە وێنەی ڤیدیۆ هەڵدەگریت (لە بەشی «هەڵگرتنی ڕەنگ» ڕوونکراوەتەوە).','ڕەنگە دڵخوازەکانت پاشەکەوت دەکەیت بۆ جاری داهاتوو، یان دەیانسڕیتەوە.','دەقی دێڕەکە: ئەگەر وشەیەک دیاری بکەیت، ڕەنگ و ستایلەکە تەنها لەسەر ئەو وشەیە دادەنرێت نەک هەموو دێڕەکە. «سڕینەوەی ستایل» هەموو ستایلەکانی دێڕەکە لادەبات.','<b>گۆرانی</b> نیشانەی ♪ دادەنێت، <b>تابلۆ</b> دێڕەکە وەک نووسینی سەر تابلۆ/شاشە دیاری دەکات؛ ڕەنگی نیشانەکەش هەڵدەبژێریت.','تێبینی: ڕوونکردنەوەیەک کە لە خوارەوەی ڕستەکە لە فایلەکەدا دەردەکەوێت، بە ڕەنگی نیشانە و نووسینی تایبەت.','<b>جێبەجێکردن</b> هەموو گۆڕانکارییەکان لەسەر دێڕەکە دادەنێت.']}
+ ]},
+{k:'move',name:'جوڵاندنی دەق',intro:'ئامرازی Move دەقەکە لە کاتی دێڕەکەدا لە شوێنێکەوە دەبات بۆ شوێنێکی تر (کۆدی \\move).',
+ feats:['دیاریکردنی خاڵی سەرەتا و کۆتایی بە ڕاکێشان','کاتی دەستپێک و کۆتایی جوڵە بە میلیچرکە','پێشبینینی جوڵەکە لەسەر ڤیدیۆ'],
+ steps:[{h:'بەکارهێنان',rows:[[E('vid','movepath',1)],[E('el','0.00 / 3.00 s',2)],[E('btn','شوێنی سەرەکی',3),E('btn','شوێنی ڕۆیشتوو',3),E('btn','گۆڕینەوە',4)],[E('el','A: X | Y'),E('el','B: X | Y',5)],[E('el','دەستپێک (ms)',6),E('el','کۆتایی (ms)',6)],[E('btn','دانانی جوڵە',7)]],
+  notes:['دەقی <b>سپی</b> خاڵی سەرەتایە و دەقی <b>سەوز</b> ئەو شوێنەیە کە دەقەکە بۆی دەڕوات. بە پەنجە ڕایانبکێشە.','کاتی پێشبینین؛ جوڵەکە دووبارە پیشان دەدرێت.','یەکێکیان هەڵبژێرە و پاشان لەسەر شاشە دەست بدە تا ڕاستەوخۆ بچێتە ئەوێ.','شوێنی سەرەتا و کۆتایی ئاڵوگۆڕ دەکات.','ژمارەی ورد بۆ هەر دوو خاڵ؛ دەتوانیت بە دەست بینووسیت. دوگمەکانی «ڕێکخستنی شوێن» (چەپ/ناوەڕاست/ڕاست، سەرەوە/ناوەند/خوارەوە) خاڵەکە ڕێک دەخەن.','کەی جوڵەکە دەست پێبکات و کەی تەواو بێت، لە سەرەتای دێڕەوە. بەتاڵ = هەموو ماوەی دێڕەکە.','جوڵەکە لەسەر دێڕەکە دادەنێت.']}]},
+{k:'censor',name:'سانسۆر',intro:'ئامرازی سانسۆر بەشێکی ڤیدیۆ دادەپۆشێت (بۆ نموونە ڕووت یان لۆگۆ) بە سندووقی ڕەش، تەڵخی یان ڕەنگ.',
+ feats:['سندووقی گۆڕاو بە ڕاکێشان و گەورە/بچووککردن','کاتی ورد بە ٠.١ چرکە','سێ جۆری داپۆشین','زیادکردنی وەک دێڕێکی نوێ لە کۆتایی فایلەکە'],
+ steps:[{h:'بەکارهێنان',rows:[[E('vid','▣ سندووقی سوور',1)],[E('btn','-1s'),E('btn','-0.1s'),E('btn','Play/Pause',2),E('btn','+0.1s'),E('btn','+1s')],[E('btn','دەستپێک: کاتی ئێستا',3),E('btn','کۆتایی: کاتی ئێستا',3)],[E('el','سندووقی ڕەش',4),E('el','تەڵخکردن (Blur)',4),E('el','ڕەنگی تایبەت',4)],[E('btn','ناوەڕاستکردنی سندووق',5)],[E('btn','زیادکردنی ئەم سانسۆرە بۆ کۆتایی فایلەکە',6)]],
+  notes:['ڤیدیۆ بگەڕێنە بۆ ئەو شوێنەی دەتەوێت، پاشان سندووقە سوورەکە ڕابکێشە سەر ئەو بەشەی دەتەوێت دایپۆشیت و لە سوچی خوارەوەیەوە گەورە و بچووکی بکە.','دوگمەکانی جوڵاندنی ورد بۆ دۆزینەوەی کاتی ڕێک.','کاتێک ڤیدیۆ گەیشتە سەرەتای دیمەنەکە «دەستپێک» دابگرە، کاتێک گەیشتە کۆتایی «کۆتایی» دابگرە.','شێوازی داپۆشین هەڵبژێرە؛ بۆ «ڕەنگی تایبەت» ڕەنگێکیش هەڵبژێرە.','سندووقەکە دەباتە ناوەڕاستی شاشە.','سانسۆرەکە وەک دێڕێکی تایبەت دەچێتە ناو فایلەکەوە.']}]},
+{k:'picker',name:'هەڵگرتنی ڕەنگ',intro:'ڕەنگێک ڕاستەوخۆ لە وێنەی ڤیدیۆ وەردەگریت، بۆ نموونە ڕەنگی تابلۆیەک بۆ ئەوەی ژێرنووسەکە لەگەڵی بگونجێت.',
+ feats:['هەڵگرتنی ڕەنگ بە پەنجە لەسەر وێنە','گەورەکردن بۆ وردی','دانانی ڕەنگ بۆ نووسین یان Outline یان Shadow'],
+ steps:[{h:'بەکارهێنان',rows:[[E('vid','✛',1)],[E('el','ڕەنگی خاڵەکە: #FFFFFF',2),E('btn','قەبارەی ئاسایی (1x)',3)],[E('el','ڕەنگی نووسین',4),E('el','Outline',4),E('el','Shadow',4)],[E('btn','هەڵبژاردن و دانان',5),E('btn','پاشگەزبوونەوە')]],
+  notes:['دەست لەسەر وێنەکە دابنێ و بیجوڵێنە تا خاڵەکە بگاتە ئەو ڕەنگەی دەتەوێت.','ڕەنگی خاڵەکە و کۆدەکەی.','گەورەکردنی وێنە بۆ هەڵگرتنی وردتر.','ڕەنگەکە بۆ کوێ دابنرێت.','ڕەنگەکە دادەنێت و دەگەڕێیتەوە پەنجەرەی تەکنیک.']}]},
+{k:'fonts',name:'فۆنتەکان',intro:'بۆ ئەوەی پێشبینین ڕێک وەک پلەیەر و هاردسەب بێت، فایلی فۆنتەکانی ژێرنووسەکە (TTF / OTF) لێرە زیاد دەکەیت.',
+ feats:['پیشاندانی ئەو فۆنتانەی فایلەکە پێویستی پێیانە','فۆنتەکان لەسەر ئامێرەکەت پاشەکەوت دەبن','ڕەندەری libass بۆ پێشبینینی ڕێک وەک FFmpeg'],
+ steps:[{h:'بەکارهێنان',rows:[[E('btn','چالاککردنی ڕەندەری libass',1)],[E('txt','فۆنتەکانی ناو فایلەکە: Arial ✓  —  Rudaw ✗',2)],[E('btn','زیادکردنی فایلی فۆنت',3)],[E('txt','فۆنتە زیادکراوەکان: ...',4)]],
+  notes:['پێشبینین دەگۆڕێت بۆ کتێبخانەی ڕاستەقینەی libass؛ سووڕانەوە، وێنەکێشان و شوێنی دەق ڕێک وەک ئەنجامی کۆتایی دەبن. جاری یەکەم ئینتەرنێتی پێویستە؛ ئەگەر سەرنەکەوت خۆکار دەگەڕێتەوە پێشبینینی ئاسایی. ئێستا کاتێک ڤیدیۆ دادەنێیت خۆکار چالاک دەبێت؛ ئەگەر دوگمەکەش بدەیت، پێت دەڵێت ڕەندەرەکە هەمیشە چالاکە.','لیستی ئەو فۆنتانەی ستایلەکانی فایلەکە ناویان هێناوە.','فایلی فۆنت لە ئامێرەکەت هەڵبژێرە.','ئەو فۆنتانەی پێشتر زیادت کردوون؛ جارێکی تر پێویست بە زیادکردن ناکات.']}]},
+{k:'ai',name:'وەرگێڕانی AI',intro:'بە یارمەتی ئامرازێکی AI (وەک ChatGPT) هەموو دێڕەکان بە یەکجار وەردەگێڕیت و دەیانگەڕێنیتەوە شوێنی خۆیان.',
+ feats:['کۆپیکردنی هەموو دەقی ئەسڵی بە ژمارەوە','هەڵبژاردنی ستایلێکی دیاریکراو بۆ کۆپی','پەیستکردن و دانانی هەر وەرگێڕانێک لە شوێنی خۆی'],
+ steps:[{h:'هەنگاوەکان',rows:[[E('el','— هەموو دێڕەکان —',1)],[E('btn','کۆپیکردنی دەق',2)],[E('txt','لێرە وەرگێڕانەکە پەیست بکە...',3)],[E('btn','پەیست بکە',3),E('btn','جێبەجێکردن لە شوێنی خۆیان',4)]],
+  notes:['ئەگەر فایلەکە چەند ستایلێکی هەبوو (بۆ نموونە گۆرانی، تابلۆ)، دەتوانیت تەنها دێڕەکانی یەک ستایل کۆپی بکەیت.','دەقەکە بە ژمارەی دێڕەکانەوە کۆپی دەبێت؛ بیبە بۆ AI و داوای وەرگێڕانی بکە بەبێ گۆڕینی ژمارەکان.','وەرگێڕانەکە لێرە دابنێ، یان «پەیست بکە» ڕاستەوخۆ لە کلیپبۆرد دایدەنێت.','هەر دێڕێک بەپێی ژمارەکەی دەچێتە شوێنی خۆی لە ئیدیتەر.']}]},
+{k:'search',name:'گەڕان و گۆڕین',intro:'بە خێرایی وشەیەک لە هەموو دێڕەکاندا دەدۆزیتەوە و دەیگۆڕیت.',
+ feats:['گەڕان لە دەقی وەرگێڕان','چوون بۆ ئەنجامی پێشوو و دواتر','گۆڕینی یەک یان هەموو'],
+ steps:[{h:'بەکارهێنان',rows:[[E('txt','گەڕان بەدوای...',1),E('ico','▲',2),E('ico','▼',2)],[E('txt','گۆڕین بە...',3)],[E('btn','گۆڕین',4),E('btn','هەمووی بگۆڕە',5)]],
+  notes:['وشەکە بنووسە؛ ژمارەی ئەنجامەکان دەردەکەوێت و دێڕەکە ڕووناک دەبێتەوە (Ctrl+F).','ئەنجامی پێشوو / دواتر.','ئەو وشەیەی دەتەوێت جێگای بگرێتەوە.','تەنها ئەنجامی ئێستا دەگۆڕێت.','هەموو ئەنجامەکان پێکەوە دەگۆڕێت؛ بە Undo دەگەڕێتەوە.']}]},
+{k:'converter',name:'گۆڕینی فایل',intro:'کارکردن بە کۆمەڵ لەسەر چەند فایلێک: کات و فۆرمات دەگۆڕیت و تاگەکان پاک دەکەیتەوە.',
+ feats:['هەڵبژاردنی چەندین فایل پێکەوە','پێشخستن/دواخستنی کات بە چرکە، بە دوو دوگمەی جیا','بینینی کاتی دێڕی یەکەم پێش و پاش گۆڕین','پاککردنەوەی تاگە ستایلەکان','گۆڕین بۆ SRT یان ASS یان VTT'],
+ steps:[{h:'بەکارهێنان',rows:[[E('box','فایلەکان هەڵبژێرە',1)],[E('el','1',2)],[E('btn','− پێشخستن',3),E('btn','+ دواخستن',3)],[E('el','کاتی دێڕی یەکەم: 00:00:05,000 → 00:00:06,500 (+1.5 چرکە)',4)],[E('el','وەک خۆی',5),E('el','پاککردنەوە',5)],[E('el','SRT',6),E('el','ASS',6),E('el','VTT',6)],[E('btn','جێبەجێکردن',7)]],
+  notes:['یەک یان چەند فایلێک هەڵبژێرە.','ژمارەی چرکەی هەر هەنگاوێک بنووسە (بۆ نموونە 1.5). ئەگەر بەتاڵ بێت، ١ چرکە وەردەگیرێت.','<b>− پێشخستن</b>: هەر جارێک دەستی لێ بدەیت ئەو بڕە لە کاتەکان کەم دەکاتەوە. <b>+ دواخستن</b>: ئەو بڕە زیاد دەکات. دەتوانیت چەند جار دووبارەی بکەیتەوە و بڕەکان کۆ دەبنەوە.','دوای هەڵبژاردنی فایل، کاتی دێڕی یەکەم لەگەڵ کاتە نوێیەکەی پیشان دەدرێت، تا پێش جێبەجێکردن دڵنیا ببیتەوە.','«پاککردنەوە» تاگەکانی ڕەنگ و فۆنت و شوێن لادەبات؛ «وەک خۆی» دەستکارییان ناکات.','فۆرماتی فایلی دەرچوو.','فایلەکان دروست دەبن و دادەبەزن.'],
+  tip:'ئەگەر چەند فایلێک پێکەوە دابەزێنیت، وێبگەڕ داوای مۆڵەت دەکات: «دەستپێکردنی داگرتن» دابگرە و ئەگەر وێبگەڕ پرسیاری کرد «ڕێگەدان» هەڵبژێرە تا هەموو فایلەکان دابەزن.'}]},
+{k:'rtl',name:'چاککردنی RTL',intro:'کێشەی ئاڕاستەی دەقی کوردی/عەرەبی چاک دەکات (وەک خاڵ و نیشانەکان کە دەچنە شوێنی هەڵە) بەبێ دەستکاریکردنی تاگەکان.',
+ feats:['چەند فایلێک پێکەوە','جۆری چاککردن بۆ هاردسەب یان پلەیەر','گەڕاندنەوە: لابردنی هێماکانی RTL'],
+ steps:[{h:'بەکارهێنان',rows:[[E('box','فایلەکان هەڵبژێرە (SRT, ASS, VTT)',1)],[E('el','هارد سەب — libass / FFmpeg (پێشنیارکراو)',2)],[E('el','گشتی — بۆ پلەیەر و VSFilter',3)],[E('el','لابردنی هەموو هێماکانی RTL',4)],[E('btn','چاککردن و داگرتن',5)]],
+  notes:['فایلەکان هەڵبژێرە.','باشترینە ئەگەر ژێرنووسەکە دەچێتە سەر ڤیدیۆ (هاردسەب) یان لە پلەیەرە نوێکان.','بۆ پلەیەرە کۆنەکان و VSFilter.','هەموو هێما شاراوەکانی RTL لادەبات و فایلەکە دەگەڕێنێتەوە دۆخی پێشوو.','فایلە چاککراوەکان دادەبەزن.']}]},
+{k:'merge',name:'تێکەڵکردنی دوو فایل',intro:'دوو فایلی ژێرنووس تێکەڵ دەکات و ستایلەکانیان بەڕێوە دەبات؛ هەروەها لۆگۆی KURD FOREST زیاد دەکات.',
+ feats:['فایلی سەرەکی + فایلی دووەم','بینین و سڕینەوەی ستایلەکان','دەستکاریکردنی ڕستەکانی فایلی دووەم','دیاریکردنی فۆنت بۆ ستایل/دێڕ','زیادکردنی لۆگۆ بە ٣ ستایلی جوڵە'],
+ steps:[{h:'هەنگاوەکان',rows:[[E('box','١. فایلی سەرەکی (بنچینە)',1)],[E('btn','سڕینەوەی ستایلە بەتاڵەکان',2)],[E('box','٢. فایلی دووەم',3)],[E('btn','دەستکاریکردنی ڕستەکانی فایلی دووەم',4)],[E('el','فۆنتەکان: زیادکردن',5)],[E('el','☑ زیادکردنی لۆگۆی KURD FOREST',6),E('el','چەند جار؟ 2',7)],[E('btn','تێکەڵکردن و داگرتن',8)]],
+  notes:['ئەو فایلەی بنچینەیە (بۆ نموونە وەرگێڕانی سەرەکی). ستایلەکانی لە خوارەوە دەردەکەون.','ئەو ستایلانەی هیچ دێڕێکیان بەکارناهێنێت لادەبات.','ئەو فایلەی دەق و ستایلەکەی دەگوازرێتەوە ناو فایلی سەرەکی (بۆ نموونە تابلۆ یان گۆرانی).','پێش تێکەڵکردن دەتوانیت ڕستەکانی فایلی دووەم بگۆڕیت.','فۆنت زیاد بکە و دیاری بکە بۆ کام ستایل یان دێڕ.','لۆگۆ زیاد دەکات؛ یەکێک یان زیاتر لە ٣ ستایلەکە هەڵبژێرە: جوڵان لە خوارەوە، دوو لایەن، یان دەرچوون لە لۆگۆوە.','چەند جار لۆگۆکە دووبارە بێتەوە (٢ جار × ٣ ستایل = ٦ جار)، بە زیرەکی بەسەر فایلەکەدا دابەش دەبن.','فایلە تێکەڵکراوەکە دادەبەزێت.']}]},
+{k:'sdh',name:'پاککردنەوەی SDH',intro:'هەموو نووسینە دەنگییەکانی وەک [music] و (screaming) لە ژێرنووس دەسڕێتەوە بەبێ تێکدانی کاتەکان.',
+ feats:['چەند فایلێک پێکەوە','دێڕە بەتاڵبووەکان خۆکار لادەبرێن'],
+ steps:[{h:'بەکارهێنان',rows:[[E('box','فایلەکان هەڵبژێرە',1)],[E('btn','پاککردنەوە و داگرتن',2)]],
+  notes:['فایلی ئینگلیزی (یان هەر زمانێک) هەڵبژێرە.','فایلە پاککراوەکان دادەبەزن؛ ئەوانە ئامادەن بۆ وەرگێڕان.']}]},
+{k:'shortcuts',name:'کورتکراوەکان',intro:'کورتکراوەکانی کیبۆرد کاری ئیدیتەر زۆر خێراتر دەکەن (بۆ کۆمپیوتەر). هەر کاتێک Ctrl+K لێبدە بۆ بینینی لیستەکە.',
+ feats:['Ctrl+Space کارپێکردن/ڕاگرتن','Ctrl+← / → پێش/پاشخستن ٢ چرکە؛ لەگەڵ Shift ٠.٢ چرکە','Tab دێڕی دواتر؛ Ctrl+↑ / ↓ دێڕی پێشوو/دواتر','Ctrl+S سەیڤ، Ctrl+F گەڕان، Ctrl+Z / Ctrl+Y','Ctrl+Enter تەکنیک، Ctrl+J چوونە سەر کاتی دێڕ','Ctrl+B ئەستوور، Ctrl+I لار، Ctrl+M ♪','Alt+Delete سڕینەوەی دێڕ، Ctrl+Shift+E سڕینەوەی بەتاڵەکان'],
+ steps:[{h:'نموونە',rows:[[E('el','Ctrl',1),E('el','+'),E('el','Space',1),E('lbl','کارپێکردن/ڕاگرتن')],[E('el','Ctrl',2),E('el','+'),E('el','Enter',2),E('lbl','تەکنیکی ئەم دێڕە')]],
+  notes:['لە کاتی نووسیندا، بەبێ بەجێهێشتنی کیبۆرد ڤیدیۆکە ڕابگرە و کاری پێبکەرەوە.','لەناو هەر خانەیەکی وەرگێڕان، ڕاستەوخۆ پەنجەرەی تەکنیکی ئەو دێڕە دەکاتەوە.']}]},
+{k:'img',name:'وێنە بۆ لینک',intro:'وێنەیەک بار دەکات بۆ ImgBB و لینکی ڕاستەوخۆت دەداتێ (بۆ پۆستەر و وێنەی ماڵپەڕ).',
+ feats:['کلیلی API تەنها یەکجار دادەنرێت','لینکی ڕاستەوخۆ','کۆپیکردن بە یەک دەست لێدان'],
+ steps:[{h:'بەکارهێنان',rows:[[E('txt','کلیلی API ...',1),E('btn','وەرگرتنی کلیل لە کوێیە؟',2)],[E('box','کرتە بکە و وێنەکە هەڵبژێرە',3)],[E('txt','https://i.ibb.co/...',4)],[E('btn','کۆپیکردنی لینک',5)]],
+  notes:['کلیلی API ی ImgBB لێرە دابنێ؛ لەسەر ئامێرەکەت بیر دەمێنێت.','ڕێنمایی وەرگرتنی کلیلی بەخۆڕایی.','وێنەکە هەڵبژێرە؛ خۆکار بار دەبێت.','لینکی ڕاستەوخۆی وێنەکە.','لینکەکە کۆپی دەکات.']}]},
+{k:'mkv',name:'دەرهێنەری MKV',intro:'ژێرنووس و دەنگ لە فایلی MKV یان WebM دەردەهێنێت، بە خێرایی و بەبێ ئینتەرنێت.',
+ feats:['خوێندنەوەی فایلی گەورە لەسەر مۆبایل','لیستی هەموو ژێرنووس و دەنگەکان بە زمان','ناوی تایبەت بۆ فایلی دەرچوو'],
+ steps:[{h:'بەکارهێنان',rows:[[E('box','کرتە بکە بۆ کردنەوەی فایلەکان',1)],[E('el','خەریکی پشکنینە... 45%',2)],[E('txt','ناوی فایلی دەرچوو',3)],[E('btn','ژێرنووس 4',4),E('btn','دەنگ (Audio) 2',4)]],
+  notes:['فایلی MKV یان WebM لە ئامێرەکەت هەڵبژێرە.','ڕێژەی پشکنین.','ناوی فایلە دەرهێنراوەکان (ئارەزوومەندانە).','دەستی لێ بدە بۆ کردنەوەی لیستەکە، پاشان دەست لە هەر ژێرنووس یان دەنگێک بدە تا دابەزێت.']}]},
+{k:'servers',name:'کۆدی سێرڤەرەکان',intro:'لینکی سێرڤەرەکانی ئەڵقەکان دەکات بە کۆدێکی ڕێکخراو بۆ ماڵپەڕ.',
+ feats:['ناسینەوەی ژمارەی ئەڵقە لە هەر شوێنێک','ناوی سێرڤەر خۆکار بە ئینگلیزی؛ Vidmoly و Google drive یەکەمن','ڕاستکردنەوەی لینک بۆ embed','ڕێکخستنەوەی کۆدی کۆن'],
+ steps:[{h:'بەکارهێنان',rows:[[E('btn','Paste',1),E('btn','نموونە',2),E('btn','پاککردنەوە',3)],[E('txt','12\nhttps://vidmoly.org/embed-...',4)],[E('el','☑ embed',5),E('el','☑ ڕیزکردن',5),E('el','ئەڵقەی سەرەتا',6)],[E('txt','<کۆدی دەرچوو>',7)],[E('btn','کۆپیکردنی کۆد',8),E('btn','داگرتن (.html)',8)]],
+  notes:['لینکەکان لە کلیپبۆرد دادەنێت.','نموونەیەک پیشان دەدات بۆ تێگەیشتن.','خانەکە بەتاڵ دەکاتەوە.','ژمارەی ئەڵقە و لینکەکان بنووسە؛ ژمارە پێش یان دوای لینک یان لەسەر هەمان دێڕ.','لینکەکان ڕاست دەکاتەوە بۆ شێوازی embed و ئەڵقەکان بە ڕیز دادەنێت.','ئەگەر ژمارەت نەنووسیبوو، لەم ژمارەیەوە دەست پێدەکات.','کۆدی ئامادە؛ ئاگادارییەکان و پوختەش لە سەرەوەی دەردەکەون.','کۆپی بکە یان وەک فایل دایبەزێنە.']}]},
+{k:'history',name:'مێژووی کارەکان',intro:'هەموو ئەو ژێرنووسانەی سەیڤت کردوون لێرە دەمێننەوە تا دووبارە بیانکەیتەوە.',
+ feats:['کردنەوەی کاری کۆن لە هەمان شوێن','سڕینەوەی یەک یان هەموو','ئاگادارکردنەوە کاتێک پڕ دەبێت'],
+ steps:[{h:'بەکارهێنان',rows:[[E('txt','Movie.2024.srt — 12/10',1),E('btn','کردنەوە',2),E('btn','سڕینەوە',3)],[E('btn','سڕینەوەی هەمووی',4)]],
+  notes:['ناوی فایل و بەرواری سەیڤکردن.','کارەکە لە ئیدیتەر دەکاتەوە.','تەنها ئەم کارە دەسڕێتەوە.','هەموو مێژوو بەتاڵ دەکاتەوە. ئەگەر ئاگاداری «خەریکە پڕ دەبێت» دەرکەوت، کارە کۆنەکان بسڕەوە.']}]}
+];
+var KG_ICO={"☰": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 6h16M4 12h16M4 18h16\"/></svg>", "↶": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 14L4 9l5-5\"/><path d=\"M4 9h11a5 5 0 010 10h-3\"/></svg>", "↷": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M15 14l5-5-5-5\"/><path d=\"M20 9H9a5 5 0 000 10h3\"/></svg>", "☑": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"3\"/><path d=\"M8 12l3 3 5-6\"/></svg>", "🗑": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 002 2h8a2 2 0 002-2l1-12M9 7V4h6v3\"/></svg>", "∅": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M5.6 18.4L18.4 5.6\"/></svg>", "🔍": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"11\" cy=\"11\" r=\"7\"/><path d=\"M21 21l-5-5\"/></svg>", "▶": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M7 4l13 8-13 8z\" fill=\"currentColor\"/></svg>", "🎨": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 3a9 9 0 100 18c1 0 1.5-.8 1.5-1.5 0-.4-.2-.7-.4-1-.3-.3-.4-.6-.4-1 0-.8.7-1.5 1.5-1.5H16a5 5 0 005-5c0-4.4-4-8-9-8z\"/><circle cx=\"7.5\" cy=\"11\" r=\"1\"/><circle cx=\"10\" cy=\"7\" r=\"1\"/><circle cx=\"14.5\" cy=\"7\" r=\"1\"/></svg>", "▲": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6 15l6-6 6 6\"/></svg>", "▼": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6 9l6 6 6-6\"/></svg>", "✕▶": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 5l7 7M10 5l-7 7\"/><path d=\"M13 6l8 6-8 6z\" fill=\"currentColor\"/></svg>", "✛": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 3v18M3 12h18\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/></svg>"};
+var SV=function(p,w,c){return '<svg viewBox="0 0 24 24" width="'+(w||16)+'" height="'+(w||16)+'" fill="none" stroke="'+(c||'currentColor')+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>';};
+KG_ICO.fsp=SV('<path d="M4 6h16M7 12h10M9 18h6"/>');
+KG_ICO.F=SV('<path d="M4 20h4M6 20L12 4l6 16M16 20h4M8 14h8"/>');
+KG_ICO.RTL='<span dir="ltr" style="font-size:11px;font-weight:900;letter-spacing:.3px">RTL</span>';
+var TR='<path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>';
+KG_ICO['↶']=SV('<path d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>');
+KG_ICO['↷']=SV('<path d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6"/>');
+KG_ICO['☑']=SV('<path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>');
+KG_ICO['🗑']=SV(TR);
+KG_ICO.trashN=SV(TR)+'<b style="font-size:12px;margin-inline-start:3px">0</b>';
+KG_ICO['🔍']=SV('<path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>');
+KG_ICO['✕▶']=SV('<path d="M6 18L18 6M6 6l12 12"/>');
+KG_ICO['🎨']=SV('<path d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>');
+KG_ICO['▶']=SV('<path d="M8 5v14l11-7z" fill="currentColor" stroke="none"/>');
+KG_ICO['▲']=SV('<path d="M5 15l7-7 7 7"/>');
+KG_ICO['▼']=SV('<path d="M19 9l-7 7-7-7"/>');
+KG_ICO.vol=SV('<path d="M11 5L6 9H2v6h4l5 4V5zM15.5 8.5a5 5 0 010 7M18.4 5.6a9 9 0 010 12.8"/>');
+var KGS='<svg class="kgx" fill="none" stroke-linecap="round" stroke-linejoin="round" ';
+var KG_X={
+dots5:KGS+'viewBox="0 0 120 20" width="120" height="20"><circle cx="10" cy="10" r="8" fill="#a8d5b8"/><circle cx="34" cy="10" r="8" fill="#38bdf8"/><circle cx="58" cy="10" r="8" fill="#c084fc"/><circle cx="82" cy="10" r="8" fill="#fb7185"/><circle cx="106" cy="10" r="8" fill="#fbbf24"/></svg>',
+dots2:KGS+'viewBox="0 0 52 20" width="52" height="20"><circle cx="10" cy="10" r="8" fill="#0f172a" stroke="#e2e8f0" stroke-width="1.5"/><circle cx="36" cy="10" r="8" fill="#facc15"/></svg>',
+movepath:KGS+'viewBox="0 0 200 30" width="200" height="30"><circle cx="16" cy="15" r="9" fill="#f8fafc"/><path d="M32 15h132" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6 5"/><path d="M162 8l8 7-8 7" stroke="#94a3b8" stroke-width="2"/><circle cx="186" cy="15" r="9" fill="#22c55e"/></svg>',
+seekbar:KGS+'viewBox="0 0 300 14" width="100%" height="14" preserveAspectRatio="none" style="color:var(--primary)"><rect x="0" y="5" width="300" height="4" rx="2" fill="#334155"/><rect x="0" y="5" width="96" height="4" rx="2" fill="currentColor"/><circle cx="96" cy="7" r="6" fill="currentColor"/></svg>',
+progress:KGS+'viewBox="0 0 300 12" width="100%" height="12" preserveAspectRatio="none" style="color:var(--primary)"><rect x="0" y="3" width="300" height="6" rx="3" fill="#334155"/><rect x="0" y="3" width="180" height="6" rx="3" fill="currentColor"/></svg>',
+gest:KGS+'viewBox="0 0 320 130" width="100%" style="max-width:340px"><rect x="2" y="2" width="316" height="126" rx="12" stroke="#475569" stroke-width="1.6"/><path d="M112 8v114M208 8v114" stroke="#475569" stroke-width="1.4" stroke-dasharray="4 5"/><g fill="#e2e8f0"><path d="M68 46L50 60l18 14zM86 46L68 60l18 14z"/><path d="M134 46l18 14-18 14zM172 46v28h6V46zM184 46v28h6V46z"/><path d="M234 46l18 14-18 14zM252 46l18 14-18 14z"/></g><g font-family="monospace" font-size="12" text-anchor="middle"><text x="68" y="92" fill="#94a3b8">-10s</text><text x="160" y="92" fill="#94a3b8">Play/Pause</text><text x="252" y="92" fill="#94a3b8">+10s</text><text x="160" y="22" fill="#facc15">DOUBLE TAP</text><text x="62" y="114" fill="#facc15">HOLD 2x</text><text x="258" y="114" fill="#facc15">HOLD 2x</text></g></svg>'
+};
+var SYM={'←':SV('<path d="M19 12H5M11 6l-6 6 6 6"/>',14),'→':SV('<path d="M5 12h14M13 6l6 6-6 6"/>',14),'↑':SV('<path d="M12 19V5M6 11l6-6 6 6"/>',14),'↓':SV('<path d="M12 5v14M6 13l6 6 6-6"/>',14),'✓':SV('<path d="M5 13l4 4L19 7"/>',14,'#22c55e'),'✗':SV('<path d="M6 18L18 6M6 6l12 12"/>',14,'#ef4444'),'✕':SV('<path d="M6 18L18 6M6 6l12 12"/>',13),'♪':SV('<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',14),'🎨':KG_ICO['🎨'],'🗑':KG_ICO['🗑'],'🔍':KG_ICO['🔍']};
+var SYMRE=new RegExp('(<[^>]*>)|('+Object.keys(SYM).join('|')+')','g');
+var LTRRE=/[+\-]?[A-Za-z0-9\\{](?:[A-Za-z0-9\\{}+\-_.:\/=#*&;,'←→↑↓ ]*[A-Za-z0-9\\}+*\/←→↑↓])?/g;
+function ltr(t){return t.replace(LTRRE,function(m){return '<bdi dir="ltr">'+m+'</bdi>';});}
+function symAll(h){return h.split(/(<[^>]*>)/).map(function(p,i){return i%2?p:ltr(p).replace(SYMRE,function(m,t,s){return t||SYM[s]||m;});}).join('');}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function lbl(l){if(KG_ICO[l])return KG_ICO[l];if(KG_X[l])return KG_X[l];
+ var m=/^(▣|☑|✛) (.*)$/.exec(l);var pre={'▣':'<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>','☑':KG_ICO['☑']};
+ if(m&&pre[m[1]])return pre[m[1]]+' '+esc(m[2]);return esc(l).replace(/\n/g,'<br>');}
+function rowsHtml(rows){return rows.map(function(r){return '<div class="kg-row">'+r.map(function(e){
+ return '<div class="kg-el '+e.t+(e.n?' hl':'')+'"'+(/[\u0600-\u06FF]/.test(e.l)?'':' dir="ltr"')+'>'+(e.n?'<b class="kg-n">'+e.n+'</b>':'')+lbl(e.l)+'</div>';}).join('')+'</div>';}).join('');}
+(function(){var gb=document.getElementById('kf-guide');if(gb&&gb.parentElement!==document.body)document.body.appendChild(gb);})();
+var tabsEl=document.getElementById('kg-tabs'),content=document.getElementById('kg-content'),body=document.getElementById('kg-body'),box=document.getElementById('kf-guide'),cur=0;
+G.forEach(function(g,i){var b=document.createElement('button');b.type='button';b.className='kg-tab';b.textContent=g.name;b.onclick=function(){show(i);};tabsEl.appendChild(b);});
+function show(i){cur=i;var g=G[i];
+ [].forEach.call(tabsEl.children,function(b,j){b.classList.toggle('on',j===i);});
+ var on=tabsEl.children[i];if(on&&on.scrollIntoView)on.scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'});
+ var h='<div class="kg-title">'+g.name+'</div><p class="kg-intro">'+g.intro+'</p>';
+ h+='<div class="kg-feat"><h4>تایبەتمەندییەکان</h4><ul>'+g.feats.map(function(f){return '<li>'+esc(f)+'</li>';}).join('')+'</ul></div>';
+ g.steps.forEach(function(s,si){
+  h+='<div class="kg-step"><h3><span>'+(si+1)+'</span>'+s.h+'</h3><div class="kg-mock">'+rowsHtml(s.rows)+'</div><div class="kg-cap">ڕەسمی ڕوونکردنەوە — ژمارە زەردەکان لە خوارەوە ڕوونکراونەتەوە</div>';
+  h+='<ul class="kg-notes">'+s.notes.map(function(n,ni){return '<li><b class="n">'+(ni+1)+'</b><div class="t">'+n+'</div></li>';}).join('')+'</ul>';
+  if(s.tip)h+='<div class="kg-tip"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0012 3z"/></svg>'+s.tip+'</div>';
+  h+='</div>';});
+ h+='<div class="kg-nav">'+(i>0?'<button type="button" onclick="kfGuide.show('+(i-1)+')">→ '+G[i-1].name+'</button>':'<span></span>')+(i<G.length-1?'<button type="button" onclick="kfGuide.show('+(i+1)+')">'+G[i+1].name+' ←</button>':'')+'</div>';
+ content.innerHTML=symAll(h);body.scrollTop=0;}
+window.kfGuide={show:show,
+ open:function(){if(window.kfNav)kfNav.closeDrawer();box.classList.add('show');box.setAttribute('aria-hidden','false');show(cur);},
+ close:function(){box.classList.remove('show');box.setAttribute('aria-hidden','true');}};
+document.addEventListener('keydown',function(e){if(e.key==='Escape')kfGuide.close();});
+// دوگمە لە مێنیو
+var ICON='<svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13C10.832 18.477 9.246 18 7.5 18S4.168 18.477 3 19.253v-13C4.168 5.477 5.754 5 7.5 5s3.332.477 4.5 1.253zm0 0C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>';
+['kf-drawer-list','kf-tabs'].forEach(function(id){var host=document.getElementById(id);if(!host)return;
+ var s=document.createElement('div');s.className='kf-sep';host.appendChild(s);
+ var b=document.createElement('button');b.type='button';b.className='kf-item';b.setAttribute('data-k','guide');b.innerHTML=ICON+'<span>فێرکاری بەکارهێنان</span>';
+ b.addEventListener('click',function(){kfGuide.open();});host.appendChild(b);});
+})();
+</script>
+
 </body>
 </html>

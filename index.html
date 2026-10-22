@@ -3103,7 +3103,7 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M7 12h10M9 18h6"/>
     </svg>
 </button>
-                <button class="top-btn" id="btn-rtl-toggle" onclick="kfToggleEditorRtl()" title="RTL (\\fe-1) — داگیرساندن/کوژاندنەوە" aria-pressed="false" style="font-size:11px;font-weight:900;letter-spacing:.3px;"><span dir="ltr">RTL</span></button>
+                <button class="top-btn" id="btn-rtl-toggle" onclick="kfToggleEditorRtl()" title="RTL — ئاڕاستەی ڕاست-بۆ-چەپ بۆ هەموو فایلەکە (ASS: لە ستایل، بێ دەستکاری دێڕەکان)" aria-pressed="false" style="font-size:11px;font-weight:900;letter-spacing:.3px;"><span dir="ltr">RTL</span></button>
                 <button class="top-btn" id="btn-select-mode" onclick="kfSel.toggleMode()" title="دیاریکردنی دێڕەکان">
                     <svg class="icon" style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
                 </button>
@@ -14311,10 +14311,32 @@ function fixAllFspZero() {
 }
 
 // ---------- دووگمەی RTL لە ئیدیتەر (هەمان سیستەمی RTL Fix — {\fe-1}) ----------
+function kfStyleRtlCapable() {
+return typeof isAssFormat !== 'undefined' && isAssFormat && typeof assHeaderLines !== 'undefined' && assHeaderLines && assHeaderLines.some(l => l.trim().startsWith('Style:'));
+}
+function kfStyleRtlOn() {
+if (!kfStyleRtlCapable()) return false;
+return assHeaderLines.filter(l => l.trim().startsWith('Style:')).every(l => l.split(',').pop().trim() === '-1');
+}
+window.kfRtlEncBackup = window.kfRtlEncBackup || {};
+function kfSetStyleEnc(on) {
+assHeaderLines = assHeaderLines.map(line => {
+if (!line.trim().startsWith('Style:')) return line;
+const parts = line.split(','); const li = parts.length - 1;
+const m = parts[li].match(/^(\s*)(-?\d+)(\s*)$/); if (!m) return line;
+const name = parts[0].replace(/^\s*Style:\s*/i, '').trim();
+let val;
+if (on) { if (m[2] !== '-1') kfRtlEncBackup[name] = m[2]; val = '-1'; }
+else { val = (kfRtlEncBackup[name] !== undefined) ? kfRtlEncBackup[name] : '1'; }
+parts[li] = m[1] + val + m[3];
+return parts.join(',');
+});
+}
 function kfEditorRtlIsOn() {
-    if (typeof originalData === 'undefined' || !originalData.length) return false;
-    return originalData.some(it => /\\fe-1(?!\d)/.test(it && it.rawText || '')) ||
-        Array.prototype.some.call(document.querySelectorAll('.subtitle-kurd textarea'), ta => /\\fe-1(?!\d)/.test(ta.value));
+if (typeof originalData === 'undefined' || !originalData.length) return false;
+if (kfStyleRtlOn()) return true;
+return originalData.some(it => /\\fe-1(?!\d)/.test(it && it.rawText || '')) ||
+Array.prototype.some.call(document.querySelectorAll('.subtitle-kurd textarea'), ta => /\\fe-1(?!\d)/.test(ta.value));
 }
 function kfSyncRtlBtn() {
     const b = document.getElementById('btn-rtl-toggle'); if (!b) return;
@@ -14324,21 +14346,36 @@ function kfSyncRtlBtn() {
     b.style.background = ''; b.style.color = '';
 }
 function kfToggleEditorRtl() {
-    if (!isEditing || !originalData.length) { showToast("تکایە سەرەتا فایلێکی ژێرنووس بکەرەوە!", "warning"); return; }
-    const turnOn = !kfEditorRtlIsOn();
-    const mode = turnOn ? 'hardsub' : 'clean';
-    const fx = t => (t && t.trim()) ? RtlEngine.fixAssText(t, mode) : t;
-    const tas = document.querySelectorAll('.subtitle-kurd textarea');
-    tas.forEach(ta => { const v = fx(ta.value); if (v !== ta.value) ta.value = v; });
-    originalData.forEach(it => { if (it && it.rawText) it.rawText = fx(it.rawText); });
-    historyStack.push(getCurrentSnapshot());
-    if (historyStack.length > 40) historyStack.shift();
-    redoStack = [];
-    updateUndoRedoButtons();
-    saveSession();
-    if (typeof renderSubtitlesNow === 'function') renderSubtitlesNow();
-    kfSyncRtlBtn();
-    showToast(turnOn ? "RTL داگیرسا — {\\fe-1} بۆ هەموو دێڕەکان دانرا" : "RTL کوژایەوە — {\\fe-1} لابرا", turnOn ? "success" : "info");
+if (!isEditing || !originalData.length) { showToast("تکایە سەرەتا فایلێکی ژێرنووس بکەرەوە!", "warning"); return; }
+const styleMode = kfStyleRtlCapable();
+const turnOn = !kfEditorRtlIsOn();
+let fx;
+if (styleMode) {
+if (turnOn) {
+kfSetStyleEnc(true);
+// تەنها \feی ناتەبا (جگە لە -1) لادەبرێت چونکە ستایلەکە پشتگوێ دەخەن؛ هیچ شتێک زیاد ناکرێت
+fx = t => (t && t.trim()) ? t.replace(/\\fe(?!-1(?!\d))-?\d+/g, '') : t;
+} else {
+if (kfStyleRtlOn()) kfSetStyleEnc(false);
+fx = t => (t && t.trim()) ? RtlEngine.fixAssText(t, 'clean') : t;
+}
+} else {
+const mode = turnOn ? 'hardsub' : 'clean';
+fx = t => (t && t.trim()) ? RtlEngine.fixAssText(t, mode) : t;
+}
+const tas = document.querySelectorAll('.subtitle-kurd textarea');
+tas.forEach(ta => { const v = fx(ta.value); if (v !== ta.value) ta.value = v; });
+originalData.forEach(it => { if (it && it.rawText) it.rawText = fx(it.rawText); });
+historyStack.push(getCurrentSnapshot());
+if (historyStack.length > 40) historyStack.shift();
+redoStack = [];
+updateUndoRedoButtons();
+saveSession();
+if (typeof renderSubtitlesNow === 'function') renderSubtitlesNow();
+try { if (styleMode && typeof LibassRenderer !== 'undefined' && LibassRenderer.isEnabled()) LibassRenderer.sync(true); } catch (e) {}
+kfSyncRtlBtn();
+if (styleMode) showToast(turnOn ? "RTL داگیرسا — لە ستایلەکانی فایلەکە (Encoding=-1) دانرا، دێڕەکان دەستکاری نەکران" : "RTL کوژایەوە — ستایلەکان گەڕانەوە بۆ دۆخی پێشوو", turnOn ? "success" : "info");
+else showToast(turnOn ? "RTL داگیرسا — {\\fe-1} بۆ هەموو دێڕەکان دانرا (SRT/VTT ستایلیان نییە)" : "RTL کوژایەوە — {\\fe-1} لابرا", turnOn ? "success" : "info");
 }
 document.addEventListener('DOMContentLoaded', () => {
     const scr = document.getElementById('editor-screen');
@@ -16213,10 +16250,10 @@ var G=[
   tip:'ئەگەر کارێکت تەواو نەکردبێت، کاتی کردنەوە پرسیارت لێ دەکرێت <b>«دەتەوێت بەردەوام بیت؟»</b>. «بەردەوامبوون» لەو شوێنەی وەستابوویت دەستپێدەکاتەوە، «دەستپێکردنەوە» کارێکی نوێ دەکاتەوە.'}
  ]},
 {k:'editor',name:'ئیدیتەر',intro:'ئیدیتەر شوێنی سەرەکیی کارکردنە: ڤیدیۆ لە سەرەوەیە، دێڕەکانی ژێرنووس لە خوارەوە، و دوگمەکانی کۆنترۆڵ لە شریتی سەرەوە و خوارەوەن.',
- feats:['بینینی ڤیدیۆ و ژێرنووس پێکەوە بە شێوەی ڕاستەوخۆ','پاشگەزبوونەوە و چوونەپێش (Undo / Redo)','دیاریکردن و سڕینەوەی چەند دێڕێک پێکەوە','سڕینەوەی هەموو دێڕە بەتاڵەکان بە یەک دەست لێدان','گەڕان و گۆڕینی وشە','سەیڤکردنی خۆکار و داگرتنی فایلی کۆتایی','دانانی RTL بۆ هەموو دێڕەکان بە یەک دەست لێدان','دەستلێدان لەسەر ڤیدیۆ: دووجار دەست بۆ ١٠ چرکە، ڕاگرتن بۆ 2x','پێداچوونەوەی کۆدەکان لەگەڵ چوونە سەر دێڕ و چاککردنی خۆکار'],
+ feats:['بینینی ڤیدیۆ و ژێرنووس پێکەوە بە شێوەی ڕاستەوخۆ','پاشگەزبوونەوە و چوونەپێش (Undo / Redo)','دیاریکردن و سڕینەوەی چەند دێڕێک پێکەوە','سڕینەوەی هەموو دێڕە بەتاڵەکان بە یەک دەست لێدان','گەڕان و گۆڕینی وشە','سەیڤکردنی خۆکار و داگرتنی فایلی کۆتایی','دانانی RTL بۆ هەموو فایلەکە (لە ستایل) بە یەک دەست لێدان','دەستلێدان لەسەر ڤیدیۆ: دووجار دەست بۆ ١٠ چرکە، ڕاگرتن بۆ 2x','پێداچوونەوەی کۆدەکان لەگەڵ چوونە سەر دێڕ و چاککردنی خۆکار'],
  steps:[
  {h:'شریتی ئامرازەکانی سەرەوە',rows:[[E('btn','گەڕانەوە',1),E('ico','↶',2),E('ico','↷',3),E('ico','fsp',4),E('ico','RTL',5)],[E('ico','☑',6),E('ico','trashN',7),E('ico','🗑',8),E('ico','F',9),E('ico','🔍',10),E('ico','✕▶',11)]],
-  notes:['<b>گەڕانەوە</b>: دەگەڕێیتەوە شاشەی سەرەکی؛ پرسیاری دڵنیابوونەوەت لێ دەکرێت چونکە ئەگەر داونلۆدت نەکردبێت، کارەکەت دەڕوات.','<b>پاشگەزبوونەوە</b>: دوایین گۆڕانکاری هەڵدەوەشێنێتەوە (Ctrl+Z).','<b>چوونەپێش</b>: گۆڕانکارییە هەڵوەشاوەکە دەگەڕێنێتەوە (Ctrl+Y).','<b>fsp 0</b>: پچڕانی نێوان پیتەکانی کوردی/عەرەبی لە هەموو فایلەکەدا لادەبات.','<b>RTL</b>: کۆدی {\\fe-1} بۆ هەموو دێڕەکان دادەنێت تا خاڵ و نیشانەکان لە شوێنی ڕاست بن. جارێکی تر دەستی لێ بدەیت کۆدەکە لادەبات. کاتێک چالاک بێت ڕەنگی دوگمەکە ڕوون دەبێتەوە.','<b>دیاریکردنی دێڕەکان</b>: دۆخی هەڵبژاردن دەکاتەوە؛ دەست لە هەر دێڕێک بدە تا نیشانەی ✓ بگرێت.','<b>سڕینەوەی دیاریکراوەکان</b>: هەموو ئەو دێڕانەی ✓یان گرتووە دەسڕێتەوە.','<b>سڕینەوەی دێڕە بەتاڵەکان</b>: هەر دێڕێک دەقی تێدا نەبێت لادەبات (Ctrl+Shift+E).','<b>فۆنتەکان</b>: پەنجەرەی فۆنتەکان و ڕەندەری libass دەکاتەوە (لە بەشی «فۆنتەکان» ڕوونکراوەتەوە).','<b>گەڕان</b>: شریتی گەڕان و گۆڕین دەکاتەوە.','<b>لابردنی ڤیدیۆ</b>: ڤیدیۆکە لادەبات تا ڤیدیۆیەکی تر دابنێیت.']},
+  notes:['<b>گەڕانەوە</b>: دەگەڕێیتەوە شاشەی سەرەکی؛ پرسیاری دڵنیابوونەوەت لێ دەکرێت چونکە ئەگەر داونلۆدت نەکردبێت، کارەکەت دەڕوات.','<b>پاشگەزبوونەوە</b>: دوایین گۆڕانکاری هەڵدەوەشێنێتەوە (Ctrl+Z).','<b>چوونەپێش</b>: گۆڕانکارییە هەڵوەشاوەکە دەگەڕێنێتەوە (Ctrl+Y).','<b>fsp 0</b>: پچڕانی نێوان پیتەکانی کوردی/عەرەبی لە هەموو فایلەکەدا لادەبات.','<b>RTL</b>: لە فایلی ASS ئاڕاستەی ڕاست-بۆ-چەپ لە <b>ستایلەکانی فایلەکە</b> دادەنێت (<bdi dir="ltr">Encoding=-1</bdi>)، بۆیە هیچ کۆدێک نەخراوەتە ناو دێڕەکان و دێڕەکان وەک خۆیان دەمێننەوە. جارێکی تر دەستی لێ بدەیت ستایلەکان دەگەڕێنێتەوە. لە SRT و VTT کە ستایلیان نییە، <bdi dir="ltr">{\\fe-1}</bdi> بۆ دێڕەکان دادەنرێت. کاتێک چالاک بێت ڕەنگی دوگمەکە ڕوون دەبێتەوە.','<b>دیاریکردنی دێڕەکان</b>: دۆخی هەڵبژاردن دەکاتەوە؛ دەست لە هەر دێڕێک بدە تا نیشانەی ✓ بگرێت.','<b>سڕینەوەی دیاریکراوەکان</b>: هەموو ئەو دێڕانەی ✓یان گرتووە دەسڕێتەوە.','<b>سڕینەوەی دێڕە بەتاڵەکان</b>: هەر دێڕێک دەقی تێدا نەبێت لادەبات (Ctrl+Shift+E).','<b>فۆنتەکان</b>: پەنجەرەی فۆنتەکان و ڕەندەری libass دەکاتەوە (لە بەشی «فۆنتەکان» ڕوونکراوەتەوە).','<b>گەڕان</b>: شریتی گەڕان و گۆڕین دەکاتەوە.','<b>لابردنی ڤیدیۆ</b>: ڤیدیۆکە لادەبات تا ڤیدیۆیەکی تر دابنێیت.']},
  {h:'پلەیەری ڤیدیۆ',rows:[[E('vid','فایل لە ئامێرەکەت هەڵبژێرە',1)],[E('el','seekbar',2)],[E('btn','-10s',3),E('ico','▶',4),E('btn','+10s',3),E('el','00:00 / 00:00',5),E('btn','1x',6),E('ico','vol',7)]],
   notes:['دەست لێ بدە و ڤیدیۆی فیلمەکە لە ئامێرەکەت هەڵبژێرە. ڤیدیۆکە بۆ هیچ شوێنێک نانێردرێت، تەنها لەسەر ئامێرەکەت کار دەکات. ژێرنووسەکە ڕاستەوخۆ لەسەری دەردەکەوێت.','هێڵی پێشکەوتن: دەستی لێ بدە یان ڕایبکێشە بۆ چوون بۆ هەر شوێنێکی ڤیدیۆ.','١٠ چرکە بۆ دواوە یان بۆ پێشەوە.','کارپێکردن / ڕاگرتن (Ctrl+Space).','کاتی ئێستا و کۆی کاتی ڤیدیۆ.','خێرایی کارپێکردن: هەر جارێک دەستی لێ بدەیت دەگۆڕێت (1x، 1.5x، 2x...).','دەنگ: دەنگی ڤیدیۆکە بێدەنگ یان دەنگدار دەکات.']},
  {h:'دەستلێدان لەسەر ڤیدیۆ',rows:[[E('vid','gest',1)]],
@@ -16233,7 +16270,7 @@ var G=[
 {k:'card',name:'کارتی دێڕ',intro:'هەر دێڕێکی ژێرنووس کارتێکی تایبەتی هەیە کە دەقی ئەسڵی و خانەی وەرگێڕانی تێدایە.',
  feats:['ژمارە و کاتی هەر دێڕێک','چوونە سەر کاتی دێڕەکە لە ڤیدیۆ','کردنەوەی پەنجەرەی تەکنیک بۆ هەمان دێڕ','سڕینەوەی دێڕ'],
  steps:[
- {h:'پێکهاتەی کارت',rows:[[E('el','#12',1),E('ico','▶',2),E('ico','🎨',3),E('ico','🗑',4),E('el','00:01:22,410 --> 00:01:25,000',5)],[E('txt','I will never leave you.',6)],[E('txt','هەرگیز بەجێت ناهێڵم.',7)]],
+ {h:'پێکهاتەی کارت',rows:[[E('el','#12',1),E('ico','▶',2),E('ico','🎨',3),E('ico','🗑',4),E('el','00:01:22,410 --> 00:01:25,000',5)],[E('txt','I will never leave you.',6)],[E('txt','هەرگیز بەجێت ناهێڵم.|',7)]],
   notes:['ژمارەی دێڕ.','<b>کارپێکردن</b>: ڤیدیۆ دەچێتە سەرەتای ئەم دێڕە و کار دەکات (Ctrl+J).','<b>تەکنیک و ڕەنگ</b>: پەنجەرەی تەکنیک و دیزاینی ئەم دێڕە دەکاتەوە (Ctrl+Enter).','<b>سڕینەوە</b>: ئەم دێڕە دەسڕێتەوە (Alt+Delete).','کاتی دەستپێک و کۆتایی دێڕەکە.','دەقی ئەسڵی (تەنها بۆ خوێندنەوە).','خانەی وەرگێڕان: وەرگێڕانەکەت لێرە بنووسە. Tab دەتباتە دێڕی دواتر. بۆ ئەستوورکردن وشەکە دیاری بکە و Ctrl+B، بۆ لار Ctrl+I، بۆ نیشانەی گۆرانی ♪ Ctrl+M.']}
  ]},
 {k:'tech',name:'تەکنیک و دیزاین',intro:'پەنجەرەی «تەکنیک و دیزاینی دێڕ» هەموو ئامرازەکانی شێوە و شوێن و جوڵەی یەک دێڕی تێدایە. لە کارتی دێڕ دەستی لە دوگمەی 🎨 بدە.',

@@ -15752,7 +15752,7 @@ window.addEventListener('resize', scheduleExact);
 
 
     /* ===== ڕەندەری ورد بە libass (JASSUB) — هەمان ڕێگای مۆداڵی دیاریکردنی شوێن ===== */
-    var exact = null, exactTrack = '', exactOn = false, exactFonts = null, exactFontsLoading = false, exactTries = 0, exactSched = 0, exactShown = false, exactWaiting = false;
+    var exact = null, exactTrack = '', exactOn = false, exactFonts = null, exactFontsLoading = false, exactTries = 0, exactSched = 0, exactShown = false, exactWaiting = false, exactSize = '';
 
     function fmtTime(sec) {
         var cs = Math.max(0, Math.round(sec * 100)), h = Math.floor(cs / 360000); cs -= h * 360000;
@@ -15786,7 +15786,7 @@ function setEngineLabel() {
         e.textContent = exactOn ? 'ڕەندەری ورد: libass (JASSUB) — وەک هاردسەبی کۆتایی' : 'پێشبینینی سادە (libass ئامادە نییە یان بار نەبووە)';
         e.style.color = exactOn ? 'var(--primary)' : '#f59e0b';
     }
-    function exactFail() { stopKeepAlive(); exactOn = false; exactShown = false; var b = el('mvScreen'); if (b) b.classList.remove('kf-exact-mv'); setEngineLabel(); }
+    function exactFail() { stopKeepAlive(); exactOn = false; exactShown = false; exactWaiting = false; var b = el('mvScreen'); if (b) b.classList.remove('kf-exact-mv'); setEngineLabel(); }
     function renderExactAt(t) {
         if (!exact || !exactOn || !mv) return;
         try { exact.setCurrentTime(true, Math.max(0, Math.min(t / 1000, mv.dur))); } catch (e) { }
@@ -15828,11 +15828,15 @@ function setEngineLabel() {
             if (!exact) {
                 var fonts = exactFonts.concat(FontStore.list().filter(function (f) { return f.ok && f.bytes; }).map(function (f) { return new Uint8Array(f.bytes); }));
                 exact = new window.JASSUB({ canvas: canvas, subContent: track, workerUrl: new URL('./jassub/jassub-worker.js', window.location.href).href, wasmUrl: KF_ASSETS['jassub-worker.wasm'], modernWasmUrl: KF_ASSETS['jassub-worker-modern.wasm'], fonts: fonts, availableFonts: { 'adobe arabic': KF_ASSETS['AdobeArabic-Regular.ttf'], 'kurdforest': KF_ASSETS['AdobeArabic-Regular.ttf'], 'speda bold': KF_ASSETS['AdobeArabic-Regular.ttf'], 'liberation sans': KF_ASSETS['default.woff2'] }, fallbackFont: 'adobe arabic', onDemandRender: false, offscreenRender: false, useLocalFonts: false, prescaleFactor: 1 });
-                exact.addEventListener('error', function () { exactFail(); });
+                var failInst = exact; exact.addEventListener('error', function () { if (exact === failInst) exactFail(); });
             } else if (track !== exactTrack) exact.setTrack(track);
             exactTrack = track;
             var dpr = window.devicePixelRatio || 1;
-            exact.sendMessage('canvas', { width: Math.round(W * dpr), height: Math.round(H * dpr), videoWidth: mv.vw || mv.resX, videoHeight: mv.vh || mv.resY });
+            var sizeKey = Math.round(W * dpr) + 'x' + Math.round(H * dpr) + '/' + (mv.vw || mv.resX) + 'x' + (mv.vh || mv.resY);
+            if (sizeKey !== exactSize) {
+                exact.sendMessage('canvas', { width: Math.round(W * dpr), height: Math.round(H * dpr), videoWidth: mv.vw || mv.resX, videoHeight: mv.vh || mv.resY });
+                exactSize = sizeKey;
+            }
             exactOn = true; setEngineLabel();
 if (exactShown) box.classList.add('kf-exact-mv');
 else if (!exactWaiting) { exactWaiting = true; var inst = exact; kfWhenReady(inst, function () { if (exact === inst && mv) { exactShown = true; var b2 = el('mvScreen'); if (b2) b2.classList.add('kf-exact-mv'); } }); }
@@ -15872,7 +15876,13 @@ else if (!exactWaiting) { exactWaiting = true; var inst = exact; kfWhenReady(ins
     function destroyExact() {
         stopKeepAlive();
         if (exactSched) { cancelAnimationFrame(exactSched); exactSched = 0; }
-        exactOn = false; exactTries = 0;
+        // هەر کردنەوەیەک instanceـی نوێی libass و کەنڤاسی نوێ دەبەستێت (وەک LibassRenderer.attach)؛
+        // instanceـی کۆن + کەنڤاسی پاککراو وای دەکرد دووەم جار هیچ نەکێشرێت
+        var inst = exact; exact = null;
+        if (inst) { try { inst.destroy(); } catch (e) { } }
+        var c = el('kf-exact-move'); if (c && c.parentNode) c.parentNode.removeChild(c);
+        exactOn = false; exactTries = 0; exactTrack = ''; exactShown = false; exactWaiting = false; exactSize = '';
+        exactVerified = false; keepCount = 0;
         var b = el('mvScreen'); if (b) b.classList.remove('kf-exact-mv');
     }
 
@@ -16086,6 +16096,7 @@ function bindScreen() {
     window.openMoveModal = function () {
         var idx = (typeof currentStylingIndex !== 'undefined') ? currentStylingIndex : -1;
         if (idx < 0 || !originalData[idx]) { showToast('تکایە سەرەتا دێڕێک هەڵبژێرە', 'warning'); return; }
+        destroyExact();
         var it = originalData[idx];
         var start = num(it.startSec, 0), end = num(it.endSec, start + 3);
         if (end <= start) end = start + 3;
@@ -16128,7 +16139,7 @@ function bindScreen() {
             fscx: num((/\\fscx([\d.]+)/.exec(source) || [])[1], 100), fscy: num((/\\fscy([\d.]+)/.exec(source) || [])[1], 100),
             fax: num((/\\fax(-?[\d.]+)/.exec(source) || [])[1], 0), fay: num((/\\fay(-?[\d.]+)/.exec(source) || [])[1], 0)
         };
-        var raw = (modalTa ? modalTa.value : fullLine) || '';
+        var raw = (modalTa && modalTa.value) || fullLine || it.rawText || it.text || '';
         var text = raw.replace(/\\fs\d+(?:\.\d+)?/gi, '').replace(/[♪\|]/g, '');
         if (!text.replace(/\{[^}]*\}/g, '').trim()) text += 'دەقی ژێرنووس';
 

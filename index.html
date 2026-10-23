@@ -9219,7 +9219,7 @@ var LibassRenderer = (function () {
         }
 
         var r = (typeof getActiveScriptResolution === 'function') ? getActiveScriptResolution() : { resX: 1920, resY: 1080 };
-        var defaultFontName = loadedCustomFont || 'KurdForest';
+        var defaultFontName = loadedCustomFont || 'Adobe Arabic';
 
         return '[Script Info]\nScriptType: v4.00+\nWrapStyle: 0\nPlayResX: ' + r.resX + '\nPlayResY: ' + r.resY + '\nScaledBorderAndShadow: yes\n\n[V4+ Styles]\n' + DEF_STYLE_FORMAT + '\nStyle: Default,' + defaultFontName + ',67,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,1.5,2.0,2,10,10,20,1\n\n[Events]\n' + EVENT_FORMAT + '\n';
     }
@@ -9349,9 +9349,11 @@ var LibassRenderer = (function () {
                 legacyWasmUrl: CDN + 'jassub-worker.wasm.js',
                 availableFonts: {
                     'liberation sans': window.KF_ASSETS['default.woff2'],
-                    'noto sans arabic': window.KF_ASSETS['AdobeArabic-Regular.ttf']
+                    'adobe arabic': window.KF_ASSETS['AdobeArabic-Regular.ttf'],
+                    'kurdforest': window.KF_ASSETS['AdobeArabic-Regular.ttf'],
+                    'speda bold': window.KF_ASSETS['AdobeArabic-Regular.ttf']
                 },
-                fallbackFont: 'noto sans arabic',
+                fallbackFont: 'adobe arabic',
                 fonts: allFonts,
                 timeOffset: 0,
                 dropAllAnimations: false,
@@ -15715,7 +15717,7 @@ function updateExact() {
   try {
     if (!exact) {
       const fonts = exactFonts.concat(FontStore.list().filter(f => f.ok && f.bytes).map(f => new Uint8Array(f.bytes)));
-      exact = new window.JASSUB({ canvas, subContent: track, workerUrl: new URL('./jassub/jassub-worker.js', window.location.href).href, wasmUrl: KF_ASSETS['jassub-worker.wasm'], modernWasmUrl: KF_ASSETS['jassub-worker-modern.wasm'], fonts, availableFonts: { 'noto sans arabic': KF_ASSETS['AdobeArabic-Regular.ttf'] }, fallbackFont: 'noto sans arabic', onDemandRender: false, offscreenRender: false, useLocalFonts: false, prescaleFactor: 1 });
+      exact = new window.JASSUB({ canvas, subContent: track, workerUrl: new URL('./jassub/jassub-worker.js', window.location.href).href, wasmUrl: KF_ASSETS['jassub-worker.wasm'], modernWasmUrl: KF_ASSETS['jassub-worker-modern.wasm'], fonts, availableFonts: { 'adobe arabic': KF_ASSETS['AdobeArabic-Regular.ttf'], 'kurdforest': KF_ASSETS['AdobeArabic-Regular.ttf'], 'speda bold': KF_ASSETS['AdobeArabic-Regular.ttf'], 'liberation sans': KF_ASSETS['default.woff2'] }, fallbackFont: 'adobe arabic', onDemandRender: false, offscreenRender: false, useLocalFonts: false, prescaleFactor: 1 });
       exact.addEventListener('error', () => { box.classList.remove('kf-exact'); toast('پێشبینینی ورد بار نەبوو؛ پێشبینینی سادە چالاکە.', 'error'); });
     } else if (track !== exactTrack) exact.setTrack(track);
     exactTrack = track;
@@ -15761,6 +15763,9 @@ window.addEventListener('resize', scheduleExact);
         var it = originalData[mv.idx] || {}, meta = it.assMeta || {};
         var header = LibassRenderer.buildScript().split('[Events]')[0];
         var clean = kfStripTags(mv.rawText || '', KF_POS_SIZE_GROUPS);
+        // Preview-only sample: keep the renderer active on an empty/tag-only line.
+        // Never write this sample back into the user's subtitle.
+        if (!clean.replace(/\{[^}]*\}/g, '').replace(/\\[Nnh]/g, ' ').trim()) clean += 'دەقی ژێرنووس';
         var tags = '\\an' + mv.align + '\\move(' + Math.round(mv.ax) + ',' + Math.round(mv.ay) + ',' + Math.round(mv.bx) + ',' + Math.round(mv.by) + ',' + Math.round(mv.t1) + ',' + Math.round(mv.t2) + ')';
         if (mv.fsTag > 0) tags += '\\fs' + mv.fsTag;
         var r = mv.rot;
@@ -15822,7 +15827,7 @@ function setEngineLabel() {
         try {
             if (!exact) {
                 var fonts = exactFonts.concat(FontStore.list().filter(function (f) { return f.ok && f.bytes; }).map(function (f) { return new Uint8Array(f.bytes); }));
-                exact = new window.JASSUB({ canvas: canvas, subContent: track, workerUrl: new URL('./jassub/jassub-worker.js', window.location.href).href, wasmUrl: KF_ASSETS['jassub-worker.wasm'], modernWasmUrl: KF_ASSETS['jassub-worker-modern.wasm'], fonts: fonts, availableFonts: { 'noto sans arabic': KF_ASSETS['AdobeArabic-Regular.ttf'] }, fallbackFont: 'noto sans arabic', onDemandRender: false, offscreenRender: false, useLocalFonts: false, prescaleFactor: 1 });
+                exact = new window.JASSUB({ canvas: canvas, subContent: track, workerUrl: new URL('./jassub/jassub-worker.js', window.location.href).href, wasmUrl: KF_ASSETS['jassub-worker.wasm'], modernWasmUrl: KF_ASSETS['jassub-worker-modern.wasm'], fonts: fonts, availableFonts: { 'adobe arabic': KF_ASSETS['AdobeArabic-Regular.ttf'], 'kurdforest': KF_ASSETS['AdobeArabic-Regular.ttf'], 'speda bold': KF_ASSETS['AdobeArabic-Regular.ttf'], 'liberation sans': KF_ASSETS['default.woff2'] }, fallbackFont: 'adobe arabic', onDemandRender: false, offscreenRender: false, useLocalFonts: false, prescaleFactor: 1 });
                 exact.addEventListener('error', function () { exactFail(); });
             } else if (track !== exactTrack) exact.setTrack(track);
             exactTrack = track;

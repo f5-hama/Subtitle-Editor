@@ -3797,7 +3797,7 @@ html.kf-wide:root body #move-modal #mvBox { margin: 0; width: 100% !important; }
 #move-modal .mv-handle { display:none !important; }
 #move-modal #mvGhostB, #move-modal #mvGhostB * { color:#22c55e !important; -webkit-text-fill-color:#22c55e !important; }
 #move-modal #mvGhostB { opacity:.85 !important; }
-#move-modal .kf-exact-mv #mvGhostB { visibility:visible; }
+#move-modal .kf-exact-mv #mvGhostB { visibility:hidden; }
 #move-modal .mv-handle.sel { outline:3px solid rgba(250,204,21,.9); outline-offset:2px; }
 #move-modal .mv-row { display:flex; align-items:center; justify-content:space-between; gap:6px; font-size:11px; margin-top:6px; direction:ltr; }
 #move-modal .mv-row label { display:flex; align-items:center; gap:4px; }
@@ -3816,8 +3816,8 @@ html.kf-wide:root body #move-modal #mvBox { margin: 0; width: 100% !important; }
         <div id="mvScreen" style="position:relative; width:100%; aspect-ratio:16/9; background:#0f1318; overflow:hidden; touch-action:none; user-select:none; -webkit-user-select:none;">
             <video id="mvVideo" playsinline preload="auto" style="position:absolute; inset:0; width:100%; height:100%; object-fit:fill; pointer-events:none;"></video>
             <svg id="mvSvg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:20; overflow:visible;">
-                <defs><marker id="mvArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#facc15"/></marker></defs>
-                <line id="mvLine" x1="0" y1="0" x2="0" y2="0" stroke="#facc15" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#mvArrow)"/>
+                <defs><marker id="mvArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="3.6" markerHeight="3.6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#facc15"/></marker></defs>
+                <line id="mvLine" x1="0" y1="0" x2="0" y2="0" stroke="#facc15" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#mvArrow)"/>
             </svg>
             <div id="mvGhostA" class="mv-txt" style="opacity:.42;"></div>
             <div id="mvGhostB" class="mv-txt" style="opacity:.42;"></div>
@@ -9141,7 +9141,7 @@ function renderSubtitlesNow() {
    ============================================================ */
 var LibassRenderer = (function () {
     var JASSUB = null, instance = null, canvas = null, loadingPromise = null;
-    var lastScript = '', lastSyncAt = 0, enabled = false, failed = false;
+    var lastScript = '', lastSyncAt = 0, enabled = false, failed = false, ready = false;
     var lastError = '';
     var extraFonts = [];
     var bundledFontsLoader = null;
@@ -9300,7 +9300,7 @@ var LibassRenderer = (function () {
 
     function fail(err) {
         console.error('libass load failed:', err);
-        failed = true; enabled = false; loadingPromise = null;
+        failed = true; enabled = false; ready = false; loadingPromise = null;
         lastError = (err && err.message) || String(err);
         try { if (instance) instance.destroy(); } catch (e) { }
         instance = null;
@@ -9362,11 +9362,15 @@ var LibassRenderer = (function () {
                 useLocalFonts: false
             };
 
-            instance = new JASSUB(opts);
+            ready = false;
+instance = new JASSUB(opts);
             instance.addEventListener('ready', function () {
                 if (!instance) return;
                 instance.resize();
                 instance.setCurrentTime(video.paused, video.currentTime, video.playbackRate);
+var inst = instance;
+// تا worker و wasm ئامادە نەبن دەقە سادەکە نامێنێتەوە؛ دوای یەکەم فرەیمی libass دەگۆڕدرێت
+setTimeout(function () { if (instance === inst) { ready = true; if (typeof renderSubtitlesNow === 'function') renderSubtitlesNow(); notifyUi(); } }, 350);
             });
             lastScript = scriptContent;
             failed = false;
@@ -9393,7 +9397,7 @@ var LibassRenderer = (function () {
 
     function destroy() {
         try { if (instance) instance.destroy(); } catch (e) {}
-        instance = null; loadingPromise = null; lastScript = '';
+        instance = null; ready = false; loadingPromise = null; lastScript = '';
         
         // پاککردنەوەی هەر کەنڤاسێکی کۆن کە لەسەر ڤیدیۆکە مابێتەوە
         var wrapper = document.getElementById('video-player-wrapper');
@@ -9404,8 +9408,8 @@ var LibassRenderer = (function () {
         canvas = null;
     }
 
-    function isActive() { return !!(enabled && instance && !failed); }
-    function status() { return failed ? 'failed' : !enabled ? 'off' : !instance ? 'loading' : 'proven'; }
+    function isActive() { return !!(enabled && instance && ready && !failed); }
+    function status() { return failed ? 'failed' : !enabled ? 'off' : (!instance || !ready) ? 'loading' : 'proven'; }
     function notifyUi() { if (typeof kfLibassRefresh === 'function') kfLibassRefresh(); }
 
     function hasVideo() {
@@ -9451,9 +9455,17 @@ var LibassRenderer = (function () {
     return { 
         attach: attach, sync: sync, destroy: destroy, isActive: isActive, 
         isEnabled: isEnabled, status: status, lastError: lastError_, 
-        toggle: toggle, buildScript: buildScript, addFont: addFont, loadFonts: loadFonts
-    };
+        toggle: toggle, buildScript: buildScript, addFont: addFont, loadFonts: loadFonts,
+preload: function () { return Promise.all([loadJassub(), loadFonts()]).catch(function () { }); }
+};
 })();
+setTimeout(function () { try { LibassRenderer.preload(); } catch (e) { } }, 2500);
+// یارمەتیدەر: دەقی سادە دەمێنێتەوە تا JASSUB ئامادە دەبێت (ready + 0.4 چرکە)، یان دوای 3 چرکە هەرچۆنێک بێت
+window.kfWhenReady = function (inst, cb) {
+var done = false; function go() { if (done) return; done = true; cb(); }
+try { inst.addEventListener('ready', function () { setTimeout(go, 400); }); } catch (e) { }
+setTimeout(go, 3000);
+};
 
 function toggleLibassPreview() {
     LibassRenderer.toggle();
@@ -15669,10 +15681,10 @@ const ensureLibass = () => { if (video?.src && LibassRenderer.status() === 'off'
 window.toggleLibassPreview = function() { if (LibassRenderer.status() !== 'off' && LibassRenderer.isEnabled()) return toast('ڕەندەری libass هەمیشە چالاکە.'); LibassRenderer.toggle(); kfLibassRefresh?.(); };
 
 // Exact ASS rendering on the position tool shares the main engine and fonts.
-let exact = null, exactTrack = '', scheduled = 0, exactFonts = null, exactFontsLoading = false;
+let exact = null, exactTrack = '', scheduled = 0, exactFonts = null, exactFontsLoading = false, exactSeen = false, exactWaiting = false;
 function updateExact() {
   scheduled = 0;
-  const modal = el('grid40-modal'); if (modal.style.display !== 'flex') { if (exact) { exact.destroy(); exact = null; } el('vDragScreenBox').classList.remove('kf-exact'); return; }
+  const modal = el('grid40-modal'); if (modal.style.display !== 'flex') { if (exact) { exact.destroy(); exact = null; } exactSeen = false; exactWaiting = false; el('vDragScreenBox').classList.remove('kf-exact'); return; }
   if (!window.JASSUB) return;
   if (!exactFonts) {
     if (!exactFontsLoading) {
@@ -15706,7 +15718,9 @@ function updateExact() {
     // JASSUB 1.8.8 resize() dereferences a video even in canvas-only mode.
     // Use its canvas message with the actual video aspect ratio instead.
     exact.sendMessage('canvas', { width: Math.round(metrics.width * devicePixelRatio), height: Math.round(metrics.height * devicePixelRatio), videoWidth: video.videoWidth || currentDragResX, videoHeight: video.videoHeight || currentDragResY });
-    exact.setCurrentTime(true, 1); box.classList.add('kf-exact');
+    exact.setCurrentTime(true, 1);
+if (exactSeen) box.classList.add('kf-exact');
+else if (!exactWaiting) { exactWaiting = true; const inst = exact; kfWhenReady(inst, () => { if (exact === inst) { exactSeen = true; box.classList.add('kf-exact'); } }); }
   } catch (error) { box.classList.remove('kf-exact'); console.error(error); }
 }
 function scheduleExact() { if (!scheduled) scheduled = requestAnimationFrame(updateExact); }
@@ -15732,7 +15746,7 @@ window.addEventListener('resize', scheduleExact);
 
 
     /* ===== ڕەندەری ورد بە libass (JASSUB) — هەمان ڕێگای مۆداڵی دیاریکردنی شوێن ===== */
-    var exact = null, exactTrack = '', exactOn = false, exactFonts = null, exactFontsLoading = false, exactTries = 0, exactSched = 0;
+    var exact = null, exactTrack = '', exactOn = false, exactFonts = null, exactFontsLoading = false, exactTries = 0, exactSched = 0, exactShown = false, exactWaiting = false;
 
     function fmtTime(sec) {
         var cs = Math.max(0, Math.round(sec * 100)), h = Math.floor(cs / 360000); cs -= h * 360000;
@@ -15749,15 +15763,21 @@ window.addEventListener('resize', scheduleExact);
         if (r.frx) tags += '\\frx' + r.frx; if (r.fry) tags += '\\fry' + r.fry; if (r.frz) tags += '\\frz' + r.frz;
         if (r.fscx !== 100) tags += '\\fscx' + r.fscx; if (r.fscy !== 100) tags += '\\fscy' + r.fscy;
         if (r.fax) tags += '\\fax' + r.fax; if (r.fay) tags += '\\fay' + r.fay;
-        return header + '[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n' +
-            'Dialogue: 0,0:00:00.00,' + fmtTime(mv.dur + 5) + ',' + (meta.style || 'Default') + ',,' + (meta.marginL || 0) + ',' + (meta.marginR || 0) + ',' + (meta.marginV || 0) + ',,{' + tags + '}' + clean.replace(/\r?\n/g, '\\N') + '\n';
-    }
-    function setEngineLabel() {
+        // شەبەقی سەوزی شوێنی B: دێڕێکی ASSی ڕاستەقینە (\pos) بە هەمان ستایل/قەبارە/سووڕانەوە، تا libass هەمان ڕێگای دەقی سپی بەکاربهێنێت
+var gtags = tags.replace(/\\move\([^)]*\)/, '\\pos(' + Math.round(mv.bx) + ',' + Math.round(mv.by) + ')') + '\\1c&H5EC522&\\alpha&H26&';
+var gclean = clean.replace(/\\(?:[1-4]?c|[1-4]a|alpha)&H[0-9A-Fa-f]+&?|\\[1-4]?c(?=[\\}])/g, '');
+gclean = gclean.replace(/\\r[^\\}]*/g, function (m) { return m + '\\1c&H5EC522&\\alpha&H26&'; });
+var dl = function (tg, tx) {
+return 'Dialogue: 0,0:00:00.00,' + fmtTime(mv.dur + 5) + ',' + (meta.style || 'Default') + ',,' + (meta.marginL || 0) + ',' + (meta.marginR || 0) + ',' + (meta.marginV || 0) + ',,{' + tg + '}' + tx.replace(/\r?\n/g, '\\N') + '\n';
+};
+return header + '[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n' + dl(gtags, gclean) + dl(tags, clean);
+}
+function setEngineLabel() {
         var e = el('mvEngine'); if (!e) return;
         e.textContent = exactOn ? 'ڕەندەری ورد: libass (JASSUB) — وەک هاردسەبی کۆتایی' : 'پێشبینینی سادە (libass ئامادە نییە یان بار نەبووە)';
         e.style.color = exactOn ? 'var(--primary)' : '#f59e0b';
     }
-    function exactFail() { stopKeepAlive(); exactOn = false; var b = el('mvScreen'); if (b) b.classList.remove('kf-exact-mv'); setEngineLabel(); }
+    function exactFail() { stopKeepAlive(); exactOn = false; exactShown = false; var b = el('mvScreen'); if (b) b.classList.remove('kf-exact-mv'); setEngineLabel(); }
     function renderExactAt(t) {
         if (!exact || !exactOn || !mv) return;
         try { exact.setCurrentTime(true, Math.max(0, Math.min(t / 1000, mv.dur))); } catch (e) { }
@@ -15804,7 +15824,9 @@ window.addEventListener('resize', scheduleExact);
             exactTrack = track;
             var dpr = window.devicePixelRatio || 1;
             exact.sendMessage('canvas', { width: Math.round(W * dpr), height: Math.round(H * dpr), videoWidth: mv.vw || mv.resX, videoHeight: mv.vh || mv.resY });
-            exactOn = true; box.classList.add('kf-exact-mv'); setEngineLabel();
+            exactOn = true; setEngineLabel();
+if (exactShown) box.classList.add('kf-exact-mv');
+else if (!exactWaiting) { exactWaiting = true; var inst = exact; kfWhenReady(inst, function () { if (exact === inst && mv) { exactShown = true; var b2 = el('mvScreen'); if (b2) b2.classList.add('kf-exact-mv'); } }); }
             renderExactAt(mv.t); startKeepAlive();
         } catch (e) { console.error(e); exactFail(); }
     }
@@ -15826,6 +15848,7 @@ window.addEventListener('resize', scheduleExact);
         keepTimer = setInterval(function () {
             if (!mv || !exact || !exactOn) { stopKeepAlive(); return; }
             if (!mv.playing) renderExactAt(mv.t);
+            if (!exactShown) return;
             keepCount++;
             if (!exactVerified) {
                 if (canvasHasInk()) { exactVerified = true; stopKeepAlive(); }
@@ -15841,7 +15864,7 @@ window.addEventListener('resize', scheduleExact);
         stopKeepAlive();
         if (exactSched) { cancelAnimationFrame(exactSched); exactSched = 0; }
         if (exact) { try { exact.destroy(); } catch (e) { } exact = null; }
-        exactOn = false; exactTrack = ''; exactTries = 0;
+        exactOn = false; exactTrack = ''; exactTries = 0; exactShown = false; exactWaiting = false;
         var c = el('kf-exact-move'); if (c && c.parentNode) c.parentNode.removeChild(c);
         var b = el('mvScreen'); if (b) b.classList.remove('kf-exact-mv');
     }
@@ -16027,11 +16050,9 @@ window.addEventListener('resize', scheduleExact);
 
     // ڕاکێشان و کلیک لەسەر شاشە
     var drag = null;
-    function toScript(e) {
-        var r = el('mvScreen').getBoundingClientRect();
-        return { x: clamp(Math.round((e.clientX - r.left) / r.width * mv.resX), 0, mv.resX), y: clamp(Math.round((e.clientY - r.top) / r.height * mv.resY), 0, mv.resY) };
-    }
-    function bindScreen() {
+// ڕاکێشانی دێلتا: دەق لەژێر پەنجە ناپەڕێت، بەپێی جوڵەی پەنجە لە شوێنی خۆیەوە دەجوڵێت
+var dragSt = null;
+function bindScreen() {
         var box = el('mvScreen');
         if (box.__kfBound) return; box.__kfBound = true;
         box.addEventListener('pointerdown', function (e) {
@@ -16039,18 +16060,19 @@ window.addEventListener('resize', scheduleExact);
             var k = mv.active;
             if (e.target && e.target.id === 'mvHA') k = 'A'; else if (e.target && e.target.id === 'mvHB') k = 'B';
             mv.active = k; drag = k;
+            dragSt = { x: e.clientX, y: e.clientY, px: (k === 'A' ? mv.ax : mv.bx), py: (k === 'A' ? mv.ay : mv.by) };
             try { box.setPointerCapture(e.pointerId); } catch (_) { }
-            var p = toScript(e);
-            if (k === 'A') { mv.ax = p.x; mv.ay = p.y; } else { mv.bx = p.x; mv.by = p.y; }
             render(); e.preventDefault();
         });
         box.addEventListener('pointermove', function (e) {
-            if (!mv || !drag) return;
-            var p = toScript(e);
-            if (drag === 'A') { mv.ax = p.x; mv.ay = p.y; } else { mv.bx = p.x; mv.by = p.y; }
+            if (!mv || !drag || !dragSt) return;
+            var r = box.getBoundingClientRect(); if (!r.width || !r.height) return;
+            var x = clamp(Math.round(dragSt.px + (e.clientX - dragSt.x) / r.width * mv.resX), 0, mv.resX);
+            var y = clamp(Math.round(dragSt.py + (e.clientY - dragSt.y) / r.height * mv.resY), 0, mv.resY);
+            if (drag === 'A') { mv.ax = x; mv.ay = y; } else { mv.bx = x; mv.by = y; }
             render();
         });
-        var end = function () { drag = null; };
+        var end = function () { drag = null; dragSt = null; };
         box.addEventListener('pointerup', end); box.addEventListener('pointercancel', end);
     }
 
@@ -16270,7 +16292,7 @@ var G=[
 {k:'card',name:'کارتی دێڕ',intro:'هەر دێڕێکی ژێرنووس کارتێکی تایبەتی هەیە کە دەقی ئەسڵی و خانەی وەرگێڕانی تێدایە.',
  feats:['ژمارە و کاتی هەر دێڕێک','چوونە سەر کاتی دێڕەکە لە ڤیدیۆ','کردنەوەی پەنجەرەی تەکنیک بۆ هەمان دێڕ','سڕینەوەی دێڕ'],
  steps:[
- {h:'پێکهاتەی کارت',rows:[[E('el','#12',1),E('ico','▶',2),E('ico','🎨',3),E('ico','🗑',4),E('el','00:01:22,410 --> 00:01:25,000',5)],[E('txt','I will never leave you.',6)],[E('txt','هەرگیز بەجێت ناهێڵم.',7)]],
+ {h:'پێکهاتەی کارت',rows:[[E('el','#12',1),E('ico','▶',2),E('ico','🎨',3),E('ico','🗑',4),E('el','00:01:22,410 --> 00:01:25,000',5)],[E('txt','I will never leave you.',6)],[E('txt','هەرگیز بەجێت ناهێڵم.|',7)]],
   notes:['ژمارەی دێڕ.','<b>کارپێکردن</b>: ڤیدیۆ دەچێتە سەرەتای ئەم دێڕە و کار دەکات (Ctrl+J).','<b>تەکنیک و ڕەنگ</b>: پەنجەرەی تەکنیک و دیزاینی ئەم دێڕە دەکاتەوە (Ctrl+Enter).','<b>سڕینەوە</b>: ئەم دێڕە دەسڕێتەوە (Alt+Delete).','کاتی دەستپێک و کۆتایی دێڕەکە.','دەقی ئەسڵی (تەنها بۆ خوێندنەوە).','خانەی وەرگێڕان: وەرگێڕانەکەت لێرە بنووسە. Tab دەتباتە دێڕی دواتر. بۆ ئەستوورکردن وشەکە دیاری بکە و Ctrl+B، بۆ لار Ctrl+I، بۆ نیشانەی گۆرانی ♪ Ctrl+M.']}
  ]},
 {k:'tech',name:'تەکنیک و دیزاین',intro:'پەنجەرەی «تەکنیک و دیزاینی دێڕ» هەموو ئامرازەکانی شێوە و شوێن و جوڵەی یەک دێڕی تێدایە. لە کارتی دێڕ دەستی لە دوگمەی 🎨 بدە.',
@@ -16301,7 +16323,7 @@ var G=[
  feats:['پیشاندانی ئەو فۆنتانەی فایلەکە پێویستی پێیانە','فۆنتەکان لەسەر ئامێرەکەت پاشەکەوت دەبن','ڕەندەری libass بۆ پێشبینینی ڕێک وەک FFmpeg'],
  steps:[{h:'بەکارهێنان',rows:[[E('btn','چالاککردنی ڕەندەری libass',1)],[E('txt','فۆنتەکانی ناو فایلەکە: Arial ✓  —  Rudaw ✗',2)],[E('btn','زیادکردنی فایلی فۆنت',3)],[E('txt','فۆنتە زیادکراوەکان: ...',4)]],
   notes:['پێشبینین دەگۆڕێت بۆ کتێبخانەی ڕاستەقینەی libass؛ سووڕانەوە، وێنەکێشان و شوێنی دەق ڕێک وەک ئەنجامی کۆتایی دەبن. جاری یەکەم ئینتەرنێتی پێویستە؛ ئەگەر سەرنەکەوت خۆکار دەگەڕێتەوە پێشبینینی ئاسایی. ئێستا کاتێک ڤیدیۆ دادەنێیت خۆکار چالاک دەبێت؛ ئەگەر دوگمەکەش بدەیت، پێت دەڵێت ڕەندەرەکە هەمیشە چالاکە.','لیستی ئەو فۆنتانەی ستایلەکانی فایلەکە ناویان هێناوە.','فایلی فۆنت لە ئامێرەکەت هەڵبژێرە.','ئەو فۆنتانەی پێشتر زیادت کردوون؛ جارێکی تر پێویست بە زیادکردن ناکات.']}]},
-{k:'ai',name:'وەرگێڕانی AI',intro:'بە یارمەتی ئامرازێکی AI (وەک Google Ai Studio) هەموو دێڕەکان بە یەکجار وەردەگێڕیت و دەیانگەڕێنیتەوە شوێنی خۆیان.',
+{k:'ai',name:'وەرگێڕانی AI',intro:'بە یارمەتی ئامرازێکی AI (وەک ChatGPT) هەموو دێڕەکان بە یەکجار وەردەگێڕیت و دەیانگەڕێنیتەوە شوێنی خۆیان.',
  feats:['کۆپیکردنی هەموو دەقی ئەسڵی بە ژمارەوە','هەڵبژاردنی ستایلێکی دیاریکراو بۆ کۆپی','پەیستکردن و دانانی هەر وەرگێڕانێک لە شوێنی خۆی'],
  steps:[{h:'هەنگاوەکان',rows:[[E('el','— هەموو دێڕەکان —',1)],[E('btn','کۆپیکردنی دەق',2)],[E('txt','لێرە وەرگێڕانەکە پەیست بکە...',3)],[E('btn','پەیست بکە',3),E('btn','جێبەجێکردن لە شوێنی خۆیان',4)]],
   notes:['ئەگەر فایلەکە چەند ستایلێکی هەبوو (بۆ نموونە گۆرانی، تابلۆ)، دەتوانیت تەنها دێڕەکانی یەک ستایل کۆپی بکەیت.','دەقەکە بە ژمارەی دێڕەکانەوە کۆپی دەبێت؛ بیبە بۆ AI و داوای وەرگێڕانی بکە بەبێ گۆڕینی ژمارەکان.','وەرگێڕانەکە لێرە دابنێ، یان «پەیست بکە» ڕاستەوخۆ لە کلیپبۆرد دایدەنێت.','هەر دێڕێک بەپێی ژمارەکەی دەچێتە شوێنی خۆی لە ئیدیتەر.']}]},

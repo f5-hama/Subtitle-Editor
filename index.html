@@ -9315,11 +9315,12 @@ var LibassRenderer = (function () {
         if (!video || !video.src) return;
 
         // ئەگەر پەیوەندییەکی کۆن هەبوو، سەرەتا پاکی دەکاتەوە تا کێشەی ونبوون نەمێنێت
+        if (loadingPromise) return;
         if (instance) {
             try { instance.destroy(); } catch(e){}
-            instance = null;
+            instance = null; ready = false;
+            if (typeof renderSubtitlesNow === 'function') renderSubtitlesNow();
         }
-        if (loadingPromise) return;
 
         notifyUi();
         loadingPromise = Promise.all([loadJassub(), loadFonts()]).then(function (loaded) {
@@ -9370,7 +9371,8 @@ instance = new JASSUB(opts);
                 instance.setCurrentTime(video.paused, video.currentTime, video.playbackRate);
 var inst = instance;
 // تا worker و wasm ئامادە نەبن دەقە سادەکە نامێنێتەوە؛ دوای یەکەم فرەیمی libass دەگۆڕدرێت
-setTimeout(function () { if (instance === inst) { ready = true; if (typeof renderSubtitlesNow === 'function') renderSubtitlesNow(); notifyUi(); } }, 350);
+try { inst.setCurrentTime(video.paused, video.currentTime, video.playbackRate); } catch (e) {}
+requestAnimationFrame(function () { requestAnimationFrame(function () { setTimeout(function () { if (instance === inst) { ready = true; if (typeof renderSubtitlesNow === 'function') renderSubtitlesNow(); notifyUi(); } }, 60); }); });
             });
             lastScript = scriptContent;
             failed = false;
@@ -9459,12 +9461,14 @@ setTimeout(function () { if (instance === inst) { ready = true; if (typeof rende
 preload: function () { return Promise.all([loadJassub(), loadFonts()]).catch(function () { }); }
 };
 })();
-setTimeout(function () { try { LibassRenderer.preload(); } catch (e) { } }, 2500);
+(function(){function kfWarm(){try{LibassRenderer.preload();}catch(e){}
+try{var b=new URL('./jassub/',location.href).href;[b+'jassub-worker.js',KF_ASSETS['jassub-worker.wasm'],KF_ASSETS['jassub-worker-modern.wasm']].forEach(function(u){fetch(u,{cache:'force-cache'}).catch(function(){});});}catch(e){}}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',kfWarm);else kfWarm();})();
 // یارمەتیدەر: دەقی سادە دەمێنێتەوە تا JASSUB ئامادە دەبێت (ready + 0.4 چرکە)، یان دوای 3 چرکە هەرچۆنێک بێت
 window.kfWhenReady = function (inst, cb) {
 var done = false; function go() { if (done) return; done = true; cb(); }
-try { inst.addEventListener('ready', function () { setTimeout(go, 400); }); } catch (e) { }
-setTimeout(go, 3000);
+try { inst.addEventListener('ready', function () { requestAnimationFrame(function () { setTimeout(go, 80); }); }); } catch (e) { }
+setTimeout(go, 1500);
 };
 
 function toggleLibassPreview() {
@@ -15684,7 +15688,7 @@ window.toggleLibassPreview = function() { if (LibassRenderer.status() !== 'off' 
 let exact = null, exactTrack = '', scheduled = 0, exactFonts = null, exactFontsLoading = false, exactSeen = false, exactWaiting = false;
 function updateExact() {
   scheduled = 0;
-  const modal = el('grid40-modal'); if (modal.style.display !== 'flex') { if (exact) { exact.destroy(); exact = null; } exactSeen = false; exactWaiting = false; el('vDragScreenBox').classList.remove('kf-exact'); return; }
+  const modal = el('grid40-modal'); if (modal.style.display !== 'flex') { el('vDragScreenBox').classList.remove('kf-exact'); return; }
   if (!window.JASSUB) return;
   if (!exactFonts) {
     if (!exactFontsLoading) {
@@ -15863,9 +15867,7 @@ else if (!exactWaiting) { exactWaiting = true; var inst = exact; kfWhenReady(ins
     function destroyExact() {
         stopKeepAlive();
         if (exactSched) { cancelAnimationFrame(exactSched); exactSched = 0; }
-        if (exact) { try { exact.destroy(); } catch (e) { } exact = null; }
-        exactOn = false; exactTrack = ''; exactTries = 0; exactShown = false; exactWaiting = false;
-        var c = el('kf-exact-move'); if (c && c.parentNode) c.parentNode.removeChild(c);
+        exactOn = false; exactTries = 0;
         var b = el('mvScreen'); if (b) b.classList.remove('kf-exact-mv');
     }
 

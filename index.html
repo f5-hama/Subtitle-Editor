@@ -16476,5 +16476,33 @@ var ICON='<svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24
 })();
 </script>
 
+<style>
+#vDragScreenBox.kf-pend #vDraggableSubText .ass-blk { visibility: hidden; }
+#mvScreen.kf-pend .mv-txt, #mvScreen.kf-pend #mvGhostB { visibility: hidden; }
+</style>
+<script id="kf-libass-ready">
+/* ئەگەر libass چالاک بوو، پێش کردنەوەی دیاریکردنی شوێن / جوڵاندن ئامادەی دەکات و شێوەی کۆنی سادە پیشان نادات.
+   ئەگەر libass بار نەبوو، دوای ٢ چرکە شێوەی سادە دەگەڕێتەوە تا دەق هەرگیز ون نەبێت. */
+(function () {
+  function libassOn() { try { return typeof LibassRenderer !== 'undefined' && LibassRenderer.isEnabled() && LibassRenderer.status() !== 'failed'; } catch (e) { return false; } }
+  function guard(boxId, doneClass) {
+    var b = document.getElementById(boxId); if (!b) return;
+    if (!libassOn()) { b.classList.remove('kf-pend'); return; }
+    try { LibassRenderer.preload(); } catch (e) {}
+    b.classList.add('kf-pend');
+    setTimeout(function () { var x = document.getElementById(boxId); if (x) x.classList.remove('kf-pend'); }, 2000);
+  }
+  function wrap(name, boxId) {
+    var orig = window[name]; if (typeof orig !== 'function' || orig.__kfReady) return;
+    var w = function () {
+      try { guard(boxId); } catch (e) {}
+      return orig.apply(this, arguments);
+    };
+    w.__kfReady = true; window[name] = w;
+  }
+  wrap('openGrid40Modal', 'vDragScreenBox');
+  wrap('openMoveModal', 'mvScreen');
+})();
+</script>
 </body>
 </html>

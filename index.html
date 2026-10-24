@@ -15687,10 +15687,32 @@ const ensureLibass = () => { if (video?.src && LibassRenderer.status() === 'off'
 window.toggleLibassPreview = function() { if (LibassRenderer.status() !== 'off' && LibassRenderer.isEnabled()) return toast('ڕەندەری libass هەمیشە چالاکە.'); LibassRenderer.toggle(); kfLibassRefresh?.(); };
 
 // Exact ASS rendering on the position tool shares the main engine and fonts.
-let exact = null, exactTrack = '', scheduled = 0, exactFonts = null, exactFontsLoading = false, exactSeen = false, exactWaiting = false;
+let exact = null, exactTrack = '', scheduled = 0, exactFonts = null, exactFontsLoading = false, exactSeen = false, exactWaiting = false, exactFontKey = '';
+// وەک مۆداڵی جوڵاندن: هەر کردنەوەیەک instanceـی نوێی libass دروست دەکات، تا فۆنتە نوێیەکان (FontStore) بەکار بهێنرێن
+function destroyDragExact() {
+  const inst = exact; exact = null;
+  if (inst) { try { inst.destroy(); } catch (e) {} }
+  const c = el('kf-exact-drag'); if (c && c.parentNode) c.parentNode.removeChild(c);
+  exactTrack = ''; exactSeen = false; exactWaiting = false; exactFontKey = '';
+  const b = el('vDragScreenBox'); if (b) b.classList.remove('kf-exact');
+}
+function dragFontKey() { return FontStore.list().filter(f => f.ok && f.bytes).map(f => (f.id || f.fileName) + ':' + (f.size || (f.bytes && f.bytes.byteLength) || 0)).join('|'); }
+// \fn ی ناو دەق بگۆڕە بۆ ئەو فۆنتەی بەکارهێنەر دایناوە (وەک LibassRenderer.currentTextFor)
+function dragResolveFn(text) {
+  return text.replace(/\\fn([^\\}]+)/gi, (m, name) => {
+    const n = name.trim().replace(/^@/, '');
+    try {
+      const r = FontStore.resolve(n); if (r && r.names && r.names[0]) return '\\fn' + r.names[0];
+      const loaded = FontStore.list().filter(x => x.ok);
+      if (loaded.length && !FontStore.has(n)) return '\\fn' + (loaded[0].names[0] || loaded[0].fileName.replace(/\.[^.]+$/, ''));
+    } catch (e) {}
+    return '\\fn' + n;
+  });
+}
 function updateExact() {
   scheduled = 0;
-  const modal = el('grid40-modal'); if (modal.style.display !== 'flex') { el('vDragScreenBox').classList.remove('kf-exact'); return; }
+  const modal = el('grid40-modal'); if (modal.style.display !== 'flex') { destroyDragExact(); return; }
+  if (exact && exactFontKey !== dragFontKey()) destroyDragExact();
   if (!window.JASSUB) return;
   if (!exactFonts) {
     if (!exactFontsLoading) {
@@ -15709,13 +15731,14 @@ function updateExact() {
   canvas.style.left = metrics.offsetLeft + 'px'; canvas.style.top = metrics.offsetTop + 'px'; canvas.style.width = metrics.width + 'px'; canvas.style.height = metrics.height + 'px';
   const item = originalData[currentStylingIndex]; if (!item) return;
   const raw = currentDragRawText || item.rawText || '';
-  const clean = raw.replace(/\\(?:pos|move)\([^)]*\)/gi, '').replace(/\\(?:an\d|fs[+-]?[\d.]+|fr[xyz][+-]?[\d.]+|fsc[xy][+-]?[\d.]+|fa[xy][+-]?[\d.]+)/gi, '').replace(/\{\s*\}/g, '');
+  const clean = dragResolveFn(kfStripTags(raw.replace(/\\move\([^)]*\)/gi, ''), KF_POS_SIZE_GROUPS));
   const fs = Number(el('vDragFontSizeInput').value) || 45;
   const tags = `\\an${currentDragAlign}\\pos(${currentDragAssX},${currentDragAssY})\\fs${fs}\\frx${currentDragFrx}\\fry${currentDragFry}\\frz${currentDragFrz}\\fscx${currentDragFscx}\\fscy${currentDragFscy}\\fax${currentDragFax}\\fay${currentDragFay}`;
   const header = LibassRenderer.buildScript().split('[Events]')[0];
   const track = header + '[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n' + `Dialogue: 0,0:00:00.00,9:59:59.00,${item.assMeta?.style || 'Default'},,${item.assMeta?.marginL || 0},${item.assMeta?.marginR || 0},${item.assMeta?.marginV || 0},,{${tags}}${clean.replace(/\r?\n/g, '\\N')}\n`;
   try {
     if (!exact) {
+      exactFontKey = dragFontKey();
       const fonts = exactFonts.concat(FontStore.list().filter(f => f.ok && f.bytes).map(f => new Uint8Array(f.bytes)));
       exact = new window.JASSUB({ canvas, subContent: track, workerUrl: new URL('./jassub/jassub-worker.js', window.location.href).href, wasmUrl: KF_ASSETS['jassub-worker.wasm'], modernWasmUrl: KF_ASSETS['jassub-worker-modern.wasm'], fonts, availableFonts: { 'adobe arabic': KF_ASSETS['AdobeArabic-Regular.ttf'], 'kurdforest': KF_ASSETS['AdobeArabic-Regular.ttf'], 'speda bold': KF_ASSETS['AdobeArabic-Regular.ttf'], 'liberation sans': KF_ASSETS['default.woff2'] }, fallbackFont: 'adobe arabic', onDemandRender: false, offscreenRender: false, useLocalFonts: false, prescaleFactor: 1 });
       exact.addEventListener('error', () => { box.classList.remove('kf-exact'); toast('پێشبینینی ورد بار نەبوو؛ پێشبینینی سادە چالاکە.', 'error'); });

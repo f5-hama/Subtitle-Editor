@@ -309,6 +309,15 @@ function deleteEmptySubtitleLines() {
             font-style: normal;
             font-display: swap;
         }
+
+        /* فۆنتی ڕووکاری ماڵپەڕ: IBM Plex Sans Arabic */
+        @font-face {
+            font-family: 'IBMPlexSansArabic';
+            src: url('./IBMPlexSansArabic-Regular.otf') format('opentype');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
         
         :root {
             --primary: #8EB69B; 
@@ -333,7 +342,7 @@ function deleteEmptySubtitleLines() {
         }
 
         html, body, #setup-screen, #editor-screen, .glass-card, .btn, .custom-modal-content, .top-nav, .top-tools, .action-bar, .subtitle-card, input, textarea, button, select {
-            font-family: 'KurdForest', Tahoma, Arial, sans-serif !important;
+            font-family: 'IBMPlexSansArabic', Tahoma, Arial, sans-serif !important;
         }
 
         html, body {
@@ -1517,7 +1526,7 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
     <div id="kf-shell">
         <header id="kf-bar">
             <button type="button" id="kf-menu-btn" class="kf-bar-btn" aria-label="مێنیو" aria-expanded="false" onclick="kfNav.toggleDrawer()">
-                <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M4 6h16M4 12h16M4 18h16"/></svg>
             </button>
             <div class="kf-bar-center"><div id="welcome-msg">بەخێربێیت!</div><span id="kf-sec-title"></span></div>
             <nav id="kf-tabs" aria-label="بەشەکان"></nav>
@@ -1528,7 +1537,7 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
             <div class="kf-drawer-head">
                 <div class="kf-drawer-title">مێنیو</div>
                 <button type="button" class="kf-bar-btn" aria-label="داخستن" onclick="kfNav.closeDrawer()">
-                    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M18 6 6 18M6 6l12 12"/></svg>
                 </button>
             </div>
             <nav id="kf-drawer-list"></nav>
@@ -1539,23 +1548,23 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
     <div id="setup-screen" class="glass-card">
         
         <div class="file-box" id="boxOriginal">
-            <button type="button" class="clear-file-btn" onclick="clearFile('fileOriginal', 'boxOriginal')" style="display: none;"><svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
-            <div class="upload-icon"><svg style="width:26px;height:26px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg></div>
+            <button type="button" class="clear-file-btn" onclick="clearFile('fileOriginal', 'boxOriginal')" style="display: none;"><svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M18 6 6 18M6 6l12 12"/></svg></button>
+            <div class="upload-icon"><svg style="width:26px;height:26px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M21 15v3.5A2.5 2.5 0 0 1 18.5 21h-13A2.5 2.5 0 0 1 3 18.5V15M17 8l-5-5-5 5M12 3v12"/></svg></div>
             <label>فایلی ئەسڵی (ئینگلیزی / عەرەبی / ...)</label>
             <div class="file-name-display">کرتە بکە بۆ هەڵبژاردن</div>
             <input type="file" id="fileOriginal" accept=".srt,.ass,.vtt,.txt,.sub,text/plain" onclick="this.value=null" onchange="toggleClearBtn(this, 'boxOriginal')">
         </div>
         
         <div class="file-box" id="boxKurdish">
-            <button type="button" class="clear-file-btn" onclick="clearFile('fileKurdish', 'boxKurdish')" style="display: none;"><svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
-            <div class="upload-icon"><svg style="width:26px;height:26px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg></div>
+            <button type="button" class="clear-file-btn" onclick="clearFile('fileKurdish', 'boxKurdish')" style="display: none;"><svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M18 6 6 18M6 6l12 12"/></svg></button>
+            <div class="upload-icon"><svg style="width:26px;height:26px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M21 15v3.5A2.5 2.5 0 0 1 18.5 21h-13A2.5 2.5 0 0 1 3 18.5V15M17 8l-5-5-5 5M12 3v12"/></svg></div>
             <label>فایلی وەرگێڕدراو (ئارەزوومەندانە)</label>
             <div class="file-name-display">کرتە بکە بۆ هەڵبژاردن</div>
             <input type="file" id="fileKurdish" accept=".srt,.ass,.vtt,.txt,.sub,text/plain" onclick="this.value=null" onchange="toggleClearBtn(this, 'boxKurdish')">
         </div>
 
         <button class="btn" style="padding: 13px; margin-top: 4px;" onclick="startEditing()">
-            <svg style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <svg style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M10 8.8v6.4a.8.8 0 0 0 1.2.7l5-3.2a.8.8 0 0 0 0-1.4l-5-3.2a.8.8 0 0 0-1.2.7z"/><circle stroke-width="1.85" cx="12" cy="12" r="9.25"/></svg>
             <span>دەستپێکردن</span>
         </button>
 
@@ -1598,7 +1607,7 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
             </div>
 
             <div class="file-box" style="margin-bottom: 12px; padding: 14px;">
-                <div class="upload-icon"><svg style="width:26px;height:26px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>
+                <div class="upload-icon"><svg style="width:26px;height:26px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect stroke-width="1.85" stroke-linejoin="round" x="3" y="3" width="18" height="18" rx="3"/><circle stroke-width="1.85" cx="9" cy="9" r="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg></div>
                 <label style="color:var(--primary); font-weight:bold; font-size:13px;" data-i18n="imgSelectLbl">کرتە بکە و وێنەکە هەڵبژێرە</label>
                 <div class="file-name-display" id="imgNameDisplay" data-i18n="imgNoFile">هیچ وێنەیەک دیاری نەکراوە</div>
                 <input type="file" id="imageFileInput" accept="image/*" onchange="uploadDirectImage(this)">
@@ -1610,7 +1619,7 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
                 <label style="font-size: 12px; font-weight: bold; color: var(--primary); display: block; margin-bottom: 4px;" data-i18n="imgDirectLinkLbl">لینکی ڕاستەوخۆی وێنەکە:</label>
                 <input type="text" id="generatedImgUrl" readonly class="input-field" style="margin-bottom: 8px; font-size: 12px; direction: ltr; text-align: left;">
                 <button class="btn" onclick="copyDirectImgLink()">
-                    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect stroke-width="1.85" stroke-linejoin="round" x="8" y="2" width="8" height="4" rx="1.2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M16 4h1.5A2.5 2.5 0 0 1 20 6.5v3M8 4H6.5A2.5 2.5 0 0 0 4 6.5v13A2.5 2.5 0 0 0 6.5 22h11a2.5 2.5 0 0 0 2.5-2.5V19M21 14H11M14 11l-3 3 3 3"/></svg>
                     <span data-i18n="imgCopyBtn">کۆپیکردنی لینک</span>
                 </button>
             </div>
@@ -1646,9 +1655,9 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
             </p>
 
             <div class="file-box" id="boxMkvFile" style="margin-bottom: 10px; padding: 12px;">
-                <button type="button" class="clear-file-btn" onclick="clearMkvFile()" style="display: none;"><svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                <button type="button" class="clear-file-btn" onclick="clearMkvFile()" style="display: none;"><svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M18 6 6 18M6 6l12 12"/></svg></button>
                 <div class="upload-icon">
-                    <svg style="width:24px;height:24px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+                    <svg style="width:24px;height:24px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9l-.8-1.2A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2z"/></svg>
                 </div>
                 <label>فایلی MKV لەناو مۆبایلەکەت هەڵبژێرە:</label>
                 <div class="file-name-display" id="mkvFileNameDisplay">کرتە بکە بۆ کردنەوەی فایلەکان</div>
@@ -1677,17 +1686,17 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
                 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
                     <button type="button" id="mkvToggleBtnSub" class="fmt-btn active" onclick="toggleMkvSection('sub')" style="display:flex; align-items:center; justify-content:center; gap:5px; padding:8px 4px;">
-                        <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>
+                        <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M21 14.5a2.5 2.5 0 0 1-2.5 2.5H8l-5 4V5.5A2.5 2.5 0 0 1 5.5 3h13A2.5 2.5 0 0 1 21 5.5zM8 8.5h8M8 12.5h5"/></svg>
                         <span>ژێرنووس</span>
                         <span id="mkvSubCountBadge" style="font-size:10px; background:rgba(0,0,0,0.35); padding:1px 5px; border-radius:8px;">0</span>
-                        <span id="mkvSubArrow" style="display:inline-flex; align-items:center;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+                        <span id="mkvSubArrow" style="display:inline-flex; align-items:center;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="m6 9 6 6 6-6"/></svg></span>
                     </button>
 
                     <button type="button" id="mkvToggleBtnAudio" class="fmt-btn" onclick="toggleMkvSection('audio')" style="display:flex; align-items:center; justify-content:center; gap:5px; padding:8px 4px;">
-                        <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M11 5L6 9H2v6h4l5 4V5z"></path></svg>
+                        <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M11 4.7a.7.7 0 0 0-1.2-.5L6.4 7.6A2 2 0 0 1 5 8.2H3a1 1 0 0 0-1 1v5.6a1 1 0 0 0 1 1h2a2 2 0 0 1 1.4.6l3.4 3.4a.7.7 0 0 0 1.2-.5zM16 9a5 5 0 0 1 0 6M19.4 18.4a9 9 0 0 0 0-12.8"/></svg>
                         <span>دەنگ (Audio)</span>
                         <span id="mkvAudioCountBadge" style="font-size:10px; background:rgba(0,0,0,0.35); padding:1px 5px; border-radius:8px;">0</span>
-                        <span id="mkvAudioArrow" style="display:inline-flex; align-items:center;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+                        <span id="mkvAudioArrow" style="display:inline-flex; align-items:center;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="m9 6 6 6-6 6"/></svg></span>
                     </button>
                 </div>
 
@@ -1762,8 +1771,8 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
     function mkvSetArrow(el, open) {
         if (!el) return;
         el.innerHTML = open
-            ? '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>'
-            : '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>';
+            ? '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="m6 9 6 6 6-6"/></svg>'
+            : '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="m9 6 6 6-6 6"/></svg>';
     }
     function toggleMkvSection(section) {
         const subPanel = document.getElementById('mkvSubtitlePanel');
@@ -2837,7 +2846,7 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 7px 10px; background: rgba(142, 182, 155, 0.08); border-radius: 8px;">
                     <span data-i18n="scSeek">پێش/پاشخستنی ڤیدیۆ (٢ چرکە)</span>
-                    <kbd dir="ltr" style="background:var(--border-color); padding: 3px 7px; border-radius: 6px; font-weight: bold; font-size: 11.5px; display:inline-flex; align-items:center; gap:4px;">Ctrl + <svg style="width:11px;height:11px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg> / <svg style="width:11px;height:11px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg></kbd>
+                    <kbd dir="ltr" style="background:var(--border-color); padding: 3px 7px; border-radius: 6px; font-weight: bold; font-size: 11.5px; display:inline-flex; align-items:center; gap:4px;">Ctrl + <svg style="width:11px;height:11px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M4 12h16M14 6l6 6-6 6"/></svg> / <svg style="width:11px;height:11px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M20 12H4M10 18l-6-6 6-6"/></svg></kbd>
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 7px 10px; background: rgba(142, 182, 155, 0.08); border-radius: 8px;">
                     <span data-i18n="scNextLine">چوونە دێڕی دواتر</span>
@@ -2861,11 +2870,11 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; gap:8px; padding: 7px 10px; background: rgba(142, 182, 155, 0.08); border-radius: 8px;">
                     <span>پێش/پاشخستنی ورد (٠.٢ چرکە)</span>
-                    <kbd dir="ltr" style="background:var(--border-color); padding: 3px 7px; border-radius: 6px; font-weight: bold; font-size: 11.5px; white-space:nowrap; display:inline-flex; align-items:center; gap:4px;">Ctrl + Shift + <svg style="width:11px;height:11px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg> / <svg style="width:11px;height:11px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg></kbd>
+                    <kbd dir="ltr" style="background:var(--border-color); padding: 3px 7px; border-radius: 6px; font-weight: bold; font-size: 11.5px; white-space:nowrap; display:inline-flex; align-items:center; gap:4px;">Ctrl + Shift + <svg style="width:11px;height:11px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M4 12h16M14 6l6 6-6 6"/></svg> / <svg style="width:11px;height:11px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M20 12H4M10 18l-6-6 6-6"/></svg></kbd>
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; gap:8px; padding: 7px 10px; background: rgba(142, 182, 155, 0.08); border-radius: 8px;">
                     <span>چوونە دێڕی پێشوو/دواتر</span>
-                    <kbd dir="ltr" style="background:var(--border-color); padding: 3px 7px; border-radius: 6px; font-weight: bold; font-size: 11.5px; white-space:nowrap; display:inline-flex; align-items:center; gap:4px;">Ctrl + <svg style="width:11px;height:11px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg> / <svg style="width:11px;height:11px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg></kbd>
+                    <kbd dir="ltr" style="background:var(--border-color); padding: 3px 7px; border-radius: 6px; font-weight: bold; font-size: 11.5px; white-space:nowrap; display:inline-flex; align-items:center; gap:4px;">Ctrl + <svg style="width:11px;height:11px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M12 20V4M6 10l6-6 6 6"/></svg> / <svg style="width:11px;height:11px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M12 4v16M18 14l-6 6-6-6"/></svg></kbd>
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; gap:8px; padding: 7px 10px; background: rgba(142, 182, 155, 0.08); border-radius: 8px;">
                     <span>کردنەوەی پەنجەرەی تەکنیک بۆ ئەم دێڕە</span>
@@ -2884,7 +2893,7 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
                     <kbd dir="ltr" style="background:var(--border-color); padding: 3px 7px; border-radius: 6px; font-weight: bold; font-size: 11.5px; white-space:nowrap;">Ctrl + I</kbd>
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; gap:8px; padding: 7px 10px; background: rgba(142, 182, 155, 0.08); border-radius: 8px;">
-                    <span>دانانی نیشانەی گۆرانی ♪</span>
+                    <span>دانانی نیشانەی گۆرانی <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span>
                     <kbd dir="ltr" style="background:var(--border-color); padding: 3px 7px; border-radius: 6px; font-weight: bold; font-size: 11.5px; white-space:nowrap;">Ctrl + M</kbd>
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; gap:8px; padding: 7px 10px; background: rgba(142, 182, 155, 0.08); border-radius: 8px;">
@@ -2923,7 +2932,7 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:6px;">
                     <span style="font-size:11px; font-weight:bold; color:var(--primary);">ستایلەکانی فایلی سەرەکی:</span>
                     <button type="button" class="btn btn-outline" style="padding:3px 8px; font-size:10.5px; width:auto; color:#ef4444; border-color:rgba(239,68,68,0.4); display:flex; align-items:center; gap:4px;" onclick="deleteEmptyMergeStyles()">
-                        <svg style="width:12px;height:12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        <svg style="width:12px;height:12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M3 6h18M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6M5.5 6l.9 13.1A2 2 0 0 0 8.4 21h7.2a2 2 0 0 0 2-1.9L18.5 6M10 11v5.5M14 11v5.5"/></svg>
                         <span>سڕینەوەی ستایلە بەتاڵەکان</span>
                     </button>
                 </div>
@@ -3010,7 +3019,7 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
             <p style="font-size: 12.5px; color:var(--text-muted); margin-bottom:12px; line-height: 1.5;" data-i18n="rtlFixDesc">فایلەکانی ژێرنووس هەڵبژێرە. سیستەمی RTLی نوێ ئاڕاستەی هەر دێڕێک دیاری دەکات بەبێ دەستکاریکردنی تاگەکان و هیچ شتێکی تری فایلەکە.</p>
             
             <div class="file-box" id="boxRtlFix" style="margin-bottom: 14px; padding: 16px;">
-                <div class="upload-icon"><svg style="width:26px;height:26px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg></div>
+                <div class="upload-icon"><svg style="width:26px;height:26px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M21 15v3.5A2.5 2.5 0 0 1 18.5 21h-13A2.5 2.5 0 0 1 3 18.5V15M17 8l-5-5-5 5M12 3v12"/></svg></div>
                 <label data-i18n="rtlFixSelectLbl">فایلەکان هەڵبژێرە (SRT, ASS, VTT):</label>
                 <div class="file-name-display" id="rtlFixCountDisplay" data-i18n="batchNoFile">هیچ فایلێک دیاری نەکراوە</div>
                 <input type="file" id="rtlFixFileInput" accept=".srt,.ass,.vtt" multiple onchange="updateRtlFixCount(this)">
@@ -3043,7 +3052,7 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
             <p style="font-size: 12.5px; color:var(--text-muted); margin-bottom:12px; line-height: 1.5;" data-i18n="batchDesc">دەتوانیت چەندین فایل پێکەوە هەڵبژێریت، کاتەکانیان بگۆڕیت یان فۆرماتەکەیان بگۆڕیت.</p>
             
             <div class="file-box" id="boxBatch" style="margin-bottom: 12px; padding: 12px;">
-                <div class="upload-icon"><svg style="width:24px;height:24px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 00-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg></div>
+                <div class="upload-icon"><svg style="width:24px;height:24px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect stroke-width="1.85" stroke-linejoin="round" x="8" y="8" width="13" height="13" rx="2.5"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M4 16a2 2 0 0 1-2-2V4.5A2.5 2.5 0 0 1 4.5 2H14a2 2 0 0 1 2 2"/></svg></div>
                 <label data-i18n="batchSelectLbl">فایلەکان هەڵبژێرە:</label>
                 <div class="file-name-display" id="batchCountDisplay" data-i18n="batchNoFile">هیچ فایلێک دیاری نەکراوە</div>
                 <input type="file" id="convertFileInput" accept=".srt,.ass,.vtt,.txt,text/plain" multiple onchange="updateBatchCount(this)">
@@ -3085,7 +3094,7 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
         <div class="header-tools-container">
             <div id="progress-container"><div id="progress-bar"></div></div>
             <div class="top-nav">
-                <button class="back-btn" onclick="confirmGoBack()"><svg class="icon" style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg><span style="margin: 0 4px;">گەڕانەوە</span></button>
+                <button class="back-btn" onclick="confirmGoBack()"><svg class="icon" style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M20 12H4M10 18l-6-6 6-6"/></svg><span style="margin: 0 4px;">گەڕانەوە</span></button>
                 <h3 style="margin:0; font-size:13.5px; color:var(--primary); text-align:center; flex-grow:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">دەستکاریکردنی ژێرنووس</h3>
                 <div class="kf-logo-mini" dir="ltr" role="img" aria-label="Kurd Forest"><span>KURD</span><b>FOREST</b></div>
             </div>
@@ -3093,42 +3102,42 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
             <div class="top-tools">
                 
                 <button class="top-btn" onclick="undo()" id="btn-undo" title="پاشگەزبوونەوە">
-                    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
+                    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
                 </button>
                 <button class="top-btn" onclick="redo()" id="btn-redo" title="چوونەپێش">
-                    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6"></path></svg>
+                    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="m15 14 5-5-5-5M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg>
                 </button>
                 <button class="top-btn" onclick="fixAllFspZero()" id="btn-fix-fsp" title="نەهێشتنی پچڕانی پیتەکان (fsp 0)" style="color: var(--primary);">
-    <svg class="icon" style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M7 12h10M9 18h6"/>
+    <svg class="icon" style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M3 6h18M6.5 12h11M9.5 18h5"/>
     </svg>
 </button>
                 <button class="top-btn" id="btn-rtl-toggle" onclick="kfToggleEditorRtl()" title="RTL — ئاڕاستەی ڕاست-بۆ-چەپ بۆ هەموو فایلەکە (ASS: لە ستایل، بێ دەستکاری دێڕەکان)" aria-pressed="false" style="font-size:11px;font-weight:900;letter-spacing:.3px;"><span dir="ltr">RTL</span></button>
                 <button class="top-btn" id="btn-select-mode" onclick="kfSel.toggleMode()" title="دیاریکردنی دێڕەکان">
-                    <svg class="icon" style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+                    <svg class="icon" style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M21 11.5v7a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 18.5v-13A2.5 2.5 0 0 1 5.5 3H16M9 11l3 3L22 4"/></svg>
                 </button>
                 <button class="top-btn danger-tool" id="btn-delete-selected" onclick="kfSel.deleteSelected()" title="سڕینەوەی دێڕە دیاریکراوەکان" style="display:none; gap:4px;">
-                    <svg class="icon" style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    <svg class="icon" style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M3 6h18M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6M5.5 6l.9 13.1A2 2 0 0 0 8.4 21h7.2a2 2 0 0 0 2-1.9L18.5 6M10 11v5.5M14 11v5.5"/></svg>
                     <span class="sel-count" style="font-size:12px;font-weight:bold;">0</span>
                 </button>
                 <button class="top-btn danger-tool" onclick="deleteEmptySubtitleLines()" title="سڕینەوەی دێڕە بەتاڵەکان">
-                    <svg class="icon" style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    <svg class="icon" style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M3 6h18M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6M5.5 6l.9 13.1A2 2 0 0 0 8.4 21h7.2a2 2 0 0 0 2-1.9L18.5 6M10 11v5.5M14 11v5.5"/>
                     </svg>
                 </button>
                 
                 <div class="tool-divider"></div>
                 
                 <button class="top-btn primary-tool" onclick="openFontsModal()" title="فۆنتەکان" id="btn-fonts-top">
-    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 20h4M6 20L12 4l6 16M16 20h4M8 14h8"/></svg>
+    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M4 20h4M16 20h4M6 20l5.1-14.4a1 1 0 0 1 1.8 0L18 20M8.3 14h7.4"/></svg>
 </button>
                 <button class="top-btn primary-tool" onclick="toggleSearchBar()" title="گەڕان">
-                    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle stroke-width="1.85" cx="11" cy="11" r="7.5"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="m21 21-4.6-4.6"/></svg>
                 </button>
 
                 <!-- دوگمەی لابردنی ڤیدیۆ لە سەرەوە -->
                 <button class="top-btn danger-tool" id="btn-remove-video-top" onclick="userRemoveVideo()" title="لابردنی ڤیدیۆ" style="display: none;">
-                    <svg class="icon" style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    <svg class="icon" style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M18 6 6 18M6 6l12 12"/></svg>
                 </button>
             </div>
         </div>
@@ -3137,12 +3146,12 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                 <span style="font-size: 13.5px; font-weight: bold; color: var(--primary);" data-i18n="searchLbl">گەڕان و گۆڕین</span>
                 <span id="searchMatchInfo" style="font-size: 11.5px; font-weight: bold; color: var(--primary); background: rgba(142,182,155,0.14); border: 1px solid rgba(142,182,155,0.3); padding: 2px 8px; border-radius: 20px; direction: ltr; display: none; margin-inline-start: auto; margin-inline-end: 8px;"></span>
-                <button class="close-search-btn" onclick="toggleSearchBar()"><svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                <button class="close-search-btn" onclick="toggleSearchBar()"><svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M18 6 6 18M6 6l12 12"/></svg></button>
             </div>
             <div class="search-row">
                 <div class="search-input-group" style="flex: 2;"><input type="text" id="searchInput" data-i18n="searchPlh" placeholder="گەڕان بەدوای..." oninput="updateSearchMatchInfo()" onkeydown="if(event.key === 'Enter') findNext(1)"></div>
-                <button class="search-btn" style="flex: 0; padding: 7px 10px;" onclick="findNext(-1)" title="Previous"><svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg></button>
-                <button class="search-btn" style="flex: 0; padding: 7px 10px;" onclick="findNext(1)" title="Next"><svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></button>
+                <button class="search-btn" style="flex: 0; padding: 7px 10px;" onclick="findNext(-1)" title="Previous"><svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="m6 15 6-6 6 6"/></svg></button>
+                <button class="search-btn" style="flex: 0; padding: 7px 10px;" onclick="findNext(1)" title="Next"><svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="m6 9 6 6 6-6"/></svg></button>
             </div>
             <div class="search-row">
                 <div class="search-input-group" style="width: 100%;"><input type="text" id="replaceInput" data-i18n="replacePlh" placeholder="گۆڕین بە..."></div>
@@ -3159,7 +3168,7 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
             <div id="video-source-selector" style="padding: 18px 14px; text-align: center; display: flex; flex-direction: column; gap: 10px; align-items: center; justify-content: center; min-height: 120px; background: rgba(18, 23, 29, 0.6);">
                 <div style="width: 100%; max-width: 320px;">
                     <button type="button" class="btn" style="width: 100%; padding: 12px 14px; font-size: 13px;" onclick="document.getElementById('nativeVideoFileInput').click()">
-                        <svg class="icon" style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                        <svg class="icon" style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M21 15v3.5A2.5 2.5 0 0 1 18.5 21h-13A2.5 2.5 0 0 1 3 18.5V15M17 8l-5-5-5 5M12 3v12"/></svg>
                         <span>فایل لە ئامێرەکەت هەڵبژێرە</span>
                     </button>
                     <input type="file" id="nativeVideoFileInput" accept="*/*" style="display: none;" onchange="handleNativeVideoUpload(this)">
@@ -3183,13 +3192,13 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
 
                 <!-- ئەنیمەیشنی دووجار کلیک بۆ دەستە ڕاست (+10s) -->
                 <div id="mainVideoSkipRippleRight" style="display:none; position:absolute; right:0; top:0; bottom:0; width:40%; background:radial-gradient(circle at center, rgba(255,255,255,0.25) 0%, transparent 70%); border-top-right-radius:12px; border-bottom-right-radius:12px; z-index:30; pointer-events:none; align-items:center; justify-content:center; flex-direction:column; gap:4px; color:#fff; font-size:12px; font-weight:bold;">
-                    <svg style="width:22px;height:22px;" fill="currentColor" viewBox="0 0 24 24"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg>
+                    <svg style="width:22px;height:22px;" fill="currentColor" viewBox="0 0 24 24"><path d="M3.5 7.2v9.6a1 1 0 0 0 1.6.8l6.4-4.8a1 1 0 0 0 0-1.6L5.1 6.4a1 1 0 0 0-1.6.8zm9 0v9.6a1 1 0 0 0 1.6.8l6.4-4.8a1 1 0 0 0 0-1.6l-6.4-4.8a1 1 0 0 0-1.6.8z" fill="currentColor" stroke="none"/></svg>
                     <span>+10s</span>
                 </div>
 
                 <!-- ئەنیمەیشنی دووجار کلیک بۆ دەستە چەپ (-10s) -->
                 <div id="mainVideoSkipRippleLeft" style="display:none; position:absolute; left:0; top:0; bottom:0; width:40%; background:radial-gradient(circle at center, rgba(255,255,255,0.25) 0%, transparent 70%); border-top-left-radius:12px; border-bottom-left-radius:12px; z-index:30; pointer-events:none; align-items:center; justify-content:center; flex-direction:column; gap:4px; color:#fff; font-size:12px; font-weight:bold;">
-                    <svg style="width:22px;height:22px;" fill="currentColor" viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg>
+                    <svg style="width:22px;height:22px;" fill="currentColor" viewBox="0 0 24 24"><path d="M11.5 7.2v9.6a1 1 0 0 1-1.6.8l-6.4-4.8a1 1 0 0 1 0-1.6l6.4-4.8a1 1 0 0 1 1.6.8zm9 0v9.6a1 1 0 0 1-1.6.8l-6.4-4.8a1 1 0 0 1 0-1.6l6.4-4.8a1 1 0 0 1 1.6.8z" fill="currentColor" stroke="none"/></svg>
                     <span>-10s</span>
                 </div>
 
@@ -3212,18 +3221,18 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
                         <div class="c-btn-group">
                             <!-- Play/Pause -->
                             <button type="button" class="c-ctrl-btn" onclick="toggleCustomPlay()" id="btnCustomPlay" title="کارپێکردن/ڕاگرتن">
-                                <svg id="iconCustomPlay" style="width:18px;height:18px;" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                                <svg id="iconCustomPause" style="width:18px;height:18px; display:none;" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                                <svg id="iconCustomPlay" style="width:18px;height:18px;" fill="currentColor" viewBox="0 0 24 24"><path d="M7 5.8v12.4a1.3 1.3 0 0 0 2 1.1l9.8-6.2a1.3 1.3 0 0 0 0-2.2L9 4.7a1.3 1.3 0 0 0-2 1.1z" fill="currentColor" stroke="none"/></svg>
+                                <svg id="iconCustomPause" style="width:18px;height:18px; display:none;" fill="currentColor" viewBox="0 0 24 24"><path d="M7.5 4.5h1.5a1.5 1.5 0 0 1 1.5 1.5v12a1.5 1.5 0 0 1-1.5 1.5H7.5A1.5 1.5 0 0 1 6 18V6a1.5 1.5 0 0 1 1.5-1.5zm7.5 0h1.5A1.5 1.5 0 0 1 18 6v12a1.5 1.5 0 0 1-1.5 1.5H15a1.5 1.5 0 0 1-1.5-1.5V6A1.5 1.5 0 0 1 15 4.5z" fill="currentColor" stroke="none"/></svg>
                             </button>
                             
                             <!-- پاشخستنی ١٠ چرکە -->
                             <button type="button" class="c-ctrl-btn" onclick="skipCustomVideo(-10)" title="١٠ چرکە بۆ دواوە">
-                                <svg style="width:16px;height:16px;" fill="currentColor" viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg>
+                                <svg style="width:16px;height:16px;" fill="currentColor" viewBox="0 0 24 24"><path d="M11.5 7.2v9.6a1 1 0 0 1-1.6.8l-6.4-4.8a1 1 0 0 1 0-1.6l6.4-4.8a1 1 0 0 1 1.6.8zm9 0v9.6a1 1 0 0 1-1.6.8l-6.4-4.8a1 1 0 0 1 0-1.6l6.4-4.8a1 1 0 0 1 1.6.8z" fill="currentColor" stroke="none"/></svg>
                             </button>
 
                             <!-- پێشخستنی ١٠ چرکە -->
                             <button type="button" class="c-ctrl-btn" onclick="skipCustomVideo(10)" title="١٠ چرکە بۆ پێشەوە">
-                                <svg style="width:16px;height:16px;" fill="currentColor" viewBox="0 0 24 24"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg>
+                                <svg style="width:16px;height:16px;" fill="currentColor" viewBox="0 0 24 24"><path d="M3.5 7.2v9.6a1 1 0 0 0 1.6.8l6.4-4.8a1 1 0 0 0 0-1.6L5.1 6.4a1 1 0 0 0-1.6.8zm9 0v9.6a1 1 0 0 0 1.6.8l6.4-4.8a1 1 0 0 0 0-1.6l-6.4-4.8a1 1 0 0 0-1.6.8z" fill="currentColor" stroke="none"/></svg>
                             </button>
 
                             <!-- کاتی ڤیدیۆ -->
@@ -3238,13 +3247,13 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
                             <!-- دەنگ و بێدەنگکردنی ڕاستەقینە -->
                             <button type="button" class="c-ctrl-btn" onclick="toggleCustomMute()" id="btnCustomMute" title="دەنگ">
                                 <!-- ئایکۆنی دەنگی کراوە -->
-                                <svg id="iconVolumeHigh" style="width:17px;height:17px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M11 5L6 9H2v6h4l5 4V5z"/>
+                                <svg id="iconVolumeHigh" style="width:17px;height:17px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M11 4.7a.7.7 0 0 0-1.2-.5L6.4 7.6A2 2 0 0 1 5 8.2H3a1 1 0 0 0-1 1v5.6a1 1 0 0 0 1 1h2a2 2 0 0 1 1.4.6l3.4 3.4a.7.7 0 0 0 1.2-.5zM16 9a5 5 0 0 1 0 6M19.4 18.4a9 9 0 0 0 0-12.8"/>
                                 </svg>
                                 <!-- ئایکۆنی بێدەنگکردن (Mute) بە هێمای X -->
-                                <svg id="iconVolumeMute" style="width:17px;height:17px; display:none;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9l6 6m0-6l-6 6"/>
+                                <svg id="iconVolumeMute" style="width:17px;height:17px; display:none;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M11 4.7a.7.7 0 0 0-1.2-.5L6.4 7.6A2 2 0 0 1 5 8.2H3a1 1 0 0 0-1 1v5.6a1 1 0 0 0 1 1h2a2 2 0 0 1 1.4.6l3.4 3.4a.7.7 0 0 0 1.2-.5z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="m22 9-6 6M16 9l6 6"/>
                                 </svg>
                             </button>
                         </div>
@@ -3266,7 +3275,7 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
             <button class="btn btn-outline" onclick="openAiModal()"><span>دانانی وەرگێڕان</span></button>
             <button class="btn btn-outline" onclick="toggleDirection()"><span>ئاڕاستەی نووسین</span></button>
             <button class="btn" style="grid-column: span 2;" onclick="downloadEditedFile()"><span>سەیڤکردن و داگرتن</span></button>
-            <button class="btn btn-outline" style="grid-column: span 2;" onclick="runCodeReview()"><span style="display:inline-flex;align-items:center;gap:6px;"><svg class="svg-ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg> پێداچوونەوەی کۆدەکان</span></button>
+            <button class="btn btn-outline" style="grid-column: span 2;" onclick="runCodeReview()"><span style="display:inline-flex;align-items:center;gap:6px;"><svg class="svg-ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="m21 21-4.6-4.6"/></svg> پێداچوونەوەی کۆدەکان</span></button>
         </div>
         <div id="code-review-panel" style="display:none;"></div>
 
@@ -3280,7 +3289,7 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
                 <div class="custom-select-wrapper" style="width: 100%; position: relative;">
                     <button type="button" class="custom-select-btn" id="aiStyleSelectBtn" style="width: 100%; justify-content: space-between; padding: 9px 12px; border-radius: 10px; font-size: 13px;" onclick="toggleAiStyleMenu(this)">
                         <span id="aiCurrentStyleText">— هەموو دێڕەکان —</span>
-                        <svg class="icon" style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        <svg class="icon" style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="m6 9 6 6 6-6"/></svg>
                     </button>
                     <div class="custom-select-menu" id="aiStyleMenu" style="width: 100%; max-height: 180px; overflow-y: auto; left: 0; right: 0;">
                         <!-- لێرە خۆکار پڕ دەبێتەوە -->
@@ -3322,21 +3331,21 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
                     <button type="button" class="pos-btn" onclick="selectAlignment('3')">خوارەوە ڕاست</button>
                 </div>
                 <button type="button" class="btn btn-outline" style="padding: 7px 10px; font-size: 11.5px; margin-top: 8px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;" onclick="openGrid40Modal()">
-                    <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="9" stroke-width="2"></circle>
                         <circle cx="12" cy="12" r="3" stroke-width="2"></circle>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2v3m0 14v3M2 12h3m14 0h3"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M12 2v3.5M12 18.5V22M2 12h3.5M18.5 12H22"/>
                     </svg>
                     <span>دیاریکردنی شوێن بە ڕاکێشان لەسەر ڤیدیۆ</span>
                 </button>
                 <input type="hidden" id="selectedAlignVal" value="2">
             </div>
             <button type="button" class="btn btn-outline" style="padding: 7px 10px; font-size: 11.5px; margin-top: 6px; margin-bottom: 14px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; color: #ef4444; border-color: rgba(239, 68, 68, 0.4);" onclick="openCensorModal()">
-    <svg style="width: 15px; height: 15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"></path></svg>
+    <svg style="width: 15px; height: 15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M10.7 5.1A10.7 10.7 0 0 1 12 5c4.6 0 8.4 2.8 9.9 6.7a1 1 0 0 1 0 .7 10.8 10.8 0 0 1-1.4 2.5M14.1 14.2a3 3 0 0 1-4.2-4.2M17.5 17.5A10.8 10.8 0 0 1 2.1 12.3a1 1 0 0 1 0-.7 10.8 10.8 0 0 1 4.4-5.1M2 2l20 20"/></svg>
     <span>سانسۆرکردنی بەشێکی ڤیدیۆ (Censor Tool)</span>
 </button>
 <button type="button" class="btn btn-outline" id="btnOpenMove" style="padding: 7px 10px; font-size: 11.5px; margin-top: -8px; margin-bottom: 14px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;" onclick="openMoveModal()">
-    <svg style="width: 15px; height: 15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m0 0l-5-5m5 5l-5 5"></path><circle cx="5" cy="12" r="1.6" fill="currentColor"></circle></svg>
+    <svg style="width: 15px; height: 15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M6 12h14M14 6l6 6-6 6"/><circle cx="5" cy="12" r="1.6" fill="currentColor"></circle></svg>
     <span>جوڵاندنی دەق لەسەر ڤیدیۆ (Move)</span>
 </button>
 
@@ -3430,7 +3439,7 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
                     <div style="display: flex; align-items: center; justify-content: space-between;">
                         <span style="font-size: 10.5px; color: var(--text-muted);">ڕەنگی Outline:</span>
                         <div style="display: flex; gap: 4px;">
-                            <div class="palette-btn active" style="width:19px; height:19px; border-radius:4px; background:rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center;" onclick="setStrokeColor('KEEP', this)" title="وەک خۆی (دەستکاری مەکە)"><svg style="width:12px;height:12px;color:#aaa;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></div>
+                            <div class="palette-btn active" style="width:19px; height:19px; border-radius:4px; background:rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center;" onclick="setStrokeColor('KEEP', this)" title="وەک خۆی (دەستکاری مەکە)"><svg style="width:12px;height:12px;color:#aaa;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M18 6 6 18M6 6l12 12"/></svg></div>
                             <div class="palette-btn" style="width:19px; height:19px; border-radius:4px; background:#000000; border:1px solid #555;" onclick="setStrokeColor('#000000', this)" title="ڕەش"></div>
                             <div class="palette-btn" style="width:19px; height:19px; border-radius:4px; background:#FFFFFF;" onclick="setStrokeColor('#FFFFFF', this)" title="سپی"></div>
                             <div class="palette-btn" style="width:19px; height:19px; border-radius:4px; background:#FFF200;" onclick="setStrokeColor('#FFF200', this)" title="زەرد"></div>
@@ -3444,7 +3453,7 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
                     <div style="display: flex; align-items: center; justify-content: space-between;">
                         <span style="font-size: 10.5px; color: var(--text-muted);">ڕەنگی Shadow:</span>
                         <div style="display: flex; gap: 4px;">
-                            <div class="palette-btn active" style="width:19px; height:19px; border-radius:4px; background:rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center;" onclick="setShadowColor('KEEP', this)" title="وەک خۆی (دەستکاری مەکە)"><svg style="width:12px;height:12px;color:#aaa;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></div>
+                            <div class="palette-btn active" style="width:19px; height:19px; border-radius:4px; background:rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center;" onclick="setShadowColor('KEEP', this)" title="وەک خۆی (دەستکاری مەکە)"><svg style="width:12px;height:12px;color:#aaa;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M18 6 6 18M6 6l12 12"/></svg></div>
                             <div class="palette-btn" style="width:19px; height:19px; border-radius:4px; background:#000000; border:1px solid #555;" onclick="setShadowColor('#000000', this)" title="ڕەش"></div>
                             <div class="palette-btn" style="width:19px; height:19px; border-radius:4px; background:#FFFFFF;" onclick="setShadowColor('#FFFFFF', this)" title="سپی"></div>
                             <div class="palette-btn" style="width:19px; height:19px; border-radius:4px; background:#333333;" onclick="setShadowColor('#333333', this)" title="تێر"></div>
@@ -3462,7 +3471,6 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
                 <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom: 4px;">
                     <label style="font-size: 11px; font-weight: bold; color: var(--primary);">دەقی دێڕەکە (دەتوانیت وشەیەک دیاری بکەیت):</label>
                     <button type="button" onclick="clearLineStyles()" title="سڕینەوەی هەموو ستایلەکانی ئەم دێڕە" style="flex-shrink:0; display:flex; align-items:center; gap:4px; font-size:10.5px; font-weight:bold; padding:4px 8px; border-radius:8px; cursor:pointer; background: rgba(239, 68, 68, 0.08); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.4);">
-                        <svg style="width:12px; height:12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                         <span>سڕینەوەی ستایل</span>
                     </button>
                 </div>
@@ -3472,14 +3480,14 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
                 
                 <div class="tech-row" style="margin:6px 0;">
                     <button type="button" class="tech-toggle-btn" style="display:inline-flex; align-items:center; justify-content:center; gap:6px;" onclick="insertSymbolToText('♪')">
-    <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+    <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="currentColor"><path d="M13 3.6v10.1a4.3 4.3 0 1 0 2 3.6V8.3l3.6-1a1.3 1.3 0 0 0 .9-1.2V4.2a1.2 1.2 0 0 0-1.5-1.2l-3.9 1A1.3 1.3 0 0 0 13 5.2z" fill="currentColor" stroke="none"/></svg>
     <span>گۆرانی</span>
-    <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+    <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="currentColor"><path d="M13 3.6v10.1a4.3 4.3 0 1 0 2 3.6V8.3l3.6-1a1.3 1.3 0 0 0 .9-1.2V4.2a1.2 1.2 0 0 0-1.5-1.2l-3.9 1A1.3 1.3 0 0 0 13 5.2z" fill="currentColor" stroke="none"/></svg>
 </button>
 <button type="button" class="tech-toggle-btn" style="display:inline-flex; align-items:center; justify-content:center; gap:6px;" onclick="insertSymbolToText('|')">
-    <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="3" x2="12" y2="21"/></svg>
+    <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="3" x2="12" y2="21"/></svg>
     <span>تابلۆ</span>
-    <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="3" x2="12" y2="21"/></svg>
+    <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="3" x2="12" y2="21"/></svg>
 </button>
                 </div>
 
@@ -3513,14 +3521,14 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
 
                 <div class="tech-row" style="margin-bottom: 6px;">
                     <button type="button" class="tech-toggle-btn" style="display:inline-flex; align-items:center; justify-content:center; gap:6px;" onclick="insertSymbolToNote('♪')">
-    <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+    <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="currentColor"><path d="M13 3.6v10.1a4.3 4.3 0 1 0 2 3.6V8.3l3.6-1a1.3 1.3 0 0 0 .9-1.2V4.2a1.2 1.2 0 0 0-1.5-1.2l-3.9 1A1.3 1.3 0 0 0 13 5.2z" fill="currentColor" stroke="none"/></svg>
     <span>گۆرانی</span>
-    <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+    <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="currentColor"><path d="M13 3.6v10.1a4.3 4.3 0 1 0 2 3.6V8.3l3.6-1a1.3 1.3 0 0 0 .9-1.2V4.2a1.2 1.2 0 0 0-1.5-1.2l-3.9 1A1.3 1.3 0 0 0 13 5.2z" fill="currentColor" stroke="none"/></svg>
 </button>
 <button type="button" class="tech-toggle-btn" style="display:inline-flex; align-items:center; justify-content:center; gap:6px;" onclick="insertSymbolToNote('|')">
-    <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="3" x2="12" y2="21"/></svg>
+    <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="3" x2="12" y2="21"/></svg>
     <span>تابلۆ</span>
-    <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="3" x2="12" y2="21"/></svg>
+    <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="3" x2="12" y2="21"/></svg>
 </button>
                 </div>
 
@@ -3566,22 +3574,22 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
                 <!-- ٤ دوگمەی کردارەکان بە تۆڕی ٢ بە ٢ی زۆر ڕێک و هاوسەنگ -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 100%; box-sizing: border-box;">
                     <button type="button" class="btn btn-outline" style="padding: 6px 4px; font-size: 11px; display: flex; align-items: center; justify-content: center; gap: 4px;" onclick="saveCurrentToMyColors()">
-                        <svg style="width: 13px; height: 13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        <svg style="width: 13px; height: 13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M12 5v14M5 12h14"/></svg>
                         <span>سەیڤکردنی ڕەنگ</span>
                     </button>
 
                     <button type="button" class="btn btn-outline" style="padding: 6px 4px; font-size: 11px; color: #ef4444; border-color: rgba(239, 68, 68, 0.4); display: flex; align-items: center; justify-content: center; gap: 4px;" onclick="clearMySavedColors()">
-                        <svg style="width: 13px; height: 13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        <svg style="width: 13px; height: 13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M3 6h18M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6M5.5 6l.9 13.1A2 2 0 0 0 8.4 21h7.2a2 2 0 0 0 2-1.9L18.5 6M10 11v5.5M14 11v5.5"/></svg>
                         <span>سڕینەوەی ڕەنگ</span>
                     </button>
 
                     <button type="button" class="btn btn-outline" style="padding: 6px 4px; font-size: 11px; display: flex; align-items: center; justify-content: center; gap: 4px;" onclick="pickColorFromScreen()">
-                        <svg class="icon" style="width: 13px; height: 13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                        <svg class="icon" style="width: 13px; height: 13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
                         <span>لە ڤیدیۆ وەربگرە</span>
                     </button>
 
                     <button type="button" class="btn btn-outline" style="padding: 6px 4px; font-size: 11px; display: flex; align-items: center; justify-content: center; gap: 4px;" onclick="setCustomPaletteColor('KEEP', this)">
-                        <svg style="width: 13px; height: 13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        <svg style="width: 13px; height: 13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M18 6 6 18M6 6l12 12"/></svg>
                         <span>ڕەنگ نەگۆڕێت</span>
                     </button>
                 </div>
@@ -3618,7 +3626,7 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
                 ئەم بژاردەیە پێشبینینەکە دەگۆڕێت بۆ کتێبخانەی <b>libass</b>ی ڕاستەقینە (هەمان کتێبخانەیەی FFmpeg و زۆربەی پلەیەرەکان بەکاریدەهێنن)، تاوەکو وێنەکێشان، سووڕانەوە، و شوێنی دەق ڕێک وەک ئەنجامی کۆتایی (هاردسەب) دەربکەون. پێویستی بە ئینتەرنێت هەیە جاری یەکەم بۆ داگرتنی کتێبخانەکە؛ ئەگەر شکستی هێنا، خۆکار دەگەڕێتەوە بۆ پێشبینینی ئاسایی.
             </p>
             <button type="button" id="kfLibassBtn" class="btn" style="width:100%; font-size:12.5px; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="toggleLibassPreview()">
-                <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M14.828 14.828a4 4 0 1 0-5.656-5.656 4 4 0 0 0 5.656 5.656zM21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>
+                <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle stroke-width="1.85" cx="12" cy="12" r="9.25"/><circle stroke-width="1.85" cx="12" cy="12" r="3.5"/></svg>
                 <span id="kfLibassBtnText">چالاککردنی ڕەندەری libass</span>
             </button>
             <div id="kfLibassBtnStatus" style="font-size:10.5px; color:var(--text-muted); margin-top:6px; text-align:center; min-height:14px;"></div>
@@ -3626,7 +3634,7 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
         <div style="font-size:12px; font-weight:bold; color:var(--primary); margin-bottom:5px;">فۆنتەکانی ناو فایلەکە:</div>
         <div id="kfFontsUsed"></div>
         <button type="button" class="btn" style="width:100%; margin:8px 0 10px 0; font-size:12.5px; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="document.getElementById('kfFontFilePick').click()">
-    <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 4v16m8-8H4"/></svg>
+    <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M12 5v14M5 12h14"/></svg>
     <span>زیادکردنی فایلی فۆنت</span>
 </button>
         <input type="file" id="kfFontFilePick" multiple style="display:none" onchange="kfOnFontFilesPicked(this)">
@@ -3714,16 +3722,16 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
                 </div>
                 <div class="v-nudge-pad">
                     <button type="button" class="v-nudge-btn up" onclick="nudgeDragPos(0,-1)" aria-label="سەرەوە">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="m6 15 6-6 6 6"/></svg>
                     </button>
                     <button type="button" class="v-nudge-btn down" onclick="nudgeDragPos(0,1)" aria-label="خوارەوە">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="m6 9 6 6 6-6"/></svg>
                     </button>
                     <button type="button" class="v-nudge-btn left" onclick="nudgeDragPos(-1,0)" aria-label="چەپ">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="m15 6-6 6 6 6"/></svg>
                     </button>
                     <button type="button" class="v-nudge-btn right" onclick="nudgeDragPos(1,0)" aria-label="ڕاست">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="m9 6 6 6-6 6"/></svg>
                     </button>
                     <button type="button" class="v-nudge-btn center" onclick="alignDragPos('center'); alignDragPos('middle')" aria-label="ناوەڕاست"></button>
                 </div>
@@ -3838,7 +3846,7 @@ html.kf-wide:root body #move-modal #mvBox { margin: 0; width: 100% !important; }
         <div style="display:flex; gap:6px; margin-top:8px; align-items:center; justify-content:center;">
             <button type="button" id="mvChipA" class="v-step-chip active" style="padding:4px 12px;" onclick="mvSelect('A')"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#fff;border:1px solid #000;vertical-align:-1px;margin-inline-end:5px;"></span>شوێنی سەرەکی</button>
             <button type="button" id="mvChipB" class="v-step-chip" style="padding:4px 12px;" onclick="mvSelect('B')"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#22c55e;border:1px solid #000;vertical-align:-1px;margin-inline-end:5px;"></span>شوێنی ڕۆیشتوو</button>
-            <button type="button" class="v-step-chip" style="padding:4px 12px;" onclick="mvSwap()"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px; margin-inline-end:4px;" aria-hidden="true"><path d="M4 8h14"/><path d="M14 4l4 4-4 4"/><path d="M20 16H6"/><path d="M10 12l-4 4 4 4"/></svg>گۆڕینەوە</button>
+            <button type="button" class="v-step-chip" style="padding:4px 12px;" onclick="mvSwap()"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px; margin-inline-end:4px;" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M4 8h15"/><path d="M14 4l4 4-4 4"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M20 16H5"/><path d="M10 12l-4 4 4 4"/></svg>گۆڕینەوە</button>
         </div>
 
         <div class="v-nudge-panel" style="margin-top:8px;">
@@ -3853,10 +3861,10 @@ html.kf-wide:root body #move-modal #mvBox { margin: 0; width: 100% !important; }
                     </div>
                 </div>
                 <div class="v-nudge-pad">
-                    <button type="button" class="v-nudge-btn up" onclick="mvNudge(0,-1)" aria-label="سەرەوە"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg></button>
-                    <button type="button" class="v-nudge-btn down" onclick="mvNudge(0,1)" aria-label="خوارەوە"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
-                    <button type="button" class="v-nudge-btn left" onclick="mvNudge(-1,0)" aria-label="چەپ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
-                    <button type="button" class="v-nudge-btn right" onclick="mvNudge(1,0)" aria-label="ڕاست"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+                    <button type="button" class="v-nudge-btn up" onclick="mvNudge(0,-1)" aria-label="سەرەوە"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="m6 15 6-6 6 6"/></svg></button>
+                    <button type="button" class="v-nudge-btn down" onclick="mvNudge(0,1)" aria-label="خوارەوە"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="m6 9 6 6 6-6"/></svg></button>
+                    <button type="button" class="v-nudge-btn left" onclick="mvNudge(-1,0)" aria-label="چەپ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="m15 6-6 6 6 6"/></svg></button>
+                    <button type="button" class="v-nudge-btn right" onclick="mvNudge(1,0)" aria-label="ڕاست"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="m9 6 6 6-6 6"/></svg></button>
                     <button type="button" class="v-nudge-btn center" onclick="mvAlign('center'); mvAlign('middle')" aria-label="ناوەڕاست"></button>
                 </div>
             </div>
@@ -3955,13 +3963,13 @@ html.kf-wide:root body #move-modal #mvBox { margin: 0; width: 100% !important; }
 
             <!-- ئەنیمەیشنی دووجار کلیک بۆ دەستە ڕاست (+10 چرکە) -->
             <div id="censorSkipRippleRight" style="display:none; position:absolute; right:0; top:0; bottom:0; width:45%; background:radial-gradient(circle at center, rgba(255,255,255,0.25) 0%, transparent 70%); border-top-right-radius:10px; border-bottom-right-radius:10px; z-index:45; pointer-events:none; align-items:center; justify-content:center; flex-direction:column; gap:4px; color:#fff; font-size:12px; font-weight:bold;">
-                <svg style="width:20px;height:20px;" fill="currentColor" viewBox="0 0 24 24"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg>
+                <svg style="width:20px;height:20px;" fill="currentColor" viewBox="0 0 24 24"><path d="M3.5 7.2v9.6a1 1 0 0 0 1.6.8l6.4-4.8a1 1 0 0 0 0-1.6L5.1 6.4a1 1 0 0 0-1.6.8zm9 0v9.6a1 1 0 0 0 1.6.8l6.4-4.8a1 1 0 0 0 0-1.6l-6.4-4.8a1 1 0 0 0-1.6.8z" fill="currentColor" stroke="none"/></svg>
                 <span>+10s</span>
             </div>
 
             <!-- ئەنیمەیشنی دووجار کلیک بۆ دەستە چەپ (-10 چرکە) -->
             <div id="censorSkipRippleLeft" style="display:none; position:absolute; left:0; top:0; bottom:0; width:45%; background:radial-gradient(circle at center, rgba(255,255,255,0.25) 0%, transparent 70%); border-top-left-radius:10px; border-bottom-left-radius:10px; z-index:45; pointer-events:none; align-items:center; justify-content:center; flex-direction:column; gap:4px; color:#fff; font-size:12px; font-weight:bold;">
-                <svg style="width:20px;height:20px;" fill="currentColor" viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg>
+                <svg style="width:20px;height:20px;" fill="currentColor" viewBox="0 0 24 24"><path d="M11.5 7.2v9.6a1 1 0 0 1-1.6.8l-6.4-4.8a1 1 0 0 1 0-1.6l6.4-4.8a1 1 0 0 1 1.6.8zm9 0v9.6a1 1 0 0 1-1.6.8l-6.4-4.8a1 1 0 0 1 0-1.6l6.4-4.8a1 1 0 0 1 1.6.8z" fill="currentColor" stroke="none"/></svg>
                 <span>-10s</span>
             </div>
             
@@ -4047,7 +4055,7 @@ html.kf-wide:root body #move-modal #mvBox { margin: 0; width: 100% !important; }
         </div>
 
         <button type="button" class="btn" style="padding:10px; font-size:12.5px; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="addCurrentCensorToSubtitles()">
-    <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 4v16m8-8H4"/></svg>
+    <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M12 5v14M5 12h14"/></svg>
     <span>زیادکردنی ئەم سانسۆرە بۆ کۆتایی فایلەکە</span>
 </button>
 
@@ -4280,7 +4288,7 @@ function openHistoryModal() {
                     </div>
                     <div style="display:flex; gap: 6px; flex-shrink:0; margin-inline-start:8px;">
                         <button type="button" class="btn" style="padding: 5px 9px; font-size: 11px; width:auto;" onclick="restoreFromHistory('${id}')">${restoreMsg}</button>
-                        <button type="button" class="btn btn-outline" style="padding: 5px 8px; font-size: 11px; width:auto; color:#ef4444; border-color:#ef4444; display:inline-flex; align-items:center; justify-content:center;" onclick="deleteHistoryItem('${id}')"><svg style="width:12px;height:12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                        <button type="button" class="btn btn-outline" style="padding: 5px 8px; font-size: 11px; width:auto; color:#ef4444; border-color:#ef4444; display:inline-flex; align-items:center; justify-content:center;" onclick="deleteHistoryItem('${id}')"><svg style="width:12px;height:12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M18 6 6 18M6 6l12 12"/></svg></button>
                     </div>
                 </div>
             `;
@@ -6357,14 +6365,14 @@ function buildEditorUI(kurdishState = [], resetHistory = true) {
                 <div style="display:flex; gap:6px; align-items:center;">
                     <div class="subtitle-line-num">#${i+1}</div>
                     <button class="play-sub-btn" onclick="seekToSubtitle(${i})" title="کارپێکردن">
-                        <svg style="width:13px;height:13px;" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                        <svg style="width:13px;height:13px;" fill="currentColor" viewBox="0 0 24 24"><path d="M7 5.8v12.4a1.3 1.3 0 0 0 2 1.1l9.8-6.2a1.3 1.3 0 0 0 0-2.2L9 4.7a1.3 1.3 0 0 0-2 1.1z" fill="currentColor" stroke="none"/></svg>
                     </button>
                     <button class="style-sub-btn" onclick="openSubStyleModal(${i})" title="تەکنیک و ڕەنگ">
-                        <svg style="width:13px;height:13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path></svg>
+                        <svg style="width:13px;height:13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M12 22a10 10 0 1 1 10-10c0 2.8-2.2 4-4 4h-2a2 2 0 0 0-1.6 3.2l.3.4A1.5 1.5 0 0 1 13.5 22z"/><circle stroke-width="1.85" cx="13.5" cy="6.5" r="0.9" fill="currentColor"/><circle stroke-width="1.85" cx="17.5" cy="10.5" r="0.9" fill="currentColor"/><circle stroke-width="1.85" cx="6.5" cy="12.5" r="0.9" fill="currentColor"/><circle stroke-width="1.85" cx="8.5" cy="7.5" r="0.9" fill="currentColor"/></svg>
                     </button>
                     <button class="delete-sub-btn" onclick="deleteSubtitleLine(${i})" title="سڕینەوە">
-                        <svg style="width:13px;height:13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        <svg style="width:13px;height:13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M3 6h18M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6M5.5 6l.9 13.1A2 2 0 0 0 8.4 21h7.2a2 2 0 0 0 2-1.9L18.5 6M10 11v5.5M14 11v5.5"/>
                         </svg>
                     </button>
                 </div>
@@ -6372,7 +6380,7 @@ function buildEditorUI(kurdishState = [], resetHistory = true) {
             </div>
             <div class="subtitle-orig" dir="auto">${orig.text.split('\n').map(function (l) { return '<div dir="auto" style="unicode-bidi:plaintext;text-align:start;">' + (l === '' ? '&nbsp;' : l) + '</div>'; }).join('')}</div>
             <div class="subtitle-kurd"><textarea dir="auto" oninput="onUserType()">${kText}</textarea></div>
-            <div class="sel-overlay" onclick="kfSel.toggleCard(${i})"><span class="sel-check"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg></span></div>
+            <div class="sel-overlay" onclick="kfSel.toggleCard(${i})"><span class="sel-check"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M20 6.5 9.5 17 4 11.5"/></svg></span></div>
         </div>`;
     }
     document.getElementById('subtitles-container').innerHTML = html;
@@ -8573,10 +8581,10 @@ function initMainVideoGestures() {
     wrapper.removeAttribute('onclick');
     wrapper.onclick = null;
 
-    var svgForward = '<svg style="width:13px;height:13px;display:inline-block;" fill="currentColor" viewBox="0 0 24 24"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg>';
-    var svgRewind = '<svg style="width:13px;height:13px;display:inline-block;" fill="currentColor" viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg>';
-    var svgPlay = '<svg style="width:28px;height:28px;display:block;transform:translateX(-0.5px);" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
-var svgPause = '<svg style="width:28px;height:28px;display:block;" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
+    var svgForward = '<svg style="width:13px;height:13px;display:inline-block;" fill="currentColor" viewBox="0 0 24 24"><path d="M3.5 7.2v9.6a1 1 0 0 0 1.6.8l6.4-4.8a1 1 0 0 0 0-1.6L5.1 6.4a1 1 0 0 0-1.6.8zm9 0v9.6a1 1 0 0 0 1.6.8l6.4-4.8a1 1 0 0 0 0-1.6l-6.4-4.8a1 1 0 0 0-1.6.8z" fill="currentColor" stroke="none"/></svg>';
+    var svgRewind = '<svg style="width:13px;height:13px;display:inline-block;" fill="currentColor" viewBox="0 0 24 24"><path d="M11.5 7.2v9.6a1 1 0 0 1-1.6.8l-6.4-4.8a1 1 0 0 1 0-1.6l6.4-4.8a1 1 0 0 1 1.6.8zm9 0v9.6a1 1 0 0 1-1.6.8l-6.4-4.8a1 1 0 0 1 0-1.6l6.4-4.8a1 1 0 0 1 1.6.8z" fill="currentColor" stroke="none"/></svg>';
+    var svgPlay = '<svg style="width:28px;height:28px;display:block;transform:translateX(-0.5px);" fill="currentColor" viewBox="0 0 24 24"><path d="M7 5.8v12.4a1.3 1.3 0 0 0 2 1.1l9.8-6.2a1.3 1.3 0 0 0 0-2.2L9 4.7a1.3 1.3 0 0 0-2 1.1z" fill="currentColor" stroke="none"/></svg>';
+var svgPause = '<svg style="width:28px;height:28px;display:block;" fill="currentColor" viewBox="0 0 24 24"><path d="M7.5 4.5h1.5a1.5 1.5 0 0 1 1.5 1.5v12a1.5 1.5 0 0 1-1.5 1.5H7.5A1.5 1.5 0 0 1 6 18V6a1.5 1.5 0 0 1 1.5-1.5zm7.5 0h1.5A1.5 1.5 0 0 1 18 6v12a1.5 1.5 0 0 1-1.5 1.5H15a1.5 1.5 0 0 1-1.5-1.5V6A1.5 1.5 0 0 1 15 4.5z" fill="currentColor" stroke="none"/></svg>';
 
     function showCenter(isPlay) {
         if (!centerPlay || !centerIcon) return;
@@ -9490,8 +9498,8 @@ function kfLibassRefresh() {
     var labelHtml = '', statusHtml = '', color = '';
 
     // ئایکۆنی سەحی SVG بۆ ناو دەق و دوگمەکان
-    var svgCheck = '<svg style="width:13px;height:13px;vertical-align:-2px;margin-inline-end:4px;display:inline-block;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>';
-    var svgSpin = '<svg style="width:13px;height:13px;vertical-align:-2px;margin-inline-end:4px;display:inline-block;animation:spin 1s linear infinite;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-linecap="round"/></svg>';
+    var svgCheck = '<svg style="width:13px;height:13px;vertical-align:-2px;margin-inline-end:4px;display:inline-block;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M20 6.5 9.5 17 4 11.5"/></svg>';
+    var svgSpin = '<svg style="width:13px;height:13px;vertical-align:-2px;margin-inline-end:4px;display:inline-block;animation:spin 1s linear infinite;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-linecap="round"/></svg>';
 
     if (s === 'off') {
         labelHtml = 'چالاککردنی ڕەندەری libass';
@@ -9878,16 +9886,16 @@ function renderMergeStylesList() {
                     
                     <!-- دوگمەی سەیری ڕستەکان (تەنها بینین) -->
                     <button type="button" class="btn btn-outline merge-style-eye-btn" style="color:var(--primary);border-color:rgba(142,182,155,.4);" aria-label="سەیرکردنی ڕستەکانی ستایل" onclick="viewMergeStyleLines('${encodeURIComponent(name)}')">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                            <circle stroke-width="1.85" cx="12" cy="12" r="3"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M2.1 12.3a1 1 0 0 1 0-.7C3.6 7.8 7.4 5 12 5s8.4 2.8 9.9 6.7a1 1 0 0 1 0 .7C20.4 16.2 16.6 19 12 19s-8.4-2.8-9.9-6.7z"/>
                         </svg>
                     </button>
 
                     <!-- دوگمەی سڕینەوە بە ئایکۆنی SVGی ڕێک -->
                     <button type="button" class="btn btn-outline" style="flex-shrink: 0; padding: 3px 7px; font-size: 10px; width: auto; color: #ef4444; border-color: rgba(239, 68, 68, 0.4); margin: 0; display: flex; align-items: center; gap: 4px;" onclick="deleteMergeBaseStyle('${name}')">
-                        <svg style="width: 11px; height: 11px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        <svg style="width: 11px; height: 11px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M18 6 6 18M6 6l12 12"/>
                         </svg>
                         <span>سڕینەوە</span>
                     </button>
@@ -12058,10 +12066,10 @@ function renderFontsModal() {
     var loaded = FontStore.list();
     var usable = loaded.filter(function (f) { return f.ok; });
 
-    var svgCheck = '<svg style="width:11px;height:11px;vertical-align:-1px;margin-inline-end:3px;display:inline-block;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>';
-    var svgCross = '<svg style="width:11px;height:11px;vertical-align:-1px;margin-inline-end:3px;display:inline-block;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>';
-    var svgArrow = '<svg style="width:10px;height:10px;vertical-align:-1px;margin-inline-end:3px;display:inline-block;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>';
-    var svgApprox = '<svg style="width:11px;height:11px;vertical-align:-2px;margin-inline-end:3px;display:inline-block;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 10c2-2 4-2 6 0s4 2 6 0 4-2 6 0M4 16c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/></svg>';
+    var svgCheck = '<svg style="width:11px;height:11px;vertical-align:-1px;margin-inline-end:3px;display:inline-block;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M20 6.5 9.5 17 4 11.5"/></svg>';
+    var svgCross = '<svg style="width:11px;height:11px;vertical-align:-1px;margin-inline-end:3px;display:inline-block;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M18 6 6 18M6 6l12 12"/></svg>';
+    var svgArrow = '<svg style="width:10px;height:10px;vertical-align:-1px;margin-inline-end:3px;display:inline-block;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M4 12h16M14 6l6 6-6 6"/></svg>';
+    var svgApprox = '<svg style="width:11px;height:11px;vertical-align:-2px;margin-inline-end:3px;display:inline-block;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M2 9.5c1.7-1.5 3.3-1.5 5 0s3.3 1.5 5 0 3.3-1.5 5 0 3.3 1.5 5 0M2 15.5c1.7-1.5 3.3-1.5 5 0s3.3 1.5 5 0 3.3-1.5 5 0 3.3 1.5 5 0"/></svg>';
 
     if (!used.length) {
         usedBox.innerHTML = '<div style="font-size:11.5px;color:var(--text-muted);padding:6px 0;">هیچ فۆنتێکی دیاریکراو لە فایلەکەدا نییە.</div>';
@@ -12097,7 +12105,7 @@ function renderFontsModal() {
                     '<div class="custom-select-wrapper" style="width:100%; position:relative;">' +
                         '<button type="button" class="custom-select-btn" id="kfFontMapBtn_' + idx + '" onclick="kfToggleFontSelectMenu(' + idx + ', this)" style="width:100%; justify-content:space-between; padding:7px 10px; border-radius:10px; font-size:12px; direction:ltr;">' +
                             '<span>— هەڵبژێرە —</span>' +
-                            '<svg class="icon" style="width:13px;height:13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>' +
+                            '<svg class="icon" style="width:13px;height:13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="m6 9 6 6 6-6"/></svg>' +
                         '</button>' +
                         '<div class="custom-select-menu" id="kfFontMenu_' + idx + '" style="width:100%; max-height:160px; overflow-y:auto; left:0; right:0;">' +
                             menuItems +
@@ -12811,8 +12819,8 @@ function kfSrvUpdate() {
     // ئاگادارکردنەوەکان (بە SVG)
     if (!r.warnings.length) { warn.innerHTML = ''; warn.style.display = 'none'; }
     else {
-        var svgInfo = '<svg style="width:13px;height:13px;vertical-align:-2px;margin-inline-end:4px;color:var(--text-muted);display:inline-block;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="2"/><path stroke-linecap="round" stroke-width="2" d="M12 16v-4m0-4h.01"/></svg>';
-        var svgWarn = '<svg style="width:13px;height:13px;vertical-align:-2px;margin-inline-end:4px;color:#f59e0b;display:inline-block;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>';
+        var svgInfo = '<svg style="width:13px;height:13px;vertical-align:-2px;margin-inline-end:4px;color:var(--text-muted);display:inline-block;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" stroke-width="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M12 16v-4.5M12 8h.01"/></svg>';
+        var svgWarn = '<svg style="width:13px;height:13px;vertical-align:-2px;margin-inline-end:4px;color:#f59e0b;display:inline-block;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="m21.7 18-8-14a2 2 0 0 0-3.5 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3zM12 9v4M12 17h.01"/></svg>';
 
         warn.style.display = 'block';
         warn.innerHTML = r.warnings.map(function (w) {
@@ -12828,7 +12836,7 @@ function kfSrvUpdate() {
     // پوختەی هەر ئەڵقەیەک (هێمای دەستکاری بە SVG)
     if (!r.episodes.length) { sum.innerHTML = ''; sum.style.display = 'none'; }
     else {
-        var svgEdit = '<svg style="width:11px;height:11px;vertical-align:-1px;color:var(--primary);display:inline-block;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>';
+        var svgEdit = '<svg style="width:11px;height:11px;vertical-align:-1px;color:var(--primary);display:inline-block;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M21.2 6.8a2.8 2.8 0 0 0-4-4L3.8 16.2a2 2 0 0 0-.5.8l-1.3 4.4a.5.5 0 0 0 .6.6l4.4-1.3a2 2 0 0 0 .8-.5zM15 5l4 4"/></svg>';
         sum.style.display = 'block';
         sum.innerHTML = r.episodes.map(function (e) {
             var names = e.items.map(function (it) {
@@ -13065,14 +13073,14 @@ var CR_IGNORE_GROUPS = { c: 1, '1c': 1, '2c': 1, '3c': 1, '4c': 1, alpha: 1, '1a
 
 /* ================= پێداچوونەوەی دەقیقی کۆدەکان (تەنها تاگەکانی ئەسڵ) ================= */
 var SVG_ICONS = {
-  search: '<svg class="svg-ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>',
-  error:  '<svg class="svg-ic" style="color:#ef4444" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>',
-  warn:   '<svg class="svg-ic" style="color:#f5b301" viewBox="0 0 24 24"><path d="M12 3.6L2.6 20h18.8L12 3.6z"/><path d="M12 9.5v4.2M12 17h.01"/></svg>',
-  ok:     '<svg class="svg-ic" style="color:#22c55e" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.6 2.6L16 9.7"/></svg>',
-  check:  '<svg class="svg-ic" viewBox="0 0 24 24"><path d="M4 12.5l5 5L20 6.5"/></svg>',
-  close:  '<svg class="svg-ic" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
-  up:     '<svg class="svg-ic" style="width:12px;height:12px;vertical-align:-1px;display:inline-block;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7"/></svg>',
-  down:   '<svg class="svg-ic" style="width:12px;height:12px;vertical-align:-1px;display:inline-block;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>'
+  search: '<svg class="svg-ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="m21 21-4.6-4.6"/></svg>',
+  error:  '<svg class="svg-ic" style="color:#ef4444" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="m15 9-6 6M9 9l6 6"/></svg>',
+  warn:   '<svg class="svg-ic" style="color:#f5b301" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="m21.7 18-8-14a2 2 0 0 0-3.5 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3z"/><path d="M12 9.5v4.2M12 17h.01"/></svg>',
+  ok:     '<svg class="svg-ic" style="color:#22c55e" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="m8.5 12.5 2.5 2.5 5-5.5"/></svg>',
+  check:  '<svg class="svg-ic" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M20 6.5 9.5 17 4 11.5"/></svg>',
+  close:  '<svg class="svg-ic" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M18 6 6 18M6 6l12 12"/></svg>',
+  up:     '<svg class="svg-ic" style="width:12px;height:12px;vertical-align:-1px;display:inline-block;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="m6 15 6-6 6 6"/></svg>',
+  down:   '<svg class="svg-ic" style="width:12px;height:12px;vertical-align:-1px;display:inline-block;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="m6 9 6 6 6-6"/></svg>'
 };
 
 function crEsc(t) { return (t || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -13142,9 +13150,9 @@ function crAnalyzeLine(idx, orig, trans) {
 
     var cmp = crCompareTags(orig, trans);
 
-    var svgMiss = '<svg style="width:12px;height:12px;vertical-align:-1px;margin-inline-end:3px;color:#ef4444;display:inline-block;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>';
-    var svgChg = '<svg style="width:12px;height:12px;vertical-align:-1px;margin-inline-end:3px;color:#f59e0b;display:inline-block;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>';
-    var svgArrowSmall = '<svg style="width:10px;height:10px;vertical-align:-1px;margin:0 3px;display:inline-block;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>';
+    var svgMiss = '<svg style="width:12px;height:12px;vertical-align:-1px;margin-inline-end:3px;color:#ef4444;display:inline-block;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M18 6 6 18M6 6l12 12"/></svg>';
+    var svgChg = '<svg style="width:12px;height:12px;vertical-align:-1px;margin-inline-end:3px;color:#f59e0b;display:inline-block;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M20 7H4M16 3l4 4-4 4M4 17h16M8 21l-4-4 4-4"/></svg>';
+    var svgArrowSmall = '<svg style="width:10px;height:10px;vertical-align:-1px;margin:0 3px;display:inline-block;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M4 12h16M14 6l6 6-6 6"/></svg>';
 
     if (cmp.missing.length > 0) {
         var missHtml = '<div>' + svgMiss + 'کۆدی ونی فایلە ئەسڵەکە: ' + cmp.missing.map(function(m) {
@@ -13353,7 +13361,7 @@ function crAutoFixLine(idx) {
     // ئەنیمەیشنی سووڕانەوە و سەرکەوتن لەسەر دوگمەکە
     const btn = event ? event.target.closest('button') : null;
     if (btn) {
-        btn.innerHTML = '<svg style="width:12px;height:12px;animation:spin 0.5s linear infinite;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> <span>چاککرا ✓</span>';
+        btn.innerHTML = '<svg style="width:12px;height:12px;animation:spin 0.5s linear infinite;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M3 12a9 9 0 0 1 9-9 9.8 9.8 0 0 1 6.7 2.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-9 9 9.8 9.8 0 0 1-6.7-2.7L3 16M8 16H3v5"/></svg> <span>چاککرا <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M20 6.5 9.5 17 4 11.5"/></svg></span>';
         btn.style.borderColor = '#22c55e';
     }
 
@@ -13405,9 +13413,9 @@ function runCodeReview() {
         html += '<div class="cr-item ' + (r.errs.length ? 'err' : 'warn') + '">' +
             '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; direction:rtl;">' +
                 '<span class="cr-line" style="font-weight:bold; font-size:13px;">دێڕی #' + r.n + '</span>' +
-                '<button type="button" class="btn btn-outline kf-jump" onclick="kfJumpToLine(' + i + ')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px"><path d="M7 17L17 7M9 7h8v8"/></svg> بڕۆ بۆ دێڕ</button>' +
+                '<button type="button" class="btn btn-outline kf-jump" onclick="kfJumpToLine(' + i + ')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M7 17 17 7M8 7h9v9"/></svg> بڕۆ بۆ دێڕ</button>' +
                 '<button type="button" class="btn btn-outline" style="width:auto; padding:3px 9px; font-size:11px; color:#22c55e; border-color:rgba(34,197,94,0.4); display:inline-flex; align-items:center; gap:4px; margin:0;" onclick="crAutoFixLine(' + i + ')">' +
-                    '<svg style="width:12px;height:12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M5 13l4 4L19 7"/></svg>' +
+                    '<svg style="width:12px;height:12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M20 6.5 9.5 17 4 11.5"/></svg>' +
                     '<span>چاککردنی خۆکار</span>' +
                 '</button>' +
             '</div>' +
@@ -13743,10 +13751,10 @@ function initCensorVideoGestures() {
     box.oncontextmenu = (e) => { e.preventDefault(); return false; };
     cVid.oncontextmenu = (e) => { e.preventDefault(); return false; };
 
-    const svgForward = '<svg style="width:13px;height:13px;display:inline-block;" fill="currentColor" viewBox="0 0 24 24"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg>';
-    const svgRewind = '<svg style="width:13px;height:13px;display:inline-block;" fill="currentColor" viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg>';
-    const svgPlay = '<svg style="width:26px;height:26px;display:block;transform:translateX(-0.5px);" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
-const svgPause = '<svg style="width:26px;height:26px;display:block;" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
+    const svgForward = '<svg style="width:13px;height:13px;display:inline-block;" fill="currentColor" viewBox="0 0 24 24"><path d="M3.5 7.2v9.6a1 1 0 0 0 1.6.8l6.4-4.8a1 1 0 0 0 0-1.6L5.1 6.4a1 1 0 0 0-1.6.8zm9 0v9.6a1 1 0 0 0 1.6.8l6.4-4.8a1 1 0 0 0 0-1.6l-6.4-4.8a1 1 0 0 0-1.6.8z" fill="currentColor" stroke="none"/></svg>';
+    const svgRewind = '<svg style="width:13px;height:13px;display:inline-block;" fill="currentColor" viewBox="0 0 24 24"><path d="M11.5 7.2v9.6a1 1 0 0 1-1.6.8l-6.4-4.8a1 1 0 0 1 0-1.6l6.4-4.8a1 1 0 0 1 1.6.8zm9 0v9.6a1 1 0 0 1-1.6.8l-6.4-4.8a1 1 0 0 1 0-1.6l6.4-4.8a1 1 0 0 1 1.6.8z" fill="currentColor" stroke="none"/></svg>';
+    const svgPlay = '<svg style="width:26px;height:26px;display:block;transform:translateX(-0.5px);" fill="currentColor" viewBox="0 0 24 24"><path d="M7 5.8v12.4a1.3 1.3 0 0 0 2 1.1l9.8-6.2a1.3 1.3 0 0 0 0-2.2L9 4.7a1.3 1.3 0 0 0-2 1.1z" fill="currentColor" stroke="none"/></svg>';
+const svgPause = '<svg style="width:26px;height:26px;display:block;" fill="currentColor" viewBox="0 0 24 24"><path d="M7.5 4.5h1.5a1.5 1.5 0 0 1 1.5 1.5v12a1.5 1.5 0 0 1-1.5 1.5H7.5A1.5 1.5 0 0 1 6 18V6a1.5 1.5 0 0 1 1.5-1.5zm7.5 0h1.5A1.5 1.5 0 0 1 18 6v12a1.5 1.5 0 0 1-1.5 1.5H15a1.5 1.5 0 0 1-1.5-1.5V6A1.5 1.5 0 0 1 15 4.5z" fill="currentColor" stroke="none"/></svg>';
 
     function showCenterFeedback(isPlaying) {
         if (!centerPlay || !centerIcon) return;
@@ -15266,7 +15274,7 @@ html:root body.startup-bg .kf-hide-close { display: none !important; }
         { k: 'servers',   fn: 'openServersModal',     id: 'kf-servers-modal',     label: 'کۆدی سێرڤەرەکان' },
         { k: 'history',   fn: 'openHistoryModal',     id: 'history-modal',        label: 'مێژووی کارەکان' }
     ];
-    var HOME_ICON = '<svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 11l9-8 9 8M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10"></path></svg>';
+    var HOME_ICON = '<svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M15 21v-7a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v7M3 10a2 2 0 0 1 .7-1.5l7-6a2 2 0 0 1 2.6 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
     var root = document.documentElement;
     var tabs = document.getElementById('kf-tabs');
     var list = document.getElementById('kf-drawer-list');
@@ -15277,7 +15285,7 @@ html:root body.startup-bg .kf-hide-close { display: none !important; }
     if (!tabs || !list || !drawer) return;
 
     // ئایکۆن و ناوی بەشەکان (بەستراوەتەوە بە کۆدەکەوە، پێویست بە مێنیوی کۆن نییە)
-    var DATA = {"converter": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4\"></path></svg>", "label": "گۆڕینی فایل"}, "rtl": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6\"></path></svg>", "label": "چاککردنی RTL"}, "merge": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 00-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2\"></path></svg>", "label": "تێکەڵکردنی دوو فایل"}, "sdh": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z\"></path></svg>", "label": "پاککردنەوەی دەنگەکان (SDH)"}, "shortcuts": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4\"></path></svg>", "label": "کورتکراوەکانی کیبۆرد"}, "img": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z\"></path></svg>", "label": "گۆڕینی وێنە بۆ لینک"}, "mkv": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z\"></path></svg>", "label": "دەرهێنەری فایل لە MKV"}, "servers": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1\"></path></svg>", "label": "کۆدی سێرڤەرەکان"}, "history": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z\"></path></svg>", "label": "مێژووی کارەکان"}, "install": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4\"></path></svg>", "label": "دابەزاندنی ئەپ"}};
+    var DATA = {"converter": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M20 7H4M16 3l4 4-4 4M4 17h16M8 21l-4-4 4-4\"/></svg>", "label": "گۆڕینی فایل"}, "rtl": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11\"/></svg>", "label": "چاککردنی RTL"}, "merge": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"8\" y=\"8\" width=\"13\" height=\"13\" rx=\"2.5\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M4 16a2 2 0 0 1-2-2V4.5A2.5 2.5 0 0 1 4.5 2H14a2 2 0 0 1 2 2\"/></svg>", "label": "تێکەڵکردنی دوو فایل"}, "sdh": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"9\" y=\"2\" width=\"6\" height=\"13\" rx=\"3\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M19 10v1a7 7 0 0 1-14 0v-1M12 18v4M8.5 22h7\"/></svg>", "label": "پاککردنەوەی دەنگەکان (SDH)"}, "shortcuts": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M2 14h4M10 8h4M18 16h4\"/></svg>", "label": "کورتکراوەکانی کیبۆرد"}, "img": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"3\"/><circle stroke-width=\"1.85\" cx=\"9\" cy=\"9\" r=\"2\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21\"/></svg>", "label": "گۆڕینی وێنە بۆ لینک"}, "mkv": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"m16 13 5.2 3.5a.5.5 0 0 0 .8-.4V7.9a.5.5 0 0 0-.8-.4L16 11\"/><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"2\" y=\"6\" width=\"14\" height=\"12\" rx=\"2.5\"/></svg>", "label": "دەرهێنەری فایل لە MKV"}, "servers": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7\"/></svg>", "label": "کۆدی سێرڤەرەکان"}, "history": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><circle stroke-width=\"1.85\" cx=\"12\" cy=\"12\" r=\"9.25\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M12 7v5l3 2\"/></svg>", "label": "مێژووی کارەکان"}, "install": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M21 15v3.5A2.5 2.5 0 0 1 18.5 21h-13A2.5 2.5 0 0 1 3 18.5V15M7 10l5 5 5-5M12 15V3\"/></svg>", "label": "دابەزاندنی ئەپ"}};
     SECS.forEach(function (s) {
         var d = DATA[s.k];
         s.icon = d ? d.icon : '';
@@ -16290,7 +16298,7 @@ function bindScreen() {
 <div id="kf-guide" aria-hidden="true">
   <div class="kg-head">
     <h2>فێرکاری بەکارهێنانی ماڵپەڕ</h2>
-    <button type="button" class="kf-bar-btn" aria-label="داخستن" onclick="kfGuide.close()"><svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+    <button type="button" class="kf-bar-btn" aria-label="داخستن" onclick="kfGuide.close()"><svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M18 6 6 18M6 6l12 12"/></svg></button>
   </div>
   <div class="kg-tabs" id="kg-tabs"></div>
   <div class="kg-body" id="kg-body"><div class="kg-wrap" id="kg-content"></div></div>
@@ -16333,7 +16341,7 @@ var G=[
 {k:'card',name:'کارتی دێڕ',intro:'هەر دێڕێکی ژێرنووس کارتێکی تایبەتی هەیە کە دەقی ئەسڵی و خانەی وەرگێڕانی تێدایە.',
  feats:['ژمارە و کاتی هەر دێڕێک','چوونە سەر کاتی دێڕەکە لە ڤیدیۆ','کردنەوەی پەنجەرەی تەکنیک بۆ هەمان دێڕ','سڕینەوەی دێڕ'],
  steps:[
- {h:'پێکهاتەی کارت',rows:[[E('el','#12',1),E('ico','▶',2),E('ico','🎨',3),E('ico','🗑',4),E('el','00:01:22,410 --> 00:01:25,000',5)],[E('txt','I will never leave you.',6)],[E('txt','هەرگیز بەجێت ناهێڵم.|',7)]],
+ {h:'پێکهاتەی کارت',rows:[[E('el','#12',1),E('ico','▶',2),E('ico','🎨',3),E('ico','🗑',4),E('el','00:01:22,410 --> 00:01:25,000',5)],[E('txt','I will never leave you.',6)],[E('txt','هەرگیز بەجێت ناهێڵم.',7)]],
   notes:['ژمارەی دێڕ.','<b>کارپێکردن</b>: ڤیدیۆ دەچێتە سەرەتای ئەم دێڕە و کار دەکات (Ctrl+J).','<b>تەکنیک و ڕەنگ</b>: پەنجەرەی تەکنیک و دیزاینی ئەم دێڕە دەکاتەوە (Ctrl+Enter).','<b>سڕینەوە</b>: ئەم دێڕە دەسڕێتەوە (Alt+Delete).','کاتی دەستپێک و کۆتایی دێڕەکە.','دەقی ئەسڵی (تەنها بۆ خوێندنەوە).','خانەی وەرگێڕان: وەرگێڕانەکەت لێرە بنووسە. Tab دەتباتە دێڕی دواتر. بۆ ئەستوورکردن وشەکە دیاری بکە و Ctrl+B، بۆ لار Ctrl+I، بۆ نیشانەی گۆرانی ♪ Ctrl+M.']}
  ]},
 {k:'tech',name:'تەکنیک و دیزاین',intro:'پەنجەرەی «تەکنیک و دیزاینی دێڕ» هەموو ئامرازەکانی شێوە و شوێن و جوڵەی یەک دێڕی تێدایە. لە کارتی دێڕ دەستی لە دوگمەی 🎨 بدە.',
@@ -16364,7 +16372,7 @@ var G=[
  feats:['پیشاندانی ئەو فۆنتانەی فایلەکە پێویستی پێیانە','فۆنتەکان لەسەر ئامێرەکەت پاشەکەوت دەبن','ڕەندەری libass بۆ پێشبینینی ڕێک وەک FFmpeg'],
  steps:[{h:'بەکارهێنان',rows:[[E('btn','چالاککردنی ڕەندەری libass',1)],[E('txt','فۆنتەکانی ناو فایلەکە: Arial ✓  —  Rudaw ✗',2)],[E('btn','زیادکردنی فایلی فۆنت',3)],[E('txt','فۆنتە زیادکراوەکان: ...',4)]],
   notes:['پێشبینین دەگۆڕێت بۆ کتێبخانەی ڕاستەقینەی libass؛ سووڕانەوە، وێنەکێشان و شوێنی دەق ڕێک وەک ئەنجامی کۆتایی دەبن. جاری یەکەم ئینتەرنێتی پێویستە؛ ئەگەر سەرنەکەوت خۆکار دەگەڕێتەوە پێشبینینی ئاسایی. ئێستا کاتێک ڤیدیۆ دادەنێیت خۆکار چالاک دەبێت؛ ئەگەر دوگمەکەش بدەیت، پێت دەڵێت ڕەندەرەکە هەمیشە چالاکە.','لیستی ئەو فۆنتانەی ستایلەکانی فایلەکە ناویان هێناوە.','فایلی فۆنت لە ئامێرەکەت هەڵبژێرە.','ئەو فۆنتانەی پێشتر زیادت کردوون؛ جارێکی تر پێویست بە زیادکردن ناکات.']}]},
-{k:'ai',name:'وەرگێڕانی AI',intro:'بە یارمەتی ئامرازێکی AI (وەک ChatGPT) هەموو دێڕەکان بە یەکجار وەردەگێڕیت و دەیانگەڕێنیتەوە شوێنی خۆیان.',
+{k:'ai',name:'وەرگێڕانی AI',intro:'بە یارمەتی ئامرازێکی AI (وەک Google Ai Studio) هەموو دێڕەکان بە یەکجار وەردەگێڕیت و دەیانگەڕێنیتەوە شوێنی خۆیان.',
  feats:['کۆپیکردنی هەموو دەقی ئەسڵی بە ژمارەوە','هەڵبژاردنی ستایلێکی دیاریکراو بۆ کۆپی','پەیستکردن و دانانی هەر وەرگێڕانێک لە شوێنی خۆی'],
  steps:[{h:'هەنگاوەکان',rows:[[E('el','— هەموو دێڕەکان —',1)],[E('btn','کۆپیکردنی دەق',2)],[E('txt','لێرە وەرگێڕانەکە پەیست بکە...',3)],[E('btn','پەیست بکە',3),E('btn','جێبەجێکردن لە شوێنی خۆیان',4)]],
   notes:['ئەگەر فایلەکە چەند ستایلێکی هەبوو (بۆ نموونە گۆرانی، تابلۆ)، دەتوانیت تەنها دێڕەکانی یەک ستایل کۆپی بکەیت.','دەقەکە بە ژمارەی دێڕەکانەوە کۆپی دەبێت؛ بیبە بۆ AI و داوای وەرگێڕانی بکە بەبێ گۆڕینی ژمارەکان.','وەرگێڕانەکە لێرە دابنێ، یان «پەیست بکە» ڕاستەوخۆ لە کلیپبۆرد دایدەنێت.','هەر دێڕێک بەپێی ژمارەکەی دەچێتە شوێنی خۆی لە ئیدیتەر.']}]},
@@ -16410,24 +16418,24 @@ var G=[
  steps:[{h:'بەکارهێنان',rows:[[E('txt','Movie.2024.srt — 12/10',1),E('btn','کردنەوە',2),E('btn','سڕینەوە',3)],[E('btn','سڕینەوەی هەمووی',4)]],
   notes:['ناوی فایل و بەرواری سەیڤکردن.','کارەکە لە ئیدیتەر دەکاتەوە.','تەنها ئەم کارە دەسڕێتەوە.','هەموو مێژوو بەتاڵ دەکاتەوە. ئەگەر ئاگاداری «خەریکە پڕ دەبێت» دەرکەوت، کارە کۆنەکان بسڕەوە.']}]}
 ];
-var KG_ICO={"☰": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 6h16M4 12h16M4 18h16\"/></svg>", "↶": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 14L4 9l5-5\"/><path d=\"M4 9h11a5 5 0 010 10h-3\"/></svg>", "↷": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M15 14l5-5-5-5\"/><path d=\"M20 9H9a5 5 0 000 10h3\"/></svg>", "☑": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"3\"/><path d=\"M8 12l3 3 5-6\"/></svg>", "🗑": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 002 2h8a2 2 0 002-2l1-12M9 7V4h6v3\"/></svg>", "∅": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M5.6 18.4L18.4 5.6\"/></svg>", "🔍": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"11\" cy=\"11\" r=\"7\"/><path d=\"M21 21l-5-5\"/></svg>", "▶": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M7 4l13 8-13 8z\" fill=\"currentColor\"/></svg>", "🎨": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 3a9 9 0 100 18c1 0 1.5-.8 1.5-1.5 0-.4-.2-.7-.4-1-.3-.3-.4-.6-.4-1 0-.8.7-1.5 1.5-1.5H16a5 5 0 005-5c0-4.4-4-8-9-8z\"/><circle cx=\"7.5\" cy=\"11\" r=\"1\"/><circle cx=\"10\" cy=\"7\" r=\"1\"/><circle cx=\"14.5\" cy=\"7\" r=\"1\"/></svg>", "▲": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6 15l6-6 6 6\"/></svg>", "▼": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6 9l6 6 6-6\"/></svg>", "✕▶": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 5l7 7M10 5l-7 7\"/><path d=\"M13 6l8 6-8 6z\" fill=\"currentColor\"/></svg>", "✛": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 3v18M3 12h18\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/></svg>"};
+var KG_ICO={"☰": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M4 6h16M4 12h16M4 18h16\"/></svg>", "↶": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M9 14 4 9l5-5\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M4 9h10.5a5.5 5.5 0 0 1 0 11H11\"/></svg>", "↷": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"m15 14 5-5-5-5\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M20 9H9.5a5.5 5.5 0 0 0 0 11H13\"/></svg>", "☑": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"3\"/><path d=\"M8 12l3 3 5-6\"/></svg>", "🗑": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M3 6h18M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6M5.5 6l.9 13.1A2 2 0 0 0 8.4 21h7.2a2 2 0 0 0 2-1.9L18.5 6M10 11v5.5M14 11v5.5\"/></svg>", "∅": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M5.6 18.4L18.4 5.6\"/></svg>", "🔍": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"11\" cy=\"11\" r=\"7\"/><path d=\"M21 21l-5-5\"/></svg>", "▶": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M7 5.8v12.4a1.3 1.3 0 0 0 2 1.1l9.8-6.2a1.3 1.3 0 0 0 0-2.2L9 4.7a1.3 1.3 0 0 0-2 1.1z\" fill=\"currentColor\" stroke=\"none\"/></svg>", "🎨": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 3a9 9 0 100 18c1 0 1.5-.8 1.5-1.5 0-.4-.2-.7-.4-1-.3-.3-.4-.6-.4-1 0-.8.7-1.5 1.5-1.5H16a5 5 0 005-5c0-4.4-4-8-9-8z\"/><circle cx=\"7.5\" cy=\"11\" r=\"1\"/><circle cx=\"10\" cy=\"7\" r=\"1\"/><circle cx=\"14.5\" cy=\"7\" r=\"1\"/></svg>", "▲": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"m6 15 6-6 6 6\"/></svg>", "▼": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"m6 9 6 6 6-6\"/></svg>", "✕▶": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M3 6l6 6M9 6l-6 6\"/><path d=\"M13 6l8 6-8 6z\" fill=\"currentColor\"/></svg>", "✛": "<svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M12 2v4M12 18v4M2 12h4M18 12h4\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/></svg>"};
 var SV=function(p,w,c){return '<svg viewBox="0 0 24 24" width="'+(w||16)+'" height="'+(w||16)+'" fill="none" stroke="'+(c||'currentColor')+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>';};
-KG_ICO.fsp=SV('<path d="M4 6h16M7 12h10M9 18h6"/>');
-KG_ICO.F=SV('<path d="M4 20h4M6 20L12 4l6 16M16 20h4M8 14h8"/>');
+KG_ICO.fsp=SV('<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M3 6h18M6.5 12h11M9.5 18h5"/>');
+KG_ICO.F=SV('<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M4 20h4M16 20h4M6 20l5.1-14.4a1 1 0 0 1 1.8 0L18 20M8.3 14h7.4"/>');
 KG_ICO.RTL='<span dir="ltr" style="font-size:11px;font-weight:900;letter-spacing:.3px">RTL</span>';
-var TR='<path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>';
-KG_ICO['↶']=SV('<path d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>');
-KG_ICO['↷']=SV('<path d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6"/>');
-KG_ICO['☑']=SV('<path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>');
+var TR='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M3 6h18M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6M5.5 6l.9 13.1A2 2 0 0 0 8.4 21h7.2a2 2 0 0 0 2-1.9L18.5 6M10 11v5.5M14 11v5.5"/>';
+KG_ICO['↶']=SV('<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>');
+KG_ICO['↷']=SV('<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="m15 14 5-5-5-5M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/>');
+KG_ICO['☑']=SV('<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M21 11.5v7a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 18.5v-13A2.5 2.5 0 0 1 5.5 3H16M9 11l3 3L22 4"/>');
 KG_ICO['🗑']=SV(TR);
 KG_ICO.trashN=SV(TR)+'<b style="font-size:12px;margin-inline-start:3px">0</b>';
-KG_ICO['🔍']=SV('<path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>');
-KG_ICO['✕▶']=SV('<path d="M6 18L18 6M6 6l12 12"/>');
-KG_ICO['🎨']=SV('<path d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>');
-KG_ICO['▶']=SV('<path d="M8 5v14l11-7z" fill="currentColor" stroke="none"/>');
-KG_ICO['▲']=SV('<path d="M5 15l7-7 7 7"/>');
-KG_ICO['▼']=SV('<path d="M19 9l-7 7-7-7"/>');
-KG_ICO.vol=SV('<path d="M11 5L6 9H2v6h4l5 4V5zM15.5 8.5a5 5 0 010 7M18.4 5.6a9 9 0 010 12.8"/>');
+KG_ICO['🔍']=SV('<circle stroke-width="1.85" cx="11" cy="11" r="7.5"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="m21 21-4.6-4.6"/>');
+KG_ICO['✕▶']=SV('<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M18 6 6 18M6 6l12 12"/>');
+KG_ICO['🎨']=SV('<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M12 22a10 10 0 1 1 10-10c0 2.8-2.2 4-4 4h-2a2 2 0 0 0-1.6 3.2l.3.4A1.5 1.5 0 0 1 13.5 22z"/><circle stroke-width="1.85" cx="13.5" cy="6.5" r="0.9" fill="currentColor"/><circle stroke-width="1.85" cx="17.5" cy="10.5" r="0.9" fill="currentColor"/><circle stroke-width="1.85" cx="6.5" cy="12.5" r="0.9" fill="currentColor"/><circle stroke-width="1.85" cx="8.5" cy="7.5" r="0.9" fill="currentColor"/>');
+KG_ICO['▶']=SV('<path d="M7 5.8v12.4a1.3 1.3 0 0 0 2 1.1l9.8-6.2a1.3 1.3 0 0 0 0-2.2L9 4.7a1.3 1.3 0 0 0-2 1.1z" fill="currentColor" stroke="none"/>');
+KG_ICO['▲']=SV('<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="m6 15 6-6 6 6"/>');
+KG_ICO['▼']=SV('<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="m6 9 6 6 6-6"/>');
+KG_ICO.vol=SV('<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M11 4.7a.7.7 0 0 0-1.2-.5L6.4 7.6A2 2 0 0 1 5 8.2H3a1 1 0 0 0-1 1v5.6a1 1 0 0 0 1 1h2a2 2 0 0 1 1.4.6l3.4 3.4a.7.7 0 0 0 1.2-.5zM16 9a5 5 0 0 1 0 6M19.4 18.4a9 9 0 0 0 0-12.8"/>');
 var KGS='<svg class="kgx" fill="none" stroke-linecap="round" stroke-linejoin="round" ';
 var KG_X={
 dots5:KGS+'viewBox="0 0 120 20" width="120" height="20"><circle cx="10" cy="10" r="8" fill="#a8d5b8"/><circle cx="34" cy="10" r="8" fill="#38bdf8"/><circle cx="58" cy="10" r="8" fill="#c084fc"/><circle cx="82" cy="10" r="8" fill="#fb7185"/><circle cx="106" cy="10" r="8" fill="#fbbf24"/></svg>',
@@ -16437,14 +16445,14 @@ seekbar:KGS+'viewBox="0 0 300 14" width="100%" height="14" preserveAspectRatio="
 progress:KGS+'viewBox="0 0 300 12" width="100%" height="12" preserveAspectRatio="none" style="color:var(--primary)"><rect x="0" y="3" width="300" height="6" rx="3" fill="#334155"/><rect x="0" y="3" width="180" height="6" rx="3" fill="currentColor"/></svg>',
 gest:KGS+'viewBox="0 0 320 130" width="100%" style="max-width:340px"><rect x="2" y="2" width="316" height="126" rx="12" stroke="#475569" stroke-width="1.6"/><path d="M112 8v114M208 8v114" stroke="#475569" stroke-width="1.4" stroke-dasharray="4 5"/><g fill="#e2e8f0"><path d="M68 46L50 60l18 14zM86 46L68 60l18 14z"/><path d="M134 46l18 14-18 14zM172 46v28h6V46zM184 46v28h6V46z"/><path d="M234 46l18 14-18 14zM252 46l18 14-18 14z"/></g><g font-family="monospace" font-size="12" text-anchor="middle"><text x="68" y="92" fill="#94a3b8">-10s</text><text x="160" y="92" fill="#94a3b8">Play/Pause</text><text x="252" y="92" fill="#94a3b8">+10s</text><text x="160" y="22" fill="#facc15">DOUBLE TAP</text><text x="62" y="114" fill="#facc15">HOLD 2x</text><text x="258" y="114" fill="#facc15">HOLD 2x</text></g></svg>'
 };
-var SYM={'←':SV('<path d="M19 12H5M11 6l-6 6 6 6"/>',14),'→':SV('<path d="M5 12h14M13 6l6 6-6 6"/>',14),'↑':SV('<path d="M12 19V5M6 11l6-6 6 6"/>',14),'↓':SV('<path d="M12 5v14M6 13l6 6 6-6"/>',14),'✓':SV('<path d="M5 13l4 4L19 7"/>',14,'#22c55e'),'✗':SV('<path d="M6 18L18 6M6 6l12 12"/>',14,'#ef4444'),'✕':SV('<path d="M6 18L18 6M6 6l12 12"/>',13),'♪':SV('<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',14),'🎨':KG_ICO['🎨'],'🗑':KG_ICO['🗑'],'🔍':KG_ICO['🔍']};
+var SYM={'←':SV('<path d="M19 12H5M11 6l-6 6 6 6"/>',14),'→':SV('<path d="M5 12h14M13 6l6 6-6 6"/>',14),'↑':SV('<path d="M12 19V5M6 11l6-6 6 6"/>',14),'↓':SV('<path d="M12 5v14M6 13l6 6 6-6"/>',14),'✓':SV('<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M20 6.5 9.5 17 4 11.5"/>',14,'#22c55e'),'✗':SV('<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M18 6 6 18M6 6l12 12"/>',14,'#ef4444'),'✕':SV('<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M18 6 6 18M6 6l12 12"/>',13),'♪':SV('<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',14),'🎨':KG_ICO['🎨'],'🗑':KG_ICO['🗑'],'🔍':KG_ICO['🔍']};
 var SYMRE=new RegExp('(<[^>]*>)|('+Object.keys(SYM).join('|')+')','g');
 var LTRRE=/[+\-]?[A-Za-z0-9\\{](?:[A-Za-z0-9\\{}+\-_.:\/=#*&;,'←→↑↓ ]*[A-Za-z0-9\\}+*\/←→↑↓])?/g;
 function ltr(t){return t.replace(LTRRE,function(m){return '<bdi dir="ltr">'+m+'</bdi>';});}
 function symAll(h){return h.split(/(<[^>]*>)/).map(function(p,i){return i%2?p:ltr(p).replace(SYMRE,function(m,t,s){return t||SYM[s]||m;});}).join('');}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function lbl(l){if(KG_ICO[l])return KG_ICO[l];if(KG_X[l])return KG_X[l];
- var m=/^(▣|☑|✛) (.*)$/.exec(l);var pre={'▣':'<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>','☑':KG_ICO['☑']};
+ var m=/^(▣|☑|✛) (.*)$/.exec(l);var pre={'▣':'<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>','☑':KG_ICO['☑']};
  if(m&&pre[m[1]])return pre[m[1]]+' '+esc(m[2]);return esc(l).replace(/\n/g,'<br>');}
 function rowsHtml(rows){return rows.map(function(r){return '<div class="kg-row">'+r.map(function(e){
  return '<div class="kg-el '+e.t+(e.n?' hl':'')+'"'+(/[\u0600-\u06FF]/.test(e.l)?'':' dir="ltr"')+'>'+(e.n?'<b class="kg-n">'+e.n+'</b>':'')+lbl(e.l)+'</div>';}).join('')+'</div>';}).join('');}
@@ -16459,7 +16467,7 @@ function show(i){cur=i;var g=G[i];
  g.steps.forEach(function(s,si){
   h+='<div class="kg-step"><h3><span>'+(si+1)+'</span>'+s.h+'</h3><div class="kg-mock">'+rowsHtml(s.rows)+'</div><div class="kg-cap">ڕەسمی ڕوونکردنەوە — ژمارە زەردەکان لە خوارەوە ڕوونکراونەتەوە</div>';
   h+='<ul class="kg-notes">'+s.notes.map(function(n,ni){return '<li><b class="n">'+(ni+1)+'</b><div class="t">'+n+'</div></li>';}).join('')+'</ul>';
-  if(s.tip)h+='<div class="kg-tip"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0012 3z"/></svg>'+s.tip+'</div>';
+  if(s.tip)h+='<div class="kg-tip"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M15 14c.2-1 .7-1.7 1.5-2.5A5.9 5.9 0 0 0 18 7.6 6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5M9 18h6M10 22h4"/></svg>'+s.tip+'</div>';
   h+='</div>';});
  h+='<div class="kg-nav">'+(i>0?'<button type="button" onclick="kfGuide.show('+(i-1)+')">→ '+G[i-1].name+'</button>':'<span></span>')+(i<G.length-1?'<button type="button" onclick="kfGuide.show('+(i+1)+')">'+G[i+1].name+' ←</button>':'')+'</div>';
  content.innerHTML=symAll(h);body.scrollTop=0;}
@@ -16468,7 +16476,7 @@ window.kfGuide={show:show,
  close:function(){box.classList.remove('show');box.setAttribute('aria-hidden','true');}};
 document.addEventListener('keydown',function(e){if(e.key==='Escape')kfGuide.close();});
 // دوگمە لە مێنیو
-var ICON='<svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13C10.832 18.477 9.246 18 7.5 18S4.168 18.477 3 19.253v-13C4.168 5.477 5.754 5 7.5 5s3.332.477 4.5 1.253zm0 0C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>';
+var ICON='<svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M12 7v14M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>';
 ['kf-drawer-list','kf-tabs'].forEach(function(id){var host=document.getElementById(id);if(!host)return;
  var s=document.createElement('div');s.className='kf-sep';host.appendChild(s);
  var b=document.createElement('button');b.type='button';b.className='kf-item';b.setAttribute('data-k','guide');b.innerHTML=ICON+'<span>فێرکاری بەکارهێنان</span>';

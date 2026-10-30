@@ -55,6 +55,8 @@ html:root body #searchBarPanel { position: fixed !important; left: 50% !importan
   html.kf-wide:root body #censor-modal > .custom-modal-content { display: flex; flex-direction: column; justify-content: safe center; padding-bottom: 24px !important; }
   #kf-tabs { min-width: 0; overflow-x: auto; scroll-behavior: auto; }
 }
+html.kf-wide:root body.editor-bg #preview-video, html.kf-wide:root body .custom-player-container video { height: calc(var(--kf-dvh, 1dvh) * 60) !important; max-height: calc(var(--kf-dvh, 1dvh) * 60) !important; min-height: 320px !important; width: 100% !important; object-fit: contain !important; background: #000; }
+html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-container { margin-top: 16px !important; }
 </style>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#080a0d">
@@ -67,7 +69,9 @@ html:root body #searchBarPanel { position: fixed !important; left: 50% !importan
     html.kf-ready body.startup-bg #kf-shell { display: block !important; }
     #kf-drawer { position: fixed; top: 0; bottom: 0; right: 0; width: min(calc(var(--kf-vw, 1vw) * 84), 330px); transform: translateX(calc(100% + 90px)); visibility: hidden; }
     #kf-scrim { position: fixed; top: 0; left: 0; right: 0; bottom: 0; opacity: 0; pointer-events: none; }
-    </style>
+    html.kf-wide:root body.editor-bg #preview-video, html.kf-wide:root body .custom-player-container video { height: calc(var(--kf-dvh, 1dvh) * 60) !important; max-height: calc(var(--kf-dvh, 1dvh) * 60) !important; min-height: 320px !important; width: 100% !important; object-fit: contain !important; background: #000; }
+html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-container { margin-top: 16px !important; }
+</style>
     <script id="kf-layout-boot">
     (function () {
         var root = document.documentElement;
@@ -1402,6 +1406,8 @@ input[type="checkbox"], input[type="radio"] {
 .rtl-mode-opt.active .rtl-mode-dot { border-color:var(--primary); }
 .rtl-mode-opt.active .rtl-mode-dot::after { content:''; position:absolute; inset:3px; border-radius:50%; background:var(--primary); }
 .rtl-mode-opt .rtl-mode-lbl { flex:1; line-height:1.5; }
+html.kf-wide:root body.editor-bg #preview-video, html.kf-wide:root body .custom-player-container video { height: calc(var(--kf-dvh, 1dvh) * 60) !important; max-height: calc(var(--kf-dvh, 1dvh) * 60) !important; min-height: 320px !important; width: 100% !important; object-fit: contain !important; background: #000; }
+html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-container { margin-top: 16px !important; }
 </style>
 
 <style>
@@ -1440,6 +1446,8 @@ html.kf-narrow #mergeStyleViewer { padding:8px!important; align-items:stretch!im
 }
 
 @keyframes spin { 100% { transform: rotate(360deg); } }
+html.kf-wide:root body.editor-bg #preview-video, html.kf-wide:root body .custom-player-container video { height: calc(var(--kf-dvh, 1dvh) * 60) !important; max-height: calc(var(--kf-dvh, 1dvh) * 60) !important; min-height: 320px !important; width: 100% !important; object-fit: contain !important; background: #000; }
+html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-container { margin-top: 16px !important; }
 </style>
 
     
@@ -1499,6 +1507,8 @@ html:root body #toast-container .toast {
     line-height: 1.7;
 }
 
+html.kf-wide:root body.editor-bg #preview-video, html.kf-wide:root body .custom-player-container video { height: calc(var(--kf-dvh, 1dvh) * 60) !important; max-height: calc(var(--kf-dvh, 1dvh) * 60) !important; min-height: 320px !important; width: 100% !important; object-fit: contain !important; background: #000; }
+html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-container { margin-top: 16px !important; }
 </style>
 
 <style id="kf-early">
@@ -1515,9 +1525,504 @@ html:root body.startup-bg #setup-screen {
     padding: calc(56px + env(safe-area-inset-top, 0px) + 18px) max(16px, calc((100% - 680px) / 2)) calc(24px + env(safe-area-inset-bottom, 0px)) !important;
 }
 html:root body.startup-bg::before, html:root body.startup-bg::after { display: none !important; }
+html.kf-wide:root body.editor-bg #preview-video, html.kf-wide:root body .custom-player-container video { height: calc(var(--kf-dvh, 1dvh) * 60) !important; max-height: calc(var(--kf-dvh, 1dvh) * 60) !important; min-height: 320px !important; width: 100% !important; object-fit: contain !important; background: #000; }
+html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-container { margin-top: 16px !important; }
 </style>
+
+<!-- Firebase Auth + Firestore for Accounts -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+// ===== ڕێکخستنی Firebase =====
+// پێویستە لە Firebase Console پرۆژەیەک دروست بکەیت و Auth (Email/Password) و Firestore چالاک بکەیت
+// پاشان ئەم ڕێکخستنە لە Project settings > General > Your apps بکۆپییە بۆ ئێرە
+const firebaseConfig = {
+  apiKey: "AIzaSyB1OZeMOtrxlwUA4v1p8xDnDXwLU9HXKC8",
+  authDomain: "subedit-6f66c.firebaseapp.com",
+  projectId: "subedit-6f66c",
+  storageBucket: "subedit-6f66c.firebasestorage.app",
+  messagingSenderId: "797419481004",
+  appId: "1:797419481004:web:be136404c4a9ccf5c33c09",
+  measurementId: "G-3M722T93W1"
+};
+// ئیمەیڵی ئۆنەر (خۆت) — تەنها ئەم ئیمەیڵە دەتوانێت بەکارهێنەران قبووڵ بکات
+const OWNER_EMAIL = "stankurd357@gmail.com"; // <-- لێرە ئیمەیڵی خۆت بنووسە
+
+if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY") {
+  firebase.initializeApp(firebaseConfig);
+  window.auth = firebase.auth();
+  window.db = firebase.firestore();
+} else {
+  console.warn("Firebase config not set. Please edit OWNER_EMAIL and firebaseConfig in the HTML.");
+  window.auth = null;
+  window.db = null;
+}
+</script>
+
 </head>
-<body class="startup-bg">
+<body class="startup-bg auth-locked">
+
+<style id="kf-auth-css">
+/* ============ شاشەی بارکردن: لۆگۆی جوڵاو ============ */
+#auth-loading {
+  position: fixed; inset: 0; z-index: 999999;
+  background: radial-gradient(ellipse at 50% 38%, #16212b 0%, #0a0c0e 72%);
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity .6s ease, visibility .6s ease;
+  overflow: hidden;
+}
+#auth-loading.hide { opacity: 0; visibility: hidden; pointer-events: none; }
+#auth-loading::before {
+  content: ''; position: absolute; left: 50%; top: 42%; width: 340px; height: 340px;
+  transform: translate(-50%, -50%); border-radius: 50%;
+  background: radial-gradient(circle, var(--primary-glow) 0%, transparent 65%);
+  opacity: 0; animation: kfGlowIn 1.6s .5s ease-out forwards;
+}
+.auth-loader-inner { position: relative; text-align: center; display: flex; flex-direction: column; align-items: center; }
+.kf-mark { width: 104px; height: 118px; overflow: visible; margin-bottom: 22px; }
+.kf-mark .tier, .kf-mark .trunk {
+  fill: transparent; stroke: var(--primary); stroke-width: 2.6; stroke-linejoin: round; stroke-linecap: round;
+  stroke-dasharray: 1; stroke-dashoffset: 1;
+}
+.kf-mark .tier { animation: kfDraw .75s cubic-bezier(.5,0,.2,1) forwards, kfFill .6s ease-out forwards; }
+.kf-mark .trunk { fill: none; }
+.kf-mark .tier.t3 { animation-delay: .1s, .85s; }
+.kf-mark .tier.t2 { animation-delay: .45s, 1.05s; }
+.kf-mark .tier.t1 { animation-delay: .8s, 1.25s; }
+.kf-mark .trunk { animation: kfDraw .35s ease-out 1.1s forwards; }
+.kf-mark .ground { stroke: rgba(255,255,255,.14); stroke-width: 2; stroke-linecap: round; }
+.kf-mark .ground-fill {
+  stroke: var(--primary); stroke-width: 2; stroke-linecap: round;
+  stroke-dasharray: 1; stroke-dashoffset: 1; animation: kfDraw 1.9s .2s cubic-bezier(.4,0,.2,1) forwards;
+}
+.kf-mark .spark { fill: #d9f99d; opacity: 0; transform-box: fill-box; transform-origin: center; }
+.kf-mark .spark.s1 { animation: kfSpark 2.6s 1.5s ease-in-out infinite; }
+.kf-mark .spark.s2 { animation: kfSpark 3.1s 2.0s ease-in-out infinite; }
+.kf-mark .spark.s3 { animation: kfSpark 2.8s 2.4s ease-in-out infinite; }
+.kf-mark-wrap { animation: kfBreath 3.2s 1.9s ease-in-out infinite; }
+@keyframes kfDraw { to { stroke-dashoffset: 0; } }
+@keyframes kfFill { to { fill: var(--primary-glow); } }
+@keyframes kfGlowIn { to { opacity: 1; } }
+@keyframes kfBreath { 0%,100% { transform: translateY(0); filter: drop-shadow(0 0 6px var(--primary-glow)); } 50% { transform: translateY(-3px); filter: drop-shadow(0 0 16px var(--primary-glow)); } }
+@keyframes kfSpark { 0%,100% { opacity: 0; transform: translateY(0) scale(.6); } 40% { opacity: .95; } 100% { opacity: 0; transform: translateY(-14px) scale(1); } }
+
+.auth-loader-logo {
+  font-family: 'KFMichroma', 'Michroma', system-ui, sans-serif;
+  font-size: 27px; letter-spacing: .2em; color: #e2e8f0; direction: ltr; unicode-bidi: isolate;
+  display: flex; gap: .55em; white-space: nowrap; margin-right: -.2em;
+}
+.auth-loader-logo .w { display: inline-flex; }
+.auth-loader-logo .w.f { color: var(--primary); text-shadow: 0 0 18px var(--primary-glow); }
+.auth-loader-logo .l {
+  display: inline-block; opacity: 0; transform: translateY(10px); filter: blur(6px);
+  animation: kfLetter .6s cubic-bezier(.2,.7,.2,1) forwards; animation-delay: calc(1.15s + var(--i) * .07s);
+}
+@keyframes kfLetter { to { opacity: 1; transform: none; filter: blur(0); } }
+.auth-loader-sub {
+  margin-top: 14px; font-size: 13px; color: #7b8b9c; letter-spacing: 0;
+  opacity: 0; animation: kfSubIn .7s 2s ease-out forwards;
+}
+.auth-loader-sub::after { content: ''; display: inline-block; width: 1.4em; text-align: start; animation: kfDots 1.2s steps(4,end) infinite; }
+@keyframes kfSubIn { to { opacity: 1; } }
+@keyframes kfDots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75%,100% { content: '...'; } }
+
+/* ============ شاشەی چوونەژوورەوە ============ */
+#auth-screen {
+  display: none; position: fixed; inset: 0; z-index: 999999; background: #080a0d;
+  align-items: center; justify-content: center; padding: 24px 16px; overflow-y: auto; overflow-x: hidden;
+}
+#auth-screen.show { display: flex; }
+#auth-screen::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background: radial-gradient(circle at 18% 8%, var(--primary-glow) 0%, transparent 48%),
+              radial-gradient(circle at 85% 70%, var(--primary-glow) 0%, transparent 42%);
+}
+#auth-screen::after {
+  content: ''; position: fixed; left: 0; right: 0; bottom: 0; height: 190px; pointer-events: none; z-index: 0;
+  background: var(--primary); opacity: .1;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='190' viewBox='0 0 260 190'%3E%3Cpath d='M70 20L100 80H85L115 135H95L125 180H78V190H62V180H15L45 135H25L55 80H40Z M200 74L224 122H212L236 160H216L238 190H162L184 160H164L188 122H176Z'/%3E%3C/svg%3E") repeat-x bottom / 260px 190px;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='190' viewBox='0 0 260 190'%3E%3Cpath d='M70 20L100 80H85L115 135H95L125 180H78V190H62V180H15L45 135H25L55 80H40Z M200 74L224 122H212L236 160H216L238 190H162L184 160H164L188 122H176Z'/%3E%3C/svg%3E") repeat-x bottom / 260px 190px;
+}
+.auth-card {
+  position: relative; z-index: 1; width: 100%; max-width: 410px; margin: auto;
+  background: linear-gradient(180deg, rgba(22,28,35,.94) 0%, rgba(13,17,22,.94) 100%);
+  border: 1px solid rgba(255,255,255,.09); border-radius: 30px; padding: 34px 26px 26px;
+  box-shadow: 0 28px 70px rgba(0,0,0,.65), 0 0 50px var(--primary-glow), inset 0 1px 0 rgba(255,255,255,.07);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+}
+#auth-screen.show .auth-card { animation: kfCardIn .6s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes kfCardIn { from { opacity: 0; transform: translateY(22px) scale(.97); } to { opacity: 1; transform: none; } }
+.auth-logo {
+  text-align: center; margin-bottom: 24px; direction: ltr;
+  font-family: 'KFMichroma', 'Michroma', system-ui, sans-serif; font-size: 20px; letter-spacing: .2em;
+  color: #e2e8f0; line-height: 1.2; user-select: none;
+}
+.auth-logo .kf-mark { width: 54px; height: 62px; margin: 0 auto 14px; display: block; }
+.auth-logo .kf-mark .tier, .auth-logo .kf-mark .trunk { animation: none; stroke-dashoffset: 0; fill: var(--primary-glow); }
+.auth-logo .kf-mark .trunk { fill: none; }
+.auth-logo b { color: var(--primary); font-weight: 400; text-shadow: 0 0 18px var(--primary-glow); }
+.auth-logo small {
+  display: block; font-family: 'IBMPlexSansArabic', Tahoma, sans-serif; font-size: 13px; letter-spacing: 0;
+  color: var(--text-muted); margin-top: 8px; direction: rtl;
+}
+.auth-tabs {
+  position: relative; display: flex; gap: 0; margin-bottom: 22px;
+  background: rgba(0,0,0,.35); padding: 4px; border-radius: 16px; border: 1px solid rgba(255,255,255,.05);
+}
+.auth-tab {
+  position: relative; z-index: 1; flex: 1; padding: 11px 8px; border-radius: 12px; border: none;
+  background: transparent; color: var(--text-muted); cursor: pointer; font-weight: bold; font-size: 13.5px;
+  transition: color .25s, background .25s;
+}
+.auth-tab.active { background: var(--primary); color: #0a0e17; box-shadow: 0 4px 16px var(--primary-glow); }
+@supports selector(:has(*)) {
+  .auth-tabs::before {
+    content: ''; position: absolute; top: 4px; bottom: 4px; width: calc(50% - 4px); right: 4px;
+    border-radius: 12px; background: var(--primary); box-shadow: 0 4px 16px var(--primary-glow);
+    transition: transform .35s cubic-bezier(.3,.8,.2,1);
+  }
+  .auth-tabs:has(.auth-tab:nth-child(2).active)::before { transform: translateX(-100%); }
+  .auth-tab.active { background: transparent; box-shadow: none; }
+}
+.auth-form { display: flex; flex-direction: column; gap: 13px; }
+.auth-form.kf-in { animation: kfFormIn .35s ease both; }
+@keyframes kfFormIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.auth-field { position: relative; display: block; }
+.auth-field > .ic {
+  position: absolute; top: 50%; right: 15px; transform: translateY(-50%); width: 19px; height: 19px;
+  color: #64748b; pointer-events: none; transition: color .2s;
+}
+.auth-field:focus-within > .ic { color: var(--primary); }
+.auth-form input {
+  width: 100%; box-sizing: border-box; padding: 14px 46px 14px 16px; border-radius: 15px;
+  border: 1.5px solid rgba(255,255,255,.09); background: rgba(6,8,11,.75) !important; color: #f1f5f9 !important;
+  font-size: 15px; direction: rtl; text-align: right; transition: border-color .2s, box-shadow .2s, background .2s;
+  -webkit-text-fill-color: #f1f5f9 !important;
+}
+.auth-form input[type="email"] { direction: ltr; text-align: right; }
+.auth-field.pw input { padding-left: 46px; }
+.auth-form input::placeholder { color: #64748b; opacity: .6; font-size: 14px; }
+.auth-form input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-glow); }
+.auth-eye {
+  position: absolute; top: 50%; left: 6px; transform: translateY(-50%); width: 38px; height: 38px; border: 0;
+  background: transparent; color: #64748b; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: color .2s, background .2s;
+}
+.auth-eye:hover { color: var(--primary); background: rgba(255,255,255,.05); }
+.auth-eye svg { width: 19px; height: 19px; }
+.auth-eye .off { display: none; }
+.auth-eye.on .off { display: block; }
+.auth-eye.on .on { display: none; }
+.auth-form .btn {
+  position: relative; overflow: hidden; margin-top: 6px; padding: 15px; font-size: 15px; border-radius: 15px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%) !important; color: #08110c !important;
+  box-shadow: 0 8px 22px var(--primary-glow) !important;
+}
+.auth-form .btn::after {
+  content: ''; position: absolute; top: 0; bottom: 0; width: 40%; left: -60%;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,.35), transparent); transform: skewX(-18deg);
+}
+.auth-form .btn:hover::after { left: 130%; transition: left .7s ease; }
+.auth-msg {
+  font-size: 13px; text-align: center; color: #fca5a5; margin-top: 12px; line-height: 1.7;
+  border-radius: 12px; padding: 0 12px;
+}
+.auth-msg:not(:empty) { background: rgba(239,68,68,.09); border: 1px solid rgba(239,68,68,.22); padding: 9px 12px; }
+.auth-msg.ok:not(:empty) { background: rgba(16,185,129,.09); border-color: rgba(16,185,129,.28); }
+.auth-msg.ok { color: var(--success); }
+.auth-links { text-align: center; margin-top: 16px; font-size: 13.5px; line-height: 1.7; }
+.auth-links a { color: var(--primary); cursor: pointer; text-decoration: none; font-weight: bold; }
+.auth-links a:hover { text-decoration: underline; text-underline-offset: 4px; }
+.auth-links span { display: block; color: #64748b; font-size: 12px; margin-top: 2px; }
+.auth-divider { display: flex; align-items: center; gap: 12px; margin: 18px 0 14px; color: var(--text-muted); font-size: 12.5px; }
+.auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,.14)); }
+.auth-divider::after { transform: scaleX(-1); }
+.btn-google {
+  display: flex; align-items: center; justify-content: center; gap: 11px; width: 100%; padding: 13px 16px;
+  border-radius: 15px; border: 1.5px solid rgba(255,255,255,.12); background: rgba(255,255,255,.05);
+  color: #e2e8f0; font-size: 14.5px; font-weight: bold; cursor: pointer; transition: background .2s, border-color .2s, transform .15s;
+}
+.btn-google:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.26); }
+.btn-google:active { transform: scale(.98); }
+.btn-google svg { width: 20px; height: 20px; flex-shrink: 0; }
+#auth-waiting {
+  display: none; text-align: center; margin-top: 18px; color: #cbd5e1; font-size: 13.5px; line-height: 1.8;
+  background: linear-gradient(180deg, rgba(251,191,36,.09), rgba(251,191,36,.04)); border: 1px solid rgba(251,191,36,.25);
+  border-radius: 16px; padding: 14px;
+}
+#auth-waiting::before {
+  content: ''; display: block; width: 26px; height: 26px; margin: 0 auto 8px; border-radius: 50%;
+  border: 2.5px solid rgba(251,191,36,.25); border-top-color: #fbbf24; animation: kfSpin 1s linear infinite;
+}
+@keyframes kfSpin { to { transform: rotate(360deg); } }
+
+/* ============ پانێلی ئۆنەر ============ */
+#owner-panel { display: none; }
+#owner-panel.show { display: flex; }
+#owner-panel { justify-content: center; }
+.owner-panel-card {
+  position: relative; margin: auto; width: 100%; max-width: 500px; box-sizing: border-box; overflow: hidden;
+  background: linear-gradient(180deg, rgba(22,28,35,.98) 0%, rgba(12,16,20,.98) 100%);
+  border: 1px solid rgba(255,255,255,.09); border-radius: 28px; padding: 26px 18px 18px;
+  box-shadow: 0 30px 80px rgba(0,0,0,.75), 0 0 45px var(--primary-glow), inset 0 1px 0 rgba(255,255,255,.07);
+  text-align: start; animation: kfCardIn .45s cubic-bezier(.2,.8,.2,1) both;
+}
+.owner-panel-card::before {
+  content: ''; position: absolute; top: -90px; left: 50%; width: 280px; height: 200px; transform: translateX(-50%);
+  background: radial-gradient(ellipse, var(--primary-glow) 0%, transparent 70%); pointer-events: none;
+}
+.owner-head { position: relative; text-align: center; margin-bottom: 18px; }
+.owner-crest {
+  width: 54px; height: 54px; margin: 0 auto 12px; border-radius: 18px; display: flex; align-items: center; justify-content: center;
+  color: var(--primary); background: linear-gradient(145deg, var(--primary-glow), rgba(255,255,255,.03));
+  border: 1px solid var(--primary); box-shadow: 0 0 26px var(--primary-glow);
+}
+.owner-crest svg { width: 27px; height: 27px; }
+.owner-panel-card h3 { margin: 0 0 5px; color: #f1f5f9; font-size: 18px; text-align: center; }
+.owner-panel-sub { text-align: center; color: var(--text-muted); font-size: 12.5px; margin-bottom: 0; }
+.owner-stats { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+.owner-stat {
+  border: 1px solid rgba(255,255,255,.07); background: rgba(255,255,255,.03); border-radius: 16px; padding: 10px 6px;
+  text-align: center; cursor: pointer; transition: border-color .2s, background .2s; font: inherit; color: inherit;
+}
+.owner-stat b { display: block; font-size: 21px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.owner-stat span { font-size: 11.5px; color: var(--text-muted); }
+.owner-stat.s-pending b { color: #fbbf24; }
+.owner-stat.s-approved b { color: var(--success); }
+.owner-stat.s-all b { color: #e2e8f0; }
+.owner-stat.active { border-color: var(--primary); background: var(--primary-glow); }
+.owner-search { position: relative; margin-bottom: 12px; }
+.owner-search svg { position: absolute; top: 50%; right: 13px; transform: translateY(-50%); width: 17px; height: 17px; color: #64748b; pointer-events: none; }
+.owner-search input {
+  width: 100%; box-sizing: border-box; padding: 11px 38px 11px 14px; border-radius: 14px; border: 1.5px solid rgba(255,255,255,.08);
+  background: rgba(6,8,11,.7); color: #f1f5f9; font-size: 14px; direction: ltr; text-align: right; transition: border-color .2s, box-shadow .2s;
+}
+.owner-search input::placeholder { color: #64748b; direction: rtl; }
+.owner-search input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow); }
+#owner-users-list {
+  max-height: 46vh; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 2px; scrollbar-width: thin;
+}
+.owner-empty { text-align: center; color: var(--text-muted); padding: 26px 10px; font-size: 13.5px; }
+.user-row {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 11px 12px;
+  background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.06); border-radius: 18px; font-size: 13.5px;
+  transition: border-color .2s, background .2s;
+}
+.user-row:hover { border-color: rgba(255,255,255,.14); background: rgba(255,255,255,.05); }
+.user-row.is-pending { border-color: rgba(251,191,36,.28); background: rgba(251,191,36,.045); }
+.user-avatar {
+  flex: 0 0 40px; width: 40px; height: 40px; border-radius: 14px; display: flex; align-items: center; justify-content: center;
+  font-family: system-ui, sans-serif; font-weight: 700; font-size: 16px; text-transform: uppercase;
+  color: var(--primary); background: var(--primary-glow); border: 1px solid rgba(255,255,255,.08);
+}
+.user-row.is-pending .user-avatar { color: #fbbf24; background: rgba(251,191,36,.12); }
+.user-row.is-rejected .user-avatar { color: #f87171; background: rgba(239,68,68,.12); }
+.user-info { min-width: 0; flex: 1; text-align: right; }
+.user-row .user-email { font-weight: 600; direction: ltr; text-align: right; word-break: break-all; font-size: 13px; color: #e8edf3; line-height: 1.5; }
+.user-meta { margin-top: 4px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.st-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; padding: 2px 9px; border-radius: 99px; font-weight: bold; }
+.st-pill::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.st-pill.status-pending { color: #fbbf24; background: rgba(251,191,36,.12); }
+.st-pill.status-pending::before { animation: kfPulse 1.4s ease-in-out infinite; }
+.st-pill.status-approved { color: var(--success); background: rgba(16,185,129,.12); }
+.st-pill.status-rejected { color: #f87171; background: rgba(239,68,68,.12); }
+@keyframes kfPulse { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
+.user-row .owner-badge {
+  display: inline-flex; align-items: center; gap: 4px; background: var(--primary-glow); color: var(--primary);
+  border: 1px solid var(--primary); border-radius: 99px; padding: 1px 8px; font-size: 11px; font-weight: bold;
+}
+.user-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.user-actions .btn, .user-actions .btn-outline {
+  display: inline-flex !important; align-items: center !important; justify-content: center !important;
+  width: auto !important; padding: 8px 13px !important; font-size: 12.5px !important; border-radius: 11px !important; margin: 0 !important; gap: 6px !important;
+}
+.user-actions .btn { color: #08110c !important; background: linear-gradient(135deg, var(--primary), var(--primary-hover)) !important; }
+.user-actions .btn-outline.danger { color: #f87171 !important; border-color: rgba(248,113,113,.55) !important; }
+.user-actions .btn-outline.danger:hover { background: rgba(239,68,68,.14) !important; border-color: #f87171 !important; color: #f87171 !important; }
+.user-actions svg { width: 14px; height: 14px; display: block; flex-shrink: 0; margin-top: -1px; }
+.owner-foot { margin-top: 14px; }
+.owner-foot .btn-outline { width: 100%; padding: 13px; border-radius: 14px; font-size: 14px; }
+.owner-skel { height: 64px; border-radius: 18px; background: linear-gradient(100deg, rgba(255,255,255,.03) 30%, rgba(255,255,255,.08) 50%, rgba(255,255,255,.03) 70%); background-size: 220% 100%; animation: kfShimmer 1.2s linear infinite; }
+@keyframes kfShimmer { from { background-position: 120% 0; } to { background-position: -120% 0; } }
+
+@media (max-width: 380px) {
+  .auth-card { padding: 28px 18px 22px; border-radius: 26px; }
+  .auth-loader-logo { font-size: 21px; }
+  .user-row { flex-wrap: wrap; }
+  .user-actions { width: 100%; }
+  .user-actions .btn, .user-actions .btn-outline { flex: 1; justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kf-mark .tier, .kf-mark .trunk, .kf-mark .ground-fill { animation: none !important; stroke-dashoffset: 0 !important; fill: var(--primary-glow); }
+  .kf-mark .trunk { fill: none; }
+  .auth-loader-logo .l, .auth-loader-sub, #auth-loading::before { animation: none !important; opacity: 1 !important; transform: none !important; filter: none !important; }
+  .kf-mark-wrap, .kf-mark .spark { animation: none !important; }
+  #auth-screen.show .auth-card, .owner-panel-card, .auth-form.kf-in { animation: none !important; }
+}
+
+/* ===== چاکسازی: شاشەی چوونەژوورەوە + پانێلی ئۆنەر + ئاگادارکەرەوەکان لەسەرەوە ===== */
+#auth-screen { align-items: flex-start !important; padding-top: max(24px, env(safe-area-inset-top)) !important; padding-bottom: max(24px, env(safe-area-inset-bottom)) !important; }
+#auth-screen .auth-card { margin: auto !important; }
+
+#kf-auth-toasts {
+  position: fixed; top: calc(12px + env(safe-area-inset-top, 0px)); left: 0; right: 0; z-index: 1000002;
+  display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 0 12px; pointer-events: none;
+}
+#kf-auth-toasts .auth-msg, #kf-auth-toasts #auth-waiting {
+  width: max-content; max-width: min(100%, 420px); box-sizing: border-box; margin: 0; text-align: center;
+  font-size: 13.5px; line-height: 1.7; border-radius: 16px; padding: 11px 16px; font-weight: bold;
+  box-shadow: 0 14px 38px rgba(0,0,0,.55); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  animation: kfToastIn .38s cubic-bezier(.2,.8,.2,1) both;
+}
+#kf-auth-toasts .auth-msg:empty { display: none; }
+#kf-auth-toasts .auth-msg:not(:empty) { background: #2a1317; border: 1px solid rgba(239,68,68,.5); color: #fca5a5; padding: 11px 16px; }
+#kf-auth-toasts .auth-msg.ok:not(:empty) { background: #0f2a20; border-color: rgba(16,185,129,.5); color: var(--success); }
+#kf-auth-toasts #auth-waiting { background: #2a2210; border: 1px solid rgba(251,191,36,.45); color: #fde68a; margin-top: 0; }
+#kf-auth-toasts #auth-waiting::before { display: inline-block; vertical-align: middle; width: 16px; height: 16px; margin: 0 0 0 10px; border-width: 2px; }
+#kf-auth-toasts .kf-out { animation: kfToastOut .3s ease forwards !important; }
+@keyframes kfToastIn { from { opacity: 0; transform: translateY(-18px) scale(.96); } to { opacity: 1; transform: none; } }
+@keyframes kfToastOut { to { opacity: 0; transform: translateY(-14px) scale(.97); } }
+
+/* پانێلی ئۆنەر = شاشەی تەواو، لیست سکرۆڵ دەکات، دووگمەی داخستن هەمیشە دیارە */
+#owner-panel.custom-modal-overlay {
+  padding: 0 !important; background: #080a0d !important; z-index: 1000001 !important;
+  overflow: hidden !important; align-items: stretch !important; justify-content: stretch !important;
+}
+#owner-panel .owner-panel-card {
+  margin: 0 !important; max-width: none !important; width: 100% !important; height: 100% !important; border-radius: 0 !important;
+  border: 0 !important; box-shadow: none !important; display: flex !important; flex-direction: column;
+  padding: calc(20px + env(safe-area-inset-top, 0px)) max(16px, calc((100% - 560px) / 2)) calc(14px + env(safe-area-inset-bottom, 0px)) !important;
+}
+#owner-panel .owner-head, #owner-panel .owner-stats, #owner-panel .owner-search { flex: none; }
+#owner-panel #owner-users-list { flex: 0 1 auto; min-height: 0; max-height: none !important; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+#owner-panel .owner-foot { flex: none; margin-top: 12px; }
+#owner-panel .owner-panel-card { justify-content: center !important; overflow-y: auto; }
+#owner-panel .owner-head, #owner-panel .owner-stats, #owner-panel .owner-search, #owner-panel #owner-users-list, #owner-panel .owner-foot { width: 100%; max-width: 560px; margin-inline: auto; box-sizing: border-box; }
+#owner-panel .owner-panel-card::before { display: none !important; }
+#owner-panel .owner-head::before { content: ""; position: absolute; top: -80px; left: 50%; width: 280px; height: 200px; transform: translateX(-50%); background: radial-gradient(ellipse, var(--primary-glow) 0%, transparent 70%); pointer-events: none; z-index: -1; }
+#owner-panel .owner-head { isolation: isolate; }
+#auth-loading { align-items: center !important; justify-content: center !important; } #auth-loading .auth-loader-inner { transform: none !important; margin: auto; }
+#auth-loading::before { display: none !important; }
+#auth-loading .auth-loader-inner::before { content: ""; position: absolute; left: 50%; top: 40px; width: 340px; height: 340px; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle, var(--primary-glow) 0%, transparent 65%); opacity: 0; animation: kfGlowIn 1.6s .5s ease-out forwards; pointer-events: none; z-index: -1; }
+
+body.auth-locked #setup-screen,
+body.auth-locked #editor-screen,
+body.auth-locked #kf-shell,
+body.auth-locked #kf-drawer,
+body.auth-locked #kf-scrim { display: none !important; visibility: hidden !important; }
+body.auth-locked { overflow: hidden; }
+html.kf-wide:root body.editor-bg #preview-video, html.kf-wide:root body .custom-player-container video { height: calc(var(--kf-dvh, 1dvh) * 60) !important; max-height: calc(var(--kf-dvh, 1dvh) * 60) !important; min-height: 320px !important; width: 100% !important; object-fit: contain !important; background: #000; }
+html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-container { margin-top: 16px !important; }
+</style>
+
+<div id="auth-loading" role="status" aria-live="polite">
+  <div class="auth-loader-inner">
+    <svg class="kf-mark" viewBox="0 0 104 118" aria-hidden="true">
+        <g class="kf-mark-wrap" style="transform-origin:52px 60px">
+          <path class="tier t3" pathLength="1" d="M52 6 L76 44 H28 Z"/>
+          <path class="tier t2" pathLength="1" d="M52 28 L84 72 H20 Z"/>
+          <path class="tier t1" pathLength="1" d="M52 52 L92 98 H12 Z"/>
+          <path class="trunk" pathLength="1" d="M52 98 V110"/>
+          <circle class="spark s1" cx="30" cy="62" r="2"/>
+          <circle class="spark s2" cx="78" cy="48" r="1.8"/>
+          <circle class="spark s3" cx="66" cy="90" r="1.6"/>
+        </g>
+        <line class="ground" x1="12" y1="112" x2="92" y2="112"/>
+        <path class="ground-fill" pathLength="1" d="M12 112 H92"/>
+      </svg>
+    <div class="auth-loader-logo" dir="ltr" aria-label="KURD FOREST"><span class="w"><span class="l" style="--i:0">K</span><span class="l" style="--i:1">U</span><span class="l" style="--i:2">R</span><span class="l" style="--i:3">D</span></span><span class="w f"><span class="l" style="--i:4">F</span><span class="l" style="--i:5">O</span><span class="l" style="--i:6">R</span><span class="l" style="--i:7">E</span><span class="l" style="--i:8">S</span><span class="l" style="--i:9">T</span></span></div>
+    <div class="auth-loader-sub">ئامادەکردن</div>
+  </div>
+</div>
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo"><svg class="kf-mark" viewBox="0 0 104 118" aria-hidden="true">
+        <g  style="transform-origin:52px 60px">
+          <path class="tier t3" pathLength="1" d="M52 6 L76 44 H28 Z"/>
+          <path class="tier t2" pathLength="1" d="M52 28 L84 72 H20 Z"/>
+          <path class="tier t1" pathLength="1" d="M52 52 L92 98 H12 Z"/>
+          <path class="trunk" pathLength="1" d="M52 98 V110"/>
+          
+          
+          
+        </g>
+        
+        
+      </svg>KURD <b>FOREST</b><small>دەستکاریکەری ژێرنووس</small></div>
+    <div class="auth-tabs">
+      <button type="button" class="auth-tab active" onclick="kfAuth.showTab('login')">چوونەژوورەوە</button>
+      <button type="button" class="auth-tab" onclick="kfAuth.showTab('register')">دروستکردنی هەژمار</button>
+    </div>
+    <form class="auth-form" id="auth-login-form" onsubmit="kfAuth.login(event)">
+      <label class="auth-field"><svg class="ic" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 8l9 6 9-6"/></svg>
+        <input type="email" id="auth-email" placeholder="ئیمەیڵ" required autocomplete="email"></label>
+      <label class="auth-field pw"><svg class="ic" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="3"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>
+        <input type="password" id="auth-password" placeholder="تێپەڕوشە" required autocomplete="current-password">
+        <button type="button" class="auth-eye" onclick="kfTogglePw(this)" aria-label="پیشاندانی تێپەڕوشە" tabindex="-1"><svg class="on" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><svg class="off" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 5.1A9.7 9.7 0 0112 5c6.4 0 10 7 10 7a17 17 0 01-3.3 4.2M6.4 6.5C3.7 8.3 2 12 2 12s3.6 7 10 7a9.8 9.8 0 004-.9"/><path d="M9.9 9.9a3 3 0 004.2 4.2"/></svg></button></label>
+      <button type="submit" class="btn">چوونەژوورەوە</button>
+    </form>
+    <form class="auth-form" id="auth-register-form" style="display:none" onsubmit="kfAuth.register(event)">
+      <label class="auth-field"><svg class="ic" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 8l9 6 9-6"/></svg>
+        <input type="email" id="reg-email" placeholder="ئیمەیڵ" required autocomplete="email"></label>
+      <label class="auth-field pw"><svg class="ic" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="3"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>
+        <input type="password" id="reg-password" placeholder="تێپەڕوشە — لانیکەم ٨ پیت" required minlength="8" autocomplete="new-password">
+        <button type="button" class="auth-eye" onclick="kfTogglePw(this)" aria-label="پیشاندانی تێپەڕوشە" tabindex="-1"><svg class="on" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><svg class="off" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 5.1A9.7 9.7 0 0112 5c6.4 0 10 7 10 7a17 17 0 01-3.3 4.2M6.4 6.5C3.7 8.3 2 12 2 12s3.6 7 10 7a9.8 9.8 0 004-.9"/><path d="M9.9 9.9a3 3 0 004.2 4.2"/></svg></button></label>
+      <label class="auth-field pw"><svg class="ic" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="3"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>
+        <input type="password" id="reg-password2" placeholder="دووبارەکردنەوەی تێپەڕوشە" required autocomplete="new-password">
+        <button type="button" class="auth-eye" onclick="kfTogglePw(this)" aria-label="پیشاندانی تێپەڕوشە" tabindex="-1"><svg class="on" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><svg class="off" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 5.1A9.7 9.7 0 0112 5c6.4 0 10 7 10 7a17 17 0 01-3.3 4.2M6.4 6.5C3.7 8.3 2 12 2 12s3.6 7 10 7a9.8 9.8 0 004-.9"/><path d="M9.9 9.9a3 3 0 004.2 4.2"/></svg></button></label>
+      <button type="submit" class="btn">دروستکردنی هەژمار</button>
+    </form>
+    <div class="auth-divider">یان</div>
+    <button type="button" class="btn-google" onclick="kfAuth.loginWithGoogle()">
+      <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      چوونەژوورەوە بە گووگڵ
+    </button>
+    <div class="auth-links">
+      <a onclick="kfAuth.forgotPassword()">تێپەڕوشەت لەبیر چووە؟</a>
+    </div>
+  </div>
+</div>
+
+<div id="kf-auth-toasts" aria-live="polite">
+  <div class="auth-msg" id="auth-msg"></div>
+  <div id="auth-waiting">
+      هەژمارەکەت دروست کرا. چاوەڕێی قبووڵکردنی ئۆنەر بە.
+    </div>
+</div>
+
+<!-- پانێلی ئۆنەر بۆ قبووڵکردنی بەکارهێنەران -->
+<div id="owner-panel" class="custom-modal-overlay" style="display:none;" onclick="if(event.target===this)kfAuth.closeOwnerPanel()">
+  <div class="owner-panel-card">
+    <div class="owner-head">
+      <div class="owner-crest"><svg fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 3l7.5 3v5.5c0 4.6-3.1 8.2-7.5 9.5-4.4-1.3-7.5-4.9-7.5-9.5V6L12 3z"/><path d="M9 12l2.2 2.2L15.5 10"/></svg></div>
+      <h3>بەڕێوەبردنی بەکارهێنەران</h3>
+      <div class="owner-panel-sub">تەنها ئۆنەر دەتوانێت قبووڵ یان ڕەت بکاتەوە</div>
+    </div>
+    <div class="owner-stats">
+      <button type="button" class="owner-stat s-pending" data-f="pending" onclick="kfOwnerFilter('pending')"><b id="os-pending">٠</b><span>چاوەڕێکەر</span></button>
+      <button type="button" class="owner-stat s-approved" data-f="approved" onclick="kfOwnerFilter('approved')"><b id="os-approved">٠</b><span>قبووڵکراو</span></button>
+      <button type="button" class="owner-stat s-all active" data-f="all" onclick="kfOwnerFilter('all')"><b id="os-all">٠</b><span>هەموو</span></button>
+    </div>
+    <div class="owner-search">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input type="search" id="owner-search" placeholder="...گەڕان بە ئیمەیڵ" oninput="kfOwnerRender()" autocomplete="off">
+    </div>
+    <div id="owner-users-list"></div>
+    <div class="custom-modal-actions owner-foot">
+      <button type="button" class="btn-outline" onclick="kfAuth.closeOwnerPanel()">داخستن</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function kfTogglePw(btn){
+  var inp = btn.parentNode.querySelector('input'); if(!inp) return;
+  var show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  btn.classList.toggle('on', show);
+}
+</script>
 
 
 
@@ -1973,7 +2478,7 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
     function mkvParseTrackEntry(r, start, end) {
         const t = {
             trackNumber: 0, type: 0, codecId: '', name: '', lang: '', langIetf: '', codecPrivate: null,
-            channels: 1, sampling: 8000, outSampling: 0, bitDepth: 0, codecDelay: 0, seekPreRoll: 0, encoded: false
+            channels: 1, sampling: 8000, outSampling: 0, bitDepth: 0, codecDelay: 0, seekPreRoll: 0, encoded: false, isDefault: 1
         };
         mkvEachChild(r, start, end, (id, dp, sz) => {
             switch (id) {
@@ -1987,6 +2492,7 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
                 case 0x56AA: t.codecDelay = r.u(dp, sz); break;
                 case 0x56BB: t.seekPreRoll = r.u(dp, sz); break;
                 case 0x6D80: t.encoded = true; break;
+                case 0x88: t.isDefault = r.u(dp, sz); break;
                 case 0xE1:
                     mkvEachChild(r, dp, dp + sz, (id2, dp2, sz2) => {
                         if (id2 === 0x9F) t.channels = r.u(dp2, sz2);
@@ -2712,6 +3218,7 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
         if (audios.length === 0) {
             audioList.innerHTML = '<div style="font-size:11.5px; color:var(--text-muted); padding:10px; text-align:center;">هیچ دەنگێک نەدۆزرایەوە.</div>';
         } else {
+            const kfDefAudio = audios.find(a => a.isDefault) || audios[0];
             audioList.innerHTML = audios.map(t => {
                 const codecName = mkvEsc(t.codecId.replace(/^A_/, ''));
                 const title = t.name ? `${mkvEsc(t.name)} (${mkvEsc(t.lang)})` : `دەنگی [${mkvEsc(t.lang.toUpperCase())}]`;
@@ -2725,7 +3232,7 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
                                 ${title}
                             </div>
                             <div style="font-size:10px; color:var(--text-muted); margin-top:3px;">
-                                <span style="color:var(--primary); font-weight:bold;">${codecName}</span> · <span>${chan}</span> · <span>تراک #${t.trackNumber}</span>
+                                <span style="color:var(--primary); font-weight:bold;">${codecName}</span> · <span>${chan}</span> · <span>تراک #${t.trackNumber}</span>${(audios.length > 1 && t === kfDefAudio) ? ' · <span style="display:inline-flex; align-items:center; gap:4px; vertical-align:middle; padding:1px 8px; border-radius:999px; background:rgba(34,197,94,.15); color:#4ade80; border:1px solid rgba(74,222,128,.45); font-weight:bold;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>دەنگی سەرەکی</span>' : ''}
                             </div>
                         </div>
                         <div style="flex-shrink:0;">
@@ -2782,6 +3289,8 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
 .kf-srv-mini{width:auto !important;padding:6px 12px !important;font-size:12px !important;border-radius:9px !important;}
 .kf-srv-opt{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-main);cursor:pointer;}
 .kf-srv-opt input[type=checkbox]{accent-color:var(--primary);width:15px;height:15px;}
+html.kf-wide:root body.editor-bg #preview-video, html.kf-wide:root body .custom-player-container video { height: calc(var(--kf-dvh, 1dvh) * 60) !important; max-height: calc(var(--kf-dvh, 1dvh) * 60) !important; min-height: 320px !important; width: 100% !important; object-fit: contain !important; background: #000; }
+html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-container { margin-top: 16px !important; }
 </style>
 <div id="kf-servers-modal" class="custom-modal-overlay">
     <div class="custom-modal-content" style="max-width: 520px; padding: 14px; max-height: calc(var(--kf-vh, 1vh) * 94); overflow-y: auto; overflow-x: hidden; text-align: right;">
@@ -3604,13 +4113,17 @@ html:root body.startup-bg::before, html:root body.startup-bg::after { display: n
         </div>
     </div>
    
-<style>#vDraggableSubText .ass-blk{outline:1.5px dashed var(--primary);outline-offset:1px;cursor:grab;}</style>
+<style>#vDraggableSubText .ass-blk{outline:1.5px dashed var(--primary);outline-offset:1px;cursor:grab;}html.kf-wide:root body.editor-bg #preview-video, html.kf-wide:root body .custom-player-container video { height: calc(var(--kf-dvh, 1dvh) * 60) !important; max-height: calc(var(--kf-dvh, 1dvh) * 60) !important; min-height: 320px !important; width: 100% !important; object-fit: contain !important; background: #000; }
+html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-container { margin-top: 16px !important; }
+</style>
 <style id="kf-history-css">
 #historyListContainer .history-info{min-width:0;flex:1 1 auto;}
 #historyListContainer .history-name{overflow-x:auto !important;overflow-y:hidden !important;text-overflow:clip !important;white-space:nowrap !important;scrollbar-width:none;-ms-overflow-style:none;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;overscroll-behavior-x:contain;padding:9px 0;margin:-9px 0;}
 #historyListContainer .history-name::-webkit-scrollbar{display:none;}
 #historyListContainer .history-name.kf-scrollable{cursor:grab;-webkit-mask-image:linear-gradient(to right,transparent 0,#000 var(--kf-l,0px),#000 calc(100% - var(--kf-r,0px)),transparent 100%);mask-image:linear-gradient(to right,transparent 0,#000 var(--kf-l,0px),#000 calc(100% - var(--kf-r,0px)),transparent 100%);}
 #historyListContainer .history-name.kf-grabbing{cursor:grabbing;user-select:none;-webkit-user-select:none;}
+html.kf-wide:root body.editor-bg #preview-video, html.kf-wide:root body .custom-player-container video { height: calc(var(--kf-dvh, 1dvh) * 60) !important; max-height: calc(var(--kf-dvh, 1dvh) * 60) !important; min-height: 320px !important; width: 100% !important; object-fit: contain !important; background: #000; }
+html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-container { margin-top: 16px !important; }
 </style>
 <!-- بەڕێوەبەری فۆنتەکان -->
 <div id="kf-fonts-modal" class="custom-modal-overlay">
@@ -3810,6 +4323,8 @@ html.kf-wide:root body #move-modal #mvBox { margin: 0; width: 100% !important; }
 #move-modal .mv-row { display:flex; align-items:center; justify-content:space-between; gap:6px; font-size:11px; margin-top:6px; direction:ltr; }
 #move-modal .mv-row label { display:flex; align-items:center; gap:4px; }
 #move-modal .mv-row .tech-input { width:58px; }
+html.kf-wide:root body.editor-bg #preview-video, html.kf-wide:root body .custom-player-container video { height: calc(var(--kf-dvh, 1dvh) * 60) !important; max-height: calc(var(--kf-dvh, 1dvh) * 60) !important; min-height: 320px !important; width: 100% !important; object-fit: contain !important; background: #000; }
+html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-container { margin-top: 16px !important; }
 </style>
 <div id="move-modal" class="custom-modal-overlay">
     <div class="custom-modal-content" style="max-width: 440px; padding: 14px; max-height: calc(var(--kf-vh, 1vh) * 92); overflow-y: auto; overflow-x: hidden;">
@@ -5855,7 +6370,7 @@ async function executeRtlFix() {
                 } else if (targetFormat === 'ass') {
                     let header = '';
                     const assTitleName = file.name.replace(/\.[^/.]+$/, "") || 'Converted Subtitle';
-                    header = `[Script Info]\nTitle: ${assTitleName}\nScriptType: v4.00+\nWrapStyle: 0\nPlayResX: 1920\nPlayResY: 1080\nScaledBorderAndShadow: yes\n\n[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\nStyle: Default,Speda Bold,67,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,1.5,0,2,10,10,75,1\n\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n`;
+                    header = `[Script Info]\nTitle: ${assTitleName}\nScriptType: v4.00+\nWrapStyle: 0\nPlayResX: 1920\nPlayResY: 1080\nScaledBorderAndShadow: yes\n\n[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\nStyle: Default,Speda Bold,67,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,1.2,1.6,2,10,10,75,1\n\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n`;
                     
                     finalContent = header;
                     parsed.forEach(item => { 
@@ -7999,7 +8514,7 @@ function getDragLineStyle() {
     }
     return stylesMap[sName] || stylesMap['default'] || {
         fontname: 'KurdForest', fontsize: 45, primaryColor: '#FFFFFF', outlineColor: '#000000', shadowColor: '#000000',
-        bold: false, italic: false, outline: 1.5, shadow: 0, alignment: '2', marginL: 10, marginR: 10, marginV: 18,
+        bold: false, italic: false, outline: 1.2, shadow: 0.8, alignment: '2', marginL: 10, marginR: 10, marginV: 18,
         scaleX: 100, scaleY: 100, spacing: 0
     };
 }
@@ -9031,8 +9546,8 @@ function getAssStylesDictionary() {
                 shadowColor: parseAssColor(rawShadowColor, '#000000'),
                 bold: sObj.bold === '-1' || sObj.bold === '1',
                 italic: sObj.italic === '-1' || sObj.italic === '1',
-                outline: (sObj.outline !== undefined && sObj.outline !== '') ? parseFloat(sObj.outline) : 1.5,
-                shadow: (sObj.shadow !== undefined && sObj.shadow !== '') ? parseFloat(sObj.shadow) : 0,
+                outline: (sObj.outline !== undefined && sObj.outline !== '') ? parseFloat(sObj.outline) : 1.2,
+                shadow: (sObj.shadow !== undefined && sObj.shadow !== '') ? parseFloat(sObj.shadow) : 0.8,
                 alignment: sObj.alignment || '2',
                 marginL: isFinite(parseFloat(sObj.marginl)) ? parseFloat(sObj.marginl) : 10,
                 marginR: isFinite(parseFloat(sObj.marginr)) ? parseFloat(sObj.marginr) : 10,
@@ -9229,7 +9744,7 @@ var LibassRenderer = (function () {
         var r = (typeof getActiveScriptResolution === 'function') ? getActiveScriptResolution() : { resX: 1920, resY: 1080 };
         var defaultFontName = loadedCustomFont || 'Adobe Arabic';
 
-        return '[Script Info]\nScriptType: v4.00+\nWrapStyle: 0\nPlayResX: ' + r.resX + '\nPlayResY: ' + r.resY + '\nScaledBorderAndShadow: yes\n\n[V4+ Styles]\n' + DEF_STYLE_FORMAT + '\nStyle: Default,' + defaultFontName + ',67,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,1.5,0,2,10,10,20,1\n\n[Events]\n' + EVENT_FORMAT + '\n';
+        return '[Script Info]\nScriptType: v4.00+\nWrapStyle: 0\nPlayResX: ' + r.resX + '\nPlayResY: ' + r.resY + '\nScaledBorderAndShadow: yes\n\n[V4+ Styles]\n' + DEF_STYLE_FORMAT + '\nStyle: Default,' + defaultFontName + ',67,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,1.2,1.6,2,10,10,20,1\n\n[Events]\n' + EVENT_FORMAT + '\n';
     }
 
     function currentTextFor(i) {
@@ -9693,7 +10208,7 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,Speda Bold,67,&H00FFFFFF,&H000000FF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,1.5,0,2,10,10,75,1
+Style: Default,Speda Bold,67,&H00FFFFFF,&H000000FF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,1.2,1.6,2,10,10,75,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -10668,10 +11183,10 @@ async function executeMergeAssCore() {
 
     // پرێسێتی قسەکردن بەپێی ڕێزۆلوشن (هەمان ئەسڵییەکەی پێشوو)
     function getSpedaPreset(resY) {
-        if (resY >= 900) return { size: 67, marginV: 75, shadow: "0", outline: "1.5" }; // 1080p
-        if (resY >= 600) return { size: 45, marginV: 50, shadow: "0", outline: "1.0" }; // 720p
-        if (resY >= 400) return { size: 30, marginV: 33, shadow: "0", outline: "0.7" }; // 480p
-        return { size: 22, marginV: 25, shadow: "0", outline: "0.5" };                   // 360p
+        if (resY >= 900) return { size: 67, marginV: 75, shadow: "1.6", outline: "1.2" }; // 1080p
+        if (resY >= 600) return { size: 45, marginV: 50, shadow: "1.1", outline: "0.8" }; // 720p
+        if (resY >= 400) return { size: 30, marginV: 33, shadow: "0.7", outline: "0.5" }; // 480p
+        return { size: 22, marginV: 25, shadow: "0.5", outline: "0.4" };                   // 360p
     }
 
     // ناسینەوەی ستایلەکانی گفتوگۆ (هەمان ئەسڵییەکەی پێشوو)
@@ -11465,7 +11980,7 @@ var AssLayout = (function () {
         var key = String(styleName || 'default').replace(/^\*/, '').trim().toLowerCase();
         return (dict && (dict[key] || dict['default'])) || {
             fontname: 'KurdForest', fontsize: 45, primaryColor: '#FFFFFF', outlineColor: '#000000', shadowColor: '#000000',
-            bold: false, italic: false, outline: 1.5, shadow: 0, alignment: '2', marginL: 10, marginR: 10, marginV: 18,
+            bold: false, italic: false, outline: 1.2, shadow: 0.8, alignment: '2', marginL: 10, marginR: 10, marginV: 18,
             scaleX: 100, scaleY: 100, spacing: 0
         };
     }
@@ -11554,7 +12069,7 @@ var AssLayout = (function () {
     function baseState(style, sy, bs) {
         return {
             primary: style.primaryColor || '#FFFFFF', outline: style.outlineColor || '#000000', shadow: style.shadowColor || '#000000',
-            bord: nz(style.outline, 1.5), shad: nz(style.shadow, 0), blur: 0,
+            bord: nz(style.outline, 1.2), shad: nz(style.shadow, 0.8), blur: 0,
             bold: !!style.bold, italic: !!style.italic, fs: nz(style.fontsize, 45), fn: style.fontname || 'KurdForest',
             spacing: nz(style.spacing, 0), under: !!style.underline, strike: !!style.strikeout, alpha: 1, outA: 1, shadA: 1, p: 0
         };
@@ -11785,8 +12300,8 @@ var AssAnim = (function () {
         style = style || {};
         return {
             fs: nz(style.fontsize, 45), fsp: nz(style.spacing, 0), fscx: nz(style.scaleX, 100), fscy: nz(style.scaleY, 100),
-            frx: 0, fry: 0, frz: 0, fax: 0, fay: 0, bord: nz(style.outline, 1.5), xbord: null, ybord: null,
-            shad: nz(style.shadow, 0), xshad: null, yshad: null, blur: 0, be: 0,
+            frx: 0, fry: 0, frz: 0, fax: 0, fay: 0, bord: nz(style.outline, 1.2), xbord: null, ybord: null,
+            shad: nz(style.shadow, 0.8), xshad: null, yshad: null, blur: 0, be: 0,
             '1c': hex2rgb(style.primaryColor), '2c': hex2rgb(style.secondaryColor || '#FF0000'), '3c': hex2rgb(style.outlineColor), '4c': hex2rgb(style.shadowColor),
             alpha: 0, '1a': 0, '2a': 0, '3a': 0, '4a': 0, clip: null, res: res || { resX: 1920, resY: 1080 }
         };
@@ -14845,6 +15360,8 @@ html:root body .subtitle-orig {
     min-width: 0 !important;
 }
 html:root body .subtitle-card { min-width: 0; max-width: 100%; }
+html.kf-wide:root body.editor-bg #preview-video, html.kf-wide:root body .custom-player-container video { height: calc(var(--kf-dvh, 1dvh) * 60) !important; max-height: calc(var(--kf-dvh, 1dvh) * 60) !important; min-height: 320px !important; width: 100% !important; object-fit: contain !important; background: #000; }
+html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-container { margin-top: 16px !important; }
 </style>
 
 <style id="kf-shell-css">
@@ -15258,6 +15775,8 @@ html.kf-xl:root body.editor-bg #editor-screen[style*="block"] { grid-template-co
     }html.kf-xl:root body.editor-bg .subtitle-card .subtitle-time { font-size: 10.5px; line-height: 1.35; white-space: normal; word-break: break-all; }html.kf-xl:root body.editor-bg .subtitle-card > .subtitle-orig { grid-column: 2; grid-row: 1; margin: 0 !important; height: auto !important; font-size: 13px; padding: 6px 9px !important; }html.kf-xl:root body.editor-bg .subtitle-card > .subtitle-kurd { grid-column: 3; grid-row: 1; display: block !important; height: auto !important; }html.kf-xl:root body.editor-bg .subtitle-card > .subtitle-kurd textarea { min-height: 52px; font-size: 14px; padding: 6px 9px; }html.kf-xl:root body.editor-bg .subtitle-card > .subtitle-note { grid-column: 2 / -1; grid-row: 2; margin-top: 0; }
 
 html:root body.startup-bg .kf-hide-close { display: none !important; }
+html.kf-wide:root body.editor-bg #preview-video, html.kf-wide:root body .custom-player-container video { height: calc(var(--kf-dvh, 1dvh) * 60) !important; max-height: calc(var(--kf-dvh, 1dvh) * 60) !important; min-height: 320px !important; width: 100% !important; object-fit: contain !important; background: #000; }
+html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-container { margin-top: 16px !important; }
 </style>
 
 <script id="kf-shell-js">
@@ -15968,7 +16487,7 @@ else if (!exactWaiting) { exactWaiting = true; var inst = exact; kfWhenReady(ins
     // دەقەکە بە ستایلی ڕاستەقینەی فایلەکە (هەمان ڕێگای مۆداڵی ڕاکێشان)
     function buildText() {
         var s = screenSize(), W = s.W, H = s.H;
-        var style0 = (typeof getDragLineStyle === 'function') ? getDragLineStyle() : { fontname: 'KurdForest', fontsize: 45, primaryColor: '#FFFFFF', outlineColor: '#000000', shadowColor: '#000000', outline: 1.5, shadow: 1, alignment: '2', marginL: 10, marginR: 10, marginV: 18, scaleX: 100, scaleY: 100, spacing: 0 };
+        var style0 = (typeof getDragLineStyle === 'function') ? getDragLineStyle() : { fontname: 'KurdForest', fontsize: 45, primaryColor: '#FFFFFF', outlineColor: '#000000', shadowColor: '#000000', outline: 1.2, shadow: 0.8, alignment: '2', marginL: 10, marginR: 10, marginV: 18, scaleX: 100, scaleY: 100, spacing: 0 };
         var st = Object.assign({}, style0);
         if (mv.fs > 0) st.fontsize = mv.fs;
         var scaleRatio = H / mv.resY;
@@ -16250,6 +16769,8 @@ function bindScreen() {
 <style id="kf-rtl-btn-css">
 #btn-rtl-toggle{opacity:.45;color:var(--text-muted,#94a3b8);transition:all .2s}
 #btn-rtl-toggle.kf-rtl-on{opacity:1;color:var(--primary);border-color:var(--primary);background:color-mix(in srgb,var(--primary) 18%,transparent);box-shadow:0 0 12px var(--primary-glow,rgba(0,0,0,0))}
+html.kf-wide:root body.editor-bg #preview-video, html.kf-wide:root body .custom-player-container video { height: calc(var(--kf-dvh, 1dvh) * 60) !important; max-height: calc(var(--kf-dvh, 1dvh) * 60) !important; min-height: 320px !important; width: 100% !important; object-fit: contain !important; background: #000; }
+html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-container { margin-top: 16px !important; }
 </style>
 <style id="kf-guide-css">
 #kf-guide{position:fixed;inset:0;z-index:2100;display:none;flex-direction:column;background:linear-gradient(170deg,#121a2c 0%,#090d17 100%);color:#e2e8f0;direction:rtl;font-family:inherit}
@@ -16293,6 +16814,8 @@ function bindScreen() {
 .kg-nav{display:flex;justify-content:space-between;gap:10px;margin-top:10px}
 .kg-nav button{flex:1;padding:11px;border-radius:12px;font:inherit;font-weight:bold;font-size:13px;cursor:pointer;color:#e2e8f0;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16)}
 .kg-el svg.kgx{max-width:100%;height:auto}.kg-notes .t svg,.kg-feat li svg,.kg-intro svg{vertical-align:-3px;margin:0 2px}
+html.kf-wide:root body.editor-bg #preview-video, html.kf-wide:root body .custom-player-container video { height: calc(var(--kf-dvh, 1dvh) * 60) !important; max-height: calc(var(--kf-dvh, 1dvh) * 60) !important; min-height: 320px !important; width: 100% !important; object-fit: contain !important; background: #000; }
+html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-container { margin-top: 16px !important; }
 </style>
 
 <div id="kf-guide" aria-hidden="true">
@@ -16487,6 +17010,8 @@ var ICON='<svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24
 <style>
 #vDragScreenBox.kf-pend #vDraggableSubText .ass-blk { visibility: hidden; }
 #mvScreen.kf-pend .mv-txt, #mvScreen.kf-pend #mvGhostB { visibility: hidden; }
+html.kf-wide:root body.editor-bg #preview-video, html.kf-wide:root body .custom-player-container video { height: calc(var(--kf-dvh, 1dvh) * 60) !important; max-height: calc(var(--kf-dvh, 1dvh) * 60) !important; min-height: 320px !important; width: 100% !important; object-fit: contain !important; background: #000; }
+html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-container { margin-top: 16px !important; }
 </style>
 <script id="kf-libass-ready">
 /* ئەگەر libass چالاک بوو، پێش کردنەوەی دیاریکردنی شوێن / جوڵاندن ئامادەی دەکات و شێوەی کۆنی سادە پیشان نادات.
@@ -16512,5 +17037,400 @@ var ICON='<svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24
   wrap('openMoveModal', 'mvScreen');
 })();
 </script>
+
+<script id="kf-auth-js">
+(function() {
+  'use strict';
+  const OWNER = (typeof OWNER_EMAIL !== 'undefined') ? OWNER_EMAIL.toLowerCase() : '';
+  let currentUserData = null;
+  if (!window.auth || !window.db) {
+    // Firebase ڕێکنەخراوە — شاشەی هەژمار پاک دەهێڵینەوە
+    document.addEventListener('DOMContentLoaded', function() {
+      const s = document.getElementById('auth-screen');
+      if (s) {
+        s.classList.add('show');
+        document.body.classList.add('auth-locked');
+      }
+    });
+    return;
+  }
+
+  let msgTimer1, msgTimer2;
+  function msg(text, ok) {
+    const el = document.getElementById('auth-msg');
+    if (!el) return;
+    clearTimeout(msgTimer1); clearTimeout(msgTimer2);
+    el.className = 'auth-msg' + (ok ? ' ok' : '');
+    el.textContent = '';
+    if (!text) return;
+    void el.offsetWidth;
+    el.textContent = text;
+    msgTimer1 = setTimeout(() => {
+      el.classList.add('kf-out');
+      msgTimer2 = setTimeout(() => { el.textContent = ''; el.classList.remove('kf-out'); }, 320);
+    }, ok ? 3500 : 4800);
+  }
+  (function kfWaitingToast() {
+    const w = document.getElementById('auth-waiting');
+    if (!w || !window.MutationObserver) return;
+    let t1, t2;
+    new MutationObserver(() => {
+      if (w.style.display === 'none' || w.style.display === '') { clearTimeout(t1); clearTimeout(t2); w.classList.remove('kf-out'); return; }
+      clearTimeout(t1); clearTimeout(t2); w.classList.remove('kf-out');
+      t1 = setTimeout(() => { w.classList.add('kf-out'); t2 = setTimeout(() => { w.style.display = 'none'; }, 320); }, 6000);
+    }).observe(w, { attributes: true, attributeFilter: ['style'] });
+  })();
+
+  let authLoadingShownAt = Date.now();
+  let pendingAuthShow = null;
+  function hideAuthLoading() {
+    const l = document.getElementById('auth-loading');
+    if (!l || l.classList.contains('hide')) return;
+    const elapsed = Date.now() - authLoadingShownAt;
+    const minShow = 3000;
+    const delay = Math.max(0, minShow - elapsed);
+    setTimeout(() => {
+      l.classList.add('hide');
+      // After loading hides, show the auth screen if it was pending
+      if (pendingAuthShow !== null) {
+        const s = document.getElementById('auth-screen');
+        if (s) s.classList.toggle('show', pendingAuthShow);
+        document.body.classList.toggle('auth-locked', pendingAuthShow);
+        pendingAuthShow = null;
+      }
+    }, delay);
+  }
+  function showAuthScreen(show) {
+    const l = document.getElementById('auth-loading');
+    const stillLoading = l && !l.classList.contains('hide');
+    if (stillLoading) {
+      pendingAuthShow = !!show;
+      hideAuthLoading();
+      return;
+    }
+    const s = document.getElementById('auth-screen');
+    if (s) s.classList.toggle('show', !!show);
+    document.body.classList.toggle('auth-locked', !!show);
+  }
+
+  const KF_DIG = '٠١٢٣٤٥٦٧٨٩';
+  const kfNum = n => String(n).replace(/\d/g, d => KF_DIG[d]);
+  const kfEsc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  let ownerFilter = 'all';
+  window.kfOwnerFilter = function (f) {
+    ownerFilter = f;
+    document.querySelectorAll('.owner-stat').forEach(b => b.classList.toggle('active', b.dataset.f === f));
+    kfOwnerRender();
+  };
+  window.kfOwnerRender = function () {
+    const list = document.getElementById('owner-users-list');
+    const users = window.__kfOwnerUsers || [];
+    const cnt = { pending: 0, approved: 0 };
+    users.forEach(u => { if (u.status === 'approved') cnt.approved++; else if (u.status !== 'rejected') cnt.pending++; });
+    document.getElementById('os-pending').textContent = kfNum(cnt.pending);
+    document.getElementById('os-approved').textContent = kfNum(cnt.approved);
+    document.getElementById('os-all').textContent = kfNum(users.length);
+    const q = (document.getElementById('owner-search').value || '').trim().toLowerCase();
+    const rank = u => u.role === 'owner' ? 3 : (u.status === 'approved' ? 2 : (u.status === 'rejected' ? 1 : 0));
+    const rows = users.filter(u => {
+      const st = u.status === 'approved' ? 'approved' : (u.status === 'rejected' ? 'rejected' : 'pending');
+      if (ownerFilter !== 'all' && st !== ownerFilter) return false;
+      return !q || String(u.email || '').toLowerCase().includes(q);
+    }).sort((a, b) => rank(a) - rank(b));
+    if (!rows.length) {
+      list.innerHTML = '<div class="owner-empty">' + (users.length ? 'هیچ ئەنجامێک نەدۆزرایەوە' : 'هیچ بەکارهێنەرێک نییە') + '</div>';
+      return;
+    }
+    const ICON_OK = '<svg fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+    const ICON_NO = '<svg fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+    const CROWN = '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5L3 8z"/></svg>';
+    list.innerHTML = '';
+    rows.forEach(u => {
+      const st = u.status === 'approved' ? 'approved' : (u.status === 'rejected' ? 'rejected' : 'pending');
+      const stText = st === 'approved' ? 'قبووڵکراو' : st === 'rejected' ? 'ڕەتکراوە' : 'چاوەڕێ دەکات';
+      const isOwner = u.role === 'owner';
+      const id = kfEsc(u.id);
+      const row = document.createElement('div');
+      row.className = 'user-row is-' + st;
+      row.innerHTML = `
+        <div class="user-avatar">${kfEsc((u.email || '?').charAt(0))}</div>
+        <div class="user-info">
+          <div class="user-email">${kfEsc(u.email)}</div>
+          <div class="user-meta">
+            <span class="st-pill status-${st}">${stText}</span>
+            ${isOwner ? `<span class="owner-badge">${CROWN}ئۆنەر</span>` : ''}
+          </div>
+        </div>
+        <div class="user-actions">
+          ${!isOwner && st !== 'approved' ? `<button class="btn" onclick="kfAuth.approve('${id}')">${ICON_OK}قبووڵکردن</button>` : ''}
+          ${!isOwner && st !== 'rejected' ? `<button class="btn-outline danger" onclick="kfAuth.reject('${id}')">${ICON_NO}ڕەتکردنەوە</button>` : ''}
+        </div>`;
+      list.appendChild(row);
+    });
+  };
+
+  function kfFormIn(id) { const f = document.getElementById(id); if (!f) return; f.classList.remove('kf-in'); void f.offsetWidth; f.classList.add('kf-in'); }
+
+  window.kfAuth = {
+    showTab(tab) {
+      document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.auth-form').forEach(f => f.style.display = 'none');
+      const waiting = document.getElementById('auth-waiting');
+      if (waiting) waiting.style.display = 'none';
+      if (tab === 'login') {
+        document.querySelector('.auth-tab:nth-child(1)').classList.add('active');
+        document.getElementById('auth-login-form').style.display = 'flex';
+        kfFormIn('auth-login-form');
+      } else {
+        document.querySelector('.auth-tab:nth-child(2)').classList.add('active');
+        document.getElementById('auth-register-form').style.display = 'flex';
+        kfFormIn('auth-register-form');
+      }
+      msg('');
+    },
+
+    async login(e) {
+      e.preventDefault();
+      const email = document.getElementById('auth-email').value.trim().toLowerCase();
+      const pass = document.getElementById('auth-password').value;
+      msg('چاوەڕوان بە...');
+      try {
+        await auth.signInWithEmailAndPassword(email, pass);
+        // onAuthStateChanged will handle the rest
+      } catch (err) {
+        const errMap = {
+          'auth/user-not-found': 'ئەم ئیمەیڵە تۆمار نەکراوە',
+          'auth/wrong-password': 'تێپەڕوشە هەڵەیە',
+          'auth/invalid-credential': 'ئیمەیڵ یان تێپەڕوشە هەڵەیە',
+          'auth/invalid-email': 'ئیمەیڵەکە دروست نییە',
+          'auth/too-many-requests': 'زۆر هەوڵ دراوە، کەمێک چاوەڕێ بکە',
+          'auth/user-disabled': 'ئەم هەژمارە ناچالاک کراوە'
+        };
+        msg(errMap[err.code] || 'هەڵەیەک ڕوویدا، دووبارە هەوڵ بدەرەوە');
+      }
+    },
+
+    async register(e) {
+      e.preventDefault();
+      const email = document.getElementById('reg-email').value.trim().toLowerCase();
+      const p1 = document.getElementById('reg-password').value;
+      const p2 = document.getElementById('reg-password2').value;
+      if (p1 !== p2) { msg('تێپەڕوشەکان یەکسان نین'); return; }
+      if (p1.length < 8) { msg('تێپەڕوشە دەبێت لانیکەم ٨ پیت بێت'); return; }
+      msg('چاوەڕوان بە...');
+      try {
+        const cred = await auth.createUserWithEmailAndPassword(email, p1);
+        const uid = cred.user.uid;
+        const isOwner = email === OWNER;
+        await db.collection('users').doc(uid).set({
+          email: email,
+          role: isOwner ? 'owner' : 'user',
+          status: isOwner ? 'approved' : 'pending',
+          created: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        msg(isOwner ? 'ئۆنەر دروست کرا! چوونەژوورەوە...' : 'هەژمار دروست کرا. چاوەڕێی قبووڵکردنی ئۆنەر بە.', true);
+        if (!isOwner) {
+          document.getElementById('auth-waiting').style.display = 'block';
+        }
+      } catch (err) {
+        const rErrMap = {
+          'auth/email-already-in-use': 'ئەم ئیمەیڵە پێشتر بەکارهاتووە',
+          'auth/weak-password': 'تێپەڕوشە زۆر لاوازە (لانیکەم ٨ پیت)',
+          'auth/invalid-email': 'ئیمەیڵەکە دروست نییە'
+        };
+        msg(rErrMap[err.code] || 'نەتوانرا هەژمار دروست بکرێت');
+      }
+    },
+
+    async loginWithGoogle() {
+      msg('چاوەڕوان بە...');
+      try {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: 'select_account' });
+        const result = await auth.signInWithPopup(provider);
+        const user = result.user;
+        // Create user doc if not exists
+        const docRef = db.collection('users').doc(user.uid);
+        const doc = await docRef.get();
+        if (!doc.exists) {
+          const isOwner = user.email.toLowerCase() === OWNER;
+          await docRef.set({
+            email: user.email.toLowerCase(),
+            role: isOwner ? 'owner' : 'user',
+            status: isOwner ? 'approved' : 'pending',
+            created: firebase.firestore.FieldValue.serverTimestamp(),
+            provider: 'google'
+          });
+          if (!isOwner) {
+            msg('هەژمار دروست کرا. چاوەڕێی قبووڵکردنی ئۆنەر بە.', true);
+          }
+        }
+        // onAuthStateChanged will handle the rest
+      } catch (err) {
+        if (err.code === 'auth/popup-closed-by-user') {
+          msg('');
+        } else if (err.code === 'auth/popup-blocked') {
+          msg('پەنجەرەی گووگڵ بلۆک کرا. تکایە popup ڕێگە بدە.');
+        } else {
+          const gErrMap = {
+            'auth/popup-closed-by-user': '',
+            'auth/popup-blocked': 'پەنجەرەی گووگڵ بلۆک کرا، ڕێگەی popup بدە',
+            'auth/cancelled-popup-request': '',
+            'auth/network-request-failed': 'پەیوەندی ئینتەرنێت نییە'
+          };
+          msg(gErrMap[err.code] !== undefined ? gErrMap[err.code] : 'هەڵە لە چوونەژوورەوە بە گووگڵ');
+        }
+      }
+    },
+
+    async forgotPassword() {
+      const email = (document.getElementById('auth-email').value || document.getElementById('reg-email').value || '').trim().toLowerCase();
+      if (!email) { msg('تکایە ئیمەیڵەکەت بنووسە'); return; }
+      msg('کۆد/لینک دەنێردرێت...');
+      try {
+        await auth.sendPasswordResetEmail(email);
+        msg('لینکی گۆڕینی تێپەڕوشە بۆ جیمێڵەکەت نێردرا. تکایە سەیری ئیمەیڵەکەت بکە (لە Spam ـیش بگەڕێ).', true);
+      } catch (err) {
+        const fErrMap = {
+          'auth/user-not-found': 'ئەم ئیمەیڵە تۆمار نەکراوە',
+          'auth/invalid-email': 'ئیمەیڵەکە دروست نییە'
+        };
+        msg(fErrMap[err.code] || 'نەتوانرا لینک بنێردرێت');
+      }
+    },
+
+    async loadUserData(user) {
+      if (!user) {
+        currentUserData = null;
+        showAuthScreen(true);
+        return;
+      }
+      try {
+        const doc = await db.collection('users').doc(user.uid).get();
+        if (!doc.exists) {
+          // Create if missing (edge case)
+          const isOwner = user.email.toLowerCase() === OWNER;
+          await db.collection('users').doc(user.uid).set({
+            email: user.email.toLowerCase(),
+            role: isOwner ? 'owner' : 'user',
+            status: isOwner ? 'approved' : 'pending',
+            created: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          currentUserData = { email: user.email, role: isOwner ? 'owner' : 'user', status: isOwner ? 'approved' : 'pending' };
+        } else {
+          currentUserData = doc.data();
+        }
+        const waitingEl = document.getElementById('auth-waiting');
+        if (currentUserData.status !== 'approved') {
+          showAuthScreen(true);
+          if (waitingEl) waitingEl.style.display = 'block';
+          msg('هەژمارەکەت هێشتا قبووڵ نەکراوە لەلایەن ئۆنەرەوە.');
+          return;
+        }
+        if (waitingEl) waitingEl.style.display = 'none';
+        // Approved
+        hideAuthLoading();
+        showAuthScreen(false);
+        localStorage.setItem('kf_active_username', user.email);
+        document.querySelectorAll('[data-kf-owner]').forEach(el => el.remove());
+        if (currentUserData.role === 'owner') {
+          injectOwnerButton();
+        } else {
+          injectLogoutOnly();
+        }
+        // Trigger any existing startup logic if needed
+        if (typeof kfReveal === 'function') {} // already handled
+      } catch (err) {
+        console.error(err);
+        msg('هەڵە لە بارکردنی زانیاری هەژمار');
+        showAuthScreen(true);
+      }
+    },
+
+    async openOwnerPanel() {
+      if (!currentUserData || currentUserData.role !== 'owner') return;
+      const list = document.getElementById('owner-users-list');
+      list.innerHTML = '<div class="owner-skel"></div><div class="owner-skel"></div><div class="owner-skel"></div>';
+      document.getElementById('owner-panel').style.display = 'flex';
+      try {
+        const snap = await db.collection('users').orderBy('created', 'desc').get();
+        window.__kfOwnerUsers = [];
+        snap.forEach(doc => window.__kfOwnerUsers.push(Object.assign({ id: doc.id }, doc.data())));
+        kfOwnerRender();
+      } catch (err) {
+        list.innerHTML = '<div class="owner-empty" style="color:#fca5a5;">هەڵە لە بارکردنی لیست</div>';
+      }
+    },
+
+    closeOwnerPanel() {
+      document.getElementById('owner-panel').style.display = 'none';
+    },
+
+    async approve(uid) {
+      await db.collection('users').doc(uid).update({ status: 'approved' });
+      this.openOwnerPanel();
+    },
+
+    async reject(uid) {
+      await db.collection('users').doc(uid).update({ status: 'rejected' });
+      this.openOwnerPanel();
+    },
+
+    logout() {
+      auth.signOut();
+      localStorage.removeItem('kf_active_username');
+      // لابردنی دوگمەی ئۆنەر
+      document.querySelectorAll('[data-kf-owner]').forEach(el => el.remove());
+      try { if (window.kfNav && kfNav.closeDrawer) kfNav.closeDrawer(); } catch(e) {}
+      document.body.classList.add('auth-locked');
+      document.body.classList.remove('editor-bg');
+      document.body.classList.add('startup-bg');
+      showAuthScreen(true);
+      const ae = document.getElementById('auth-email'); if (ae) ae.value = '';
+      const ap = document.getElementById('auth-password'); if (ap) ap.value = '';
+      const waiting = document.getElementById('auth-waiting'); if (waiting) waiting.style.display = 'none';
+      msg('');
+    }
+  };
+
+  function injectLogoutOnly() {
+    ['kf-drawer-list', 'kf-tabs'].forEach(hostId => {
+      const host = document.getElementById(hostId);
+      if (!host || host.querySelector('[data-kf-logout]')) return;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'kf-item';
+      btn.setAttribute('data-kf-logout', '1');
+      btn.innerHTML = '<svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg><span>دەرچوون</span>';
+      btn.onclick = () => kfAuth.logout();
+      host.appendChild(btn);
+    });
+  }
+  function injectOwnerButton() {
+    injectLogoutOnly();
+    ['kf-drawer-list', 'kf-tabs'].forEach(hostId => {
+      const host = document.getElementById(hostId);
+      if (!host || host.querySelector('[data-kf-owner]')) return;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'kf-item';
+      btn.setAttribute('data-kf-owner', '1');
+      btn.innerHTML = '<svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M12 3l7.5 3v5.5c0 4.6-3.1 8.2-7.5 9.5-4.4-1.3-7.5-4.9-7.5-9.5V6L12 3zM9 12l2.2 2.2L15.5 10"/></svg><span>بەڕێوەبردنی بەکارهێنەران</span>';
+      btn.onclick = () => kfAuth.openOwnerPanel();
+      const logoutBtn = host.querySelector('[data-kf-logout]');
+      if (logoutBtn) host.insertBefore(btn, logoutBtn);
+      else host.appendChild(btn);
+    });
+  }
+
+  // Auth state listener
+  auth.onAuthStateChanged(user => {
+    kfAuth.loadUserData(user);
+  });
+
+  // Initial: چاوەڕێی onAuthStateChanged دەکەین تا شاشەی چوونەژوورەوە بە هەڵە دەرنەکەوێت
+})();
+</script>
+
 </body>
 </html>

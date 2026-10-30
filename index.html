@@ -17276,9 +17276,15 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
             'auth/popup-closed-by-user': '',
             'auth/popup-blocked': 'پەنجەرەی گووگڵ بلۆک کرا، ڕێگەی popup بدە',
             'auth/cancelled-popup-request': '',
-            'auth/network-request-failed': 'پەیوەندی ئینتەرنێت نییە'
+            'auth/network-request-failed': 'پەیوەندی ئینتەرنێت نییە',
+            'auth/unauthorized-domain': 'ئەم ماڵپەڕە (' + location.hostname + ') لە Firebase ڕێگەپێدراو نییە. لە Firebase Console > Authentication > Settings > Authorized domains زیادی بکە.',
+            'auth/operation-not-allowed': 'چوونەژوورەوە بە گووگڵ لە Firebase Console چالاک نەکراوە.'
           };
-          msg(gErrMap[err.code] !== undefined ? gErrMap[err.code] : 'هەڵە لە چوونەژوورەوە بە گووگڵ');
+          if (err.code === 'auth/operation-not-supported-in-this-environment' || err.code === 'auth/web-storage-unsupported') {
+            try { await auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider()); return; } catch (e2) { err = e2; }
+          }
+          console.error('Google login error:', err.code, err.message);
+          msg(gErrMap[err.code] !== undefined ? gErrMap[err.code] : 'هەڵە لە چوونەژوورەوە بە گووگڵ (' + (err.code || '') + ')');
         }
       }
     },

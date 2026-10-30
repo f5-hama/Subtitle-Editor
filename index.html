@@ -17312,7 +17312,15 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
         return;
       }
       try {
-        const doc = await db.collection('users').doc(user.uid).get();
+        let doc;
+        try {
+          doc = await db.collection('users').doc(user.uid).get();
+        } catch (netErr) {
+          // ئینتەرنێت نییە: زانیاری پاشەکەوتکراوی هەژمار بەکاربهێنە
+          const cached = JSON.parse(localStorage.getItem('kf_user_cache_' + user.uid) || 'null');
+          if (!cached) throw netErr;
+          doc = { exists: true, data: () => cached };
+        }
         if (!doc.exists) {
           // Create if missing (edge case)
           const isOwner = user.email.toLowerCase() === OWNER;
@@ -17326,6 +17334,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
         } else {
           currentUserData = doc.data();
         }
+        try { localStorage.setItem('kf_user_cache_' + user.uid, JSON.stringify({ email: currentUserData.email, role: currentUserData.role, status: currentUserData.status })); } catch(e) {}
         const waitingEl = document.getElementById('auth-waiting');
         if (currentUserData.status !== 'approved') {
           showAuthScreen(true);
@@ -17383,6 +17392,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
     },
 
     logout() {
+      try { if (auth.currentUser) localStorage.removeItem('kf_user_cache_' + auth.currentUser.uid); } catch(e) {}
       auth.signOut();
       localStorage.removeItem('kf_active_username');
       // لابردنی دوگمەی ئۆنەر

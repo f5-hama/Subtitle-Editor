@@ -5855,7 +5855,7 @@ async function executeRtlFix() {
                 } else if (targetFormat === 'ass') {
                     let header = '';
                     const assTitleName = file.name.replace(/\.[^/.]+$/, "") || 'Converted Subtitle';
-                    header = `[Script Info]\nTitle: ${assTitleName}\nScriptType: v4.00+\nWrapStyle: 0\nPlayResX: 1920\nPlayResY: 1080\nScaledBorderAndShadow: yes\n\n[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\nStyle: Default,Speda Bold,67,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,1.5,2.0,2,10,10,75,1\n\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n`;
+                    header = `[Script Info]\nTitle: ${assTitleName}\nScriptType: v4.00+\nWrapStyle: 0\nPlayResX: 1920\nPlayResY: 1080\nScaledBorderAndShadow: yes\n\n[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\nStyle: Default,Speda Bold,67,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,1.5,0,2,10,10,75,1\n\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n`;
                     
                     finalContent = header;
                     parsed.forEach(item => { 
@@ -7999,7 +7999,7 @@ function getDragLineStyle() {
     }
     return stylesMap[sName] || stylesMap['default'] || {
         fontname: 'KurdForest', fontsize: 45, primaryColor: '#FFFFFF', outlineColor: '#000000', shadowColor: '#000000',
-        bold: false, italic: false, outline: 1.5, shadow: 1.0, alignment: '2', marginL: 10, marginR: 10, marginV: 18,
+        bold: false, italic: false, outline: 1.5, shadow: 0, alignment: '2', marginL: 10, marginR: 10, marginV: 18,
         scaleX: 100, scaleY: 100, spacing: 0
     };
 }
@@ -9032,7 +9032,7 @@ function getAssStylesDictionary() {
                 bold: sObj.bold === '-1' || sObj.bold === '1',
                 italic: sObj.italic === '-1' || sObj.italic === '1',
                 outline: (sObj.outline !== undefined && sObj.outline !== '') ? parseFloat(sObj.outline) : 1.5,
-                shadow: (sObj.shadow !== undefined && sObj.shadow !== '') ? parseFloat(sObj.shadow) : 1.0,
+                shadow: (sObj.shadow !== undefined && sObj.shadow !== '') ? parseFloat(sObj.shadow) : 0,
                 alignment: sObj.alignment || '2',
                 marginL: isFinite(parseFloat(sObj.marginl)) ? parseFloat(sObj.marginl) : 10,
                 marginR: isFinite(parseFloat(sObj.marginr)) ? parseFloat(sObj.marginr) : 10,
@@ -9229,7 +9229,7 @@ var LibassRenderer = (function () {
         var r = (typeof getActiveScriptResolution === 'function') ? getActiveScriptResolution() : { resX: 1920, resY: 1080 };
         var defaultFontName = loadedCustomFont || 'Adobe Arabic';
 
-        return '[Script Info]\nScriptType: v4.00+\nWrapStyle: 0\nPlayResX: ' + r.resX + '\nPlayResY: ' + r.resY + '\nScaledBorderAndShadow: yes\n\n[V4+ Styles]\n' + DEF_STYLE_FORMAT + '\nStyle: Default,' + defaultFontName + ',67,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,1.5,2.0,2,10,10,20,1\n\n[Events]\n' + EVENT_FORMAT + '\n';
+        return '[Script Info]\nScriptType: v4.00+\nWrapStyle: 0\nPlayResX: ' + r.resX + '\nPlayResY: ' + r.resY + '\nScaledBorderAndShadow: yes\n\n[V4+ Styles]\n' + DEF_STYLE_FORMAT + '\nStyle: Default,' + defaultFontName + ',67,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,1.5,0,2,10,10,20,1\n\n[Events]\n' + EVENT_FORMAT + '\n';
     }
 
     function currentTextFor(i) {
@@ -9693,7 +9693,7 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,Speda Bold,67,&H00FFFFFF,&H000000FF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,1.5,2,2,10,10,75,1
+Style: Default,Speda Bold,67,&H00FFFFFF,&H000000FF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,1.5,0,2,10,10,75,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -10668,10 +10668,10 @@ async function executeMergeAssCore() {
 
     // پرێسێتی قسەکردن بەپێی ڕێزۆلوشن (هەمان ئەسڵییەکەی پێشوو)
     function getSpedaPreset(resY) {
-        if (resY >= 900) return { size: 67, marginV: 75, shadow: "2.0", outline: "1.5" }; // 1080p
-        if (resY >= 600) return { size: 45, marginV: 50, shadow: "1.3", outline: "1.0" }; // 720p
-        if (resY >= 400) return { size: 30, marginV: 33, shadow: "0.9", outline: "0.7" }; // 480p
-        return { size: 22, marginV: 25, shadow: "0.7", outline: "0.5" };                   // 360p
+        if (resY >= 900) return { size: 67, marginV: 75, shadow: "0", outline: "1.5" }; // 1080p
+        if (resY >= 600) return { size: 45, marginV: 50, shadow: "0", outline: "1.0" }; // 720p
+        if (resY >= 400) return { size: 30, marginV: 33, shadow: "0", outline: "0.7" }; // 480p
+        return { size: 22, marginV: 25, shadow: "0", outline: "0.5" };                   // 360p
     }
 
     // ناسینەوەی ستایلەکانی گفتوگۆ (هەمان ئەسڵییەکەی پێشوو)
@@ -11465,7 +11465,7 @@ var AssLayout = (function () {
         var key = String(styleName || 'default').replace(/^\*/, '').trim().toLowerCase();
         return (dict && (dict[key] || dict['default'])) || {
             fontname: 'KurdForest', fontsize: 45, primaryColor: '#FFFFFF', outlineColor: '#000000', shadowColor: '#000000',
-            bold: false, italic: false, outline: 1.5, shadow: 1.0, alignment: '2', marginL: 10, marginR: 10, marginV: 18,
+            bold: false, italic: false, outline: 1.5, shadow: 0, alignment: '2', marginL: 10, marginR: 10, marginV: 18,
             scaleX: 100, scaleY: 100, spacing: 0
         };
     }
@@ -11554,7 +11554,7 @@ var AssLayout = (function () {
     function baseState(style, sy, bs) {
         return {
             primary: style.primaryColor || '#FFFFFF', outline: style.outlineColor || '#000000', shadow: style.shadowColor || '#000000',
-            bord: nz(style.outline, 1.5), shad: nz(style.shadow, 1.0), blur: 0,
+            bord: nz(style.outline, 1.5), shad: nz(style.shadow, 0), blur: 0,
             bold: !!style.bold, italic: !!style.italic, fs: nz(style.fontsize, 45), fn: style.fontname || 'KurdForest',
             spacing: nz(style.spacing, 0), under: !!style.underline, strike: !!style.strikeout, alpha: 1, outA: 1, shadA: 1, p: 0
         };
@@ -11786,7 +11786,7 @@ var AssAnim = (function () {
         return {
             fs: nz(style.fontsize, 45), fsp: nz(style.spacing, 0), fscx: nz(style.scaleX, 100), fscy: nz(style.scaleY, 100),
             frx: 0, fry: 0, frz: 0, fax: 0, fay: 0, bord: nz(style.outline, 1.5), xbord: null, ybord: null,
-            shad: nz(style.shadow, 1), xshad: null, yshad: null, blur: 0, be: 0,
+            shad: nz(style.shadow, 0), xshad: null, yshad: null, blur: 0, be: 0,
             '1c': hex2rgb(style.primaryColor), '2c': hex2rgb(style.secondaryColor || '#FF0000'), '3c': hex2rgb(style.outlineColor), '4c': hex2rgb(style.shadowColor),
             alpha: 0, '1a': 0, '2a': 0, '3a': 0, '4a': 0, clip: null, res: res || { resX: 1920, resY: 1080 }
         };

@@ -1790,6 +1790,8 @@ if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY") {
 .owner-stat span { font-size: 11.5px; color: var(--text-muted); }
 .kf-pend-badge{position:absolute;top:4px;right:6px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#fbbf24;color:#111;font-size:11px;font-weight:800;align-items:center;justify-content:center;line-height:1;box-shadow:0 0 0 2px rgba(15,23,42,.9)}
 [data-kf-owner]{position:relative}
+#kf-menu-btn{position:relative;--kf-pending-yellow:oklch(0.83 0.16 85)}
+.kf-menu-pend-dot{position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%;background:var(--kf-pending-yellow);pointer-events:none}
 .owner-stat.s-pending b { color: #fbbf24; }
 .owner-stat.s-approved b { color: var(--success); }
 .owner-stat.s-all b { color: #e2e8f0; }
@@ -2002,9 +2004,9 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
       <div class="owner-panel-sub">تەنها ئۆنەر دەتوانێت قبووڵ یان ڕەت بکاتەوە</div>
     </div>
     <div class="owner-stats">
-      <button type="button" class="owner-stat s-pending" data-f="pending" onclick="kfOwnerFilter('pending')"><b id="os-pending">٠</b><span>چاوەڕێکەر</span></button>
-      <button type="button" class="owner-stat s-approved" data-f="approved" onclick="kfOwnerFilter('approved')"><b id="os-approved">٠</b><span>قبووڵکراو</span></button>
-      <button type="button" class="owner-stat s-all active" data-f="all" onclick="kfOwnerFilter('all')"><b id="os-all">٠</b><span>هەموو</span></button>
+      <button type="button" class="owner-stat s-pending" data-f="pending" onclick="kfOwnerFilter('pending')"><b id="os-pending">0</b><span>چاوەڕێکەر</span></button>
+      <button type="button" class="owner-stat s-approved" data-f="approved" onclick="kfOwnerFilter('approved')"><b id="os-approved">0</b><span>قبووڵکراو</span></button>
+      <button type="button" class="owner-stat s-all active" data-f="all" onclick="kfOwnerFilter('all')"><b id="os-all">0</b><span>هەموو</span></button>
     </div>
     <div class="owner-search">
       <svg fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
@@ -2033,6 +2035,7 @@ function kfTogglePw(btn){
     <div id="kf-shell">
         <header id="kf-bar">
             <button type="button" id="kf-menu-btn" class="kf-bar-btn" aria-label="مێنیو" aria-expanded="false" onclick="kfNav.toggleDrawer()">
+                <span class="kf-menu-pend-dot" data-kf-menu-pend style="display:none" aria-hidden="true"></span>
                 <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M4 6h16M4 12h16M4 18h16"/></svg>
             </button>
             <div class="kf-bar-center"><div id="welcome-msg">بەخێربێیت!</div><span id="kf-sec-title"></span></div>
@@ -17115,8 +17118,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
     document.body.classList.toggle('auth-locked', !!show);
   }
 
-  const KF_DIG = '٠١٢٣٤٥٦٧٨٩';
-  const kfNum = n => String(n).replace(/\d/g, d => KF_DIG[d]);
+  const kfNum = n => String(n);
   const kfEsc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let ownerFilter = 'all';
   window.kfOwnerFilter = function (f) {
@@ -17399,6 +17401,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
       try { if (auth.currentUser) localStorage.removeItem('kf_user_cache_' + auth.currentUser.uid); } catch(e) {}
       auth.signOut();
       localStorage.removeItem('kf_active_username');
+      if (window.kfSetPendingBadge) kfSetPendingBadge(0);
       // لابردنی دوگمەی ئۆنەر
       document.querySelectorAll('[data-kf-owner]').forEach(el => el.remove());
       try { if (window.kfNav && kfNav.closeDrawer) kfNav.closeDrawer(); } catch(e) {}
@@ -17444,22 +17447,20 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
   }
 
   window.kfSetPendingBadge = function (n) {
+    document.querySelectorAll('[data-kf-menu-pend]').forEach(dot => {
+      dot.style.display = n > 0 ? 'block' : 'none';
+    });
     document.querySelectorAll('[data-kf-pend]').forEach(b => {
       b.textContent = kfNum(n);
       b.style.display = n > 0 ? 'inline-flex' : 'none';
     });
   };
-  let kfPendNotified = false;
   async function kfCheckPending() {
     try {
       const snap = await db.collection('users').get();
       let n = 0;
       snap.forEach(d => { const u = d.data(); if (u.role !== 'owner' && u.status !== 'approved' && u.status !== 'rejected') n++; });
       kfSetPendingBadge(n);
-      if (n > 0 && !kfPendNotified) {
-        kfPendNotified = true;
-        setTimeout(() => { if (typeof showToast === 'function') showToast(kfNum(n) + ' بەکارهێنەر چاوەڕێی قبووڵکردنن', 'warning'); }, 1200);
-      }
     } catch (e) {}
   }
 

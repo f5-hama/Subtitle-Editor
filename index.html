@@ -1533,6 +1533,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check-compat.js"></script>
 <script>
 // ===== ڕێکخستنی Firebase =====
 // پێویستە لە Firebase Console پرۆژەیەک دروست بکەیت و Auth (Email/Password) و Firestore چالاک بکەیت
@@ -1551,6 +1552,7 @@ const OWNER_EMAIL = "stankurd357@gmail.com"; // <-- لێرە ئیمەیڵی خۆ
 
 if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY") {
   firebase.initializeApp(firebaseConfig);
+  try { firebase.appCheck().activate(new firebase.appCheck.ReCaptchaEnterpriseProvider('6LeY8wouAAAAAOen3ArIP06RCT_mZ8sZvCxKYuzf'), true); } catch (e) { console.warn('App Check init failed', e); }
   window.auth = firebase.auth();
   window.db = firebase.firestore();
 } else {

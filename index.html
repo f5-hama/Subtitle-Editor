@@ -1560,6 +1560,85 @@ if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY") {
 }
 </script>
 
+
+<style id="kf-profile-css">
+/* ===== پڕۆفایلی بەکارهێنەر لە مێنیوی مۆبایل ===== */
+#kf-drawer .kf-drawer-head.kf-prof-head {
+  height: auto; min-height: 0; padding: 14px 18px 14px 12px; gap: 10px;
+  border-bottom: 1px solid rgba(255,255,255,.09);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--primary, #8EB69B) 9%, transparent), transparent);
+}
+#kf-drawer .kf-prof {
+  flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 12px;
+  background: none; border: 0; padding: 4px; margin: -4px; border-radius: 16px;
+  color: inherit; font: inherit; text-align: start; cursor: pointer;
+  -webkit-tap-highlight-color: transparent; transition: background .2s;
+}
+#kf-drawer .kf-prof:active { background: rgba(255,255,255,.06); }
+#kf-drawer .kf-prof:focus-visible { outline: 2px solid var(--primary, #8EB69B); outline-offset: 2px; }
+.kf-av {
+  position: relative; flex: 0 0 auto; width: 56px; height: 56px; border-radius: 50%;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--primary, #8EB69B) 55%, #0b101c), color-mix(in srgb, var(--primary, #8EB69B) 18%, #0b101c));
+  box-shadow: 0 0 0 2px #0b101c, 0 0 0 4px var(--primary, #8EB69B), 0 0 22px var(--primary-glow, rgba(142,182,155,.35));
+  display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 22px; line-height: 1;
+}
+.kf-av img { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: none; }
+.kf-av.has-img img { display: block; }
+.kf-av.has-img .kf-av-ini { display: none; }
+.kf-av-badge {
+  position: absolute; left: -3px; bottom: -3px; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--primary, #8EB69B); color: #0b101c; display: grid; place-items: center;
+  box-shadow: 0 0 0 2px #0b101c;
+}
+.kf-av-badge svg { width: 12px; height: 12px; }
+.kf-prof-txt { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.kf-prof-name { font-size: 16px; font-weight: 800; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kf-prof-mail { font-size: 11px; color: #94a3b8; direction: ltr; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* پەنجەرەی دەستکاریکردن */
+#kf-prof-sheet { position: fixed; inset: 0; z-index: 2200; display: none; }
+#kf-prof-sheet.show { display: block; }
+.kf-ps-back { position: absolute; inset: 0; background: rgba(2,4,10,.66); opacity: 0; transition: opacity .25s ease; }
+#kf-prof-sheet.in .kf-ps-back { opacity: 1; }
+.kf-ps-card {
+  position: absolute; left: 0; right: 0; bottom: 0; margin: 0 auto; width: min(100%, 440px); box-sizing: border-box;
+  padding: 22px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(170deg, #1a2238 0%, #0d1220 100%);
+  border: 1px solid rgba(255,255,255,.12); border-bottom: 0; border-radius: 26px 26px 0 0;
+  box-shadow: 0 -20px 60px rgba(0,0,0,.55);
+  transform: translateY(100%); transition: transform .38s cubic-bezier(.22,.9,.3,1);
+  display: flex; flex-direction: column; align-items: stretch; gap: 16px;
+}
+#kf-prof-sheet.in .kf-ps-card { transform: none; }
+.kf-ps-grip { width: 38px; height: 4px; border-radius: 4px; background: rgba(255,255,255,.2); margin: -10px auto 0; }
+.kf-ps-title { font-size: 17px; font-weight: 800; color: var(--primary, #8EB69B); text-align: center; }
+.kf-ps-photo { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.kf-ps-photo .kf-av { width: 96px; height: 96px; font-size: 38px; }
+.kf-ps-photo-actions { display: flex; gap: 8px; align-items: center; }
+.kf-ps-link {
+  background: transparent; border: 1px solid rgba(255,255,255,.16); color: #e2e8f0; font: inherit; font-size: 13px; font-weight: 700;
+  padding: 8px 14px; border-radius: 12px; cursor: pointer; transition: background .2s, border-color .2s;
+}
+.kf-ps-link:hover { background: rgba(255,255,255,.07); }
+.kf-ps-link.danger { color: #fca5a5; border-color: rgba(252,165,165,.3); }
+.kf-ps-field { display: flex; flex-direction: column; gap: 7px; }
+.kf-ps-field label { font-size: 12.5px; font-weight: 700; color: #94a3b8; }
+.kf-ps-field input {
+  width: 100%; box-sizing: border-box; padding: 13px 14px; border-radius: 14px; font: inherit; font-size: 15px; font-weight: 700;
+  background: rgba(0,0,0,.28); color: #fff; border: 1.5px solid rgba(255,255,255,.14); outline: none; transition: border-color .2s, box-shadow .2s;
+}
+.kf-ps-field input:focus { border-color: var(--primary, #8EB69B); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary, #8EB69B) 22%, transparent); }
+.kf-ps-note { font-size: 11.5px; color: #7c8aa3; line-height: 1.8; text-align: center; margin: -4px 0 0; }
+.kf-ps-msg { min-height: 18px; font-size: 12.5px; font-weight: 700; text-align: center; color: #fca5a5; }
+.kf-ps-msg.ok { color: var(--primary, #8EB69B); }
+.kf-ps-btns { display: flex; gap: 10px; }
+.kf-ps-btn { flex: 1; padding: 13px 10px; border-radius: 14px; font: inherit; font-size: 15px; font-weight: 800; cursor: pointer; border: 1.5px solid transparent; transition: filter .2s, background .2s; }
+.kf-ps-btn.primary { background: var(--primary, #8EB69B); color: #0b101c; }
+.kf-ps-btn.primary:hover { filter: brightness(1.08); }
+.kf-ps-btn.ghost { background: transparent; color: #e2e8f0; border-color: rgba(255,255,255,.16); flex: 0 0 34%; }
+.kf-ps-btn[disabled] { opacity: .55; cursor: default; }
+@media (prefers-reduced-motion: reduce) { .kf-ps-card, .kf-ps-back { transition: none; } }
+</style>
 </head>
 <body class="startup-bg auth-locked">
 
@@ -2044,8 +2123,13 @@ function kfTogglePw(btn){
         </header>
         <div id="kf-scrim" onclick="kfNav.closeDrawer()"></div>
         <aside id="kf-drawer" aria-hidden="true">
-            <div class="kf-drawer-head">
-                <div class="kf-drawer-title">مێنیو</div>
+            <div class="kf-drawer-head kf-prof-head">
+                <button type="button" class="kf-prof" id="kf-prof-btn" aria-label="دەستکاریکردنی پڕۆفایل" onclick="kfProfile.open()">
+                    <span class="kf-av" id="kf-prof-av"><img alt="" referrerpolicy="no-referrer"><span class="kf-av-ini">؟</span>
+                        <span class="kf-av-badge" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span>
+                    </span>
+                    <span class="kf-prof-txt"><span class="kf-prof-name" id="kf-prof-name">بەکارهێنەر</span><span class="kf-prof-mail" id="kf-prof-mail"></span></span>
+                </button>
                 <button type="button" class="kf-bar-btn" aria-label="داخستن" onclick="kfNav.closeDrawer()">
                     <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M18 6 6 18M6 6l12 12"/></svg>
                 </button>
@@ -17473,5 +17557,157 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
 })();
 </script>
 
+
+<div id="kf-prof-sheet" role="dialog" aria-modal="true" aria-labelledby="kf-ps-title" aria-hidden="true">
+  <div class="kf-ps-back" onclick="kfProfile.close()"></div>
+  <div class="kf-ps-card">
+    <div class="kf-ps-grip"></div>
+    <div class="kf-ps-title" id="kf-ps-title">پڕۆفایل</div>
+    <div class="kf-ps-photo">
+      <div class="kf-av" id="kf-ps-av"><img alt="" referrerpolicy="no-referrer"><span class="kf-av-ini">؟</span></div>
+      <div class="kf-ps-photo-actions">
+        <button type="button" class="kf-ps-link" onclick="document.getElementById('kf-ps-file').click()">گۆڕینی وێنە</button>
+        <button type="button" class="kf-ps-link danger" id="kf-ps-remove" onclick="kfProfile.removePhoto()">لابردنی وێنە</button>
+      </div>
+      <input type="file" id="kf-ps-file" accept="image/*" hidden>
+    </div>
+    <div class="kf-ps-field">
+      <label for="kf-ps-name">ناو</label>
+      <input type="text" id="kf-ps-name" maxlength="30" autocomplete="nickname" placeholder="ناوەکەت بنووسە">
+    </div>
+    <p class="kf-ps-note">ناوەکەت لەگەڵ هەژمارەکەتدا دەپارێزرێت. وێنەکە تەنها لەسەر ئەم ئامێرە دەمێنێتەوە.</p>
+    <div class="kf-ps-msg" id="kf-ps-msg" role="status" aria-live="polite"></div>
+    <div class="kf-ps-btns">
+      <button type="button" class="kf-ps-btn primary" id="kf-ps-save" onclick="kfProfile.save()">پاشەکەوتکردن</button>
+      <button type="button" class="kf-ps-btn ghost" onclick="kfProfile.close()">داخستن</button>
+    </div>
+  </div>
+</div>
+
+<script id="kf-profile-js">
+(function () {
+  var AV_SIZE = 256;
+  var pendingPhoto = undefined;   // undefined = نەگۆڕدراوە، null = لابردن، string = وێنەی نوێ
+  function $(id) { return document.getElementById(id); }
+  function curUser() { try { return window.auth && window.auth.currentUser; } catch (e) { return null; } }
+  function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }
+  function lsDel(k) { try { localStorage.removeItem(k); } catch (e) {} }
+  function mailName(u) { return ((u && u.email) || '').split('@')[0] || 'بەکارهێنەر'; }
+  function nameOf(u) { return (u && (lsGet('kf_name_' + u.uid) || u.displayName)) || mailName(u); }
+  function photoOf(u) { return (u && (lsGet('kf_avatar_' + u.uid) || u.photoURL)) || ''; }
+  function initial(n) { var c = Array.from((n || '').trim())[0]; return c ? c.toUpperCase() : '؟'; }
+
+  function paint(el, name, photo) {
+    if (!el) return;
+    var img = el.querySelector('img'), ini = el.querySelector('.kf-av-ini');
+    ini.textContent = initial(name);
+    if (photo) {
+      img.onerror = function () { el.classList.remove('has-img'); };
+      img.onload = function () { el.classList.add('has-img'); };
+      img.src = photo;
+      el.classList.add('has-img');
+    } else {
+      img.removeAttribute('src');
+      el.classList.remove('has-img');
+    }
+  }
+
+  function render(u) {
+    u = u || curUser();
+    var n = $('kf-prof-name'), m = $('kf-prof-mail');
+    if (!n) return;
+    if (!u) { n.textContent = 'بەکارهێنەر'; if (m) m.textContent = ''; paint($('kf-prof-av'), '', ''); return; }
+    var name = nameOf(u);
+    n.textContent = name;
+    if (m) m.textContent = u.email || '';
+    paint($('kf-prof-av'), name, photoOf(u));
+  }
+
+  function setMsg(t, ok) { var el = $('kf-ps-msg'); if (!el) return; el.textContent = t || ''; el.className = 'kf-ps-msg' + (ok ? ' ok' : ''); }
+
+  function shrink(file) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file), im = new Image();
+      im.onload = function () {
+        try {
+          var s = Math.min(im.naturalWidth, im.naturalHeight);
+          if (!s) throw new Error('empty');
+          var sx = (im.naturalWidth - s) / 2, sy = (im.naturalHeight - s) / 2;
+          var c = document.createElement('canvas'); c.width = c.height = AV_SIZE;
+          c.getContext('2d').drawImage(im, sx, sy, s, s, 0, 0, AV_SIZE, AV_SIZE);
+          URL.revokeObjectURL(url);
+          resolve(c.toDataURL('image/jpeg', 0.86));
+        } catch (e) { URL.revokeObjectURL(url); reject(e); }
+      };
+      im.onerror = function () { URL.revokeObjectURL(url); reject(new Error('decode')); };
+      im.src = url;
+    });
+  }
+
+  window.kfProfile = {
+    render: render,
+    open: function () {
+      var u = curUser(); if (!u) return;
+      pendingPhoto = undefined; setMsg('');
+      $('kf-ps-name').value = nameOf(u);
+      paint($('kf-ps-av'), nameOf(u), photoOf(u));
+      $('kf-ps-remove').style.display = photoOf(u) ? '' : 'none';
+      var sh = $('kf-prof-sheet');
+      sh.classList.add('show'); sh.setAttribute('aria-hidden', 'false');
+      requestAnimationFrame(function () { requestAnimationFrame(function () { sh.classList.add('in'); }); });
+    },
+    close: function () {
+      var sh = $('kf-prof-sheet'); if (!sh) return;
+      sh.classList.remove('in'); sh.setAttribute('aria-hidden', 'true');
+      setTimeout(function () { if (!sh.classList.contains('in')) sh.classList.remove('show'); }, 380);
+    },
+    removePhoto: function () {
+      pendingPhoto = null;
+      paint($('kf-ps-av'), $('kf-ps-name').value || nameOf(curUser()), '');
+      $('kf-ps-remove').style.display = 'none';
+      setMsg('');
+    },
+    save: async function () {
+      var u = curUser(); if (!u) return;
+      var btn = $('kf-ps-save'), name = ($('kf-ps-name').value || '').replace(/\s+/g, ' ').trim().slice(0, 30);
+      if (!name) { setMsg('تکایە ناوێک بنووسە.'); return; }
+      btn.disabled = true; setMsg('');
+      try {
+        if (pendingPhoto === null) { lsDel('kf_avatar_' + u.uid); }
+        else if (typeof pendingPhoto === 'string') {
+          if (!lsSet('kf_avatar_' + u.uid, pendingPhoto)) { setMsg('شوێنی پاشەکەوتکردن پڕە. وێنەیەکی بچووکتر هەڵبژێرە.'); btn.disabled = false; return; }
+        }
+        lsSet('kf_name_' + u.uid, name);
+        try { await u.updateProfile({ displayName: name }); } catch (e) { /* ناو لەسەر ئامێرەکە پاشەکەوت کرا */ }
+        render(u);
+        btn.disabled = false;
+        window.kfProfile.close();
+      } catch (e) { setMsg('نەتوانرا پاشەکەوت بکرێت. دووبارە هەوڵبدەرەوە.'); btn.disabled = false; }
+    }
+  };
+
+  document.addEventListener('DOMContentLoaded', function () {
+    // پەنجەرەکە دەبێت راستەوخۆ لە ناو body بێت (فایلی HTML دیڤی کراوە هەیە و ڕەنگە لە ناو بەشێکی شاراوە بکەوێت)
+    var sh0 = $('kf-prof-sheet'); if (sh0 && sh0.parentNode !== document.body) document.body.appendChild(sh0);
+    var f = $('kf-ps-file');
+    if (f) f.addEventListener('change', function () {
+      var file = f.files && f.files[0]; f.value = '';
+      if (!file) return;
+      if (!/^image\//.test(file.type)) { setMsg('تەنها وێنە هەڵبژێرە.'); return; }
+      setMsg('...');
+      shrink(file).then(function (data) {
+        pendingPhoto = data; setMsg('');
+        paint($('kf-ps-av'), $('kf-ps-name').value, data);
+        $('kf-ps-remove').style.display = '';
+      }).catch(function () { setMsg('ئەم وێنەیە ناخوێنرێتەوە. وێنەیەکی تر (JPG یان PNG) هەڵبژێرە.'); });
+    });
+    var nm = $('kf-ps-name');
+    if (nm) nm.addEventListener('input', function () { var av = $('kf-ps-av'); if (!av.classList.contains('has-img')) av.querySelector('.kf-av-ini').textContent = initial(nm.value); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && $('kf-prof-sheet').classList.contains('show')) window.kfProfile.close(); });
+    try { if (window.auth) window.auth.onAuthStateChanged(function (u) { render(u); }); } catch (e) {}
+  });
+})();
+</script>
 </body>
 </html>

@@ -17575,7 +17575,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
       <label for="kf-ps-name">ناو</label>
       <input type="text" id="kf-ps-name" maxlength="30" autocomplete="nickname" placeholder="ناوەکەت بنووسە">
     </div>
-    <p class="kf-ps-note">ناوەکەت لەگەڵ هەژمارەکەتدا دەپارێزرێت. وێنەکە تەنها لەسەر ئەم ئامێرە دەمێنێتەوە.</p>
+    <p class="kf-ps-note">ناو و وێنەکەت لەگەڵ هەژمارەکەتدا دەپارێزرێت و لە هەموو ئامێرەکانت دەردەکەون.</p>
     <div class="kf-ps-msg" id="kf-ps-msg" role="status" aria-live="polite"></div>
     <div class="kf-ps-btns">
       <button type="button" class="kf-ps-btn primary" id="kf-ps-save" onclick="kfProfile.save()">پاشەکەوتکردن</button>
@@ -17586,7 +17586,8 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
 
 <script id="kf-profile-js">
 (function () {
-  var AV_SIZE = 256;
+  var AV_SIZE = 160;  // بچووکە بۆ ئەوەی لە Firestore جێ ببێتەوە
+  var MAX_SYNC_PHOTO = 38000;
   var pendingPhoto = undefined;   // undefined = نەگۆڕدراوە، null = لابردن، string = وێنەی نوێ
   function $(id) { return document.getElementById(id); }
   function curUser() { try { return window.auth && window.auth.currentUser; } catch (e) { return null; } }
@@ -17637,13 +17638,75 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
           var c = document.createElement('canvas'); c.width = c.height = AV_SIZE;
           c.getContext('2d').drawImage(im, sx, sy, s, s, 0, 0, AV_SIZE, AV_SIZE);
           URL.revokeObjectURL(url);
-          resolve(c.toDataURL('image/jpeg', 0.86));
+          resolve(c.toDataURL('image/jpeg', 0.82));
         } catch (e) { URL.revokeObjectURL(url); reject(e); }
       };
       im.onerror = function () { URL.revokeObjectURL(url); reject(new Error('decode')); };
       im.src = url;
     });
   }
+
+
+  /* ---------- هاوکاتکردن لەگەڵ Firestore (users/{uid}) ---------- */
+  var hydrated = false, pending = {}, pushTimer = null, warned = false;
+  function dbDoc(u) { try { return (window.db && u) ? window.db.collection('users').doc(u.uid) : null; } catch (e) { return null; } }
+  function warnSync() {
+    if (warned) return; warned = true;
+    try { if (typeof showToast === 'function') showToast('هاوکاتکردنی پڕۆفایل سەرنەکەوت. لەسەر ئەم ئامێرە پاشەکەوت کرا.', 'warning'); } catch (e) {}
+  }
+  function validHex(c) { return typeof c === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(c); }
+  function localColors() { try { var a = JSON.parse(lsGet('my_sub_colors') || '[]'); return Array.isArray(a) ? a.filter(validHex).slice(0, 60) : []; } catch (e) { return []; } }
+  async function pushNow(fields) {
+    var u = curUser(), ref = dbDoc(u);
+    if (!ref || !fields || !Object.keys(fields).length) return true;
+    try { await ref.update(fields); return true; } catch (e) { console.warn('profile sync failed', e && e.code); warnSync(); return false; }
+  }
+  function queue(fields) {
+    if (!hydrated) return;
+    Object.keys(fields).forEach(function (k) { pending[k] = fields[k]; });
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(function () { var f = pending; pending = {}; pushNow(f); }, 1200);
+  }
+  async function hydrate(u) {
+    hydrated = false; pending = {};
+    var ref = dbDoc(u); if (!ref) return;
+    try {
+      var snap = await ref.get();
+      if (!curUser() || curUser().uid !== u.uid) return;
+      var d = (snap && snap.exists) ? (snap.data() || {}) : {}, up = {};
+      // ناو
+      var ln = lsGet('kf_name_' + u.uid);
+      if (typeof d.displayName === 'string' && d.displayName.trim()) lsSet('kf_name_' + u.uid, d.displayName.trim().slice(0, 30));
+      else if (ln) up.displayName = ln.slice(0, 30);
+      // وێنە
+      var lp = lsGet('kf_avatar_' + u.uid);
+      if (typeof d.photo === 'string' && /^data:image\/(jpeg|png|webp);base64,/.test(d.photo) && d.photo.length <= MAX_SYNC_PHOTO) lsSet('kf_avatar_' + u.uid, d.photo);
+      else if (lp && lp.length <= MAX_SYNC_PHOTO) up.photo = lp;
+      // ڕەنگی ڕووکار
+      var okTheme = (typeof appThemePalettes !== 'undefined') ? function (k) { return !!appThemePalettes[k]; } : function () { return false; };
+      if (typeof d.theme === 'string' && okTheme(d.theme)) {
+        if (lsGet('kf_selected_theme') !== d.theme && typeof applyCustomTheme === 'function') applyCustomTheme(d.theme);
+      } else { var lt = lsGet('kf_selected_theme'); if (lt && okTheme(lt)) up.theme = lt; }
+      // ڕەنگە پاشەکەوتکراوەکانی ژێرنووس
+      if (Array.isArray(d.subColors)) {
+        lsSet('my_sub_colors', JSON.stringify(d.subColors.filter(validHex).slice(0, 60)));
+        if (typeof showMySavedColors === 'function') showMySavedColors();
+      } else { var lc = localColors(); if (lc.length) up.subColors = lc; }
+      hydrated = true;
+      render(u);
+      if (Object.keys(up).length) pushNow(up);
+    } catch (e) { hydrated = false; }
+  }
+  // پێچانەوەی فەنکشنەکانی ئەپ: هەر گۆڕانکارییەک خۆکار دەنێردرێت
+  function wrapFn(name, after) {
+    try {
+      var orig = window[name]; if (typeof orig !== 'function') return;
+      window[name] = function () { var r = orig.apply(this, arguments); try { after.apply(null, arguments); } catch (e) {} return r; };
+    } catch (e) {}
+  }
+  wrapFn('applyCustomTheme', function (k) { if (typeof appThemePalettes !== 'undefined' && appThemePalettes[k]) queue({ theme: k }); });
+  wrapFn('saveCurrentToMyColors', function () { queue({ subColors: localColors() }); });
+  wrapFn('clearMySavedColors', function () { queue({ subColors: [] }); });
 
   window.kfProfile = {
     render: render,
@@ -17681,6 +17744,10 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
         lsSet('kf_name_' + u.uid, name);
         try { await u.updateProfile({ displayName: name }); } catch (e) { /* ناو لەسەر ئامێرەکە پاشەکەوت کرا */ }
         render(u);
+        var fields = { displayName: name };
+        if (pendingPhoto === null) fields.photo = firebase.firestore.FieldValue.delete();
+        else if (typeof pendingPhoto === 'string' && pendingPhoto.length <= MAX_SYNC_PHOTO) fields.photo = pendingPhoto;
+        pushNow(fields);
         btn.disabled = false;
         window.kfProfile.close();
       } catch (e) { setMsg('نەتوانرا پاشەکەوت بکرێت. دووبارە هەوڵبدەرەوە.'); btn.disabled = false; }
@@ -17705,7 +17772,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
     var nm = $('kf-ps-name');
     if (nm) nm.addEventListener('input', function () { var av = $('kf-ps-av'); if (!av.classList.contains('has-img')) av.querySelector('.kf-av-ini').textContent = initial(nm.value); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && $('kf-prof-sheet').classList.contains('show')) window.kfProfile.close(); });
-    try { if (window.auth) window.auth.onAuthStateChanged(function (u) { render(u); }); } catch (e) {}
+    try { if (window.auth) window.auth.onAuthStateChanged(function (u) { render(u); if (u) hydrate(u); else { hydrated = false; } }); } catch (e) {}
   });
 })();
 </script>

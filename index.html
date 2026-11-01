@@ -1638,6 +1638,31 @@ if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY") {
 .kf-ps-btn.ghost { background: transparent; color: #e2e8f0; border-color: rgba(255,255,255,.16); flex: 0 0 34%; }
 .kf-ps-btn[disabled] { opacity: .55; cursor: default; }
 @media (prefers-reduced-motion: reduce) { .kf-ps-card, .kf-ps-back { transition: none; } }
+
+/* ===== کۆمپیتەر: پڕۆفایل لە شریتی سەرەوە + پەنجەرەی ناوەڕاست ===== */
+.kf-prof-bar { display: none; }
+html.kf-wide .kf-prof-bar {
+  display: flex; align-items: center; gap: 10px; flex: 0 0 auto; max-width: 220px;
+  padding: 4px 4px 4px 12px; margin: 0; border-radius: 999px; cursor: pointer;
+  background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.13); color: inherit; font: inherit;
+  transition: background .2s, border-color .2s;
+}
+html.kf-wide .kf-prof-bar:hover { background: rgba(255,255,255,.11); border-color: color-mix(in srgb, var(--primary, #8EB69B) 55%, transparent); }
+html.kf-wide .kf-prof-bar:focus-visible { outline: 2px solid var(--primary, #8EB69B); outline-offset: 2px; }
+html.kf-wide .kf-prof-bar .kf-av { width: 34px; height: 34px; font-size: 15px; box-shadow: 0 0 0 1.5px #0b101c, 0 0 0 3px var(--primary, #8EB69B); }
+html.kf-wide .kf-prof-bar .kf-prof-name { font-size: 13px; font-weight: 700; max-width: 130px; }
+html.kf-wide .kf-prof-bar .kf-pencil { width: 13px; height: 13px; color: #94a3b8; flex: 0 0 auto; opacity: 0; transition: opacity .2s; }
+html.kf-wide .kf-prof-bar:hover .kf-pencil, html.kf-wide .kf-prof-bar:focus-visible .kf-pencil { opacity: 1; }
+
+html.kf-wide .kf-ps-card {
+  top: 50%; bottom: auto; left: 50%; right: auto; margin: 0; width: 420px; max-width: calc(100vw - 40px);
+  padding-bottom: 22px; border: 1px solid rgba(255,255,255,.12); border-radius: 24px;
+  box-shadow: 0 30px 80px rgba(0,0,0,.6);
+  transform: translate(-50%, -46%) scale(.97); opacity: 0;
+  transition: transform .3s cubic-bezier(.22,.9,.3,1), opacity .25s ease;
+}
+html.kf-wide #kf-prof-sheet.in .kf-ps-card { transform: translate(-50%, -50%); opacity: 1; }
+html.kf-wide .kf-ps-grip { display: none; }
 </style>
 </head>
 <body class="startup-bg auth-locked">
@@ -2116,6 +2141,10 @@ function kfTogglePw(btn){
             <button type="button" id="kf-menu-btn" class="kf-bar-btn" aria-label="مێنیو" aria-expanded="false" onclick="kfNav.toggleDrawer()">
                 <span class="kf-menu-pend-dot" data-kf-menu-pend style="display:none" aria-hidden="true"></span>
                 <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+            <button type="button" class="kf-prof-bar" id="kf-prof-btn-bar" aria-label="دەستکاریکردنی پڕۆفایل" onclick="kfProfile.open()">
+                <span class="kf-av" id="kf-prof-av-bar"><img alt="" referrerpolicy="no-referrer"><span class="kf-av-ini">؟</span></span>
+                <span class="kf-prof-name" id="kf-prof-name-bar">بەکارهێنەر</span>
             </button>
             <div class="kf-bar-center"><div id="welcome-msg">بەخێربێیت!</div><span id="kf-sec-title"></span></div>
             <nav id="kf-tabs" aria-label="بەشەکان"></nav>
@@ -17616,13 +17645,20 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
 
   function render(u) {
     u = u || curUser();
-    var n = $('kf-prof-name'), m = $('kf-prof-mail');
+    var n = $('kf-prof-name'), m = $('kf-prof-mail'), nb = $('kf-prof-name-bar'), bb = $('kf-prof-btn-bar');
     if (!n) return;
-    if (!u) { n.textContent = 'بەکارهێنەر'; if (m) m.textContent = ''; paint($('kf-prof-av'), '', ''); return; }
-    var name = nameOf(u);
+    if (!u) {
+      n.textContent = 'بەکارهێنەر'; if (m) m.textContent = ''; paint($('kf-prof-av'), '', '');
+      if (nb) nb.textContent = 'بەکارهێنەر'; if (bb) bb.removeAttribute('title'); paint($('kf-prof-av-bar'), '', '');
+      return;
+    }
+    var name = nameOf(u), photo = photoOf(u);
     n.textContent = name;
     if (m) m.textContent = u.email || '';
-    paint($('kf-prof-av'), name, photoOf(u));
+    paint($('kf-prof-av'), name, photo);
+    if (nb) nb.textContent = name;
+    if (bb) bb.title = 'دەستکاریکردنی پڕۆفایل' + (u.email ? ' — ' + u.email : '');
+    paint($('kf-prof-av-bar'), name, photo);
   }
 
   function setMsg(t, ok) { var el = $('kf-ps-msg'); if (!el) return; el.textContent = t || ''; el.className = 'kf-ps-msg' + (ok ? ' ok' : ''); }

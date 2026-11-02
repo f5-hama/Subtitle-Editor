@@ -2214,7 +2214,29 @@ function kfTogglePw(btn){
             <div class="theme-mini-box" id="theme-mini-sand" onclick="applyCustomTheme('sand')" title="لمی" style="background: linear-gradient(135deg, #d4b483, #a07c45);"></div>
         </div>
 
+        <!-- دووگمەی بەشی مانگا / مانهوا (لە کۆتایی کارتی سەرەکی) -->
+        <button type="button" class="btn btn-outline kf-manga-btn" id="kfMangaBtn" onclick="kfMode.toManga()">
+            <svg style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path stroke-width="1.85" d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path stroke-width="1.85" d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            <span>مانگا / مانهوا</span>
+        </button>
+
     </div>
+
+    <!-- ===== بەشی مانگا / مانهوا (بەشێکی جیاواز لە ژێرنووس) ===== -->
+    <div id="manga-screen" aria-label="مانگا / مانهوا">
+        <div class="kf-mg-card">
+            <svg class="kf-mg-ic" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path stroke-width="1.6" d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path stroke-width="1.6" d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            <h2>مانگا / مانهوا</h2>
+            <p>ئەم بەشە ئامادەکراوە و جیاوازە لە بەشی ژێرنووس. تایبەتمەندییەکانی مانگا و مانهوا لێرە زیاد دەکرێن.</p>
+        </div>
+        <button type="button" class="btn btn-outline kf-mg-back" onclick="kfMode.toSubtitle()">
+            <svg style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path stroke-width="1.85" d="M5 12h14M13 6l6 6-6 6"/></svg>
+            <span>گەڕانەوە بۆ ژێرنووس</span>
+        </button>
+    </div>
+
+    <!-- شاشەی بارکردنی گواستنەوە لە نێوان بەشەکان -->
+    <div id="kf-mode-loader" class="kf-mode-loader" role="status" aria-live="polite" aria-hidden="true"></div>
     
     <!-- مۆداڵی گۆڕینی وێنە بۆ لینک بە هەموو زمانەکان -->
     <div id="img-upload-modal" class="custom-modal-overlay">
@@ -17812,5 +17834,182 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
   });
 })();
 </script>
+
+<style id="kf-manga-css">
+/* ============ بەشی مانگا / مانهوا ============ */
+.kf-manga-btn { margin-top: 6px; padding: 13px 14px; }
+#manga-screen { display: none; }
+html.kf-manga-mode #setup-screen { display: none !important; }
+html.kf-manga-mode #manga-screen {
+  display: flex; flex-direction: column; justify-content: center; gap: 16px; width: 100%; box-sizing: border-box;
+  min-height: calc(var(--kf-dvh, 1dvh) * 100);
+  padding: calc(var(--kf-bar-h, 56px) + env(safe-area-inset-top, 0px) + 18px) max(16px, calc((100% - 680px) / 2)) calc(24px + env(safe-area-inset-bottom, 0px));
+}
+/* لەناو ئەم بەشەدا مێنیو و تابەکانی ژێرنووس نابینرێن */
+html.kf-manga-mode #kf-menu-btn,
+html.kf-manga-mode #kf-tabs,
+html.kf-manga-mode #kf-drawer,
+html.kf-manga-mode #kf-scrim,
+html.kf-manga-mode #kf-sec-title,
+html.kf-manga-mode .kf-bar-center #welcome-msg { display: none !important; }
+html.kf-manga-mode .kf-bar-center::after { content: 'مانگا / مانهوا'; font-size: 15px; font-weight: bold; color: var(--primary); white-space: nowrap; }
+.kf-mg-card {
+  display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center;
+  padding: 28px 20px; border-radius: 18px; background: rgba(255,255,255,.05); border: 1px solid var(--border-color);
+}
+.kf-mg-card .kf-mg-ic { width: 54px; height: 54px; color: var(--primary); filter: drop-shadow(0 0 10px var(--primary-glow)); }
+.kf-mg-card h2 { margin: 0; font-size: 19px; color: var(--text-main); }
+.kf-mg-card p { margin: 0; font-size: 13px; line-height: 1.8; color: var(--text-muted); max-width: 420px; }
+.kf-mg-back { padding: 13px 14px; }
+
+/* ============ شاشەی بارکردنی گواستنەوە ============ */
+.kf-mode-loader {
+  position: fixed; inset: 0; z-index: 999990; display: flex; align-items: center; justify-content: center; overflow: hidden;
+  opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .45s ease, visibility .45s ease;
+}
+.kf-mode-loader.show { opacity: 1; visibility: visible; pointer-events: auto; }
+/* گەڕانەوە بۆ ژێرنووس: هەمان بارکردنی KURD FOREST */
+.kf-mode-loader.kf-ml-subtitle { background: radial-gradient(ellipse at 50% 38%, #16212b 0%, #0a0c0e 72%); }
+.kf-ml-subtitle .auth-loader-inner { transform: none; margin: auto; }
+.kf-ml-subtitle .auth-loader-inner::before {
+  content: ""; position: absolute; left: 50%; top: 40px; width: 340px; height: 340px; transform: translate(-50%, -50%); border-radius: 50%;
+  background: radial-gradient(circle, var(--primary-glow) 0%, transparent 65%); opacity: 0; animation: kfGlowIn 1.6s .5s ease-out forwards; pointer-events: none; z-index: -1;
+}
+/* چوونە بەشی مانگا / مانهوا: شێوازی لاپەڕەی مانگا */
+.kf-mode-loader.kf-ml-manga { background: #08090c; }
+.kf-ml-manga::before {
+  content: ''; position: absolute; inset: -6%;
+  background: radial-gradient(circle, rgba(255,255,255,.11) 1.3px, transparent 1.8px) 0 0 / 15px 15px;
+  -webkit-mask-image: radial-gradient(ellipse at 50% 44%, transparent 16%, #000 78%); mask-image: radial-gradient(ellipse at 50% 44%, transparent 16%, #000 78%);
+  opacity: 0; animation: kfMgIn .8s .05s ease-out forwards;
+}
+.kf-ml-manga::after {
+  content: ''; position: absolute; inset: 0;
+  background: repeating-conic-gradient(from 0deg at 50% 44%, rgba(255,255,255,.06) 0 1.6deg, transparent 1.6deg 7deg);
+  -webkit-mask-image: radial-gradient(circle at 50% 44%, transparent 14%, #000 72%); mask-image: radial-gradient(circle at 50% 44%, transparent 14%, #000 72%);
+  opacity: 0; animation: kfMgIn .8s .15s ease-out forwards;
+}
+.kf-mg-inner { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 0 16px; }
+.kf-mg-inner::before {
+  content: ''; position: absolute; left: 50%; top: 62px; width: 320px; height: 320px; transform: translate(-50%, -50%); border-radius: 50%; z-index: -1;
+  background: radial-gradient(circle, var(--primary-glow) 0%, transparent 65%); opacity: 0; animation: kfMgIn 1.4s .4s ease-out forwards; pointer-events: none;
+}
+.kf-mg-page { width: 98px; height: 120px; overflow: visible; margin-bottom: 22px; }
+.kf-mg-wrap { transform-origin: 60px 74px; animation: kfMgFloat 3s 1.9s ease-in-out infinite; }
+.kf-mg-page .pg { fill: none; stroke: rgba(255,255,255,.24); stroke-width: 2; stroke-dasharray: 1; stroke-dashoffset: 1; animation: kfMgDraw .8s .05s ease-out forwards; }
+.kf-mg-page .pn {
+  fill: transparent; stroke: var(--primary); stroke-width: 2.2; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1;
+  animation: kfMgDraw .55s cubic-bezier(.5,0,.2,1) forwards, kfMgFill .5s ease-out forwards;
+}
+.kf-mg-page .pa { animation-delay: .3s, .75s; }
+.kf-mg-page .pb { animation-delay: .55s, .95s; }
+.kf-mg-page .pc { animation-delay: .8s, 1.15s; }
+.kf-mg-page .bub { fill: #eef2f6; opacity: 0; transform-box: fill-box; transform-origin: 30% 80%; animation: kfMgPop .45s 1.05s cubic-bezier(.2,.9,.3,1.3) forwards; }
+.kf-mg-page .dot { fill: #0b0d12; opacity: 0; animation: kfMgDot 1s 1.5s ease-in-out infinite; }
+.kf-mg-page .dot.d2 { animation-delay: 1.65s; }
+.kf-mg-page .dot.d3 { animation-delay: 1.8s; }
+.kf-mg-page .spd { stroke: var(--primary); stroke-width: 1.7; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: kfMgDraw .3s ease-out forwards; }
+.kf-mg-page .spd.s1 { animation-delay: 1.3s; } .kf-mg-page .spd.s2 { animation-delay: 1.38s; } .kf-mg-page .spd.s3 { animation-delay: 1.46s; }
+.kf-mg-page .spd.s4 { animation-delay: 1.54s; } .kf-mg-page .spd.s5 { animation-delay: 1.62s; }
+.kf-mg-title {
+  font-family: 'KFMichroma', 'Michroma', system-ui, sans-serif; font-size: 19px; letter-spacing: .16em; color: #e2e8f0; direction: ltr; unicode-bidi: isolate;
+  display: flex; flex-wrap: wrap; justify-content: center; gap: .15em .6em; margin-right: -.16em;
+}
+.kf-mg-title .w { display: inline-flex; }
+.kf-mg-title .w.f { color: var(--primary); text-shadow: 0 0 18px var(--primary-glow); }
+.kf-mg-title .l { display: inline-block; opacity: 0; transform: translateY(8px) skewX(-8deg); animation: kfMgLetter .45s cubic-bezier(.2,.7,.2,1) forwards; animation-delay: calc(.8s + var(--i) * .055s); }
+.kf-mg-cjk { margin-top: 10px; font-size: 12px; letter-spacing: .3em; color: #7b8b9c; opacity: 0; animation: kfMgIn .6s 1.5s ease-out forwards; direction: ltr; }
+.kf-mg-sub { margin-top: 10px; font-size: 13px; color: #7b8b9c; opacity: 0; animation: kfMgIn .6s 1.45s ease-out forwards; }
+.kf-mg-sub::after { content: ''; display: inline-block; width: 1.4em; text-align: start; animation: kfDots 1.2s steps(4,end) infinite; }
+@keyframes kfMgIn { to { opacity: 1; } }
+@keyframes kfMgDraw { to { stroke-dashoffset: 0; } }
+@keyframes kfMgFill { to { fill: var(--primary-glow); } }
+@keyframes kfMgPop { 0% { opacity: 0; transform: scale(.4); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes kfMgDot { 0%, 100% { opacity: .15; } 50% { opacity: 1; } }
+@keyframes kfMgLetter { to { opacity: 1; transform: none; } }
+@keyframes kfMgFloat { 0%, 100% { transform: translateY(0); filter: drop-shadow(0 0 6px var(--primary-glow)); } 50% { transform: translateY(-3px); filter: drop-shadow(0 0 16px var(--primary-glow)); } }
+@media (max-width: 380px) { .kf-mg-title { font-size: 16px; } }
+@media (prefers-reduced-motion: reduce) {
+  .kf-ml-manga::before, .kf-ml-manga::after, .kf-mg-inner::before, .kf-mg-title .l, .kf-mg-sub, .kf-mg-cjk, .kf-mg-page .bub, .kf-mg-page .dot, .kf-mg-wrap { animation: none !important; opacity: 1 !important; transform: none !important; }
+  .kf-mg-page .pg, .kf-mg-page .pn, .kf-mg-page .spd { animation: none !important; stroke-dashoffset: 0 !important; }
+  .kf-mg-page .pn { fill: var(--primary-glow); }
+}
+</style>
+
+<script id="kf-manga-js">
+(function () {
+  'use strict';
+  var root = document.documentElement;
+  var loader = document.getElementById('kf-mode-loader');
+  var busy = false;
+
+  function letters(str, start) {
+    var h = '';
+    for (var i = 0; i < str.length; i++) h += '<span class="l" style="--i:' + (start + i) + '">' + str.charAt(i) + '</span>';
+    return h;
+  }
+  function mangaHTML() {
+    return '<div class="kf-mg-inner">' +
+      '<svg class="kf-mg-page" viewBox="0 0 120 148" aria-hidden="true"><g class="kf-mg-wrap">' +
+        '<path class="pg" pathLength="1" d="M9 3H111A6 6 0 0 1 117 9V139A6 6 0 0 1 111 145H9A6 6 0 0 1 3 139V9A6 6 0 0 1 9 3Z"/>' +
+        '<path class="pn pa" pathLength="1" d="M10 10H110V50L10 58Z"/>' +
+        '<path class="pn pb" pathLength="1" d="M10 66L58 62.2V138H10Z"/>' +
+        '<path class="pn pc" pathLength="1" d="M66 61.4L110 58V138H66Z"/>' +
+        '<path class="bub" d="M44 17C58 17 68 22 68 29C68 36 58 41 44 41C41 41 38 40.7 35.5 40.2L27 47L29.5 38.5C24 36.5 20 33 20 29C20 22 30 17 44 17Z"/>' +
+        '<circle class="dot d1" cx="35" cy="29" r="2.3"/><circle class="dot d2" cx="44" cy="29" r="2.3"/><circle class="dot d3" cx="53" cy="29" r="2.3"/>' +
+        '<path class="spd s1" pathLength="1" d="M88 96L88 70"/><path class="spd s2" pathLength="1" d="M88 100L108 84"/><path class="spd s3" pathLength="1" d="M88 100L72 76"/>' +
+        '<path class="spd s4" pathLength="1" d="M86 104L70 118"/><path class="spd s5" pathLength="1" d="M90 104L106 122"/>' +
+      '</g></svg>' +
+      '<div class="kf-mg-title" dir="ltr" aria-label="MANGA MANHWA"><span class="w">' + letters('MANGA', 0) + '</span><span class="w f">' + letters('MANHWA', 5) + '</span></div>' +
+      '<div class="kf-mg-cjk" aria-hidden="true">漫画 · 만화</div>' +
+      '<div class="kf-mg-sub">ئامادەکردن</div>' +
+    '</div>';
+  }
+  function subtitleHTML() {
+    // هەمان شاشەی بارکردنی سەرەتا (KURD FOREST) دووبارە دروست دەکرێتەوە بۆ ئەوەی ئەنیمەیشنەکەی لە سەرەتاوە بێت
+    var src = document.querySelector('#auth-loading .auth-loader-inner');
+    return src ? src.outerHTML : '<div class="auth-loader-inner"><div class="auth-loader-sub">ئامادەکردن</div></div>';
+  }
+
+  // loader دەردەکەوێت، لە ژێریەوە بەشەکە دەگۆڕدرێت، پاشان loader دەسڕێتەوە
+  function run(kind, holdMs, swap) {
+    if (busy) return;
+    if (!loader) { swap(); return; }
+    busy = true;
+    loader.className = 'kf-mode-loader kf-ml-' + kind;
+    loader.innerHTML = kind === 'manga' ? mangaHTML() : subtitleHTML();
+    void loader.offsetWidth;
+    loader.classList.add('show');
+    loader.setAttribute('aria-hidden', 'false');
+    setTimeout(function () {
+      try { swap(); } catch (e) { console.error(e); }
+      setTimeout(function () {
+        loader.classList.remove('show');
+        loader.setAttribute('aria-hidden', 'true');
+        setTimeout(function () { loader.innerHTML = ''; busy = false; }, 600);
+      }, 200);
+    }, holdMs);
+  }
+
+  function enterManga() {
+    try { if (window.kfNav) { kfNav.closeDrawer(); kfNav.closeSections(); } } catch (e) {}
+    root.classList.add('kf-manga-mode');
+    try { if (window.kfNav) kfNav.sync(); } catch (e) {}
+    window.scrollTo(0, 0);
+  }
+  function exitManga() {
+    root.classList.remove('kf-manga-mode');
+    try { if (window.kfNav) kfNav.sync(); } catch (e) {}
+    window.scrollTo(0, 0);
+  }
+
+  window.kfMode = {
+    isManga: function () { return root.classList.contains('kf-manga-mode'); },
+    toManga: function () { if (this.isManga()) return; run('manga', 2300, enterManga); },
+    toSubtitle: function () { if (!this.isManga()) return; run('subtitle', 2700, exitManga); }
+  };
+})();
+</script>
+
 </body>
 </html>

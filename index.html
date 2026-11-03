@@ -3672,6 +3672,34 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
     </div>
 
 
+    <!-- مۆداڵی پێچەوانەکردنەوەی RTL (وەک Subtitle Edit: Reverse RTL start/end) -->
+    <div id="rev-rtl-modal" class="custom-modal-overlay">
+        <div class="custom-modal-content">
+            <h3 class="custom-modal-title">پێچەوانەکردنەوەی RTL (سەرەتا / کۆتایی)</h3>
+            <p style="font-size: 12.5px; color:var(--text-muted); margin-bottom:12px; line-height: 1.7;">ئەو نیشانانەی لە سەرەتای دێڕدان (<bdi dir="ltr">! ? . , : ; - ...</bdi>) دەیانباتە کۆتایی، و ئەوانەی لە کۆتایین دەیانباتە سەرەتا — هەمان کاری <bdi dir="ltr">Reverse RTL start/end</bdi>ـی Subtitle Edit. تەنها دێڕە RTLەکان دەگۆڕدرێن؛ دێڕی ئینگلیزی و تاگەکان وەک خۆیان دەمێنن. ئەگەر دووبارە جێبەجێی بکەیت، دەگەڕێتەوە دۆخی پێشوو.</p>
+
+            <div class="file-box" id="boxRevRtl" style="margin-bottom: 14px; padding: 16px;">
+                <div class="upload-icon"><svg style="width:26px;height:26px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M21 15v3.5A2.5 2.5 0 0 1 18.5 21h-13A2.5 2.5 0 0 1 3 18.5V15M17 8l-5-5-5 5M12 3v12"/></svg></div>
+                <label>فایلەکان هەڵبژێرە (SRT, ASS, VTT):</label>
+                <div class="file-name-display" id="revRtlCountDisplay">هیچ فایلێک دیاری نەکراوە</div>
+                <input type="file" id="revRtlFileInput" accept=".srt,.ass,.vtt" multiple onchange="updateRevRtlCount(this)">
+            </div>
+
+            <div style="margin-bottom: 14px;">
+                <label style="display:block; font-size:12.5px; font-weight:bold; margin-bottom:6px; color:var(--text-main);">تاقیکردنەوەی خێرا (بینین پێش جێبەجێکردن):</label>
+                <textarea id="revRtlSample" dir="rtl" oninput="revRtlPreview()" style="width:100%; min-height:62px; resize:vertical; box-sizing:border-box; border:1px solid var(--border-color); border-radius:8px; padding:8px 10px; background:var(--bg-color); color:var(--text-main); font-family:inherit; font-size:14px; line-height:1.7; direction:rtl; text-align:right;">!ئەمە دێڕێکی تاقیکردنەوەیە
+...سڵاو، چۆنیت؟</textarea>
+                <div style="font-size:11.5px; color:var(--text-muted); margin:8px 0 4px;">دوای پێچەوانەکردنەوە:</div>
+                <div id="revRtlAfter" dir="rtl" style="white-space:pre-wrap; min-height:44px; box-sizing:border-box; border:1px dashed var(--primary); border-radius:8px; padding:8px 10px; font-size:14px; line-height:1.7; color:var(--text-main); direction:rtl; text-align:right;"></div>
+            </div>
+
+            <div class="custom-modal-actions">
+                <button class="btn" onclick="executeRevRtl()">پێچەوانەکردنەوە و داگرتن</button>
+                <button class="btn btn-outline" onclick="document.getElementById('rev-rtl-modal').style.display='none'" data-i18n="closeBtn">داخستن</button>
+            </div>
+        </div>
+    </div>
+
      <!-- مۆداڵی گۆڕینی فۆرماتی فایلەکان -->
     <div id="converter-modal" class="custom-modal-overlay">
         <div class="custom-modal-content">
@@ -3796,7 +3824,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
                 <div style="width: 100%; max-width: 320px;">
                     <button type="button" class="btn" style="width: 100%; padding: 12px 14px; font-size: 13px;" onclick="document.getElementById('nativeVideoFileInput').click()">
                         <svg class="icon" style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M21 15v3.5A2.5 2.5 0 0 1 18.5 21h-13A2.5 2.5 0 0 1 3 18.5V15M17 8l-5-5-5 5M12 3v12"/></svg>
-                        <span>فایل لە ئامێرەکەت هەڵبژێرە</span>
+                        <span>فایلی ڤیدیۆ لە ئامێرەکەت هەڵبژێرە</span>
                     </button>
                     <input type="file" id="nativeVideoFileInput" accept="*/*" style="display: none;" onchange="handleNativeVideoUpload(this)">
                 </div>
@@ -6130,6 +6158,143 @@ const RtlEngine = (function () {
         fixSubLine: fixSubLine, fixSubText: fixSubText, fixSubFile: fixSubFile
     };
 })();
+
+/* ============================================================
+   RevRtl — پێچەوانەکردنەوەی نیشانەکانی سەرەتا و کۆتایی
+   (هەمان بیرۆکەی «Reverse RTL start/end»ـی Subtitle Edit)
+   ============================================================ */
+const RevRtl = (function () {
+    'use strict';
+    const RTL_CHAR = /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/;
+    // نیشانەکان + هێماکانی ئاڕاستە (لەگەڵ نیشانەکە دەجوڵێن)
+    const RUN = '[.,!?:;\\u061F\\u060C\\u061B\\u2026"\'\\u00AB\\u00BB\\u201C\\u201D\\u2018\\u2019()\\[\\]\\-\\u2013\\u2014\\u266A\\u00BF\\u00A1\\u200E\\u200F\\u061C\\u202A-\\u202E\\u2066-\\u2069]';
+    const TAG = '(?:\\{[^}]*\\}|<\\/?[A-Za-z][^>]*>)';
+    const LEAD_TAGS = new RegExp('^' + TAG + '+');
+    const TRAIL_TAGS = new RegExp(TAG + '+$');
+    const LEAD = new RegExp('^(' + RUN + '+)(\\s*)');
+    const TRAIL = new RegExp('(\\s*)(' + RUN + '+)$');
+
+    // یەک دێڕ: نیشانەکانی سەرەتا <-> کۆتایی (تاگەکانی {..} و <i> وەک خۆیان دەمێنن)
+    function reverseLine(line) {
+        if (!line || !RTL_CHAR.test(line)) return line;
+        let pre = '', post = '', core = line, m;
+        m = core.match(LEAD_TAGS);  if (m) { pre = m[0];  core = core.slice(pre.length); }
+        m = core.match(TRAIL_TAGS); if (m) { post = m[0]; core = core.slice(0, core.length - post.length); }
+        const ws1 = core.match(/^\s*/)[0]; core = core.slice(ws1.length);
+        const ws2 = core.match(/\s*$/)[0]; core = core.slice(0, core.length - ws2.length);
+        let lead = '', leadSp = '', trail = '', trailSp = '';
+        m = core.match(LEAD);  if (m) { lead = m[1]; leadSp = m[2]; core = core.slice(m[0].length); }
+        m = core.match(TRAIL); if (m) { trail = m[2]; trailSp = m[1]; core = core.slice(0, core.length - m[0].length); }
+        if (!core) return line;                 // دێڕەکە تەنها نیشانەیە
+        if (!lead && !trail) return line;
+        return pre + ws1 + trail + trailSp + core + leadSp + lead + ws2 + post;
+    }
+
+    // چەند دێڕ (\n ی ڕاستەقینە یان \N ی ASS)
+    function reverseText(text) {
+        return (text || '').split(/(\\[Nn]|\r?\n)/).map(function (p, i) { return i % 2 ? p : reverseLine(p); }).join('');
+    }
+
+    function assTextStart(line) {
+        let c = 0;
+        for (let i = 0; i < line.length; i++) if (line.charCodeAt(i) === 44 && ++c === 9) return i + 1;
+        return -1;
+    }
+
+    function reverseAssFile(content) {
+        const eol = content.indexOf('\r\n') >= 0 ? '\r\n' : '\n';
+        const lines = content.split(/\r?\n/);
+        const stats = { changed: 0, lines: 0 };
+        for (let i = 0; i < lines.length; i++) {
+            const ln = lines[i];
+            if (ln.substring(0, 9) !== 'Dialogue:') continue;
+            const at = assTextStart(ln);
+            if (at < 0) continue;
+            const body = ln.substring(at);
+            stats.lines++;
+            if (typeof RtlEngine !== 'undefined' && RtlEngine.hasDrawing(body)) continue;
+            const fixed = reverseText(body);
+            if (fixed !== body) { lines[i] = ln.substring(0, at) + fixed; stats.changed++; }
+        }
+        return { content: lines.join(eol), stats: stats };
+    }
+
+    function reverseSubFile(content) {
+        const eol = content.indexOf('\r\n') >= 0 ? '\r\n' : '\n';
+        const lines = content.split(/\r?\n/);
+        const out = [];
+        const stats = { changed: 0, lines: 0 };
+        let i = 0;
+        while (i < lines.length) {
+            const ln = lines[i];
+            out.push(ln); i++;
+            if (ln.indexOf('-->') < 0) continue;
+            while (i < lines.length && lines[i].trim() !== '') {
+                const orig = lines[i];
+                const fixed = reverseLine(orig);
+                stats.lines++;
+                if (fixed !== orig) stats.changed++;
+                out.push(fixed); i++;
+            }
+        }
+        return { content: out.join(eol), stats: stats };
+    }
+
+    return { reverseLine: reverseLine, reverseText: reverseText, reverseAssFile: reverseAssFile, reverseSubFile: reverseSubFile };
+})();
+
+// ---------- مۆداڵی پێچەوانەکردنەوەی RTL ----------
+function openRevRtlModal() {
+    document.getElementById('rev-rtl-modal').style.display = 'flex';
+    const inp = document.getElementById('revRtlFileInput');
+    if (inp) inp.value = '';
+    updateRevRtlCount(inp || { files: [] });
+    revRtlPreview();
+}
+
+function updateRevRtlCount(input) {
+    const display = document.getElementById('revRtlCountDisplay');
+    if (!display) return;
+    if (input && input.files && input.files.length > 0) {
+        display.innerText = input.files.length + ' ' + ((i18n[currentLang] && i18n[currentLang]['batchFilesSelected']) || 'فایل دیاریکراون');
+        display.style.color = 'var(--success)';
+    } else {
+        display.innerText = (i18n[currentLang] && i18n[currentLang]['batchNoFile']) || 'هیچ فایلێک دیاری نەکراوە';
+        display.style.color = 'var(--text-muted)';
+    }
+}
+
+function revRtlPreview() {
+    const i = document.getElementById('revRtlSample');
+    const a = document.getElementById('revRtlAfter');
+    if (i && a) a.textContent = RevRtl.reverseText(i.value);
+}
+
+async function executeRevRtl() {
+    const fileInput = document.getElementById('revRtlFileInput');
+    const files = fileInput ? fileInput.files : null;
+    if (!files || files.length === 0) {
+        showToast((i18n[currentLang] && i18n[currentLang]['msgSelectBatch']) || 'تکایە سەرەتا فایل هەڵبژێرە!', 'error');
+        return;
+    }
+    let totalChanged = 0;
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const raw = await file.text();
+        const lower = file.name.toLowerCase();
+        const isAss = lower.endsWith('.ass') || lower.endsWith('.ssa') || raw.includes('[Events]') || raw.includes('[Script Info]');
+        const isVtt = !isAss && (lower.endsWith('.vtt') || /^\uFEFF?WEBVTT/.test(raw));
+        const result = isAss ? RevRtl.reverseAssFile(raw) : RevRtl.reverseSubFile(raw);
+        totalChanged += result.stats.changed;
+        const ext = isAss ? 'ass' : (isVtt ? 'vtt' : 'srt');
+        const base = file.name.replace(/\.[^/.]+$/, '').replace(/_RTL_(Fixed|Clean|Reversed)$/, '');
+        triggerDownload(result.content, base + '_RTL_Reversed.' + ext);
+        await new Promise(function (r) { setTimeout(r, 600); });
+    }
+    if (totalChanged === 0) showToast('هیچ دێڕێک پێویستی بە گۆڕین نەبوو', 'info');
+    else showToast('پێچەوانەکردنەوەی RTL تەواو بوو — ' + totalChanged + ' دێڕ', 'success');
+}
+
 
 
 // ---------- مۆداڵی چاککردنی RTL ----------
@@ -15607,6 +15772,7 @@ html.kf-in-section body.startup-bg::before,
 html.kf-in-section body.startup-bg::after { display: none !important; }
 html:root body.startup-bg #converter-modal,
 html:root body.startup-bg #rtl-fix-modal,
+html:root body.startup-bg #rev-rtl-modal,
 html:root body.startup-bg #merge-modal,
 html:root body.startup-bg #sdh-modal,
 html:root body.startup-bg #shortcuts-modal,
@@ -15618,6 +15784,7 @@ html:root body.startup-bg #history-modal {
 }
 html:root body.startup-bg #converter-modal > .custom-modal-content,
 html:root body.startup-bg #rtl-fix-modal > .custom-modal-content,
+html:root body.startup-bg #rev-rtl-modal > .custom-modal-content,
 html:root body.startup-bg #merge-modal > .custom-modal-content,
 html:root body.startup-bg #sdh-modal > .custom-modal-content,
 html:root body.startup-bg #shortcuts-modal > .custom-modal-content,
@@ -15629,6 +15796,7 @@ html:root body.startup-bg #history-modal > .custom-modal-content { animation: no
 /* ---------- بەشەکان (مۆداڵەکان): تەواوی شاشە ---------- */
 html:root body.startup-bg #converter-modal,
 html:root body.startup-bg #rtl-fix-modal,
+html:root body.startup-bg #rev-rtl-modal,
 html:root body.startup-bg #merge-modal,
 html:root body.startup-bg #sdh-modal,
 html:root body.startup-bg #shortcuts-modal,
@@ -15644,6 +15812,7 @@ html:root body.startup-bg #history-modal {
 }
 html:root body.startup-bg #converter-modal > .custom-modal-content,
 html:root body.startup-bg #rtl-fix-modal > .custom-modal-content,
+html:root body.startup-bg #rev-rtl-modal > .custom-modal-content,
 html:root body.startup-bg #merge-modal > .custom-modal-content,
 html:root body.startup-bg #sdh-modal > .custom-modal-content,
 html:root body.startup-bg #shortcuts-modal > .custom-modal-content,
@@ -15672,6 +15841,7 @@ html.kf-wide #kf-drawer { display: none !important; }html.kf-wide .kf-bar-center
         padding-inline: max(24px, calc((100% - 760px) / 2)) !important; gap: 20px !important;
     }html.kf-wide:root body.startup-bg #converter-modal > .custom-modal-content,
 html.kf-wide:root body.startup-bg #rtl-fix-modal > .custom-modal-content,
+html.kf-wide:root body.startup-bg #rev-rtl-modal > .custom-modal-content,
 html.kf-wide:root body.startup-bg #merge-modal > .custom-modal-content,
 html.kf-wide:root body.startup-bg #sdh-modal > .custom-modal-content,
 html.kf-wide:root body.startup-bg #shortcuts-modal > .custom-modal-content,
@@ -15903,6 +16073,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
     var SECS = [
         { k: 'converter', fn: 'openConverterModal',   id: 'converter-modal',      label: 'گۆڕینی فایل' },
         { k: 'rtl',       fn: 'openRtlFixModal',      id: 'rtl-fix-modal',        label: 'چاککردنی RTL' },
+        { k: 'revrtl',    fn: 'openRevRtlModal',      id: 'rev-rtl-modal',        label: 'پێچەوانەکردنەوەی RTL' },
         { k: 'merge',     fn: 'openMergeModal',       id: 'merge-modal',          label: 'تێکەڵکردنی دوو فایل' },
         { k: 'sdh',       fn: 'openSdhModal',         id: 'sdh-modal',            label: 'پاککردنەوەی دەنگەکان (SDH)' },
         { k: 'shortcuts', fn: 'openShortcutsModal',   id: 'shortcuts-modal',      label: 'کورتکراوەکانی کیبۆرد' },
@@ -15922,7 +16093,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
     if (!tabs || !list || !drawer) return;
 
     // ئایکۆن و ناوی بەشەکان (بەستراوەتەوە بە کۆدەکەوە، پێویست بە مێنیوی کۆن نییە)
-    var DATA = {"converter": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M20 7H4M16 3l4 4-4 4M4 17h16M8 21l-4-4 4-4\"/></svg>", "label": "گۆڕینی فایل"}, "rtl": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11\"/></svg>", "label": "چاککردنی RTL"}, "merge": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"8\" y=\"8\" width=\"13\" height=\"13\" rx=\"2.5\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M4 16a2 2 0 0 1-2-2V4.5A2.5 2.5 0 0 1 4.5 2H14a2 2 0 0 1 2 2\"/></svg>", "label": "تێکەڵکردنی دوو فایل"}, "sdh": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"9\" y=\"2\" width=\"6\" height=\"13\" rx=\"3\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M19 10v1a7 7 0 0 1-14 0v-1M12 18v4M8.5 22h7\"/></svg>", "label": "پاککردنەوەی دەنگەکان (SDH)"}, "shortcuts": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M2 14h4M10 8h4M18 16h4\"/></svg>", "label": "کورتکراوەکانی کیبۆرد"}, "img": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"3\"/><circle stroke-width=\"1.85\" cx=\"9\" cy=\"9\" r=\"2\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21\"/></svg>", "label": "گۆڕینی وێنە بۆ لینک"}, "mkv": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"m16 13 5.2 3.5a.5.5 0 0 0 .8-.4V7.9a.5.5 0 0 0-.8-.4L16 11\"/><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"2\" y=\"6\" width=\"14\" height=\"12\" rx=\"2.5\"/></svg>", "label": "دەرهێنەری فایل لە MKV"}, "servers": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7\"/></svg>", "label": "کۆدی سێرڤەرەکان"}, "history": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><circle stroke-width=\"1.85\" cx=\"12\" cy=\"12\" r=\"9.25\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M12 7v5l3 2\"/></svg>", "label": "مێژووی کارەکان"}, "install": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M21 15v3.5A2.5 2.5 0 0 1 18.5 21h-13A2.5 2.5 0 0 1 3 18.5V15M7 10l5 5 5-5M12 15V3\"/></svg>", "label": "دابەزاندنی ئەپ"}};
+    var DATA = {"converter": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M20 7H4M16 3l4 4-4 4M4 17h16M8 21l-4-4 4-4\"/></svg>", "label": "گۆڕینی فایل"}, "rtl": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11\"/></svg>", "label": "چاککردنی RTL"}, "revrtl": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M7 20V4M7 20l-3-3M7 20l3-3M17 4v16M17 4l-3 3M17 4l3 3\"/></svg>", "label": "پێچەوانەکردنەوەی RTL"}, "merge": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"8\" y=\"8\" width=\"13\" height=\"13\" rx=\"2.5\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M4 16a2 2 0 0 1-2-2V4.5A2.5 2.5 0 0 1 4.5 2H14a2 2 0 0 1 2 2\"/></svg>", "label": "تێکەڵکردنی دوو فایل"}, "sdh": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"9\" y=\"2\" width=\"6\" height=\"13\" rx=\"3\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M19 10v1a7 7 0 0 1-14 0v-1M12 18v4M8.5 22h7\"/></svg>", "label": "پاککردنەوەی دەنگەکان (SDH)"}, "shortcuts": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M2 14h4M10 8h4M18 16h4\"/></svg>", "label": "کورتکراوەکانی کیبۆرد"}, "img": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"3\"/><circle stroke-width=\"1.85\" cx=\"9\" cy=\"9\" r=\"2\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21\"/></svg>", "label": "گۆڕینی وێنە بۆ لینک"}, "mkv": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"m16 13 5.2 3.5a.5.5 0 0 0 .8-.4V7.9a.5.5 0 0 0-.8-.4L16 11\"/><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"2\" y=\"6\" width=\"14\" height=\"12\" rx=\"2.5\"/></svg>", "label": "دەرهێنەری فایل لە MKV"}, "servers": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7\"/></svg>", "label": "کۆدی سێرڤەرەکان"}, "history": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><circle stroke-width=\"1.85\" cx=\"12\" cy=\"12\" r=\"9.25\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M12 7v5l3 2\"/></svg>", "label": "مێژووی کارەکان"}, "install": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M21 15v3.5A2.5 2.5 0 0 1 18.5 21h-13A2.5 2.5 0 0 1 3 18.5V15M7 10l5 5 5-5M12 15V3\"/></svg>", "label": "دابەزاندنی ئەپ"}};
     SECS.forEach(function (s) {
         var d = DATA[s.k];
         s.icon = d ? d.icon : '';
@@ -15969,7 +16140,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
     var center = document.querySelector('.kf-bar-center');
     if (wm && center) center.insertBefore(wm, center.firstChild);
 
-    var KEEP = { converter: 1, rtl: 1, merge: 1, sdh: 1, img: 1, mkv: 1 }, visited = {};
+    var KEEP = { converter: 1, rtl: 1, revrtl: 1, merge: 1, sdh: 1, img: 1, mkv: 1 }, visited = {};
     var nav = window.kfNav = {
         secs: SECS,
         isHome: function () { return document.body.classList.contains('startup-bg'); },
@@ -16071,6 +16242,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
         var PICK = [
             { id: 'convertFileInput', chips: true, reset: function (i) { if (typeof updateBatchCount === 'function') updateBatchCount(i); } },
             { id: 'rtlFixFileInput', chips: true, reset: function (i) { if (typeof updateRtlFixCount === 'function') updateRtlFixCount(i); } },
+            { id: 'revRtlFileInput', chips: true, reset: function (i) { if (typeof updateRevRtlCount === 'function') updateRevRtlCount(i); } },
             { id: 'sdhFileInput', chips: true, reset: function (i) { if (typeof updateSdhCount === 'function') updateSdhCount(i); } },
             { id: 'mergeBaseFile', reset: function (i) { if (typeof handleMergeBaseFileSelect === 'function') handleMergeBaseFileSelect(i); } },
             { id: 'mergeSourceFile', reset: function (i) { if (typeof handleMergeSourceFileSelect === 'function') handleMergeSourceFileSelect(i); } },
@@ -16966,7 +17138,7 @@ var G=[
  steps:[
  {h:'شریتی ئامرازەکانی سەرەوە',rows:[[E('btn','گەڕانەوە',1),E('ico','↶',2),E('ico','↷',3),E('ico','fsp',4),E('ico','RTL',5)],[E('ico','☑',6),E('ico','trashN',7),E('ico','🗑',8),E('ico','F',9),E('ico','🔍',10),E('ico','✕▶',11)]],
   notes:['<b>گەڕانەوە</b>: دەگەڕێیتەوە شاشەی سەرەکی؛ پرسیاری دڵنیابوونەوەت لێ دەکرێت چونکە ئەگەر داونلۆدت نەکردبێت، کارەکەت دەڕوات.','<b>پاشگەزبوونەوە</b>: دوایین گۆڕانکاری هەڵدەوەشێنێتەوە (Ctrl+Z).','<b>چوونەپێش</b>: گۆڕانکارییە هەڵوەشاوەکە دەگەڕێنێتەوە (Ctrl+Y).','<b>fsp 0</b>: پچڕانی نێوان پیتەکانی کوردی/عەرەبی لە هەموو فایلەکەدا لادەبات.','<b>RTL</b>: لە فایلی ASS ئاڕاستەی ڕاست-بۆ-چەپ لە <b>ستایلەکانی فایلەکە</b> دادەنێت (<bdi dir="ltr">Encoding=-1</bdi>)، بۆیە هیچ کۆدێک نەخراوەتە ناو دێڕەکان و دێڕەکان وەک خۆیان دەمێننەوە. جارێکی تر دەستی لێ بدەیت ستایلەکان دەگەڕێنێتەوە. لە SRT و VTT کە ستایلیان نییە، <bdi dir="ltr">{\\fe-1}</bdi> بۆ دێڕەکان دادەنرێت. کاتێک چالاک بێت ڕەنگی دوگمەکە ڕوون دەبێتەوە.','<b>دیاریکردنی دێڕەکان</b>: دۆخی هەڵبژاردن دەکاتەوە؛ دەست لە هەر دێڕێک بدە تا نیشانەی ✓ بگرێت.','<b>سڕینەوەی دیاریکراوەکان</b>: هەموو ئەو دێڕانەی ✓یان گرتووە دەسڕێتەوە.','<b>سڕینەوەی دێڕە بەتاڵەکان</b>: هەر دێڕێک دەقی تێدا نەبێت لادەبات (Ctrl+Shift+E).','<b>فۆنتەکان</b>: پەنجەرەی فۆنتەکان و ڕەندەری libass دەکاتەوە (لە بەشی «فۆنتەکان» ڕوونکراوەتەوە).','<b>گەڕان</b>: شریتی گەڕان و گۆڕین دەکاتەوە.','<b>لابردنی ڤیدیۆ</b>: ڤیدیۆکە لادەبات تا ڤیدیۆیەکی تر دابنێیت.']},
- {h:'پلەیەری ڤیدیۆ',rows:[[E('vid','فایل لە ئامێرەکەت هەڵبژێرە',1)],[E('el','seekbar',2)],[E('btn','-10s',3),E('ico','▶',4),E('btn','+10s',3),E('el','00:00 / 00:00',5),E('btn','1x',6),E('ico','vol',7)]],
+ {h:'پلەیەری ڤیدیۆ',rows:[[E('vid','فایلی ڤیدیۆ لە ئامێرەکەت هەڵبژێرە',1)],[E('el','seekbar',2)],[E('btn','-10s',3),E('ico','▶',4),E('btn','+10s',3),E('el','00:00 / 00:00',5),E('btn','1x',6),E('ico','vol',7)]],
   notes:['دەست لێ بدە و ڤیدیۆی فیلمەکە لە ئامێرەکەت هەڵبژێرە. ڤیدیۆکە بۆ هیچ شوێنێک نانێردرێت، تەنها لەسەر ئامێرەکەت کار دەکات. ژێرنووسەکە ڕاستەوخۆ لەسەری دەردەکەوێت.','هێڵی پێشکەوتن: دەستی لێ بدە یان ڕایبکێشە بۆ چوون بۆ هەر شوێنێکی ڤیدیۆ.','١٠ چرکە بۆ دواوە یان بۆ پێشەوە.','کارپێکردن / ڕاگرتن (Ctrl+Space).','کاتی ئێستا و کۆی کاتی ڤیدیۆ.','خێرایی کارپێکردن: هەر جارێک دەستی لێ بدەیت دەگۆڕێت (1x، 1.5x، 2x...).','دەنگ: دەنگی ڤیدیۆکە بێدەنگ یان دەنگدار دەکات.']},
  {h:'دەستلێدان لەسەر ڤیدیۆ',rows:[[E('vid','gest',1)]],
   notes:['شاشەی ڤیدیۆ سێ بەش دەبێت: چەپ، ناوەڕاست و ڕاست. <b>دووجار دەستلێدان</b> لە لای چەپ: ١٠ چرکە دەگەڕێتەوە دواوە. لە ناوەڕاست: ڤیدیۆ دەوەستێنێت یان کار دەکات. لە لای ڕاست: ١٠ چرکە دەچێتە پێشەوە.','<b>ڕاگرتنی پەنجە</b> (نزیکەی نیو چرکە): لە لای ڕاست ڤیدیۆ بە 2x کار دەکات، لە لای چەپ بە 2x بۆ دواوە دەگەڕێتەوە. کاتێک پەنجەت هەڵگرت، دەگەڕێتەوە دۆخی پێشوو (کارپێکردن یان ڕاگرتن).'],
@@ -17030,6 +17202,10 @@ var G=[
  feats:['چەند فایلێک پێکەوە','جۆری چاککردن بۆ هاردسەب یان پلەیەر','گەڕاندنەوە: لابردنی هێماکانی RTL'],
  steps:[{h:'بەکارهێنان',rows:[[E('box','فایلەکان هەڵبژێرە (SRT, ASS, VTT)',1)],[E('el','هارد سەب — libass / FFmpeg (پێشنیارکراو)',2)],[E('el','گشتی — بۆ پلەیەر و VSFilter',3)],[E('el','لابردنی هەموو هێماکانی RTL',4)],[E('btn','چاککردن و داگرتن',5)]],
   notes:['فایلەکان هەڵبژێرە.','باشترینە ئەگەر ژێرنووسەکە دەچێتە سەر ڤیدیۆ (هاردسەب) یان لە پلەیەرە نوێکان.','بۆ پلەیەرە کۆنەکان و VSFilter.','هەموو هێما شاراوەکانی RTL لادەبات و فایلەکە دەگەڕێنێتەوە دۆخی پێشوو.','فایلە چاککراوەکان دادەبەزن.']}]},
+{k:'revrtl',name:'پێچەوانەکردنەوەی RTL',intro:'نیشانەکانی سەرەتا و کۆتایی دێڕ (وەک ! ? . ,) ئاڵوگۆڕ دەکات، وەک Reverse RTL start/end لە Subtitle Edit.',
+ feats:['چەند فایلێک پێکەوە','بینینی ئەنجام لە تاقیکردنەوەی خێرادا','تاگەکان و دێڕی ئینگلیزی دەستکاری ناکرێن','دووبارە جێبەجێکردن دەیگەڕێنێتەوە'],
+ steps:[{h:'بەکارهێنان',rows:[[E('box','فایلەکان هەڵبژێرە (SRT, ASS, VTT)',1)],[E('el','!ئەمە دێڕێکی تاقیکردنەوەیە',2)],[E('btn','پێچەوانەکردنەوە و داگرتن',3)]],
+  notes:['یەک یان چەند فایلێک هەڵبژێرە.','دەقێک بنووسە و ئەنجامەکەی دەبینیت پێش ئەوەی فایلەکان بگۆڕیت.','فایلە گۆڕاوەکان بە ناوی _RTL_Reversed دادەبەزن.']}]},
 {k:'merge',name:'تێکەڵکردنی دوو فایل',intro:'دوو فایلی ژێرنووس تێکەڵ دەکات و ستایلەکانیان بەڕێوە دەبات؛ هەروەها لۆگۆی KURD FOREST زیاد دەکات.',
  feats:['فایلی سەرەکی + فایلی دووەم','بینین و سڕینەوەی ستایلەکان','دەستکاریکردنی ڕستەکانی فایلی دووەم','دیاریکردنی فۆنت بۆ ستایل/دێڕ','زیادکردنی لۆگۆ بە ٣ ستایلی جوڵە'],
  steps:[{h:'هەنگاوەکان',rows:[[E('box','١. فایلی سەرەکی (بنچینە)',1)],[E('btn','سڕینەوەی ستایلە بەتاڵەکان',2)],[E('box','٢. فایلی دووەم',3)],[E('btn','دەستکاریکردنی ڕستەکانی فایلی دووەم',4)],[E('el','فۆنتەکان: زیادکردن',5)],[E('el','☑ زیادکردنی لۆگۆی KURD FOREST',6),E('el','چەند جار؟ 2',7)],[E('btn','تێکەڵکردن و داگرتن',8)]],

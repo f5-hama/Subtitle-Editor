@@ -3676,21 +3676,17 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
     <div id="rev-rtl-modal" class="custom-modal-overlay">
         <div class="custom-modal-content">
             <h3 class="custom-modal-title">پێچەوانەکردنەوەی RTL (سەرەتا / کۆتایی)</h3>
-            <p style="font-size: 12.5px; color:var(--text-muted); margin-bottom:12px; line-height: 1.7;">ئەو نیشانانەی لە سەرەتای دێڕدان (<bdi dir="ltr">! ? . , : ; - ...</bdi>) دەیانباتە کۆتایی، و ئەوانەی لە کۆتایین دەیانباتە سەرەتا — هەمان کاری <bdi dir="ltr">Reverse RTL start/end</bdi>ـی Subtitle Edit. تەنها دێڕە RTLەکان دەگۆڕدرێن؛ دێڕی ئینگلیزی و تاگەکان وەک خۆیان دەمێنن. ئەگەر دووبارە جێبەجێی بکەیت، دەگەڕێتەوە دۆخی پێشوو.</p>
+            <p style="font-size: 12.5px; color:var(--text-muted); margin-bottom:8px; line-height: 1.9;">نیشانەکانی سەرەتای دێڕ دەباتە کۆتایی و ئەوانەی کۆتایین دەباتە سەرەتا (وەک <bdi dir="ltr">Reverse RTL start/end</bdi>ـی Subtitle Edit). تەنها دێڕە RTLەکان دەگۆڕدرێن؛ دێڕی ئینگلیزی و تاگەکان وەک خۆیان دەمێنن.</p>
+            <div dir="ltr" style="display:flex; flex-wrap:wrap; justify-content:center; gap:6px; margin-bottom:8px;">
+                <span style="padding:2px 10px; border:1px solid var(--border-color); border-radius:8px; font-size:14px; color:var(--text-main);">!</span><span style="padding:2px 10px; border:1px solid var(--border-color); border-radius:8px; font-size:14px; color:var(--text-main);">.</span><span style="padding:2px 10px; border:1px solid var(--border-color); border-radius:8px; font-size:14px; color:var(--text-main);">,</span><span style="padding:2px 10px; border:1px solid var(--border-color); border-radius:8px; font-size:14px; color:var(--text-main);">:</span><span style="padding:2px 10px; border:1px solid var(--border-color); border-radius:8px; font-size:14px; color:var(--text-main);">;</span><span style="padding:2px 10px; border:1px solid var(--border-color); border-radius:8px; font-size:14px; color:var(--text-main);">-</span><span style="padding:2px 10px; border:1px solid var(--border-color); border-radius:8px; font-size:14px; color:var(--text-main);">...</span>
+            </div>
+            <p style="font-size: 12px; color:var(--text-muted); margin-bottom:12px; line-height: 1.8;">نیشانەی پرسیار (<bdi dir="ltr">?</bdi> و <bdi dir="ltr">؟</bdi>) ناگۆڕدرێت. ئەگەر دووبارە جێبەجێی بکەیت، دەگەڕێتەوە دۆخی پێشوو.</p>
 
             <div class="file-box" id="boxRevRtl" style="margin-bottom: 14px; padding: 16px;">
                 <div class="upload-icon"><svg style="width:26px;height:26px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M21 15v3.5A2.5 2.5 0 0 1 18.5 21h-13A2.5 2.5 0 0 1 3 18.5V15M17 8l-5-5-5 5M12 3v12"/></svg></div>
                 <label>فایلەکان هەڵبژێرە (SRT, ASS, VTT):</label>
                 <div class="file-name-display" id="revRtlCountDisplay">هیچ فایلێک دیاری نەکراوە</div>
                 <input type="file" id="revRtlFileInput" accept=".srt,.ass,.vtt" multiple onchange="updateRevRtlCount(this)">
-            </div>
-
-            <div style="margin-bottom: 14px;">
-                <label style="display:block; font-size:12.5px; font-weight:bold; margin-bottom:6px; color:var(--text-main);">تاقیکردنەوەی خێرا (بینین پێش جێبەجێکردن):</label>
-                <textarea id="revRtlSample" dir="rtl" oninput="revRtlPreview()" style="width:100%; min-height:62px; resize:vertical; box-sizing:border-box; border:1px solid var(--border-color); border-radius:8px; padding:8px 10px; background:var(--bg-color); color:var(--text-main); font-family:inherit; font-size:14px; line-height:1.7; direction:rtl; text-align:right;">!ئەمە دێڕێکی تاقیکردنەوەیە
-...سڵاو، چۆنیت؟</textarea>
-                <div style="font-size:11.5px; color:var(--text-muted); margin:8px 0 4px;">دوای پێچەوانەکردنەوە:</div>
-                <div id="revRtlAfter" dir="rtl" style="white-space:pre-wrap; min-height:44px; box-sizing:border-box; border:1px dashed var(--primary); border-radius:8px; padding:8px 10px; font-size:14px; line-height:1.7; color:var(--text-main); direction:rtl; text-align:right;"></div>
             </div>
 
             <div class="custom-modal-actions">
@@ -3824,7 +3820,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
                 <div style="width: 100%; max-width: 320px;">
                     <button type="button" class="btn" style="width: 100%; padding: 12px 14px; font-size: 13px;" onclick="document.getElementById('nativeVideoFileInput').click()">
                         <svg class="icon" style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M21 15v3.5A2.5 2.5 0 0 1 18.5 21h-13A2.5 2.5 0 0 1 3 18.5V15M17 8l-5-5-5 5M12 3v12"/></svg>
-                        <span>فایلی ڤیدیۆ لە ئامێرەکەت هەڵبژێرە</span>
+                        <span>فایل لە ئامێرەکەت هەڵبژێرە</span>
                     </button>
                     <input type="file" id="nativeVideoFileInput" accept="*/*" style="display: none;" onchange="handleNativeVideoUpload(this)">
                 </div>
@@ -6167,7 +6163,7 @@ const RevRtl = (function () {
     'use strict';
     const RTL_CHAR = /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/;
     // نیشانەکان + هێماکانی ئاڕاستە (لەگەڵ نیشانەکە دەجوڵێن)
-    const RUN = '[.,!?:;\\u061F\\u060C\\u061B\\u2026"\'\\u00AB\\u00BB\\u201C\\u201D\\u2018\\u2019()\\[\\]\\-\\u2013\\u2014\\u266A\\u00BF\\u00A1\\u200E\\u200F\\u061C\\u202A-\\u202E\\u2066-\\u2069]';
+    const RUN = '[.,!:;\\u060C\\u061B\\u2026"\'\\u00AB\\u00BB\\u201C\\u201D\\u2018\\u2019()\\[\\]\\-\\u2013\\u2014\\u266A\\u00BF\\u00A1\\u200E\\u200F\\u061C\\u202A-\\u202E\\u2066-\\u2069]';
     const TAG = '(?:\\{[^}]*\\}|<\\/?[A-Za-z][^>]*>)';
     const LEAD_TAGS = new RegExp('^' + TAG + '+');
     const TRAIL_TAGS = new RegExp(TAG + '+$');
@@ -6249,7 +6245,6 @@ function openRevRtlModal() {
     const inp = document.getElementById('revRtlFileInput');
     if (inp) inp.value = '';
     updateRevRtlCount(inp || { files: [] });
-    revRtlPreview();
 }
 
 function updateRevRtlCount(input) {
@@ -6262,12 +6257,6 @@ function updateRevRtlCount(input) {
         display.innerText = (i18n[currentLang] && i18n[currentLang]['batchNoFile']) || 'هیچ فایلێک دیاری نەکراوە';
         display.style.color = 'var(--text-muted)';
     }
-}
-
-function revRtlPreview() {
-    const i = document.getElementById('revRtlSample');
-    const a = document.getElementById('revRtlAfter');
-    if (i && a) a.textContent = RevRtl.reverseText(i.value);
 }
 
 async function executeRevRtl() {
@@ -17138,7 +17127,7 @@ var G=[
  steps:[
  {h:'شریتی ئامرازەکانی سەرەوە',rows:[[E('btn','گەڕانەوە',1),E('ico','↶',2),E('ico','↷',3),E('ico','fsp',4),E('ico','RTL',5)],[E('ico','☑',6),E('ico','trashN',7),E('ico','🗑',8),E('ico','F',9),E('ico','🔍',10),E('ico','✕▶',11)]],
   notes:['<b>گەڕانەوە</b>: دەگەڕێیتەوە شاشەی سەرەکی؛ پرسیاری دڵنیابوونەوەت لێ دەکرێت چونکە ئەگەر داونلۆدت نەکردبێت، کارەکەت دەڕوات.','<b>پاشگەزبوونەوە</b>: دوایین گۆڕانکاری هەڵدەوەشێنێتەوە (Ctrl+Z).','<b>چوونەپێش</b>: گۆڕانکارییە هەڵوەشاوەکە دەگەڕێنێتەوە (Ctrl+Y).','<b>fsp 0</b>: پچڕانی نێوان پیتەکانی کوردی/عەرەبی لە هەموو فایلەکەدا لادەبات.','<b>RTL</b>: لە فایلی ASS ئاڕاستەی ڕاست-بۆ-چەپ لە <b>ستایلەکانی فایلەکە</b> دادەنێت (<bdi dir="ltr">Encoding=-1</bdi>)، بۆیە هیچ کۆدێک نەخراوەتە ناو دێڕەکان و دێڕەکان وەک خۆیان دەمێننەوە. جارێکی تر دەستی لێ بدەیت ستایلەکان دەگەڕێنێتەوە. لە SRT و VTT کە ستایلیان نییە، <bdi dir="ltr">{\\fe-1}</bdi> بۆ دێڕەکان دادەنرێت. کاتێک چالاک بێت ڕەنگی دوگمەکە ڕوون دەبێتەوە.','<b>دیاریکردنی دێڕەکان</b>: دۆخی هەڵبژاردن دەکاتەوە؛ دەست لە هەر دێڕێک بدە تا نیشانەی ✓ بگرێت.','<b>سڕینەوەی دیاریکراوەکان</b>: هەموو ئەو دێڕانەی ✓یان گرتووە دەسڕێتەوە.','<b>سڕینەوەی دێڕە بەتاڵەکان</b>: هەر دێڕێک دەقی تێدا نەبێت لادەبات (Ctrl+Shift+E).','<b>فۆنتەکان</b>: پەنجەرەی فۆنتەکان و ڕەندەری libass دەکاتەوە (لە بەشی «فۆنتەکان» ڕوونکراوەتەوە).','<b>گەڕان</b>: شریتی گەڕان و گۆڕین دەکاتەوە.','<b>لابردنی ڤیدیۆ</b>: ڤیدیۆکە لادەبات تا ڤیدیۆیەکی تر دابنێیت.']},
- {h:'پلەیەری ڤیدیۆ',rows:[[E('vid','فایلی ڤیدیۆ لە ئامێرەکەت هەڵبژێرە',1)],[E('el','seekbar',2)],[E('btn','-10s',3),E('ico','▶',4),E('btn','+10s',3),E('el','00:00 / 00:00',5),E('btn','1x',6),E('ico','vol',7)]],
+ {h:'پلەیەری ڤیدیۆ',rows:[[E('vid','فایل لە ئامێرەکەت هەڵبژێرە',1)],[E('el','seekbar',2)],[E('btn','-10s',3),E('ico','▶',4),E('btn','+10s',3),E('el','00:00 / 00:00',5),E('btn','1x',6),E('ico','vol',7)]],
   notes:['دەست لێ بدە و ڤیدیۆی فیلمەکە لە ئامێرەکەت هەڵبژێرە. ڤیدیۆکە بۆ هیچ شوێنێک نانێردرێت، تەنها لەسەر ئامێرەکەت کار دەکات. ژێرنووسەکە ڕاستەوخۆ لەسەری دەردەکەوێت.','هێڵی پێشکەوتن: دەستی لێ بدە یان ڕایبکێشە بۆ چوون بۆ هەر شوێنێکی ڤیدیۆ.','١٠ چرکە بۆ دواوە یان بۆ پێشەوە.','کارپێکردن / ڕاگرتن (Ctrl+Space).','کاتی ئێستا و کۆی کاتی ڤیدیۆ.','خێرایی کارپێکردن: هەر جارێک دەستی لێ بدەیت دەگۆڕێت (1x، 1.5x، 2x...).','دەنگ: دەنگی ڤیدیۆکە بێدەنگ یان دەنگدار دەکات.']},
  {h:'دەستلێدان لەسەر ڤیدیۆ',rows:[[E('vid','gest',1)]],
   notes:['شاشەی ڤیدیۆ سێ بەش دەبێت: چەپ، ناوەڕاست و ڕاست. <b>دووجار دەستلێدان</b> لە لای چەپ: ١٠ چرکە دەگەڕێتەوە دواوە. لە ناوەڕاست: ڤیدیۆ دەوەستێنێت یان کار دەکات. لە لای ڕاست: ١٠ چرکە دەچێتە پێشەوە.','<b>ڕاگرتنی پەنجە</b> (نزیکەی نیو چرکە): لە لای ڕاست ڤیدیۆ بە 2x کار دەکات، لە لای چەپ بە 2x بۆ دواوە دەگەڕێتەوە. کاتێک پەنجەت هەڵگرت، دەگەڕێتەوە دۆخی پێشوو (کارپێکردن یان ڕاگرتن).'],
@@ -17202,10 +17191,10 @@ var G=[
  feats:['چەند فایلێک پێکەوە','جۆری چاککردن بۆ هاردسەب یان پلەیەر','گەڕاندنەوە: لابردنی هێماکانی RTL'],
  steps:[{h:'بەکارهێنان',rows:[[E('box','فایلەکان هەڵبژێرە (SRT, ASS, VTT)',1)],[E('el','هارد سەب — libass / FFmpeg (پێشنیارکراو)',2)],[E('el','گشتی — بۆ پلەیەر و VSFilter',3)],[E('el','لابردنی هەموو هێماکانی RTL',4)],[E('btn','چاککردن و داگرتن',5)]],
   notes:['فایلەکان هەڵبژێرە.','باشترینە ئەگەر ژێرنووسەکە دەچێتە سەر ڤیدیۆ (هاردسەب) یان لە پلەیەرە نوێکان.','بۆ پلەیەرە کۆنەکان و VSFilter.','هەموو هێما شاراوەکانی RTL لادەبات و فایلەکە دەگەڕێنێتەوە دۆخی پێشوو.','فایلە چاککراوەکان دادەبەزن.']}]},
-{k:'revrtl',name:'پێچەوانەکردنەوەی RTL',intro:'نیشانەکانی سەرەتا و کۆتایی دێڕ (وەک ! ? . ,) ئاڵوگۆڕ دەکات، وەک Reverse RTL start/end لە Subtitle Edit.',
- feats:['چەند فایلێک پێکەوە','بینینی ئەنجام لە تاقیکردنەوەی خێرادا','تاگەکان و دێڕی ئینگلیزی دەستکاری ناکرێن','دووبارە جێبەجێکردن دەیگەڕێنێتەوە'],
- steps:[{h:'بەکارهێنان',rows:[[E('box','فایلەکان هەڵبژێرە (SRT, ASS, VTT)',1)],[E('el','!ئەمە دێڕێکی تاقیکردنەوەیە',2)],[E('btn','پێچەوانەکردنەوە و داگرتن',3)]],
-  notes:['یەک یان چەند فایلێک هەڵبژێرە.','دەقێک بنووسە و ئەنجامەکەی دەبینیت پێش ئەوەی فایلەکان بگۆڕیت.','فایلە گۆڕاوەکان بە ناوی _RTL_Reversed دادەبەزن.']}]},
+{k:'revrtl',name:'پێچەوانەکردنەوەی RTL',intro:'نیشانەکانی سەرەتا و کۆتایی دێڕ (وەک ! . ,) ئاڵوگۆڕ دەکات؛ نیشانەی پرسیار ناگۆڕێت، وەک Reverse RTL start/end لە Subtitle Edit.',
+ feats:['چەند فایلێک پێکەوە','تاگەکان و دێڕی ئینگلیزی دەستکاری ناکرێن','دووبارە جێبەجێکردن دەیگەڕێنێتەوە'],
+ steps:[{h:'بەکارهێنان',rows:[[E('box','فایلەکان هەڵبژێرە (SRT, ASS, VTT)',1)],[E('btn','پێچەوانەکردنەوە و داگرتن',2)]],
+  notes:['یەک یان چەند فایلێک هەڵبژێرە.','فایلە گۆڕاوەکان بە ناوی _RTL_Reversed دادەبەزن.']}]},
 {k:'merge',name:'تێکەڵکردنی دوو فایل',intro:'دوو فایلی ژێرنووس تێکەڵ دەکات و ستایلەکانیان بەڕێوە دەبات؛ هەروەها لۆگۆی KURD FOREST زیاد دەکات.',
  feats:['فایلی سەرەکی + فایلی دووەم','بینین و سڕینەوەی ستایلەکان','دەستکاریکردنی ڕستەکانی فایلی دووەم','دیاریکردنی فۆنت بۆ ستایل/دێڕ','زیادکردنی لۆگۆ بە ٣ ستایلی جوڵە'],
  steps:[{h:'هەنگاوەکان',rows:[[E('box','١. فایلی سەرەکی (بنچینە)',1)],[E('btn','سڕینەوەی ستایلە بەتاڵەکان',2)],[E('box','٢. فایلی دووەم',3)],[E('btn','دەستکاریکردنی ڕستەکانی فایلی دووەم',4)],[E('el','فۆنتەکان: زیادکردن',5)],[E('el','☑ زیادکردنی لۆگۆی KURD FOREST',6),E('el','چەند جار؟ 2',7)],[E('btn','تێکەڵکردن و داگرتن',8)]],

@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html id="html-tag" lang="ckb" dir="rtl">
 <head>
+<script>
+(function(){try{var r=document.documentElement;if(localStorage.getItem('kf_mode')==='manga'){r.classList.add('kf-manga-mode','kf-noanim');var d=function(){setTimeout(function(){r.classList.remove('kf-noanim');},500);};window.addEventListener('load',d);setTimeout(d,2500);}}catch(e){}})();
+</script>
+<script>(function(){try{var c=localStorage.getItem('kf_mg_theme_css');if(c){var st=document.createElement('style');st.id='kf-mg-theme-style';st.textContent=c;document.head.appendChild(st);document.documentElement.classList.add('kf-mgtheme');}}catch(e){}})();</script>
+<style>html.kf-noanim .mgp-panel,html.kf-noanim .mgp-handle,html.kf-noanim .mgp-handle svg,html.kf-noanim #manga-screen,html.kf-noanim #manga-screen *{transition:none!important;animation:none!important}</style>
+
 
 <link rel="manifest" href="manifest.json">
 
@@ -2264,10 +2270,12 @@ function kfTogglePw(btn){
                 <div class="mgp-note">فۆنتە کاڵەکان هێشتا بار نەکراون؛ فایلەکانیان هەڵبژێرە، بەیەکجار بار دەکرێن و لە مۆبایلەکەدا دەمێننەوە.</div>
                 <label class="mgp-lbl">قەبارە <b id="mgpSizeV">28</b></label>
                 <input type="range" id="mgpSize" min="6" max="400" value="28">
-                <div class="mgp-row">
-                    <div class="mgp-col"><label class="mgp-lbl">ڕەنگ</label><input type="color" class="mgp-cin" id="mgpColor" value="#000000"></div>
-                    <div class="mgp-col"><label class="mgp-lbl">ڕەنگی لێوار</label><input type="color" class="mgp-cin" id="mgpStroke" value="#ffffff"></div>
-                </div>
+                <div class="mgp-glbl">نووسین</div>
+                <div class="mgp-grow" data-grow="gt"><button type="button" class="mgp-gbtn g-open" title="جۆری گرادیێنت"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 6h14M5 10h14M5 14h14M5 18h14" opacity=".9"/></svg></button><div class="mgp-gcell"><span class="mgp-ga">↑</span><input type="color" class="mgp-cin" id="mgpColor" value="#000000"></div><div class="mgp-gcell"><span class="mgp-ga">↓</span><input type="color" class="mgp-cin" id="mgpColor2" value="#000000"></div><button type="button" class="mgp-gbtn g-eq" title="هەردوو ڕەنگ وەک یەک">=</button><button type="button" class="mgp-gbtn g-swap" title="گۆڕینی ڕەنگەکان">⇅</button></div>
+                <div class="mgp-glbl">لێوار</div>
+                <div class="mgp-grow" data-grow="gs"><button type="button" class="mgp-gbtn g-open" title="جۆری گرادیێنت"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 6h14M5 10h14M5 14h14M5 18h14" opacity=".9"/></svg></button><div class="mgp-gcell"><span class="mgp-ga">↑</span><input type="color" class="mgp-cin" id="mgpStroke" value="#000000"></div><div class="mgp-gcell"><span class="mgp-ga">↓</span><input type="color" class="mgp-cin" id="mgpStroke2" value="#000000"></div><button type="button" class="mgp-gbtn g-eq" title="هەردوو ڕەنگ وەک یەک">=</button><button type="button" class="mgp-gbtn g-swap" title="گۆڕینی ڕەنگەکان">⇅</button></div>
+                <div class="mgp-glbl">باکگراوند</div>
+                <div class="mgp-grow" data-grow="gb"><button type="button" class="mgp-gbtn g-open" title="جۆری گرادیێنت"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 6h14M5 10h14M5 14h14M5 18h14" opacity=".9"/></svg></button><div class="mgp-gcell"><span class="mgp-ga">↑</span><input type="color" class="mgp-cin" id="mgpBg" value="#000000"></div><div class="mgp-gcell"><span class="mgp-ga">↓</span><input type="color" class="mgp-cin" id="mgpBg2" value="#000000"></div><button type="button" class="mgp-gbtn g-eq" title="هەردوو ڕەنگ وەک یەک">=</button><button type="button" class="mgp-gbtn g-swap" title="گۆڕینی ڕەنگەکان">⇅</button></div>
                 <label class="mgp-lbl">ستووریی لێوار <b id="mgpStrokeV">0</b></label>
                 <input type="range" id="mgpStrokeW" min="0" max="12" step="0.5" value="0">
                 <div class="mgp-row mgp-seg">
@@ -2299,6 +2307,7 @@ function kfTogglePw(btn){
                 <div class="mgp-tools" id="mgpTools">
                     <button type="button" class="mgp-tool on" data-tool="select"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 8-6 2-3 6z"/></svg><span>دەستنیشان</span></button>
                     <button type="button" class="mgp-tool" data-tool="whiteout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20H9L4 15a2 2 0 0 1 0-3l8-8a2 2 0 0 1 3 0l5 5a2 2 0 0 1 0 3l-7 8"/><path d="M7 11l6 6"/></svg><span>سپیکردنەوە</span></button>
+                    <button type="button" class="mgp-tool" data-tool="aierase"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg><span>زیرەکی دەستکرد</span></button>
                     <button type="button" class="mgp-tool" data-tool="brush"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg><span>فرچە</span></button>
                     <button type="button" class="mgp-tool" data-tool="rect"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="1.5"/></svg><span>چوارگۆشە</span></button>
                     <button type="button" class="mgp-tool" data-tool="ellipse"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="12" rx="9" ry="7"/></svg><span>بازنە</span></button>
@@ -2323,6 +2332,9 @@ function kfTogglePw(btn){
                 <label class="mgp-lbl">ستووری هێڵ <b id="mgpLineWV">3</b></label>
                 <input type="range" id="mgpLineW" min="1" max="20" value="3">
 
+                <div class="mgp-sec">سڕینەوە بە زیرەکی دەستکرد</div>
+                <div class="mgp-note">ئامرازی «زیرەکی دەستکرد» هەڵبژێرە، ئەو شتەی دەتەوێت بسڕێتەوە بە فرچە ڕەنگ بکە، پاشان «سڕینەوە» دابگرە. پێویستی بە ئینتەرنێت و کلیلی Gemini API هەیە.</div>
+                <div class="mgp-row mgp-wrap"><button type="button" class="mgp-btn mgp-primary" id="mgpAiRun">سڕینەوە</button><button type="button" class="mgp-btn" id="mgpAiClear">پاککردنەوەی نیشانە</button><button type="button" class="mgp-btn" id="mgpAiKey">گۆڕینی کلیل</button></div>
                 <div class="mgp-sec">ڕەنگ دەرهێنان لە وێنە / PDF</div>
                 <div class="mgp-pick">
                     <div class="mgp-sw" id="mgpSw"></div>
@@ -17988,7 +18000,7 @@ html.kf-manga-mode #manga-screen.has-doc .mgp-stage { display: block; }
 .mgp-page { position: relative; flex: 0 0 auto; background: #fff; box-shadow: 0 6px 24px rgba(0,0,0,.55); overflow: hidden; user-select: none; -webkit-user-select: none; }
 .mgp-page canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .mgp-layer { position: absolute; inset: 0; overflow: hidden; }
-.mgp-stage[data-tool="whiteout"] .mgp-page, .mgp-stage[data-tool="brush"] .mgp-page,
+.mgp-stage[data-tool="whiteout"] .mgp-page, .mgp-stage[data-tool="aierase"] .mgp-page, .mgp-stage[data-tool="brush"] .mgp-page,
 .mgp-stage[data-tool="rect"] .mgp-page, .mgp-stage[data-tool="ellipse"] .mgp-page, .mgp-stage[data-tool="pick"] .mgp-page { touch-action: none; cursor: crosshair; }
 .mgp-stage:not([data-tool="select"]) .mgp-obj { pointer-events: none; }
 .mgp-obj { position: absolute; touch-action: none; direction: ltr; }
@@ -18126,6 +18138,48 @@ html.kf-manga-mode #manga-screen.has-doc .mgp-bar { display: flex; }
 .mgp-hc img { width: 54px; height: 72px; object-fit: cover; border-radius: 6px; background: #fff; }
 .mgp-hc .t { flex: 1; font-size: 13px; direction: ltr; text-align: left; }
 .mgp-hc .mgp-btn { flex: none; padding: 8px 12px; }
+.mgp-page canvas.mgp-mask { opacity: .55; pointer-events: none; }
+
+.mgp-glbl { font-size: 12px; color: var(--primary); margin: 8px 2px 2px; }
+.mgp-grow { display: grid; grid-template-columns: 40px 1fr 1fr 40px 40px; gap: 6px; align-items: center; }
+.mgp-gbtn { height: 40px; border-radius: 10px; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.06); color: #e2e8f0; font-size: 18px; font-weight: bold; cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center; }
+.mgp-gbtn svg { width: 20px; height: 20px; }
+.mgp-gcell { position: relative; min-width: 0; }
+.mgp-ga { position: absolute; top: 2px; right: 6px; z-index: 2; font-size: 13px; font-weight: bold; color: #fff; mix-blend-mode: difference; pointer-events: none; }
+.mgp-gcell .mgp-swrow { margin: 0; gap: 3px; }
+.mgp-gcell .mgp-swatch { height: 40px; }
+.mgp-gcell .mgp-swatch::after { display: none; }
+.mgp-gcell .mgp-quick { width: 16px; height: 16px; border-width: 1px; }
+.mgp-swatch.none, .mgp-quick.none { background: repeating-linear-gradient(45deg, #fff 0 4px, #cfcfcf 4px 8px) !important; }
+.mgp-gprev { height: 72px; border-radius: 12px; border: 1px solid rgba(255,255,255,.25); background-color: #fff; }
+.mgp-gpats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.mgp-gpats button { height: 46px; border-radius: 10px; border: 2px solid rgba(255,255,255,.2); cursor: pointer; padding: 0; }
+.mgp-gpats button.on, .mgp-gseg button.on { border-color: #8ab4ff; box-shadow: 0 0 0 2px rgba(138,180,255,.4); }
+.mgp-gseg { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; }
+.mgp-gseg button { padding: 10px 4px; border-radius: 10px; border: 2px solid rgba(255,255,255,.2); background: rgba(255,255,255,.06); color: #e2e8f0; cursor: pointer; font-size: 13px; }
+.mgp-txt { isolation: isolate; }
+.mgp-txt[data-tg] { caret-color: #888; }
+.mgp-txt[data-tg]::after, .mgp-txt[data-og]::before { content: attr(data-t); position: absolute; inset: 0; padding: inherit; white-space: pre-wrap; word-break: break-word; unicode-bidi: plaintext; text-align: inherit; pointer-events: none; -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; }
+.mgp-txt[data-tg]::after { background-image: var(--tg); }
+.mgp-txt[data-og]::before { background-image: var(--og); -webkit-text-stroke: var(--osw) #000; stroke-linejoin: round; z-index: -1; }
+
+.mgp-modal.mgp-center { align-items: center; padding: 18px; }
+.mgp-dlg { border-radius: 18px; max-width: 420px; }
+.mgp-mb p { margin: 6px 0; line-height: 1.8; font-size: 15px; }
+.mgp-tin { width: 100%; box-sizing: border-box; padding: 11px; border-radius: 10px; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.06); color: #e2e8f0; direction: ltr; font-size: 14px; }
+.mgp-hc { flex-direction: column; align-items: stretch; }
+.mgp-hinfo { display: flex; gap: 10px; align-items: center; }
+.mgp-hbtns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.mgp-hbtns .mgp-btn { margin: 0; padding: 10px 6px; }
+.mgp-tag { display: inline-block; margin-inline-start: 6px; padding: 1px 8px; border-radius: 8px; font-size: 11px; background: var(--primary); color: #0b101c; font-weight: bold; }
+.mgp-pw { margin-top: 4px; }
+.mgp-pbar { height: 10px; border-radius: 6px; background: rgba(255,255,255,.12); overflow: hidden; }
+.mgp-pbar i { display: block; height: 100%; width: 0; background: var(--primary); transition: width .15s; }
+.mgp-ptxt { margin-top: 6px; font-size: 13px; text-align: center; direction: ltr; min-height: 18px; }
+.mgp-bbtn.mgp-bsave { background-image: linear-gradient(to right, rgba(255,255,255,.6) var(--p, 0%), transparent var(--p, 0%)); min-width: 110px; direction: ltr; }
+.mgp-tgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; padding: 6px 2px; }
+.mgp-tdot { aspect-ratio: 1; border-radius: 50%; border: 3px solid transparent; cursor: pointer; padding: 0; }
+.mgp-tdot.on { border-color: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,.3); }
 @media (prefers-reduced-motion: reduce) { .mgp-panel, .mgp-handle svg { transition: none; } }
 
 /* ============ شاشەی بارکردنی گواستنەوە ============ */
@@ -18259,16 +18313,21 @@ html.kf-manga-mode #manga-screen.has-doc .mgp-bar { display: flex; }
 
   function enterManga() {
     try { if (window.kfNav) { kfNav.closeDrawer(); kfNav.closeSections(); } } catch (e) {}
-    root.classList.add('kf-manga-mode');
+    root.classList.add('kf-noanim', 'kf-manga-mode');
+    try { localStorage.setItem('kf_mode', 'manga'); } catch (e) {}
+    setTimeout(function () { root.classList.remove('kf-noanim'); }, 900);
     try { if (window.kfNav) kfNav.sync(); } catch (e) {}
     window.scrollTo(0, 0);
   }
   function exitManga() {
-    root.classList.remove('kf-manga-mode');
+    root.classList.add('kf-noanim'); root.classList.remove('kf-manga-mode');
+    try { localStorage.removeItem('kf_mode'); } catch (e) {}
+    setTimeout(function () { root.classList.remove('kf-noanim'); }, 900);
     try { if (window.kfNav) kfNav.sync(); } catch (e) {}
     window.scrollTo(0, 0);
   }
 
+  window.addEventListener('load', function () { setTimeout(function () { try { if (root.classList.contains('kf-manga-mode') && window.kfNav) kfNav.sync(); } catch (e) {} }, 300); });
   window.kfMode = {
     isManga: function () { return root.classList.contains('kf-manga-mode'); },
     toManga: function () { if (this.isManga()) return; run('manga', 2300, enterManga); },
@@ -18302,7 +18361,7 @@ html.kf-manga-mode #manga-screen.has-doc .mgp-bar { display: flex; }
   var FONTS = PRESETS.map(function (p) { FINFO[p.name] = { label: p.label, bg: p.bg, fg: p.fg, loaded: false, key: nk(p.name) }; return [p.name, p.name]; });
   var S = {
     pages: [], tool: 'select', sel: null, zoom: 1, undo: [], picked: null, nid: 1, dirty: false, drag: null, lastTap: null,
-    text: { font: 'UniMahan Shaho', size: 28, color: '#000000', stroke: '#ffffff', sw: 0, bold: false, italic: false, align: 'center', rot: 0, lh: 1.35, ws: 0 },
+    text: { font: 'UniMahan Shaho', size: 28, color: '#000000', stroke: '#ffffff', sw: 0, bold: false, italic: false, align: 'center', rot: 0, lh: 1.35, ws: 0, color2: '#000000', stroke2: '#ffffff', bg: '', bg2: '', gt: { type: 'linear', angle: 180, pat: 0 }, gs: { type: 'linear', angle: 180, pat: 0 }, gb: { type: 'linear', angle: 180, pat: 0 } },
     brush: { size: 24, color: '#000000' },
     shape: { fillOn: true, fill: '#ffffff', lineOn: false, line: '#000000', lw: 3 }
   };
@@ -18346,12 +18405,12 @@ html.kf-manga-mode #manga-screen.has-doc .mgp-bar { display: flex; }
     close: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M18 6 6 18M6 6l12 12"/>'
   };
   var MENU = [
-    { k: 'open', label: 'کردنەوەی وێنە / PDF', act: function () { $('mgpFile').click(); } },
-    { k: 'hist', label: 'مێژوو', act: function () { openHistory(); } },
+    { k: 'main', icon: 'back', label: 'بەشی سەرەکی', act: function () { goMain(); } },
+    { k: 'theme', icon: 'conv', label: 'ڕەنگەکان', act: function () { themePicker(); } },
     { k: 'pdfe', label: 'دەستکاری PDF', act: function () { pdfEditor(); } },
     { k: 'conv', label: 'گۆڕینی وێنە ↔ PDF', act: function () { converter(); } },
-    { sep: 1, doc: 1 },
-    { k: 'main', icon: 'back', label: 'بەشی سەرەکی', doc: 1, act: function () { closeDoc(); } }
+    { sep: 1 },
+    { k: 'hist', label: 'مێژوو', act: function () { openHistory(); } }
   ];
   var hosts = [];
   (function buildMenu() {
@@ -18506,11 +18565,41 @@ html.kf-manga-mode #manga-screen.has-doc .mgp-bar { display: flex; }
     S.pages = []; S.undo = []; S.sel = null; S.dirty = false; S.drag = null;
     pagesEl.innerHTML = ''; syncSel();
   }
+  function stampNow() { return new Date().toISOString().slice(0, 16).replace(/[-:T]/g, ''); }
+  var closing = false;
   function closeDoc() {
-    if (!hasDoc()) return;
-    if (S.dirty && !confirm('گۆڕانکارییەکان دەسڕێنەوە. فایلەکان دابخرێن؟')) return;
-    resetDoc(); screen.classList.remove('has-doc'); updateMenu();
+    if (!hasDoc() || closing) return;
+    function go() {
+      closing = true; toast('پاشەکەوتکردن لە مێژوو...');
+      saveHistory(stampNow(), true).then(function () { resetDoc(); screen.classList.remove('has-doc'); updateMenu(); closing = false; toast('لە مێژوو پاشەکەوت کرا'); });
+    }
+    if (S.dirty) askYesNo('کارەکەت لە مێژوو پاشەکەوت دەکرێت و دەگەڕێیتەوە بۆ بەشی سەرەکی. بەردەوام بیت؟', go); else go();
   }
+  function goMain() {
+    [].forEach.call(document.querySelectorAll('.mgp-modal'), function (m) { m.remove(); });
+    try { if (window.kfNav) kfNav.closeDrawer(); } catch (e) {}
+    if (hasDoc()) closeDoc(); else window.scrollTo(0, 0);
+  }
+  function askYesNo(msg, yes, yesLabel) {
+    var m = document.createElement('div'); m.className = 'mgp-modal mgp-center';
+    m.innerHTML = '<div class="mgp-mc mgp-dlg"><div class="mgp-mb"><p></p><div class="mgp-row"></div></div></div>';
+    m.querySelector('p').textContent = msg; var row = m.querySelector('.mgp-row');
+    row.appendChild(mkBtn('نەخێر', function () { m.remove(); })); row.appendChild(mkBtn(yesLabel || 'بەڵێ', function () { m.remove(); yes(); }, 'mgp-primary'));
+    document.body.appendChild(m);
+  }
+  function askText(msg, val, cb) {
+    var m = document.createElement('div'); m.className = 'mgp-modal mgp-center';
+    m.innerHTML = '<div class="mgp-mc mgp-dlg"><div class="mgp-mb"><p></p><input class="mgp-tin" type="text"><div class="mgp-row"></div></div></div>';
+    m.querySelector('p').textContent = msg; var inp = m.querySelector('input'); inp.value = val || ''; var row = m.querySelector('.mgp-row');
+    row.appendChild(mkBtn('هەڵوەشاندنەوە', function () { m.remove(); })); row.appendChild(mkBtn('پاشەکەوت', function () { var v = inp.value.trim(); m.remove(); if (v) cb(v); }, 'mgp-primary'));
+    document.body.appendChild(m); inp.focus();
+  }
+  function mkProg(b) {
+    var w = document.createElement('div'); w.className = 'mgp-pw'; w.innerHTML = '<div class="mgp-pbar"><i></i></div><div class="mgp-ptxt"></div>'; b.appendChild(w);
+    var bar = w.querySelector('i'), tx = w.querySelector('.mgp-ptxt');
+    return function (i, n, txt) { bar.style.width = Math.round(i / n * 100) + '%'; tx.textContent = txt || (i + ' / ' + n); };
+  }
+  function mb(blob) { return (blob.size / 1048576).toFixed(1) + ' MB'; }
 
   /* ---------- گەورەکردن ---------- */
   function layout() {
@@ -18540,7 +18629,7 @@ html.kf-manga-mode #manga-screen.has-doc .mgp-bar { display: flex; }
 
 
   /* ---------- ڕەنگ: بێ پەنجەرەی ئەندرۆید، تەنها لە شاشەوە هەڵدەگیرێت ---------- */
-  var CIDS = ['mgpColor', 'mgpStroke', 'mgpBrushC', 'mgpFill', 'mgpLine'];
+  var CIDS = ['mgpColor', 'mgpColor2', 'mgpStroke', 'mgpStroke2', 'mgpBg', 'mgpBg2', 'mgpBrushC', 'mgpFill', 'mgpLine'];
   var pickTarget = null, pickPrev = 'select';
   (function buildSwatches() {
     var vd = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
@@ -18551,10 +18640,13 @@ html.kf-manga-mode #manga-screen.has-doc .mgp-bar { display: flex; }
       var qb = document.createElement('button'); qb.type = 'button'; qb.className = 'mgp-quick'; qb.style.background = '#000'; qb.title = 'ڕەش';
       var qw = document.createElement('button'); qw.type = 'button'; qw.className = 'mgp-quick'; qw.style.background = '#fff'; qw.title = 'سپی';
       inp.parentNode.insertBefore(row, inp);
-      row.appendChild(sw); row.appendChild(qb); row.appendChild(qw); row.appendChild(inp);
+      row.appendChild(sw); row.appendChild(qb); row.appendChild(qw); inp._sw = sw;
+      if (/^mgpBg/.test(id)) { var qn = document.createElement('button'); qn.type = 'button'; qn.className = 'mgp-quick none'; qn.title = 'بێ ڕەنگ'; row.appendChild(qn);
+        qn.addEventListener('click', function () { inp.dataset.none = '1'; sw.classList.add('none'); inp.dispatchEvent(new Event('input', { bubbles: true })); }); }
+      row.appendChild(inp);
       Object.defineProperty(inp, 'value', { get: function () { return vd.get.call(inp); }, set: function (v) { vd.set.call(inp, v); sw.style.background = vd.get.call(inp); } });
       sw.style.background = inp.value;
-      function applyQuick(c) { inp.value = c; inp.dispatchEvent(new Event('input', { bubbles: true })); }
+      function applyQuick(c) { delete inp.dataset.none; sw.classList.remove('none'); inp.value = c; inp.dispatchEvent(new Event('input', { bubbles: true })); }
       qb.addEventListener('click', function () { applyQuick('#000000'); });
       qw.addEventListener('click', function () { applyQuick('#ffffff'); });
       sw.addEventListener('click', function () {
@@ -18572,6 +18664,7 @@ html.kf-manga-mode #manga-screen.has-doc .mgp-bar { display: flex; }
     var id = pickTarget; pickTarget = null;
     [].forEach.call(document.querySelectorAll('.mgp-swatch'), function (x) { x.classList.remove('waiting'); });
     var inp = $(id); if (!inp) return;
+    delete inp.dataset.none; if (inp._sw) inp._sw.classList.remove('none');
     inp.value = h; inp.dispatchEvent(new Event('input', { bubbles: true }));
     var back = pickPrev, keep = S.sel; setTool(back); if (keep && back === 'select') select(keep);
     toast('ڕەنگ جێبەجێ کرا');
@@ -18620,6 +18713,14 @@ html.kf-manga-mode #manga-screen.has-doc .mgp-bar { display: flex; }
   });
 
   /* ---------- شتەکان (نووسین و شێوە) ---------- */
+  var GD = { type: 'linear', angle: 180, pat: 0 };
+  var PATS = [[[0, 'a'], [1, 'b']], [[0, 'a'], [.5, 'a'], [.5, 'b'], [1, 'b']], [[0, 'a'], [.25, 'a'], [1, 'b']], [[0, 'a'], [.75, 'b'], [1, 'b']], [[0, 'a'], [.5, 'b'], [1, 'a']],
+    [[0, 'b'], [.5, 'a'], [1, 'b']], [[0, 'a'], [.25, 'a'], [.25, 'b'], [1, 'b']], [[0, 'a'], [.75, 'a'], [.75, 'b'], [1, 'b']], [[0, 'a'], [.33, 'a'], [.33, 'b'], [.66, 'b'], [.66, 'a'], [1, 'a']], [[0, 'a'], [.4, 'a'], [.6, 'b'], [1, 'b']]];
+  function cssGrad(a, b, g) {
+    a = a || 'transparent'; b = b || 'transparent'; if (a === b) return null; g = Object.assign({}, GD, g);
+    var st = PATS[g.pat || 0].map(function (q) { return (q[1] === 'a' ? a : b) + ' ' + (q[0] * 100) + '%'; }).join(',');
+    return g.type === 'radial' ? 'radial-gradient(circle,' + st + ')' : 'linear-gradient(' + g.angle + 'deg,' + st + ')';
+  }
   function outlineShadow(sw, col) {
     if (!sw) return 'none';
     var a = [], n = 16, ring, i, an;
@@ -18637,9 +18738,17 @@ html.kf-manga-mode #manga-screen.has-doc .mgp-bar { display: flex; }
       var t = o;
       el.style.fontFamily = "'" + t.font + "', 'IBMPlexSansArabic', Tahoma, sans-serif";
       el.style.fontSize = 'calc(var(--pw) * ' + t.size + ' / 1000)';
-      el.style.color = t.color; el.style.fontWeight = t.bold ? '800' : '400'; el.style.fontStyle = t.italic ? 'italic' : 'normal';
+      el.style.fontWeight = t.bold ? '800' : '400'; el.style.fontStyle = t.italic ? 'italic' : 'normal';
       el.style.lineHeight = String(t.lh || 1.35); el.style.wordSpacing = t.ws ? 'calc(var(--pw) * ' + t.ws + ' / 1000)' : '0'; el.style.textAlign = t.align; el.style.transform = t.rot ? 'rotate(' + t.rot + 'deg)' : '';
-      el.style.webkitTextStroke = '0'; el.style.textShadow = outlineShadow(t.sw, t.stroke);
+      var c2 = t.color2 || t.color, s2 = t.stroke2 || t.stroke, bgA = t.bg || 'transparent', bgB = (t.bg2 === undefined ? t.bg : t.bg2) || 'transparent';
+      var gt = cssGrad(t.color, c2, t.gt || GD), gs = t.sw ? cssGrad(t.stroke, s2, t.gs || GD) : null, hasBg = !(bgA === 'transparent' && bgB === 'transparent');
+      el.style.color = gt ? 'transparent' : t.color; el.style.webkitTextStroke = '0';
+      el.style.textShadow = gs ? 'none' : outlineShadow(t.sw, t.stroke);
+      el.setAttribute('data-t', t.text);
+      if (gt) { el.style.setProperty('--tg', gt); el.setAttribute('data-tg', '1'); } else el.removeAttribute('data-tg');
+      if (gs) { el.style.setProperty('--og', gs); el.style.setProperty('--osw', 'calc(var(--pw) * ' + (t.sw * 2) + ' / 1000)'); el.setAttribute('data-og', '1'); } else el.removeAttribute('data-og');
+      el.style.background = hasBg ? (cssGrad(bgA, bgB, t.gb || GD) || bgA) : 'none';
+      el.style.padding = hasBg ? '0.18em 0.35em' : '';
     } else {
       el.style.height = px(o.h);
       el.style.background = o.fillOn ? o.fill : 'transparent';
@@ -18680,7 +18789,7 @@ html.kf-manga-mode #manga-screen.has-doc .mgp-bar { display: flex; }
     if (o && o.type === 'text') {
       ta.disabled = false; ta.value = o.text;
       setVal('mgpFont', o.font); setVal('mgpSize', o.size); $('mgpSizeV').textContent = Math.round(o.size);
-      setVal('mgpColor', o.color); setVal('mgpStroke', o.stroke); setVal('mgpStrokeW', o.sw); $('mgpStrokeV').textContent = o.sw;
+      setCI('mgpColor', o.color); setCI('mgpColor2', o.color2 || o.color); setCI('mgpStroke', o.stroke); setCI('mgpStroke2', o.stroke2 || o.stroke); setCI('mgpBg', o.bg || ''); setCI('mgpBg2', o.bg2 === undefined ? (o.bg || '') : o.bg2); setVal('mgpStrokeW', o.sw); $('mgpStrokeV').textContent = o.sw;
       setVal('mgpLh', o.lh); $('mgpLhV').textContent = o.lh; setVal('mgpWs', o.ws); $('mgpWsV').textContent = o.ws;
     } else { ta.disabled = true; ta.value = ''; }
     if (o && o.type !== 'text') {
@@ -18761,7 +18870,7 @@ html.kf-manga-mode #manga-screen.has-doc .mgp-bar { display: flex; }
     if (o.type === 'text') { hdl(rh, 'size'); hdl(hw, 'width'); hdl(hr, 'rot'); } else hdl(rh, 'box');
     el.addEventListener('input', function () {
       if (!el.isContentEditable) return;
-      o.text = el.innerText.replace(/\n$/, ''); if (S.sel === o) $('mgpTxt').value = o.text; S.dirty = true;
+      o.text = el.innerText.replace(/\n$/, ''); el.setAttribute('data-t', o.text); if (S.sel === o) $('mgpTxt').value = o.text; S.dirty = true;
     });
     el.addEventListener('blur', function () {
       if (el.isContentEditable) { el.contentEditable = 'false'; o.text = el.innerText.replace(/\n$/, ''); el.textContent = o.text; reHandles(o); }
@@ -18788,7 +18897,7 @@ html.kf-manga-mode #manga-screen.has-doc .mgp-bar { display: flex; }
     var r = pg.el.getBoundingClientRect(), ah = pg.h / pg.w;
     var cy = Math.min(Math.max((window.innerHeight / 2 - r.top) / r.width, 0.02), Math.max(0.02, ah - 0.1));
     var t = S.text;
-    var o = newObj(pg, { type: 'text', text: 'نووسین لێرە', x: 0.25, y: cy, w: 0.5, font: t.font, size: t.size, color: t.color, stroke: t.stroke, sw: t.sw, bold: t.bold, italic: t.italic, align: t.align, rot: t.rot, lh: t.lh, ws: t.ws });
+    var o = newObj(pg, { type: 'text', text: 'نووسین لێرە', x: 0.25, y: cy, w: 0.5, font: t.font, size: t.size, color: t.color, stroke: t.stroke, sw: t.sw, bold: t.bold, italic: t.italic, align: t.align, rot: t.rot, lh: t.lh, ws: t.ws, color2: t.color2, stroke2: t.stroke2, bg: t.bg, bg2: t.bg2, gt: Object.assign({}, t.gt), gs: Object.assign({}, t.gs), gb: Object.assign({}, t.gb) });
     pushUndo({ t: 'add', o: o }); select(o);
   });
   $('mgpDup').addEventListener('click', function () {
@@ -18834,8 +18943,50 @@ html.kf-manga-mode #manga-screen.has-doc .mgp-bar { display: flex; }
   fillFonts();
   fsel.addEventListener('change', function () { tProp('font', fsel.value); });
   $('mgpSize').addEventListener('input', function (e) { var v = +e.target.value; $('mgpSizeV').textContent = v; tProp('size', v); });
-  $('mgpColor').addEventListener('input', function (e) { tProp('color', e.target.value); });
-  $('mgpStroke').addEventListener('input', function (e) { tProp('stroke', e.target.value); });
+  function curT() { return S.sel && S.sel.type === 'text' ? S.sel : S.text; }
+  function setCI(id, v) {
+    var i = $(id); if (!i) return;
+    if (v === '') { i.dataset.none = '1'; if (i._sw) i._sw.classList.add('none'); }
+    else { delete i.dataset.none; if (i._sw) i._sw.classList.remove('none'); setVal(id, v); }
+  }
+  function ciVal(e) { return e.target.dataset.none ? '' : e.target.value; }
+  [['mgpColor', 'color', 'mgpColor2', 'color2'], ['mgpStroke', 'stroke', 'mgpStroke2', 'stroke2'], ['mgpBg', 'bg', 'mgpBg2', 'bg2']].forEach(function (c) {
+    $(c[0]).addEventListener('input', function (e) {
+      var o = curT(), v = ciVal(e), solid = (o[c[1]] || '') === (o[c[3]] === undefined ? o[c[1]] : o[c[3]] || '');
+      tProp(c[1], v); if (solid) { tProp(c[3], v); setCI(c[2], v); }
+    });
+    $(c[2]).addEventListener('input', function (e) { tProp(c[3], ciVal(e)); });
+  });
+  function gradDialog(gk, k1, k2, id2, title) {
+    var o = curT(), g = Object.assign({}, GD, o[gk]), pa = o[k1] || '', pb = o[k2] === undefined ? pa : o[k2];
+    var same = pa === pb; if (same) pb = (pa === '#ffffff' || !pa) ? '#000000' : '#ffffff'; if (!pa) pa = '#ffffff';
+    var b = openModal(title), prev = document.createElement('div'), pats = document.createElement('div'), typ = document.createElement('div'), ang = document.createElement('input'), angL = document.createElement('div');
+    prev.className = 'mgp-gprev'; pats.className = 'mgp-gpats'; typ.className = 'mgp-gseg'; ang.type = 'range'; ang.min = 0; ang.max = 360; ang.value = g.angle;
+    function draw() {
+      prev.style.background = cssGrad(pa, pb, g) || pa; angL.textContent = g.angle + '°';
+      [].forEach.call(pats.children, function (x, i) { x.classList.toggle('on', i === g.pat); x.style.background = cssGrad(pa, pb, { type: 'linear', angle: 180, pat: i }); });
+      [].forEach.call(typ.children, function (x) { x.classList.toggle('on', x.dataset.v === g.type || (x.dataset.a && +x.dataset.a === g.angle && g.type === 'linear')); });
+    }
+    PATS.forEach(function (_, i) { var x = document.createElement('button'); x.type = 'button'; x.onclick = function () { g.pat = i; draw(); }; pats.appendChild(x); });
+    [['linear', 'خەتی'], ['radial', 'بازنەیی'], ['', '90°', 90], ['', '270°', 270]].forEach(function (d) {
+      var x = document.createElement('button'); x.type = 'button'; x.textContent = d[1]; if (d[0]) x.dataset.v = d[0]; if (d[2]) x.dataset.a = d[2];
+      x.onclick = function () { if (d[0]) g.type = d[0]; else { g.type = 'linear'; g.angle = d[2]; ang.value = g.angle; } draw(); }; typ.appendChild(x);
+    });
+    ang.oninput = function () { g.angle = +ang.value; draw(); };
+    var act = document.createElement('div'); act.className = 'mgp-row';
+    act.appendChild(mkBtn('هەڵوەشاندنەوە', function () { b.parentNode.parentNode.remove(); }));
+    act.appendChild(mkBtn('جێبەجێکردن', function () {
+      tProp(gk, g); if (same) { tProp(k2, pb); setCI(id2, pb); }
+      b.parentNode.parentNode.remove();
+    }, 'mgp-primary'));
+    [prev, pats, typ, angL, ang, act].forEach(function (x) { b.appendChild(x); }); draw();
+  }
+  [['gt', 'color', 'color2', 'mgpColor', 'mgpColor2', 'نووسین'], ['gs', 'stroke', 'stroke2', 'mgpStroke', 'mgpStroke2', 'لێوار'], ['gb', 'bg', 'bg2', 'mgpBg', 'mgpBg2', 'باکگراوند']].forEach(function (c) {
+    var row = document.querySelector('[data-grow="' + c[0] + '"]');
+    row.querySelector('.g-open').onclick = function () { gradDialog(c[0], c[1], c[2], c[4], 'گرادیێنت: ' + c[5]); };
+    row.querySelector('.g-eq').onclick = function () { var o = curT(), v = o[c[1]] || ''; tProp(c[2], v); setCI(c[4], v); };
+    row.querySelector('.g-swap').onclick = function () { var o = curT(), v1 = o[c[1]] || '', v2 = o[c[2]] === undefined ? v1 : o[c[2]]; tProp(c[1], v2); tProp(c[2], v1); setCI(c[3], v2); setCI(c[4], v1); };
+  });
   $('mgpStrokeW').addEventListener('input', function (e) { var v = +e.target.value; $('mgpStrokeV').textContent = v; tProp('sw', v); });
   $('mgpLh').addEventListener('input', function (e) { var v = +e.target.value; $('mgpLhV').textContent = v; tProp('lh', v); });
   $('mgpWs').addEventListener('input', function (e) { var v = +e.target.value; $('mgpWsV').textContent = v; tProp('ws', v); });
@@ -18844,7 +18995,7 @@ html.kf-manga-mode #manga-screen.has-doc .mgp-bar { display: flex; }
   [].forEach.call(document.querySelectorAll('[data-al]'), function (b) { b.addEventListener('click', function () { tProp('align', b.getAttribute('data-al')); syncSel(); }); });
   $('mgpTxt').addEventListener('input', function (e) {
     var o = S.sel; if (!o || o.type !== 'text') return;
-    o.text = e.target.value; o.el.textContent = o.text; reHandles(o); S.dirty = true;
+    o.text = e.target.value; o.el.textContent = o.text; o.el.setAttribute('data-t', o.text); reHandles(o); S.dirty = true;
   });
   function matchPreset(fn) {
     var f = nk(fn); if (f.length < 4) return null;
@@ -18919,7 +19070,16 @@ html.kf-manga-mode #manga-screen.has-doc .mgp-bar { display: flex; }
     ctx.save(); ctx.translate((o.x + o.w / 2) * W, o.y * W + lines.length * lh / 2); ctx.rotate((o.rot || 0) * Math.PI / 180);
     ctx.textAlign = o.align || 'center';
     var ax = o.align === 'left' ? -bw / 2 : o.align === 'right' ? bw / 2 : 0;
-    ctx.lineJoin = 'round'; ctx.lineWidth = 2 * (o.sw || 0) * k; ctx.strokeStyle = o.stroke; ctx.fillStyle = o.color;
+    var th = lines.length * lh, bx0 = -bw / 2, by0 = -th / 2;
+    function cp(a, b, g) {
+      a = a || ''; b = b === undefined ? a : b; if (!a && !b) return 'rgba(0,0,0,0)'; var A = a || 'rgba(0,0,0,0)', B = b || 'rgba(0,0,0,0)'; if (a === b) return A;
+      g = Object.assign({}, GD, g); var cx = bx0 + bw / 2, cy = by0 + th / 2, gr;
+      if (g.type === 'radial') gr = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.hypot(bw, th) / 2 || 1);
+      else { var an = g.angle * Math.PI / 180, dx = Math.sin(an), dy = -Math.cos(an), L = Math.abs(bw * dx) + Math.abs(th * dy) || 1; gr = ctx.createLinearGradient(cx - dx * L / 2, cy - dy * L / 2, cx + dx * L / 2, cy + dy * L / 2); }
+      PATS[g.pat || 0].forEach(function (q) { gr.addColorStop(q[0], q[1] === 'a' ? A : B); }); return gr;
+    }
+    if (o.bg || o.bg2) { ctx.fillStyle = cp(o.bg, o.bg2 === undefined ? o.bg : o.bg2, o.gb); ctx.fillRect(bx0 - 0.35 * fs, by0 - 0.18 * fs, bw + 0.7 * fs, th + 0.36 * fs); }
+    ctx.lineJoin = 'round'; ctx.lineWidth = 2 * (o.sw || 0) * k; ctx.strokeStyle = cp(o.stroke, o.stroke2, o.gs); ctx.fillStyle = cp(o.color, o.color2, o.gt);
     lines.forEach(function (ln, i) {
       var y = (i + 0.5) * lh - lines.length * lh / 2;
       if (o.sw) ctx.strokeText(ln, ax, y);
@@ -18969,6 +19129,8 @@ html.kf-manga-mode #manga-screen.has-doc .mgp-bar { display: flex; }
     setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
   }
   var saving = false;
+  function prog(i, n) { var bt = $('mgpSave'); bt.style.setProperty('--p', Math.round(i / n * 100) + '%'); bt.textContent = i + ' / ' + n; }
+  function progEnd() { var bt = $('mgpSave'); bt.style.removeProperty('--p'); bt.textContent = 'پاشەکەوتکردن'; }
   $('mgpSave').addEventListener('click', function () {
     if (!hasDoc() || saving) return;
     saving = true; toast('پاشەکەوتکردن...');
@@ -18978,15 +19140,16 @@ html.kf-manga-mode #manga-screen.has-doc .mgp-bar { display: flex; }
         return ch.then(function () {
           if (pg.render) { var r = pg.render; pg.render = null; return r(); }
         }).then(function () {
-          var c = renderPageOut(pg);
+          prog(S.pages.indexOf(pg) + 1, S.pages.length); var c = renderPageOut(pg);
           if (S.pages.length === 1) return toBlob(c, 'image/png').then(function (b) { download(b, 'kurdforest-' + stamp + '.png'); });
           return toBlob(c, 'image/jpeg', 0.95).then(function (b) { return b.arrayBuffer(); }).then(function (ab) { out.push({ w: c.width, h: c.height, jpg: new Uint8Array(ab) }); });
         });
       }, Promise.resolve());
     }).then(function () {
+      var bt0 = $('mgpSave'); bt0.style.setProperty('--p', '100%'); bt0.textContent = '...';
       if (out.length) download(buildPdf(out), 'kurdforest-' + stamp + '.pdf');
-      S.dirty = false; saveHistory(stamp); toast('پاشەکەوت کرا');
-    }).catch(function (e) { console.error(e); toast('نەتوانرا پاشەکەوت بکرێت'); }).then(function () { saving = false; });
+      S.dirty = false; return saveHistory(stamp).then(function () { toast('پاشەکەوت کرا'); });
+    }).catch(function (e) { console.error(e); toast('نەتوانرا پاشەکەوت بکرێت'); }).then(function () { saving = false; progEnd(); });
   });
 
 
@@ -19011,9 +19174,7 @@ html.kf-manga-mode #manga-screen.has-doc .mgp-bar { display: flex; }
         var w = im.naturalWidth, h = im.naturalHeight;
         if (/jpe?g/i.test(f.type) && jpegComps(u) === 3) return { w: w, h: h, jpg: u, filter: 'DCTDecode' };
         var c = document.createElement('canvas'); c.width = w; c.height = h; var x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, w, h); x.drawImage(im, 0, 0);
-        var d = x.getImageData(0, 0, w, h).data, rgb = new Uint8Array(w * h * 3);
-        for (var i = 0, j = 0; i < d.length; i += 4) { rgb[j++] = d[i]; rgb[j++] = d[i + 1]; rgb[j++] = d[i + 2]; }
-        return deflate(rgb).then(function (z) { return { w: w, h: h, jpg: z, filter: 'FlateDecode' }; });
+        return toBlob(c, 'image/jpeg', 0.95).then(function (bl) { return bl.arrayBuffer(); }).then(function (ab2) { return { w: w, h: h, jpg: new Uint8Array(ab2), filter: 'DCTDecode' }; });
       });
     });
   }
@@ -19021,29 +19182,31 @@ html.kf-manga-mode #manga-screen.has-doc .mgp-bar { display: flex; }
   /* ---------- گۆڕینی وێنە ↔ PDF ---------- */
   function converter() {
     var b = openModal('گۆڕینی وێنە ↔ PDF');
-    b.appendChild(mkBtn('وێنەکان → PDF (کوالێتی ئەسڵی)', function () {
-      pickFiles('image/*', true, function (files) {
-        files.sort(byName); toast('کارکردن...'); var out = [];
-        files.reduce(function (c, f) { return c.then(function () { return fileToPdfPage(f).then(function (g) { out.push(g); }); }); }, Promise.resolve())
-          .then(function () { download(buildPdf(out), 'images-' + Date.now() + '.pdf'); toast('ئامادەیە'); }).catch(function () { toast('نەتوانرا بگۆڕدرێت'); });
-      });
-    }, 'mgp-primary'));
-    b.appendChild(mkBtn('PDF → وێنەکان (PNG)', function () {
+    function pdf2img(fmt) {
       pickFiles('.pdf,application/pdf', false, function (fs) {
-        var f = fs[0];
+        var f = fs[0], prog = mkProg(b), jp = fmt === 'jpg';
         loadPdfJs().then(function (lib) { return f.arrayBuffer().then(function (ab) { return lib.getDocument({ data: ab }).promise; }); }).then(function (doc) {
           var ch = Promise.resolve();
           for (var i = 1; i <= doc.numPages; i++) (function (i) {
-            ch = ch.then(function () { return doc.getPage(i); }).then(function (pg) {
-              var vp = pg.getViewport({ scale: 3 }), c = document.createElement('canvas'); c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+            ch = ch.then(function () { prog(i - 1, doc.numPages); return doc.getPage(i); }).then(function (pg) {
+              var vp = pg.getViewport({ scale: jp ? 2.5 : 2 }), c = document.createElement('canvas'); c.width = Math.round(vp.width); c.height = Math.round(vp.height);
               var x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
-              return pg.render({ canvasContext: x, viewport: vp }).promise.then(function () { return toBlob(c, 'image/png'); });
-            }).then(function (bl) { download(bl, 'page-' + String(i).padStart(3, '0') + '.png'); toast(i + ' / ' + doc.numPages); return new Promise(function (r) { setTimeout(r, 600); }); });
+              return pg.render({ canvasContext: x, viewport: vp }).promise.then(function () { return toBlob(c, jp ? 'image/jpeg' : 'image/png', 0.92); });
+            }).then(function (bl) { download(bl, 'page-' + String(i).padStart(3, '0') + (jp ? '.jpg' : '.png')); prog(i, doc.numPages, i + ' / ' + doc.numPages + ' · ' + mb(bl)); return new Promise(function (r) { setTimeout(r, 600); }); });
           })(i);
           return ch;
         }).catch(function () { toast('نەتوانرا PDF بکرێتەوە'); });
       });
-    }));
+    }
+    b.appendChild(mkBtn('وێنەکان → PDF', function () {
+      pickFiles('image/*', true, function (files) {
+        files.sort(byName); var out = [], prog = mkProg(b);
+        files.reduce(function (c, f, i) { return c.then(function () { prog(i, files.length); return fileToPdfPage(f).then(function (g) { out.push(g); }); }); }, Promise.resolve())
+          .then(function () { var bl = buildPdf(out); download(bl, 'images-' + Date.now() + '.pdf'); prog(files.length, files.length, 'ئامادەیە · ' + mb(bl)); }).catch(function () { toast('نەتوانرا بگۆڕدرێت'); });
+      });
+    }, 'mgp-primary'));
+    b.appendChild(mkBtn('PDF → وێنەکان (JPG، قەبارەی کەم)', function () { pdf2img('jpg'); }));
+    b.appendChild(mkBtn('PDF → وێنەکان (PNG، بێ کەمبوونەوە)', function () { pdf2img('png'); }));
   }
 
   /* ---------- دەستکاری PDF ---------- */
@@ -19054,63 +19217,62 @@ html.kf-manga-mode #manga-screen.has-doc .mgp-bar { display: flex; }
     return pdfLibP;
   }
   function pdfEditor() {
-    var b = openModal('دەستکاری PDF'), items = [], list = document.createElement('div'); list.className = 'mgp-pl';
+    var b = openModal('دەستکاری PDF'), body = b.parentNode, items = [], list = document.createElement('div'), obs = null, q = Promise.resolve();
+    list.className = 'mgp-pl';
+    function thumbOf(it) {
+      if (it.thumb !== undefined && it.thumb !== null) return Promise.resolve(it.thumb);
+      q = q.then(function () { return it.src.doc.getPage(it.i + 1); }).then(function (pg) {
+        var vp = pg.getViewport({ scale: 0.3 }), c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height;
+        var x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
+        return pg.render({ canvasContext: x, viewport: vp }).promise.then(function () { it.thumb = c.toDataURL('image/jpeg', 0.6); });
+      }).catch(function () { it.thumb = ''; });
+      return q.then(function () { return it.thumb; });
+    }
     function render() {
+      if (obs) obs.disconnect();
+      obs = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { obs.unobserve(e.target); thumbOf(e.target._it).then(function (u) { e.target.querySelector('img').src = u; }); } }); }, { root: body, rootMargin: '400px' }) : null;
       list.innerHTML = '';
-      function ins(at, txt) { var x = mkBtn(txt, function () { pickFiles('.pdf,application/pdf,image/*', true, function (fs) { addFiles(fs.sort(byName), at); }); }, 'mgp-ins'); list.appendChild(x); }
+      function ins(at, txt) { list.appendChild(mkBtn(txt, function () { pickFiles('.pdf,application/pdf,image/*', true, function (fs) { addFiles(fs.sort(byName), at); }); }, 'mgp-ins')); }
       if (items.length) ins(0, '＋ زیادکردن لە سەرەتا');
       items.forEach(function (it, i) {
-        var c = document.createElement('div'); c.className = 'mgp-pc' + (it.del ? ' del' : '');
-        var im = document.createElement('img'); im.src = it.thumb; c.appendChild(im);
+        var c = document.createElement('div'); c.className = 'mgp-pc' + (it.del ? ' del' : ''); c._it = it;
+        var im = document.createElement('img'); im.src = it.thumb || 'data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=='; c.appendChild(im);
         c.appendChild(document.createTextNode(String(i + 1)));
         c.appendChild(mkBtn(it.del ? 'گەڕاندنەوە' : 'سڕینەوە', function () { it.del = !it.del; render(); }, it.del ? '' : 'mgp-danger'));
         list.appendChild(c);
+        if (!it.thumb) { if (obs) obs.observe(c); else thumbOf(it).then(function (u) { im.src = u; }); }
         if ((i + 1) % 3 === 0 || i === items.length - 1) ins(i + 1, '＋ زیادکردن دوای لاپەڕەی ' + (i + 1));
       });
     }
     function addFiles(files, at) {
       toast('بارکردن...');
-      return Promise.all([loadPdfLib(), loadPdfJs()]).then(function (L) {
+      return loadPdfJs().then(function (L) {
         var added = [];
         return files.reduce(function (ch, f) {
           return ch.then(function () {
-            if (isPdf(f)) return f.arrayBuffer().then(function (ab) {
-              return Promise.all([L[0].PDFDocument.load(ab.slice(0), { ignoreEncryption: true }), L[1].getDocument({ data: ab.slice(0) }).promise]);
-            }).then(function (r) {
-              var lib = r[0], doc = r[1], c2 = Promise.resolve();
-              for (var i = 1; i <= doc.numPages; i++) (function (i) {
-                c2 = c2.then(function () { return doc.getPage(i); }).then(function (pg) {
-                  var vp = pg.getViewport({ scale: 0.3 }), c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height;
-                  var x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
-                  return pg.render({ canvasContext: x, viewport: vp }).promise.then(function () { added.push({ type: 'pdf', lib: lib, i: i - 1, thumb: c.toDataURL('image/jpeg', 0.6) }); });
-                });
-              })(i);
-              return c2;
-            });
+            if (isPdf(f)) return f.arrayBuffer().then(function (ab) { return L.getDocument({ data: ab.slice(0) }).promise.then(function (doc) { var src = { ab: ab, doc: doc }; for (var i = 0; i < doc.numPages; i++) added.push({ type: 'pdf', src: src, i: i }); }); });
             return blobImg(f).then(function (im) { var c = document.createElement('canvas'); c.width = 150; c.height = 200; var x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, 150, 200); var k = Math.min(150 / im.naturalWidth, 200 / im.naturalHeight); x.drawImage(im, 0, 0, im.naturalWidth * k, im.naturalHeight * k); added.push({ type: 'img', file: f, thumb: c.toDataURL('image/jpeg', 0.6) }); });
           });
         }, Promise.resolve()).then(function () { items.splice.apply(items, [at, 0].concat(added)); render(); toast('ئامادەیە'); });
-      }).catch(function () { toast('نەتوانرا بکرێتەوە (ئینتەرنێت پێویستە بۆ یەکەم جار)'); });
+      }).catch(function () { toast('نەتوانرا بکرێتەوە'); });
     }
     b.appendChild(mkBtn('＋ PDF هەڵبژێرە', function () { pickFiles('.pdf,application/pdf,image/*', true, function (fs) { addFiles(fs.sort(byName), items.length); }); }, 'mgp-primary'));
     b.appendChild(list);
+    var prog = mkProg(b);
     b.appendChild(mkBtn('پاشەکەوتکردنی PDF', function () {
       var keep = items.filter(function (x) { return !x.del; }); if (!keep.length) { toast('هیچ لاپەڕەیەک نەماوە'); return; }
-      toast('کارکردن...');
+      prog(0, keep.length, 'ئامادەکردن...');
       loadPdfLib().then(function (L) {
         return L.PDFDocument.create().then(function (out) {
-          return keep.reduce(function (ch, it) {
+          return keep.reduce(function (ch, it, idx) {
             return ch.then(function () {
-              if (it.type === 'pdf') return out.copyPages(it.lib, [it.i]).then(function (r) { out.addPage(r[0]); });
-              return fileToPdfPage(it.file).then(function (g) {
-                var jp = g.filter === 'DCTDecode';
-                return (jp ? out.embedJpg(g.jpg) : blobImg(it.file).then(function (im) { var c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; c.getContext('2d').drawImage(im, 0, 0); return toBlob(c, 'image/png').then(function (bl) { return bl.arrayBuffer(); }).then(function (ab) { return out.embedPng(ab); }); }))
-                  .then(function (img) { var pg = out.addPage([g.w, g.h]); pg.drawImage(img, { x: 0, y: 0, width: g.w, height: g.h }); });
-              });
+              prog(idx, keep.length);
+              if (it.type === 'pdf') { it.src.libP = it.src.libP || L.PDFDocument.load(it.src.ab, { ignoreEncryption: true }); return it.src.libP.then(function (lib) { return out.copyPages(lib, [it.i]); }).then(function (r) { out.addPage(r[0]); }); }
+              return fileToPdfPage(it.file).then(function (g) { return out.embedJpg(g.jpg).then(function (img) { var pg = out.addPage([g.w, g.h]); pg.drawImage(img, { x: 0, y: 0, width: g.w, height: g.h }); }); });
             });
-          }, Promise.resolve()).then(function () { return out.save(); });
+          }, Promise.resolve()).then(function () { prog(keep.length, keep.length, 'پاشەکەوتکردن...'); return out.save(); });
         });
-      }).then(function (bytes) { download(new Blob([bytes], { type: 'application/pdf' }), 'edited-' + Date.now() + '.pdf'); toast('پاشەکەوت کرا'); }).catch(function () { toast('نەتوانرا PDF دروست بکرێت'); });
+      }).then(function (bytes) { var bl = new Blob([bytes], { type: 'application/pdf' }); download(bl, 'edited-' + Date.now() + '.pdf'); prog(keep.length, keep.length, 'ئامادەیە · ' + mb(bl)); }).catch(function () { prog(0, 1, 'نەتوانرا PDF دروست بکرێت'); });
     }, 'mgp-primary'));
   }
 
@@ -19123,34 +19285,44 @@ html.kf-manga-mode #manga-screen.has-doc .mgp-bar { display: flex; }
     } catch (e) { cb(null); }
   }
   function plainObj(o) { var c = Object.assign({}, o); delete c.el; delete c.pg; delete c.hs; delete c.id; return c; }
-  function saveHistory(stamp) {
-    Promise.all(S.pages.map(function (pg) {
-      return Promise.all([toBlob(pg.base, 'image/png'), pg.paint ? toBlob(pg.paint, 'image/png') : null]).then(function (r) { return { w: pg.w, h: pg.h, base: r[0], paint: r[1], objs: pg.objs.map(plainObj) }; });
+  function saveHistory(stamp, auto) {
+    var scroll = window.scrollY, zoomV = S.zoom, pgs = S.pages.slice();
+    if (!pgs.length) return Promise.resolve();
+    return Promise.all(pgs.map(function (pg) {
+      return Promise.all([pg._bb ? pg._bb : toBlob(pg.base, 'image/png').then(function (bl) { pg._bb = bl; return bl; }), pg.paint ? toBlob(pg.paint, 'image/png') : null])
+        .then(function (r) { return { w: pg.w, h: pg.h, base: r[0], paint: r[1], objs: pg.objs.map(plainObj) }; });
     })).then(function (pages) {
-      var t = document.createElement('canvas'); t.width = 120; t.height = 160; var x = t.getContext('2d'), p0 = S.pages[0];
+      var t = document.createElement('canvas'); t.width = 120; t.height = 160; var x = t.getContext('2d'), p0 = pgs[0];
       x.fillStyle = '#fff'; x.fillRect(0, 0, 120, 160); x.drawImage(p0.base, 0, 0, p0.w, Math.min(p0.h, p0.w * 4 / 3), 0, 0, 120, 160);
       return toBlob(t, 'image/jpeg', 0.7).then(function (tb) {
-        hdb(function (db) {
-          if (!db) return;
-          try {
-            var st = db.transaction('h', 'readwrite').objectStore('h');
-            st.put({ id: Date.now(), name: stamp, thumb: tb, pages: pages });
-            st.getAllKeys().onsuccess = function (e) { var k = e.target.result; while (k.length > 15) st.delete(k.shift()); };
-          } catch (er) {}
+        return new Promise(function (res) {
+          hdb(function (db) {
+            if (!db) return res();
+            try {
+              var tx = db.transaction('h', 'readwrite'), st = tx.objectStore('h');
+              var entry = { id: Date.now(), name: stamp, auto: !!auto, thumb: tb, scroll: scroll, zoom: zoomV, pages: pages };
+              var put = function () { st.put(entry); st.getAllKeys().onsuccess = function (e) { var k = e.target.result; while (k.length > 15) st.delete(k.shift()); }; };
+              if (auto) st.openCursor().onsuccess = function (e) { var c = e.target.result; if (c) { if (c.value.auto) c.delete(); c.continue(); } else put(); }; else put();
+              tx.oncomplete = res; tx.onerror = res; tx.onabort = res;
+            } catch (er) { res(); }
+          });
         });
       });
     }).catch(function () {});
   }
   function restoreProject(e) {
-    if (hasDoc() && S.dirty && !confirm('گۆڕانکارییەکانی ئێستا دەسڕێنەوە. بەردەوام بیت؟')) return;
-    resetDoc(); screen.classList.add('has-doc'); updateMenu(); toast('بارکردن...');
-    e.pages.reduce(function (ch, d) {
-      return ch.then(function () { return blobImg(d.base); }).then(function (im) {
-        var pg = makePage(d.w, d.h); pg.base.getContext('2d').drawImage(im, 0, 0); pg.ready = true;
-        return (d.paint ? blobImg(d.paint).then(function (pi) { getPaint(pg).getContext('2d').drawImage(pi, 0, 0); pg.paintNew = false; }) : Promise.resolve())
-          .then(function () { d.objs.forEach(function (o) { newObj(pg, Object.assign({}, o)); }); });
-      });
-    }, Promise.resolve()).then(function () { layout(); window.scrollTo(0, 0); S.dirty = false; toast('کرایەوە'); }).catch(function () { toast('نەتوانرا بکرێتەوە'); });
+    function go() {
+      resetDoc(); screen.classList.add('has-doc'); updateMenu(); toast('بارکردن...');
+      S.zoom = e.zoom || 1;
+      e.pages.reduce(function (ch, d) {
+        return ch.then(function () { return blobImg(d.base); }).then(function (im) {
+          var pg = makePage(d.w, d.h); pg.base.getContext('2d').drawImage(im, 0, 0); pg.ready = true; pg._bb = d.base;
+          return (d.paint ? blobImg(d.paint).then(function (pi) { getPaint(pg).getContext('2d').drawImage(pi, 0, 0); pg.paintNew = false; }) : Promise.resolve())
+            .then(function () { d.objs.forEach(function (o) { newObj(pg, Object.assign({}, o)); }); });
+        });
+      }, Promise.resolve()).then(function () { layout(); S.dirty = false; setTimeout(function () { window.scrollTo(0, e.scroll || 0); }, 60); toast('کرایەوە'); }).catch(function () { toast('نەتوانرا بکرێتەوە'); });
+    }
+    if (hasDoc() && S.dirty) askYesNo('گۆڕانکارییەکانی ئێستا دەسڕێنەوە. بەردەوام بیت؟', go); else go();
   }
   function openHistory() {
     var b = openModal('مێژوو');
@@ -19161,16 +19333,105 @@ html.kf-manga-mode #manga-screen.has-doc .mgp-bar { display: flex; }
         if (!all.length) { b.textContent = 'هێشتا هیچ کارێک پاشەکەوت نەکراوە'; return; }
         all.forEach(function (it) {
           var row = document.createElement('div'); row.className = 'mgp-hc';
+          var info = document.createElement('div'); info.className = 'mgp-hinfo';
           var im = document.createElement('img'); im.src = URL.createObjectURL(it.thumb);
-          var t = document.createElement('div'); t.className = 't'; t.textContent = new Date(it.id).toLocaleString() + ' · ' + it.pages.length;
-          row.appendChild(im); row.appendChild(t);
-          row.appendChild(mkBtn('کردنەوە', function () { b.parentNode.parentNode.remove(); restoreProject(it); }, 'mgp-primary'));
-          row.appendChild(mkBtn('سڕینەوە', function () { if (!confirm('بسڕدرێتەوە؟')) return; db.transaction('h', 'readwrite').objectStore('h').delete(it.id); row.remove(); }, 'mgp-danger'));
-          b.appendChild(row);
+          var t = document.createElement('div'); t.className = 't'; t.textContent = new Date(it.id).toLocaleString() + ' · ' + it.pages.length + ' پەڕە';
+          if (it.auto) { var tg = document.createElement('span'); tg.className = 'mgp-tag'; tg.textContent = 'دوایین کار'; t.appendChild(tg); }
+          info.appendChild(im); info.appendChild(t); row.appendChild(info);
+          var bt = document.createElement('div'); bt.className = 'mgp-hbtns';
+          bt.appendChild(mkBtn('کردنەوە', function () { b.parentNode.parentNode.remove(); restoreProject(it); }, 'mgp-primary'));
+          bt.appendChild(mkBtn('سڕینەوە', function () { askYesNo('ئەم کارە لە مێژوو بسڕدرێتەوە؟', function () { db.transaction('h', 'readwrite').objectStore('h').delete(it.id); row.remove(); }, 'سڕینەوە'); }, 'mgp-danger'));
+          row.appendChild(bt); b.appendChild(row);
         });
       };
     });
   }
+
+  /* ---------- ڕەنگەکان (تەنها بۆ بەشی مانگا) ---------- */
+  var MGPAL = {
+                forest: { primary: '#8EB69B', hover: '#7ca188', glow: 'rgba(142, 182, 155, 0.35)' },
+                ocean: { primary: '#38bdf8', hover: '#0284c7', glow: 'rgba(56, 189, 248, 0.35)' },
+                purple: { primary: '#c084fc', hover: '#9333ea', glow: 'rgba(192, 132, 252, 0.35)' },
+                rose: { primary: '#fb7185', hover: '#e11d48', glow: 'rgba(251, 113, 133, 0.35)' },
+                amber: { primary: '#fbbf24', hover: '#d97706', glow: 'rgba(251, 191, 36, 0.35)' },
+                emerald: { primary: '#34d399', hover: '#059669', glow: 'rgba(52, 211, 153, 0.35)' },
+                crimson: { primary: '#e11d48', hover: '#be123c', glow: 'rgba(225, 29, 72, 0.35)' },
+                sunset: { primary: '#f97316', hover: '#ea580c', glow: 'rgba(249, 115, 22, 0.35)' },
+                cyan: { primary: '#06b6d4', hover: '#0891b2', glow: 'rgba(6, 182, 212, 0.35)' },
+                indigo: { primary: '#6366f1', hover: '#4f46e5', glow: 'rgba(99, 102, 241, 0.35)' },
+                fuchsia: { primary: '#d946ef', hover: '#c026d3', glow: 'rgba(217, 70, 239, 0.35)' },
+                platinum: { primary: '#64748b', hover: '#475569', glow: 'rgba(100, 116, 139, 0.35)' },
+                lime: { primary: '#84cc16', hover: '#4d7c0f', glow: 'rgba(132, 204, 22, 0.35)' },
+                teal: { primary: '#0d9488', hover: '#115e59', glow: 'rgba(13, 148, 136, 0.35)' },
+                orchid: { primary: '#c4a1c9', hover: '#8e6a94', glow: 'rgba(196, 161, 201, 0.35)' },
+                copper: { primary: '#c2764a', hover: '#8f4a22', glow: 'rgba(194, 118, 74, 0.35)' },
+                sand: { primary: '#d4b483', hover: '#a07c45', glow: 'rgba(212, 180, 131, 0.35)' }
+            };
+  function applyMgTheme(key) {
+    var pl = MGPAL[key]; if (!pl) return;
+    var css = 'html.kf-manga-mode.kf-mgtheme, html.kf-manga-mode.kf-mgtheme body { --primary: ' + pl.primary + ' !important; --primary-hover: ' + pl.hover + ' !important; --primary-glow: ' + pl.glow + ' !important; }';
+    var st = $('kf-mg-theme-style'); if (!st) { st = document.createElement('style'); st.id = 'kf-mg-theme-style'; document.head.appendChild(st); }
+    st.textContent = css; root.classList.add('kf-mgtheme');
+    try { localStorage.setItem('kf_mg_theme', key); localStorage.setItem('kf_mg_theme_css', css); } catch (e) {}
+  }
+  function themePicker() {
+    var b = openModal('ڕەنگی بەشی مانگا و مانهوا'), g = document.createElement('div'), cur = ''; g.className = 'mgp-tgrid';
+    try { cur = localStorage.getItem('kf_mg_theme') || ''; } catch (e) {}
+    Object.keys(MGPAL).forEach(function (k) {
+      var d = document.createElement('button'); d.type = 'button'; d.className = 'mgp-tdot' + (k === cur ? ' on' : ''); d.style.background = 'linear-gradient(135deg,' + MGPAL[k].primary + ',' + MGPAL[k].hover + ')';
+      d.onclick = function () { applyMgTheme(k); [].forEach.call(g.children, function (x) { x.classList.remove('on'); }); d.classList.add('on'); }; g.appendChild(d);
+    });
+    b.appendChild(g);
+    b.appendChild(mkBtn('گەڕاندنەوەی ڕەنگی ئاسایی', function () { root.classList.remove('kf-mgtheme'); var st = $('kf-mg-theme-style'); if (st) st.remove(); try { localStorage.removeItem('kf_mg_theme'); localStorage.removeItem('kf_mg_theme_css'); } catch (e) {} [].forEach.call(g.children, function (x) { x.classList.remove('on'); }); }));
+  }
+
+  /* ---------- سڕینەوە بە زیرەکی دەستکرد (Gemini) ---------- */
+  function getMask(pg) {
+    if (!pg.mask) { var c = document.createElement('canvas'); c.width = pg.w; c.height = pg.h; c.className = 'mgp-mask'; pg.el.insertBefore(c, pg.layer); pg.mask = c; }
+    return pg.mask;
+  }
+  function trackMask(d, p) {
+    if (!d.mask) return; var m = d.pg.mb || (d.pg.mb = { x0: 1e9, y0: 1e9, x1: -1, y1: -1 });
+    m.x0 = Math.min(m.x0, p.x - d.rad); m.y0 = Math.min(m.y0, p.y - d.rad); m.x1 = Math.max(m.x1, p.x + d.rad); m.y1 = Math.max(m.y1, p.y + d.rad);
+  }
+  function clearMasks() { S.pages.forEach(function (pg) { if (pg.mask) pg.mask.getContext('2d').clearRect(0, 0, pg.w, pg.h); pg.mb = null; }); }
+  $('mgpAiClear').addEventListener('click', function () { clearMasks(); toast('نیشانەکان پاککرانەوە'); });
+  $('mgpAiKey').addEventListener('click', function () { askText('کلیلی Gemini API (Google AI Studio):', localStorage.getItem('kf_gemini_key') || '', function (v) { localStorage.setItem('kf_gemini_key', v); }); });
+  function b64(c) { return c.toDataURL('image/png').split(',')[1]; }
+  function aiResultImg(j) {
+    var parts = (((j.candidates || [])[0] || {}).content || {}).parts || [];
+    for (var i = 0; i < parts.length; i++) { var d = parts[i].inlineData || parts[i].inline_data; if (d && d.data) return blobImg(new Blob([Uint8Array.from(atob(d.data), function (c) { return c.charCodeAt(0); })], { type: d.mimeType || d.mime_type || 'image/png' })); }
+    return Promise.reject(new Error((j.error && j.error.message) || 'no image'));
+  }
+  $('mgpAiRun').addEventListener('click', function () {
+    var pg = S.pages.filter(function (q) { return q.mb && q.mb.x1 > 0; })[0];
+    if (!pg) { toast('سەرەتا شوێنی سڕینەوە ڕەنگ بکە'); return; }
+    var key = (localStorage.getItem('kf_gemini_key') || '').trim();
+    if (!key) { askText('کلیلی Gemini API (Google AI Studio):', '', function (v) { localStorage.setItem('kf_gemini_key', v); $('mgpAiRun').click(); }); return; }
+    var m = pg.mb, bw = m.x1 - m.x0, bh = m.y1 - m.y0, pad = Math.max(96, Math.max(bw, bh) * 0.35);
+    var x0 = Math.max(0, Math.floor(m.x0 - pad)), y0 = Math.max(0, Math.floor(m.y0 - pad)), x1 = Math.min(pg.w, Math.ceil(m.x1 + pad)), y1 = Math.min(pg.h, Math.ceil(m.y1 + pad));
+    var cw = x1 - x0, ch = y1 - y0, k = Math.min(1, 1024 / Math.max(cw, ch)), sw = Math.round(cw * k), sh = Math.round(ch * k);
+    var img = document.createElement('canvas'); img.width = sw; img.height = sh; var ix = img.getContext('2d');
+    ix.fillStyle = '#fff'; ix.fillRect(0, 0, sw, sh); ix.drawImage(pg.base, x0, y0, cw, ch, 0, 0, sw, sh); if (pg.paint) ix.drawImage(pg.paint, x0, y0, cw, ch, 0, 0, sw, sh);
+    var mk = document.createElement('canvas'); mk.width = sw; mk.height = sh; var mx = mk.getContext('2d');
+    mx.drawImage(pg.mask, x0, y0, cw, ch, 0, 0, sw, sh); mx.globalCompositeOperation = 'source-in'; mx.fillStyle = '#fff'; mx.fillRect(0, 0, sw, sh);
+    var bwc = document.createElement('canvas'); bwc.width = sw; bwc.height = sh; var bx = bwc.getContext('2d'); bx.fillStyle = '#000'; bx.fillRect(0, 0, sw, sh); bx.drawImage(mk, 0, 0);
+    var prompt1 = 'Image 1 is a comic/manga page crop. Image 2 is a mask: the white area marks objects or text to remove from image 1. Remove them completely and reconstruct the area naturally, continuing the surrounding background, lines, screentone and colors. Keep everything outside the white area exactly the same. Return only the edited image, same size and framing as image 1.';
+    toast('زیرەکی دەستکرد کار دەکات...');
+    fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt1 }, { inlineData: { mimeType: 'image/png', data: b64(img) } }, { inlineData: { mimeType: 'image/png', data: b64(bwc) } }] }] })
+    }).then(function (r) { return r.json(); }).then(aiResultImg).then(function (res) {
+      var out = document.createElement('canvas'); out.width = cw; out.height = ch; var ox = out.getContext('2d');
+      ox.drawImage(res, 0, 0, cw, ch);
+      var soft = document.createElement('canvas'); soft.width = cw; soft.height = ch; var sx = soft.getContext('2d');
+      sx.filter = 'blur(' + Math.max(2, Math.round(cw / 200)) + 'px)'; sx.drawImage(pg.mask, x0, y0, cw, ch, 0, 0, cw, ch); sx.drawImage(pg.mask, x0, y0, cw, ch, 0, 0, cw, ch);
+      ox.globalCompositeOperation = 'destination-in'; ox.drawImage(soft, 0, 0);
+      var pc = getPaint(pg).getContext('2d'), d = { pg: pg, ctx: pc, tiles: {}, rad: 0 };
+      saveTiles(d, x0, y0, x1, y1); pc.drawImage(out, x0, y0);
+      pushUndo({ t: 'paint', pg: pg, tiles: d.tiles }); clearMasks(); S.dirty = true; toast('سڕایەوە');
+    }).catch(function (e) { console.error(e); toast('سەرنەکەوت: ' + (e && e.message ? e.message : 'کێشەی ئینتەرنێت یان کلیل')); });
+  });
 
   /* ---------- ژمارەی پەڕە ---------- */
   var pgNum = $('mgpPgNum'), pgRaf = 0;
@@ -19230,6 +19491,7 @@ html.kf-manga-mode #manga-screen.has-doc .mgp-bar { display: flex; }
   function seg(ctx, a, b) { ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); }
   /* پاشگەزبوونەوە: تەنها ئەو بەشانەی لە وێنەکە دەگۆڕدرێن پاشەکەوت دەکرێن، نەک هەموو وێنەکە */
   function saveTiles(d, x0, y0, x1, y1) {
+    if (d.mask) return;
     var m = d.rad + 3, pg = d.pg;
     var ax = Math.max(0, Math.floor((x0 - m) / TILE)), bx = Math.min(Math.floor((pg.w - 1) / TILE), Math.floor((x1 + m) / TILE));
     var ay = Math.max(0, Math.floor((y0 - m) / TILE)), by = Math.min(Math.floor((pg.h - 1) / TILE), Math.floor((y1 + m) / TILE));
@@ -19246,6 +19508,7 @@ html.kf-manga-mode #manga-screen.has-doc .mgp-bar { display: flex; }
   }
   function strokeTo(d, p) {
     var ctx = d.ctx, mid = { x: (d.last.x + p.x) / 2, y: (d.last.y + p.y) / 2 };
+    trackMask(d, p);
     saveTiles(d, Math.min(d.lastMid.x, d.last.x, mid.x), Math.min(d.lastMid.y, d.last.y, mid.y), Math.max(d.lastMid.x, d.last.x, mid.x), Math.max(d.lastMid.y, d.last.y, mid.y));
     ctx.beginPath(); ctx.moveTo(d.lastMid.x, d.lastMid.y); ctx.quadraticCurveTo(d.last.x, d.last.y, mid.x, mid.y); ctx.stroke();
     d.lastMid = mid; d.last = p;
@@ -19261,7 +19524,7 @@ html.kf-manga-mode #manga-screen.has-doc .mgp-bar { display: flex; }
     lx.save(); lx.fillStyle = '#fff'; lx.fillRect(0, 0, 224, 224); lx.imageSmoothingEnabled = false;
     try { lx.drawImage(pg.base, sx, sy, span, span, 0, 0, 224, 224); if (pg.paint) lx.drawImage(pg.paint, sx, sy, span, span, 0, 0, 224, 224); } catch (x) {}
     var t = S.tool;
-    if (t === 'brush' || t === 'whiteout') ring(Math.max(3, S.brush.size * pg.w / 1000 / 2 * (224 / span)));
+    if (t === 'brush' || t === 'whiteout' || t === 'aierase') ring(Math.max(3, S.brush.size * pg.w / 1000 / 2 * (224 / span)));
     else {
       ring(11);
       lx.lineWidth = 1.6; lx.strokeStyle = '#000'; lx.beginPath(); lx.moveTo(112 - 20, 112); lx.lineTo(112 - 13, 112); lx.moveTo(112 + 13, 112); lx.lineTo(112 + 20, 112);
@@ -19281,13 +19544,13 @@ html.kf-manga-mode #manga-screen.has-doc .mgp-bar { display: flex; }
     try { pg.el.setPointerCapture(e.pointerId); } catch (x) {}
     var r = pg.el.getBoundingClientRect(), p = pos(pg, e, r);
     if (t === 'pick') { S.drag = { kind: 'pick', pg: pg, p: p, r: r }; showLoupe(pg, e, r); return; }
-    if (t === 'brush' || t === 'whiteout') {
-      var ctx = getPaint(pg).getContext('2d');
+    if (t === 'brush' || t === 'whiteout' || t === 'aierase') {
+      var ctx = (t === 'aierase' ? getMask(pg) : getPaint(pg)).getContext('2d');
       ctx.lineCap = 'round'; ctx.lineJoin = 'round';
       ctx.lineWidth = Math.max(1, S.brush.size * pg.w / 1000);
-      ctx.strokeStyle = t === 'whiteout' ? '#ffffff' : S.brush.color;
-      var d = { kind: 'paint', pg: pg, ctx: ctx, tiles: {}, rad: ctx.lineWidth / 2, last: p, lastMid: p, r: r };
-      saveTiles(d, p.x, p.y, p.x + 1, p.y + 1);
+      ctx.strokeStyle = t === 'whiteout' ? '#ffffff' : t === 'aierase' ? '#ff2d55' : S.brush.color;
+      var d = { kind: 'paint', pg: pg, ctx: ctx, tiles: {}, rad: ctx.lineWidth / 2, last: p, lastMid: p, r: r, mask: t === 'aierase' };
+      trackMask(d, p); saveTiles(d, p.x, p.y, p.x + 1, p.y + 1);
       seg(ctx, p, { x: p.x + 0.01, y: p.y });
       S.drag = d; showLoupe(pg, e, r);
     } else if (t === 'rect' || t === 'ellipse') {
@@ -19317,7 +19580,7 @@ html.kf-manga-mode #manga-screen.has-doc .mgp-bar { display: flex; }
       var a = d.lastMid, b = d.last;
       saveTiles(d, Math.min(a.x, b.x), Math.min(a.y, b.y), Math.max(a.x, b.x), Math.max(a.y, b.y));
       seg(d.ctx, a, b);
-      pushUndo({ t: 'paint', pg: pg, tiles: d.tiles }); S.drag = null;
+      if (!d.mask) pushUndo({ t: 'paint', pg: pg, tiles: d.tiles }); S.drag = null;
     } else if (d.kind === 'shape') {
       S.drag = null;
       if (d.o.w * S.pw < 8 || d.o.h * S.pw < 8) { removeObj(d.o, true); return; }

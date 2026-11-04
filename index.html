@@ -2508,33 +2508,78 @@ function kfTogglePw(btn){
             return m;
         }
 
-        // کارتی «ئەگەر CRF نەبوو»: bitrate ی هاوشێوە + خەمڵێنەری CRF
+        // کارتی «ئەگەر CRF نەبوو»: bitrate ی هاوشێوە + خەمڵێنەری خۆکاری CRF بە دوو فایلی نموونە
+        async function fileKbps(f) {
+            var b = await rd(f, 0, 4);
+            var m = (b[0] === 0x1A && b[1] === 0x45) ? await mkvMeta(f) : await mp4Meta(f);
+            return m.dur ? f.size * 8 / m.dur / 1000 : 0;
+        }
+        function cmdBlock(parent, text) {
+            parent.appendChild(el('pre', 'crf-code', text));
+            var b = el('button', 'btn btn-outline', 'کۆپیکردن'); b.type = 'button';
+            b.addEventListener('click', function () { copyText(text, b); });
+            parent.appendChild(b);
+        }
+        function picker(parent, label, onKbps) {
+            var w = el('div', 'crf-ltr'); w.style.cssText = 'margin-top:8px';
+            var lb = el('div', 'crf-msg', label); lb.style.direction = 'rtl'; w.appendChild(lb);
+            var inp = el('input', 'input-field'); inp.type = 'file'; inp.style.cssText = 'margin:4px 0 0;font-size:12px';
+            var st = el('div', 'crf-msg', ''); st.style.cssText = 'direction:rtl;margin:2px 0 0';
+            inp.addEventListener('change', async function () {
+                st.textContent = '';
+                var f = inp.files && inp.files[0]; if (!f) { onKbps(0); return; }
+                try { var k = await fileKbps(f); st.textContent = k ? 'bitrate: ' + Math.round(k) + ' kbps' : 'ماوەی فایلەکە نەخوێنرایەوە'; onKbps(k); }
+                catch (e) { st.textContent = 'فایلەکە نەخوێنرایەوە'; onKbps(0); }
+            });
+            w.appendChild(inp); w.appendChild(st); parent.appendChild(w);
+        }
         function estimateCard(box, file, res, p) {
             var m = res.meta || {};
             var kb = p && p.map.bitrate ? parseFloat(p.map.bitrate) : (m.dur ? file.size * 8 / m.dur / 1000 : 0);
             if (!kb) return;
             kb = Math.round(kb);
             var lib = ((p && p.enc === 'x265') || m.codec === 'H.265') ? 'libx265' : 'libx264';
+            var mid = m.dur ? Math.max(0, Math.floor(m.dur / 2 - 30)) : 60;
+            var inName = '"' + file.name + '"';
             var c = el('div', 'crf-card');
-            c.appendChild(el('div', 'crf-title', 'ئەگەر دەتەوێت هەمان قەبارە و کوالیتی بەدەست بهێنیت'));
-            c.appendChild(el('p', 'crf-msg', 'ڕێژەی ناوەندی ڤیدیۆکە نزیکەی ' + kb + ' kbps ـە' + (m.w ? ' (' + m.w + '×' + m.h + (m.fps ? ' ، ' + m.fps.toFixed(1) + ' fps' : '') + ')' : '') + '. CRF ی دەقەودەق لە فایلێکی بێ CRF نازانرێت، بەڵام ئەم دوو ڕێگایە نزیکترین ئەنجام دەدەن:'));
-            c.appendChild(el('p', 'crf-msg', 'ڕێگای ١ — هەمان bitrate (باشترە 2-pass بێت):'));
-            var cmd = '-c:v ' + lib + ' -b:v ' + kb + 'k';
-            c.appendChild(el('pre', 'crf-code', cmd));
-            var cb = el('button', 'btn btn-outline', 'کۆپیکردنی فەرمان'); cb.type = 'button';
-            cb.addEventListener('click', function () { copyText(cmd, cb); });
-            c.appendChild(cb);
-            c.appendChild(el('p', 'crf-msg', 'ڕێگای ٢ — CRF: بڕێکی ٦٠ چرکەیی لە ناوەڕاستی ڤیدیۆکە بە CRF 20 ئینکۆد بکە، پاشان bitrate ی فایلە نوێیەکە لێرە بنووسە:'));
-            var wrap = el('div', 'crf-ltr'); wrap.style.cssText = 'display:flex;gap:8px;margin-top:6px';
-            var a = el('input', 'input-field'); a.type = 'number'; a.value = '20'; a.placeholder = 'CRF'; a.style.margin = '0';
-            var b = el('input', 'input-field'); b.type = 'number'; b.placeholder = 'kbps'; b.style.margin = '0';
-            wrap.appendChild(a); wrap.appendChild(b); c.appendChild(wrap);
-            var out = el('p', 'crf-msg', ''); out.style.cssText = 'font-weight:bold;color:var(--primary)'; c.appendChild(out);
-            function calc() {
-                var t = parseFloat(a.value), k = parseFloat(b.value);
-                out.textContent = (t > 0 && k > 0) ? 'CRF ی نزیک ≈ ' + (t + 6 * Math.log2(k / kb)).toFixed(1) + ' (ئەگەر زۆر جیاواز بوو، بە ئەم ژمارەیە دووبارە تاقی بکەرەوە)' : '';
+            c.appendChild(el('div', 'crf-title', 'CRF نییە؟ ئەمە نزیکترین ڕێگایە'));
+            c.appendChild(el('p', 'crf-msg', 'ڕێژەی ناوەندی ڤیدیۆکە نزیکەی ' + kb + ' kbps ـە' + (m.w ? ' (' + m.w + '×' + m.h + (m.fps ? '، ' + m.fps.toFixed(1) + ' fps' : '') + ')' : '') + '. CRF ی دەقەودەق لە فایلەکەدا نییە، بەڵام دەتوانیت CRFـێکی هاوشێوە بدۆزیتەوە:'));
+            c.appendChild(el('p', 'crf-msg', 'ڕێگای ١ — هەمان قەبارە، بە bitrate (باشترە 2-pass بێت):'));
+            cmdBlock(c, '-c:v ' + lib + ' -b:v ' + kb + 'k');
+            var d = el('details'); d.open = true; d.style.marginTop = '10px';
+            d.appendChild(el('summary', '', 'ڕێگای ٢ — دۆزینەوەی CRF بە ٣ هەنگاو'));
+            d.appendChild(el('p', 'crf-msg', 'هەنگاوی ١: ئەم دوو فەرمانە لە ffmpeg بکە (هەر دووکیان تەنها ٦٠ چرکە لە ناوەڕاستی ڤیدیۆکە وەردەگرن و خێران):'));
+            var crfIn = el('input', 'input-field'); crfIn.type = 'number'; crfIn.value = '20'; crfIn.style.cssText = 'margin:4px 0;width:90px;direction:ltr';
+            var lab = el('div', 'crf-msg', 'CRF ی تاقیکردنەوە:'); lab.appendChild(crfIn); d.appendChild(lab);
+            var pre1 = el('pre', 'crf-code', ''), pre2 = el('pre', 'crf-code', '');
+            function cmds() {
+                pre1.textContent = 'ffmpeg -ss ' + mid + ' -t 60 -i ' + inName + ' -an -sn -c:v copy original.mkv';
+                pre2.textContent = 'ffmpeg -ss ' + mid + ' -t 60 -i ' + inName + ' -an -sn -c:v ' + lib + ' -crf ' + (crfIn.value || 20) + ' -preset medium test.mkv';
             }
-            a.addEventListener('input', calc); b.addEventListener('input', calc);
+            cmds(); crfIn.addEventListener('input', function () { cmds(); calc(); });
+            d.appendChild(pre1);
+            var b1 = el('button', 'btn btn-outline', 'کۆپی فەرمانی ١'); b1.type = 'button'; b1.addEventListener('click', function () { copyText(pre1.textContent, b1); }); d.appendChild(b1);
+            d.appendChild(pre2);
+            var b2 = el('button', 'btn btn-outline', 'کۆپی فەرمانی ٢'); b2.type = 'button'; b2.addEventListener('click', function () { copyText(pre2.textContent, b2); }); d.appendChild(b2);
+            d.appendChild(el('p', 'crf-msg', 'هەنگاوی ٢: هەردوو فایلە دروستکراوەکە لێرە هەڵبژێرە (ئاسانتر لە نووسینی ژمارە):'));
+            var kOrig = 0, kTest = 0;
+            var out = el('p', 'crf-msg', ''); out.style.cssText = 'font-weight:bold;color:var(--primary);margin-top:10px';
+            var cmdBox = el('div');
+            function calc() {
+                cmdBox.textContent = '';
+                var t = parseFloat(crfIn.value), base = kOrig || 0;
+                if (!(t > 0) || !kTest || !base) { out.textContent = (kTest && !base) ? 'فایلی original.mkv ـیش هەڵبژێرە' : ''; return; }
+                var est = Math.min(51, Math.max(0, t + 6 * Math.log2(kTest / base)));
+                var r = est.toFixed(1);
+                out.textContent = 'هەنگاوی ٣: CRF ی نزیک ≈ ' + r;
+                cmdBox.appendChild(el('p', 'crf-msg', 'بەکاریبهێنە:'));
+                cmdBlock(cmdBox, '-c:v ' + lib + ' -crf ' + r);
+                cmdBox.appendChild(el('p', 'crf-msg', 'ئەگەر قەبارەکە هێشتا جیاواز بوو، ژمارەکە بەکاربهێنە وەک CRF ی تاقیکردنەوە و دووبارە بکەرەوە.'));
+            }
+            picker(d, 'فایلی original.mkv (نموونەی ئەسڵی):', function (k) { kOrig = k; calc(); });
+            picker(d, 'فایلی test.mkv (نموونەی CRF):', function (k) { kTest = k; calc(); });
+            d.appendChild(out); d.appendChild(cmdBox);
+            c.appendChild(d);
             box.appendChild(c);
         }
 
@@ -17686,6 +17731,11 @@ var G=[
  feats:['خوێندنەوەی فایلی گەورە لەسەر مۆبایل','لیستی هەموو ژێرنووس و دەنگەکان بە زمان','ناوی تایبەت بۆ فایلی دەرچوو'],
  steps:[{h:'بەکارهێنان',rows:[[E('box','کرتە بکە بۆ کردنەوەی فایلەکان',1)],[E('el','خەریکی پشکنینە... 45%',2)],[E('txt','ناوی فایلی دەرچوو',3)],[E('btn','ژێرنووس 4',4),E('btn','دەنگ (Audio) 2',4)]],
   notes:['فایلی MKV یان WebM لە ئامێرەکەت هەڵبژێرە.','ڕێژەی پشکنین.','ناوی فایلە دەرهێنراوەکان (ئارەزوومەندانە).','دەستی لێ بدە بۆ کردنەوەی لیستەکە، پاشان دەست لە هەر ژێرنووس یان دەنگێک بدە تا دابەزێت.']}]},
+{k:'crf',name:'پشکنینی CRF',intro:'ڤیدیۆیەکی MP4 یان MKV هەڵدەبژێریت و دەزانیت بە چ CRFـێک کۆد کراوە، تا هەمان شت بەکاربهێنیت.',
+ feats:['بەهای CRF بۆ ڤیدیۆی x264 و x265','فەرمانی ffmpeg و ڕێنمایی HandBrake ئامادەیە','ئەگەر CRF نەبوو: bitrate ی هاوشێوە و خەمڵێنەری CRF','فایلەکە ناناردرێت؛ هەموو شتێک لەسەر ئامێرەکەتە'],
+ steps:[{h:'بەکارهێنان',rows:[[E('box','ڤیدیۆکە (MKV یان MP4) هەڵبژێرە',1)],[E('el','CRF 18 — کوالیتی بەرز',2)],[E('btn','کۆپیکردنی ژمارەی CRF',3)],[E('el','ئەگەر CRF نەبوو: bitrate ≈ 8000 kbps',4)],[E('txt','original.mkv + test.mkv',5)]],
+  notes:['فایلەکە لە Files هەڵبژێرە؛ خۆکار دەپشکنرێت.','ژمارەی کەمتر = کوالیتی بەرزتر و قەبارەی گەورەتر. ڕێنمایی HandBrake (RF) و فەرمانی ffmpeg لەژێریدا دەردەکەوێت.','ژمارەکە کۆپی دەکات.','بەشی «زانیاری زیاتر» ڕێکخستنەکانی ئینکۆدەر پیشان دەدات. ئەگەر ڤیدیۆکە بە bitrate (2-pass) کۆد کرابوو، CRF نییە و تەنها bitrate پیشان دەدرێت.','بۆ دۆزینەوەی CRFـی هاوشێوە: دوو فەرمانی ffmpeg ی ناو بەشەکە بکە (٦٠ چرکە)، پاشان فایلی original.mkv و test.mkv هەڵبژێرە؛ CRF ی نزیک خۆکار دەژمێردرێت.'],
+  tip:'CRF لە ناو MP4/MKV پاشەکەوت ناکرێت؛ تەنها x264 و x265 دەقی ڕێکخستنەکانیان دەنووسنە ناو ڤیدیۆکە. بۆیە ئەگەر ڤیدیۆکە بە ئینکۆدەری هاردوێر یان AV1 کۆد کرابێت، CRF نادۆزرێتەوە و خەمڵێنەرەکە بەکاردێت.'}]},
 {k:'servers',name:'کۆدی سێرڤەرەکان',intro:'لینکی سێرڤەرەکانی ئەڵقەکان دەکات بە کۆدێکی ڕێکخراو بۆ ماڵپەڕ.',
  feats:['ناسینەوەی ژمارەی ئەڵقە لە هەر شوێنێک','ناوی سێرڤەر خۆکار بە ئینگلیزی؛ Vidmoly و Google drive یەکەمن','ڕاستکردنەوەی لینک بۆ embed','ڕێکخستنەوەی کۆدی کۆن'],
  steps:[{h:'بەکارهێنان',rows:[[E('btn','Paste',1),E('btn','نموونە',2),E('btn','پاککردنەوە',3)],[E('txt','12\nhttps://vidmoly.org/embed-...',4)],[E('el','☑ embed',5),E('el','☑ ڕیزکردن',5),E('el','ئەڵقەی سەرەتا',6)],[E('txt','<کۆدی دەرچوو>',7)],[E('btn','کۆپیکردنی کۆد',8),E('btn','داگرتن (.html)',8)]],

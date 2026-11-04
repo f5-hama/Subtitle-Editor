@@ -2269,492 +2269,6 @@ function kfTogglePw(btn){
         </div>
     </div>
 
-    <!-- مۆداڵی پشکنینی CRF ی ڤیدیۆ (MP4 / MKV) -->
-    <style>
-    #crf-modal .crf-ltr { direction: ltr; unicode-bidi: isolate; text-align: left; }
-    #crf-modal .crf-card { border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; margin-top: 10px; background: rgba(255,255,255,0.03); }
-    #crf-modal .crf-big { text-align: center; padding: 14px 8px; }
-    #crf-modal .crf-big .crf-lbl { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
-    #crf-modal .crf-big .crf-val { font-size: 44px; font-weight: 800; color: var(--primary); line-height: 1.1; direction: ltr; unicode-bidi: isolate; }
-    #crf-modal .crf-chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 8px; }
-    #crf-modal .crf-chip { font-size: 11.5px; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--border-color); color: var(--text-muted); direction: ltr; unicode-bidi: isolate; }
-    #crf-modal .crf-row { display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px; padding: 5px 0; border-bottom: 1px dashed rgba(255,255,255,0.08); }
-    #crf-modal .crf-row:last-child { border-bottom: 0; }
-    #crf-modal .crf-row span:first-child { color: var(--text-muted); }
-    #crf-modal .crf-row span:last-child { direction: ltr; unicode-bidi: isolate; font-weight: bold; text-align: left; overflow-wrap: anywhere; }
-    #crf-modal pre.crf-code { margin: 6px 0 0; padding: 9px 10px; border-radius: 8px; background: rgba(0,0,0,0.35); color: #e2e8f0; font-size: 12px; direction: ltr; text-align: left; white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; max-height: 160px; overflow: auto; }
-    #crf-modal .crf-title { font-size: 12px; font-weight: bold; color: var(--primary); }
-    #crf-modal .crf-msg { font-size: 12.5px; line-height: 1.9; color: var(--text-muted); }
-    #crf-modal .crf-card .btn { width: auto; margin: 8px 0 0; padding: 6px 12px; font-size: 12px; }
-    #crf-modal .crf-big .btn { padding: 8px 16px; }
-    #crf-modal details.crf-card > summary { cursor: pointer; font-size: 13px; font-weight: bold; color: var(--primary); margin-bottom: 6px; }
-    #crf-modal .crf-big .crf-msg { margin-top: 4px; }
-    </style>
-    <div id="crf-modal" class="custom-modal-overlay">
-        <div class="custom-modal-content" style="max-width: 500px; text-align: start;">
-            <h3 class="custom-modal-title" style="text-align: center; margin: 0 0 6px 0; color: var(--primary); font-size: 16px;">پشکنینی CRF ی ڤیدیۆ</h3>
-            <p style="font-size: 11px; color: var(--text-muted); text-align: center; margin: 0 0 10px 0; line-height: 1.7;">
-                فایلی MP4 یان MKV هەڵبژێرە؛ ئەگەر بە x264 یان x265 کۆد کرابێت، بەهای CRF دەدۆزرێتەوە. فایلەکە ناناردرێت و هەموو شتێک لەسەر ئامێرەکەی خۆتدا ئەنجام دەدرێت.
-            </p>
-
-            <div class="file-box" id="boxCrfFile" style="margin-bottom: 10px; padding: 12px;">
-                <button type="button" class="clear-file-btn" onclick="clearCrfFile()" style="display: none;"><svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M18 6 6 18M6 6l12 12"/></svg></button>
-                <div class="upload-icon">
-                    <svg style="width:24px;height:24px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M12 14l4-4M3.3 17a10 10 0 1 1 17.4 0"/></svg>
-                </div>
-                <label>ڤیدیۆکە (MP4 یان MKV) هەڵبژێرە:</label>
-                <div class="file-name-display" id="crfFileNameDisplay" style="direction:ltr; unicode-bidi:plaintext; text-align:center;">کرتە بکە بۆ کردنەوەی فایلەکان</div>
-                <input type="file" id="crfFileInput" onchange="handleCrfFileSelect(this)">
-            </div>
-
-            <div id="crfProgressContainer" style="display: none; margin-bottom: 10px;">
-                <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); margin-bottom:4px;">
-                    <span id="crfStatusText">خەریکی پشکنینی فایلەکەیە...</span>
-                    <span id="crfProgressPercent">0%</span>
-                </div>
-                <div style="width:100%; height:5px; background:rgba(255,255,255,0.1); border-radius:999px; overflow:hidden;">
-                    <div id="crfProgressBarFill" style="width:0%; height:100%; background:var(--primary); transition:width 0.15s ease;"></div>
-                </div>
-            </div>
-
-            <div id="crfResult"></div>
-
-            <div class="custom-modal-actions" style="margin-top: 12px;">
-                <button class="btn btn-outline" onclick="document.getElementById('crf-modal').style.display='none'">داخستن</button>
-            </div>
-        </div>
-    </div>
-    <script id="kf-crf-js">
-    (function () {
-        'use strict';
-        var CH = 4 * 1024 * 1024, OV = 8192, QUICK = 32 * 1024 * 1024, TAIL = 8 * 1024 * 1024;
-        var NEEDLES = ['x264 - core', 'x265 (build', 'x265 - '];
-        var HINTS = [['avc1', 'H.264'], ['avcC', 'H.264'], ['V_MPEG4/ISO/AVC', 'H.264'], ['hvc1', 'H.265'], ['hev1', 'H.265'], ['hvcC', 'H.265'], ['V_MPEGH/ISO/HEVC', 'H.265'], ['av01', 'AV1'], ['V_AV1', 'AV1'], ['vp09', 'VP9'], ['V_VP9', 'VP9']];
-        var SHOW = ['preset', 'ref', 'bframes', 'me', 'subme', 'rd', 'trellis', 'aq', 'aq-mode', 'aq-strength', 'psy-rd', 'psy_rd', 'rc-lookahead', 'rc_lookahead', 'keyint', 'min-keyint', 'deblock', 'weightp', 'b-adapt', 'b_adapt', 'ctu'];
-        var dec = new TextDecoder('latin1');
-        var token = 0, curFile = null;
-        function $(id) { return document.getElementById(id); }
-
-        function fmtSize(n) {
-            if (n >= 1073741824) return (n / 1073741824).toFixed(2) + ' GB';
-            if (n >= 1048576) return (n / 1048576).toFixed(1) + ' MB';
-            return Math.max(1, Math.round(n / 1024)) + ' KB';
-        }
-        function copyText(text, btn) {
-            var old = btn.textContent;
-            function done() { btn.textContent = 'کۆپی کرا ✓'; setTimeout(function () { btn.textContent = old; }, 1500); }
-            function fallback() {
-                var t = document.createElement('textarea'); t.value = text; t.style.cssText = 'position:fixed;opacity:0';
-                document.body.appendChild(t); t.select();
-                try { document.execCommand('copy'); done(); } catch (e) {}
-                t.remove();
-            }
-            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
-        }
-        function el(tag, cls, text) {
-            var e = document.createElement(tag);
-            if (cls) e.className = cls;
-            if (text !== undefined) e.textContent = text;
-            return e;
-        }
-        function setProgress(p, label) {
-            $('crfProgressContainer').style.display = 'block';
-            $('crfProgressBarFill').style.width = p + '%';
-            $('crfProgressPercent').textContent = Math.round(p) + '%';
-            if (label) $('crfStatusText').textContent = label;
-        }
-
-        async function sniffContainer(file) {
-            var b = new Uint8Array(await file.slice(0, 16).arrayBuffer());
-            if (b[0] === 0x1A && b[1] === 0x45 && b[2] === 0xDF && b[3] === 0xA3) return 'MKV / WebM (Matroska)';
-            if (String.fromCharCode(b[4], b[5], b[6], b[7]) === 'ftyp') return 'MP4 / MOV';
-            return null;
-        }
-
-        // فایلەکە پارچە پارچە دەخوێنرێتەوە و دەقی ڕێکخستنی x264/x265 دەدۆزرێتەوە
-        async function scan(file, ranges, tk) {
-            var total = 0, done = 0, hints = {};
-            ranges.forEach(function (r) { total += r[1] - r[0]; });
-            for (var ri = 0; ri < ranges.length; ri++) {
-                var from = ranges[ri][0], to = ranges[ri][1];
-                for (var off = from; off < to; off += CH) {
-                    if (tk !== token) return { cancelled: true };
-                    var end = Math.min(off + CH + OV, file.size);
-                    var s = dec.decode(await file.slice(off, end).arrayBuffer());
-                    var last = end >= file.size || off + CH >= to;
-                    var lim = last ? s.length : CH;
-                    var best = -1;
-                    for (var n = 0; n < NEEDLES.length; n++) {
-                        var i = s.indexOf(NEEDLES[n]);
-                        if (i > -1 && i < lim && (best < 0 || i < best)) best = i;
-                    }
-                    if (best > -1) {
-                        var j = best, mx = Math.min(s.length, best + 8000);
-                        while (j < mx) { var c = s.charCodeAt(j); if (c < 32 || c > 126) break; j++; }
-                        return { text: s.slice(best, j), hints: Object.keys(hints) };
-                    }
-                    done += Math.min(CH, to - off);
-                    setProgress(Math.min(99, done / total * 100));
-                }
-            }
-            return { text: null, hints: Object.keys(hints) };
-        }
-
-        function parse(str) {
-            var enc = str.indexOf('x264') === 0 ? 'x264' : 'x265';
-            var ver = '';
-            var m = enc === 'x264' ? /core (\d+)/.exec(str) : /build (\d+)/.exec(str);
-            if (m) ver = enc === 'x264' ? 'core ' + m[1] : 'build ' + m[1];
-            var oi = str.indexOf('options:');
-            var opts = oi > -1 ? str.slice(oi + 8).trim() : '';
-            var map = {};
-            opts.split(/\s+/).forEach(function (t) {
-                var k = /^([\w-]+)=(.*)$/.exec(t);
-                if (k) map[k[1]] = k[2];
-            });
-            var mode = null;
-            if (map.crf !== undefined) mode = 'crf';
-            else if (map.rc === 'cqp' || (map.qp !== undefined && !map.bitrate)) mode = 'cqp';
-            else if (map.bitrate !== undefined) mode = (map.rc === '2pass' || map.rc === '3pass') ? 'multipass' : 'abr';
-            return { enc: enc, ver: ver, opts: opts, map: map, mode: mode, raw: str };
-        }
-
-        // ---- خوێندنەوەی زانیاری فایل (ماوە، قەبارەی وێنە، کۆدێک) بۆ خەمڵاندنی CRF ----
-        async function rd(f, o, n) { return new Uint8Array(await f.slice(o, Math.min(f.size, o + n)).arrayBuffer()); }
-        function vint(b, i, keep) {
-            var l = 1, m = 0x80; while (l <= 8 && !(b[i] & m)) { l++; m >>= 1; }
-            if (l > 8 || i + l > b.length) return null;
-            var v = keep ? b[i] : (b[i] & (m - 1)); for (var k = 1; k < l; k++) v = v * 256 + b[i + k];
-            return { v: v, l: l };
-        }
-        function uint(b, s, e) { var v = 0; for (var i = s; i < e; i++) v = v * 256 + b[i]; return v; }
-        function str(b, s, e) { return String.fromCharCode.apply(null, b.subarray(s, e)); }
-        function ebml(b, s, e, cb) {
-            var i = s;
-            while (i < e) {
-                var id = vint(b, i, true); if (!id) break;
-                var sz = vint(b, i + id.l, false); if (!sz) break;
-                var ds = i + id.l + sz.l, de = Math.min(ds + sz.v, e);
-                cb(id.v, ds, de); i = de;
-            }
-        }
-        var CODEC = { 'V_MPEG4/ISO/AVC': 'H.264', avc1: 'H.264', 'V_MPEGH/ISO/HEVC': 'H.265', hvc1: 'H.265', hev1: 'H.265', V_AV1: 'AV1', av01: 'AV1', V_VP9: 'VP9', vp09: 'VP9' };
-        async function mkvMeta(f) {
-            var m = {}, scale = 1000000, raw = 0, h = await rd(f, 0, 32);
-            var id = vint(h, 0, true), sz = id && vint(h, id.l, false); if (!sz) return m;
-            var pos = id.l + sz.l + sz.v;
-            h = await rd(f, pos, 32); id = vint(h, 0, true); sz = id && vint(h, id.l, false); if (!sz) return m;
-            pos += id.l + sz.l;
-            while (pos < f.size) {
-                h = await rd(f, pos, 32); id = vint(h, 0, true); sz = id && vint(h, id.l, false); if (!sz) break;
-                var ds = pos + id.l + sz.l;
-                if (id.v === 0x1549A966 || id.v === 0x1654AE6B) {
-                    var b = await rd(f, ds, Math.min(sz.v, 4e6));
-                    if (id.v === 0x1549A966) ebml(b, 0, b.length, function (i, s, e) {
-                        if (i === 0x2AD7B1) scale = uint(b, s, e);
-                        if (i === 0x4489) { var dv = new DataView(b.buffer, b.byteOffset + s, e - s); raw = e - s === 4 ? dv.getFloat32(0) : dv.getFloat64(0); }
-                    });
-                    else ebml(b, 0, b.length, function (i, s, e) {
-                        if (i !== 0xAE || m.w) return;
-                        var t = 0, c = '', w = 0, hh = 0, dd = 0;
-                        ebml(b, s, e, function (i2, s2, e2) {
-                            if (i2 === 0x83) t = uint(b, s2, e2);
-                            if (i2 === 0x86) c = str(b, s2, e2);
-                            if (i2 === 0x23E383) dd = uint(b, s2, e2);
-                            if (i2 === 0xE0) ebml(b, s2, e2, function (i3, s3, e3) { if (i3 === 0xB0) w = uint(b, s3, e3); if (i3 === 0xBA) hh = uint(b, s3, e3); });
-                        });
-                        if (t === 1) { m.w = w; m.h = hh; m.codec = CODEC[c] || ''; if (dd) m.fps = 1e9 / dd; }
-                    });
-                } else if (id.v === 0x1F43B675) break;
-                if (raw && m.w) break;
-                pos = ds + sz.v;
-            }
-            if (raw) m.dur = raw * scale / 1e9;
-            return m;
-        }
-        async function mp4Meta(f) {
-            var pos = 0, moov = null;
-            while (pos < f.size) {
-                var h = await rd(f, pos, 16), dv = new DataView(h.buffer), sz = dv.getUint32(0), hl = 8;
-                if (sz === 1) { sz = dv.getUint32(8) * 4294967296 + dv.getUint32(12); hl = 16; } else if (sz === 0) sz = f.size - pos;
-                if (sz < 8) break;
-                if (str(h, 4, 8) === 'moov') { if (sz < 64e6) moov = await rd(f, pos + hl, sz - hl); break; }
-                pos += sz;
-            }
-            if (!moov) return {};
-            var m = {}, ts = 0, du = 0;
-            function walk(s, e, cb) {
-                var i = s;
-                while (i + 8 <= e) { var d = new DataView(moov.buffer, moov.byteOffset + i, 8), z = d.getUint32(0); if (z < 8) break; cb(str(moov, i + 4, i + 8), i + 8, Math.min(i + z, e)); i += z; }
-            }
-            function u32(o) { return new DataView(moov.buffer, moov.byteOffset + o, 4).getUint32(0); }
-            walk(0, moov.length, function (t, s, e) {
-                if (t === 'mvhd') { var v = moov[s]; ts = u32(s + (v ? 20 : 12)); du = v ? u32(s + 24) * 4294967296 + u32(s + 28) : u32(s + 16); }
-                if (t === 'trak') {
-                    var tr = { vide: false, w: 0, h: 0, n: 0, c: '' };
-                    (function dive(s1, e1) {
-                        walk(s1, e1, function (t1, s2, e2) {
-                            if (t1 === 'tkhd') { tr.w = u32(e2 - 8) >>> 16; tr.h = u32(e2 - 4) >>> 16; }
-                            else if (t1 === 'hdlr') tr.vide = str(moov, s2 + 8, s2 + 12) === 'vide';
-                            else if (t1 === 'stsz') tr.n = u32(s2 + 8);
-                            else if (t1 === 'stsd') tr.c = str(moov, s2 + 12, s2 + 16);
-                            else if (t1 === 'mdia' || t1 === 'minf' || t1 === 'stbl') dive(s2, e2);
-                        });
-                    })(s, e);
-                    if (tr.vide && !m.w) { m.w = tr.w; m.h = tr.h; m.codec = CODEC[tr.c] || ''; m.n = tr.n; }
-                }
-            });
-            if (ts && du) { m.dur = du / ts; if (m.n) m.fps = m.n / m.dur; }
-            return m;
-        }
-
-        // کارتی «ئەگەر CRF نەبوو»: bitrate ی هاوشێوە + خەمڵێنەری خۆکاری CRF بە دوو فایلی نموونە
-        async function fileKbps(f) {
-            var b = await rd(f, 0, 4);
-            var m = (b[0] === 0x1A && b[1] === 0x45) ? await mkvMeta(f) : await mp4Meta(f);
-            return m.dur ? f.size * 8 / m.dur / 1000 : 0;
-        }
-        function cmdBlock(parent, text) {
-            parent.appendChild(el('pre', 'crf-code', text));
-            var b = el('button', 'btn btn-outline', 'کۆپیکردن'); b.type = 'button';
-            b.addEventListener('click', function () { copyText(text, b); });
-            parent.appendChild(b);
-        }
-        function picker(parent, label, onKbps) {
-            var w = el('div', 'crf-ltr'); w.style.cssText = 'margin-top:8px';
-            var lb = el('div', 'crf-msg', label); lb.style.direction = 'rtl'; w.appendChild(lb);
-            var inp = el('input', 'input-field'); inp.type = 'file'; inp.style.cssText = 'margin:4px 0 0;font-size:12px';
-            var st = el('div', 'crf-msg', ''); st.style.cssText = 'direction:rtl;margin:2px 0 0';
-            inp.addEventListener('change', async function () {
-                st.textContent = '';
-                var f = inp.files && inp.files[0]; if (!f) { onKbps(0); return; }
-                try { var k = await fileKbps(f); st.textContent = k ? 'bitrate: ' + Math.round(k) + ' kbps' : 'ماوەی فایلەکە نەخوێنرایەوە'; onKbps(k); }
-                catch (e) { st.textContent = 'فایلەکە نەخوێنرایەوە'; onKbps(0); }
-            });
-            w.appendChild(inp); w.appendChild(st); parent.appendChild(w);
-        }
-        function estimateCard(box, file, res, p) {
-            var m = res.meta || {};
-            var kb = p && p.map.bitrate ? parseFloat(p.map.bitrate) : (m.dur ? file.size * 8 / m.dur / 1000 : 0);
-            if (!kb) return;
-            kb = Math.round(kb);
-            var lib = ((p && p.enc === 'x265') || m.codec === 'H.265') ? 'libx265' : 'libx264';
-            var mid = m.dur ? Math.max(0, Math.floor(m.dur / 2 - 30)) : 60;
-            var inName = '"' + file.name + '"';
-            var c = el('div', 'crf-card');
-            c.appendChild(el('div', 'crf-title', 'CRF نییە؟ ئەمە نزیکترین ڕێگایە'));
-            c.appendChild(el('p', 'crf-msg', 'ڕێژەی ناوەندی ڤیدیۆکە نزیکەی ' + kb + ' kbps ـە' + (m.w ? ' (' + m.w + '×' + m.h + (m.fps ? '، ' + m.fps.toFixed(1) + ' fps' : '') + ')' : '') + '. CRF ی دەقەودەق لە فایلەکەدا نییە، بەڵام دەتوانیت CRFـێکی هاوشێوە بدۆزیتەوە:'));
-            c.appendChild(el('p', 'crf-msg', 'ڕێگای ١ — هەمان قەبارە، بە bitrate (باشترە 2-pass بێت):'));
-            cmdBlock(c, '-c:v ' + lib + ' -b:v ' + kb + 'k');
-            var d = el('details'); d.open = true; d.style.marginTop = '10px';
-            d.appendChild(el('summary', '', 'ڕێگای ٢ — دۆزینەوەی CRF بە ٣ هەنگاو'));
-            d.appendChild(el('p', 'crf-msg', 'هەنگاوی ١: ئەم دوو فەرمانە لە ffmpeg بکە (هەر دووکیان تەنها ٦٠ چرکە لە ناوەڕاستی ڤیدیۆکە وەردەگرن و خێران):'));
-            var crfIn = el('input', 'input-field'); crfIn.type = 'number'; crfIn.value = '20'; crfIn.style.cssText = 'margin:4px 0;width:90px;direction:ltr';
-            var lab = el('div', 'crf-msg', 'CRF ی تاقیکردنەوە:'); lab.appendChild(crfIn); d.appendChild(lab);
-            var pre1 = el('pre', 'crf-code', ''), pre2 = el('pre', 'crf-code', '');
-            function cmds() {
-                pre1.textContent = 'ffmpeg -ss ' + mid + ' -t 60 -i ' + inName + ' -an -sn -c:v copy original.mkv';
-                pre2.textContent = 'ffmpeg -ss ' + mid + ' -t 60 -i ' + inName + ' -an -sn -c:v ' + lib + ' -crf ' + (crfIn.value || 20) + ' -preset medium test.mkv';
-            }
-            cmds(); crfIn.addEventListener('input', function () { cmds(); calc(); });
-            d.appendChild(pre1);
-            var b1 = el('button', 'btn btn-outline', 'کۆپی فەرمانی ١'); b1.type = 'button'; b1.addEventListener('click', function () { copyText(pre1.textContent, b1); }); d.appendChild(b1);
-            d.appendChild(pre2);
-            var b2 = el('button', 'btn btn-outline', 'کۆپی فەرمانی ٢'); b2.type = 'button'; b2.addEventListener('click', function () { copyText(pre2.textContent, b2); }); d.appendChild(b2);
-            d.appendChild(el('p', 'crf-msg', 'هەنگاوی ٢: هەردوو فایلە دروستکراوەکە لێرە هەڵبژێرە (ئاسانتر لە نووسینی ژمارە):'));
-            var kOrig = 0, kTest = 0;
-            var out = el('p', 'crf-msg', ''); out.style.cssText = 'font-weight:bold;color:var(--primary);margin-top:10px';
-            var cmdBox = el('div');
-            function calc() {
-                cmdBox.textContent = '';
-                var t = parseFloat(crfIn.value), base = kOrig || 0;
-                if (!(t > 0) || !kTest || !base) { out.textContent = (kTest && !base) ? 'فایلی original.mkv ـیش هەڵبژێرە' : ''; return; }
-                var est = Math.min(51, Math.max(0, t + 6 * Math.log2(kTest / base)));
-                var r = est.toFixed(1);
-                out.textContent = 'هەنگاوی ٣: CRF ی نزیک ≈ ' + r;
-                cmdBox.appendChild(el('p', 'crf-msg', 'بەکاریبهێنە:'));
-                cmdBlock(cmdBox, '-c:v ' + lib + ' -crf ' + r);
-                cmdBox.appendChild(el('p', 'crf-msg', 'ئەگەر قەبارەکە هێشتا جیاواز بوو، ژمارەکە بەکاربهێنە وەک CRF ی تاقیکردنەوە و دووبارە بکەرەوە.'));
-            }
-            picker(d, 'فایلی original.mkv (نموونەی ئەسڵی):', function (k) { kOrig = k; calc(); });
-            picker(d, 'فایلی test.mkv (نموونەی CRF):', function (k) { kTest = k; calc(); });
-            d.appendChild(out); d.appendChild(cmdBox);
-            c.appendChild(d);
-            box.appendChild(c);
-        }
-
-        function qualityLabel(enc, v) {
-            var n = parseFloat(v); if (isNaN(n)) return '';
-            var e = enc === 'x265' ? n - 5 : n;
-            if (e <= 16) return 'کوالیتی زۆر بەرز';
-            if (e <= 19) return 'کوالیتی بەرز';
-            if (e <= 23) return 'کوالیتی باش (ئاسایی)';
-            if (e <= 27) return 'کوالیتی مامناوەند';
-            return 'کوالیتی نزم';
-        }
-        function row(parent, k, v) {
-            var r = el('div', 'crf-row'); r.appendChild(el('span', '', k)); r.appendChild(el('span', '', v)); parent.appendChild(r);
-        }
-        function addFileInfo(parent, file, container, res) {
-            row(parent, 'فایل', file.name);
-            row(parent, 'قەبارە', fmtSize(file.size));
-            if (container) row(parent, 'جۆری کۆنتەینەر', container);
-            if (res.hints && res.hints.length) row(parent, 'کۆدێکی ڤیدیۆ', res.hints.join(' / '));
-        }
-
-        function render(file, container, res, quick) {
-            var box = $('crfResult'); box.textContent = '';
-
-            if (!res.text) {
-                var nf = el('div', 'crf-card');
-                nf.appendChild(el('div', 'crf-title', 'بەهای CRF نەدۆزرایەوە'));
-                var why = 'CRF لە ناو فایلەکەدا بە شێوەیەکی ستانداردی کۆنتەینەر پاشەکەوت ناکرێت؛ تەنها x264 و x265 دەقی ڕێکخستنەکانیان لە ناو ڤیدیۆکە دەنووسن. ';
-                if (res.hints && res.hints.indexOf('AV1') > -1) why += 'ئەم ڤیدیۆیە AV1ـە و زۆربەی ئینکۆدەرەکانی AV1 ئەو زانیارییە ناخەنە ناو فایلەکە. ';
-                else if (res.hints && res.hints.indexOf('VP9') > -1) why += 'ئەم ڤیدیۆیە VP9ـە و ئەو زانیارییە تێیدا نانووسرێت. ';
-                else why += 'لەوانەیە فایلەکە بە ئینکۆدەری هاردوێر (NVENC، کامێرا، مۆبایل...) کۆد کرابێت، یان ئەو دەقە لابرابێت. ';
-                nf.appendChild(el('p', 'crf-msg', why));
-                if (quick) {
-                    nf.appendChild(el('p', 'crf-msg', 'تەنها سەرەتا و کۆتایی فایلەکە پشکنرا. دەتوانیت هەموو فایلەکە بپشکنیت (لەوانەیە کەمێک کات بخایەنێت).'));
-                    var fb = el('button', 'btn btn-outline', 'پشکنینی تەواوی فایل'); fb.type = 'button';
-                    fb.addEventListener('click', function () { run(file, true); });
-                    nf.appendChild(fb);
-                }
-                box.appendChild(nf);
-                estimateCard(box, file, res, null);
-                var ic = el('div', 'crf-card'); addFileInfo(ic, file, container, res); box.appendChild(ic);
-                return;
-            }
-
-            var p = parse(res.text);
-            var big = el('div', 'crf-card crf-big');
-            var crfNum = null;
-            if (p.mode === 'crf') {
-                crfNum = String(parseFloat(p.map.crf));
-                big.appendChild(el('div', 'crf-lbl', 'بەهای CRF'));
-                big.appendChild(el('div', 'crf-val', crfNum));
-                var ql = qualityLabel(p.enc, p.map.crf);
-                if (ql) big.appendChild(el('div', 'crf-msg', ql));
-            } else if (p.mode === 'cqp') {
-                big.appendChild(el('div', 'crf-lbl', 'CRF بەکارنەهاتووە؛ شێوازی CQP'));
-                big.appendChild(el('div', 'crf-val', 'QP ' + (p.map.qp || '?')));
-            } else if (p.mode === 'abr' || p.mode === 'multipass') {
-                big.appendChild(el('div', 'crf-lbl', 'CRF بەکارنەهاتووە؛ بە bitrate کۆد کراوە' + (p.mode === 'multipass' ? ' (multi-pass)' : '')));
-                big.appendChild(el('div', 'crf-val', p.map.bitrate + ' kbps'));
-            } else {
-                big.appendChild(el('div', 'crf-lbl', 'ئینکۆدەرەکە دۆزرایەوە بەڵام شێوازی ڕێژە دیار نییە'));
-                big.appendChild(el('div', 'crf-val', '—'));
-            }
-            var chips = el('div', 'crf-chips');
-            chips.appendChild(el('span', 'crf-chip', p.enc + (p.ver ? ' · ' + p.ver : '')));
-            if (p.map.rc) chips.appendChild(el('span', 'crf-chip', 'rc=' + p.map.rc));
-            big.appendChild(chips);
-            if (crfNum !== null) {
-                big.appendChild(el('div', 'crf-msg', 'ژمارەی کەمتر = کوالیتی بەرزتر و قەبارەی گەورەتر'));
-                var nb = el('button', 'btn', 'کۆپیکردنی ژمارەی CRF'); nb.type = 'button';
-                nb.addEventListener('click', function () { copyText(crfNum, nb); });
-                big.appendChild(nb);
-            }
-            box.appendChild(big);
-
-            if (crfNum !== null) {
-                var cmd = (p.enc === 'x264' ? '-c:v libx264' : '-c:v libx265') + ' -crf ' + crfNum;
-                var cc = el('div', 'crf-card');
-                cc.appendChild(el('div', 'crf-title', 'چۆن هەمان شت بەکاربهێنم؟'));
-                cc.appendChild(el('p', 'crf-msg', 'لە ffmpeg:'));
-                cc.appendChild(el('pre', 'crf-code', cmd));
-                var cb = el('button', 'btn btn-outline', 'کۆپیکردنی فەرمان'); cb.type = 'button';
-                cb.addEventListener('click', function () { copyText(cmd, cb); });
-                cc.appendChild(cb);
-                cc.appendChild(el('p', 'crf-msg', 'لە HandBrake: Video ← Constant Quality ← RF = ' + crfNum));
-                cc.appendChild(el('p', 'crf-msg', 'تێبینی: preset و ڕێکخستنەکانی تریش کاریگەری لەسەر قەبارە و کوالیتی هەیە.'));
-                box.appendChild(cc);
-            }
-
-            if (crfNum === null) estimateCard(box, file, res, p);
-            var more = el('details', 'crf-card');
-            more.appendChild(el('summary', '', 'زانیاری زیاتر'));
-            addFileInfo(more, file, container, res);
-            var keys = SHOW.filter(function (k) { return p.map[k] !== undefined; });
-            if (keys.length) {
-                var t = el('div', 'crf-title', 'ڕێکخستنە سەرەکییەکان'); t.style.marginTop = '10px'; more.appendChild(t);
-                keys.forEach(function (k) { row(more, k, p.map[k]); });
-            }
-            var t2 = el('div', 'crf-title', 'دەقی تەواوی ئینکۆدەر'); t2.style.marginTop = '10px'; more.appendChild(t2);
-            more.appendChild(el('pre', 'crf-code', p.raw));
-            var fbn = el('button', 'btn btn-outline', 'کۆپیکردنی دەقەکە'); fbn.type = 'button';
-            fbn.addEventListener('click', function () { copyText(p.raw, fbn); });
-            more.appendChild(fbn);
-            box.appendChild(more);
-        }
-
-        async function run(file, full) {
-            var tk = ++token;
-            $('crfResult').textContent = '';
-            setProgress(0, full ? 'خەریکی پشکنینی تەواوی فایلەکەیە...' : 'خەریکی پشکنینی فایلەکەیە...');
-            try {
-                var container = await sniffContainer(file);
-                var ranges, quick = false;
-                if (full || file.size <= QUICK + TAIL) ranges = [[0, file.size]];
-                else { ranges = [[0, QUICK], [file.size - TAIL, file.size]]; quick = true; }
-                var res = await scan(file, ranges, tk);
-                if (res.cancelled || tk !== token) return;
-                $('crfProgressContainer').style.display = 'none';
-                try { res.meta = container && container.indexOf('MKV') === 0 ? await mkvMeta(file) : await mp4Meta(file); } catch (e2) { res.meta = {}; }
-                res.hints = res.meta && res.meta.codec ? [res.meta.codec] : [];
-                if (!container) {
-                    var box = $('crfResult'); box.textContent = '';
-                    var c = el('div', 'crf-card'); c.appendChild(el('p', 'crf-msg', 'ئەم فایلە MP4 یان MKV نییە. تکایە فایلێکی MP4 یان MKV هەڵبژێرە.'));
-                    box.appendChild(c);
-                    return;
-                }
-                render(file, container, res, quick);
-            } catch (e) {
-                console.error(e);
-                $('crfProgressContainer').style.display = 'none';
-                var b2 = $('crfResult'); b2.textContent = '';
-                var c2 = el('div', 'crf-card'); c2.appendChild(el('p', 'crf-msg', 'هەڵەیەک ڕوویدا لە کاتی خوێندنەوەی فایلەکە.'));
-                b2.appendChild(c2);
-            }
-        }
-
-        function syncUI(file) {
-            var box = $('boxCrfFile');
-            $('crfFileNameDisplay').textContent = file ? file.name : 'کرتە بکە بۆ کردنەوەی فایلەکان';
-            var btn = box.querySelector('.clear-file-btn'); if (btn) btn.style.display = file ? 'flex' : 'none';
-            box.classList.toggle('has-file', !!file);
-        }
-        window.handleCrfFileSelect = function (input) {
-            var f = input.files && input.files[0];
-            curFile = f || null;
-            syncUI(curFile);
-            if (!f) { token++; $('crfResult').textContent = ''; $('crfProgressContainer').style.display = 'none'; return; }
-            run(f, false);
-        };
-        window.clearCrfFile = function () {
-            token++; curFile = null;
-            $('crfFileInput').value = '';
-            syncUI(null);
-            $('crfResult').textContent = '';
-            $('crfProgressContainer').style.display = 'none';
-        };
-        (function () {
-            var b = $('boxCrfFile'); if (!b) return;
-            b.addEventListener('dragover', function (e) { e.preventDefault(); });
-            b.addEventListener('drop', function (e) {
-                e.preventDefault();
-                var f = e.dataTransfer && e.dataTransfer.files; if (!f || !f.length) return;
-                var inp = $('crfFileInput');
-                try { inp.files = f; } catch (err) { return; }
-                window.handleCrfFileSelect(inp);
-            });
-        })();
-        window.openCrfModal = function () {
-            $('crf-modal').style.display = 'flex';
-        };
-    })();
-    </script>
-
-
 <!-- مۆداڵی پێشکەوتووی دەرهێنانی ژێرنووس و دەنگ لە MKV (Fast Stream Engine) -->
     <div id="mkv-extractor-modal" class="custom-modal-overlay">
         <div class="custom-modal-content" style="max-width: 500px; text-align: start;">
@@ -2967,7 +2481,7 @@ function kfTogglePw(btn){
     }
 
     class MkvFastReader {
-        constructor(file, chunkSize) {
+        constructor(file, chunkSize, prefetch) {
             this.file = file;
             this.size = file.size;
             this.CHUNK = chunkSize || mkvChunkSize;
@@ -2975,6 +2489,22 @@ function kfTogglePw(btn){
             this.u8 = new Uint8Array(0);
             this.dv = new DataView(this.u8.buffer);
             this.rl = 0;
+            this.pre = !!prefetch;   // خوێندنەوەی پارچەی دواتر لە کاتی پڕۆسێسکردنی پارچەی ئێستادا
+            this.pf = null;
+        }
+        setChunk(start, buf) {
+            this.cs = start;
+            this.ce = start + buf.byteLength;
+            this.u8 = new Uint8Array(buf);
+            this.dv = new DataView(buf);
+        }
+        startPrefetch() {
+            if (!this.pre || this.ce >= this.size) return;
+            const ov = Math.min(1048576, this.CHUNK >> 2);
+            const s = Math.max(this.cs + 1, this.ce - ov);
+            if (this.pf && this.pf.s === s) return;
+            const e = Math.min(this.size, s + this.CHUNK);
+            this.pf = { s, e, p: this.file.slice(s, e).arrayBuffer().catch(() => null) };
         }
         has(pos, n) {
             return pos >= this.cs && (pos + n <= this.ce || (this.ce >= this.size && pos < this.ce));
@@ -2983,12 +2513,20 @@ function kfTogglePw(btn){
             if (pos >= this.size) return false;
             n = Math.min(n, this.size - pos);
             if (this.has(pos, n)) return true;
+            const pf = this.pf;
+            if (pf && pos >= pf.s && pos + n <= pf.e) {
+                const pb = await pf.p;
+                if (pb && pb.byteLength >= pos + n - pf.s) {
+                    this.pf = null;
+                    this.setChunk(pf.s, pb);
+                    this.startPrefetch();
+                    return pos + n <= this.ce;
+                }
+            }
             const end = Math.min(this.size, pos + Math.max(n, this.CHUNK));
             const buf = await this.file.slice(pos, end).arrayBuffer();
-            this.cs = pos;
-            this.ce = pos + buf.byteLength;
-            this.u8 = new Uint8Array(buf);
-            this.dv = new DataView(buf);
+            this.setChunk(pos, buf);
+            this.startPrefetch();
             return pos + n <= this.ce;
         }
         u8At(pos) { return this.u8[pos - this.cs]; }
@@ -3260,7 +2798,7 @@ function kfTogglePw(btn){
     }
 
             async function mkvWalk(file, startPos, wanted, handler, myId, onProgress) {
-        const r = new MkvFastReader(file, mkvChunkSize);
+        const r = new MkvFastReader(file, mkvChunkSize, true);
         const size = file.size;
         let pos = startPos || 0, cluTc = 0, cnt = 0, lastUi = Date.now(), resync = 0;
         let gActive = false, gEnd = 0, gItem = null, gDur = 0, gExtras = null;
@@ -16278,7 +15816,6 @@ html:root body.startup-bg #shortcuts-modal,
 html:root body.startup-bg #img-upload-modal,
 html:root body.startup-bg #mkv-extractor-modal,
 html:root body.startup-bg #kf-servers-modal,
-html:root body.startup-bg #crf-modal,
 html:root body.startup-bg #history-modal {
     animation: none !important; transition: none !important;
 }
@@ -16291,7 +15828,6 @@ html:root body.startup-bg #shortcuts-modal > .custom-modal-content,
 html:root body.startup-bg #img-upload-modal > .custom-modal-content,
 html:root body.startup-bg #mkv-extractor-modal > .custom-modal-content,
 html:root body.startup-bg #kf-servers-modal > .custom-modal-content,
-html:root body.startup-bg #crf-modal > .custom-modal-content,
 html:root body.startup-bg #history-modal > .custom-modal-content { animation: none !important; transition: none !important; }
 
 /* ---------- بەشەکان (مۆداڵەکان): تەواوی شاشە ---------- */
@@ -16304,7 +15840,6 @@ html:root body.startup-bg #shortcuts-modal,
 html:root body.startup-bg #img-upload-modal,
 html:root body.startup-bg #mkv-extractor-modal,
 html:root body.startup-bg #kf-servers-modal,
-html:root body.startup-bg #crf-modal,
 html:root body.startup-bg #history-modal {
     z-index: 1950 !important;
     padding: calc(var(--kf-bar-h) + env(safe-area-inset-top, 0px)) 0 0 0 !important;
@@ -16321,7 +15856,6 @@ html:root body.startup-bg #shortcuts-modal > .custom-modal-content,
 html:root body.startup-bg #img-upload-modal > .custom-modal-content,
 html:root body.startup-bg #mkv-extractor-modal > .custom-modal-content,
 html:root body.startup-bg #kf-servers-modal > .custom-modal-content,
-html:root body.startup-bg #crf-modal > .custom-modal-content,
 html:root body.startup-bg #history-modal > .custom-modal-content {
     width: 100% !important; max-width: none !important; max-height: none !important;
     min-height: calc(calc(var(--kf-dvh, 1dvh) * 100) - var(--kf-bar-h) - env(safe-area-inset-top, 0px)) !important;
@@ -16351,7 +15885,6 @@ html.kf-wide:root body.startup-bg #shortcuts-modal > .custom-modal-content,
 html.kf-wide:root body.startup-bg #img-upload-modal > .custom-modal-content,
 html.kf-wide:root body.startup-bg #mkv-extractor-modal > .custom-modal-content,
 html.kf-wide:root body.startup-bg #kf-servers-modal > .custom-modal-content,
-html.kf-wide:root body.startup-bg #crf-modal > .custom-modal-content,
 html.kf-wide:root body.startup-bg #history-modal > .custom-modal-content {
         flex: 0 0 auto !important; margin: auto !important; min-height: 0 !important;
         max-width: 920px !important; padding: 32px 28px 44px !important;
@@ -16583,7 +16116,6 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
         { k: 'shortcuts', fn: 'openShortcutsModal',   id: 'shortcuts-modal',      label: 'کورتکراوەکانی کیبۆرد' },
         { k: 'img',       fn: 'openImgUploaderModal', id: 'img-upload-modal',     label: 'گۆڕینی وێنە بۆ لینک' },
         { k: 'mkv',       fn: 'openMkvExtractorModal',id: 'mkv-extractor-modal',  label: 'دەرهێنەری فایل لە MKV' },
-        { k: 'crf',       fn: 'openCrfModal',         id: 'crf-modal',            label: 'پشکنینی CRF' },
         { k: 'servers',   fn: 'openServersModal',     id: 'kf-servers-modal',     label: 'کۆدی سێرڤەرەکان' },
         { k: 'history',   fn: 'openHistoryModal',     id: 'history-modal',        label: 'مێژووی کارەکان' }
     ];
@@ -16598,7 +16130,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
     if (!tabs || !list || !drawer) return;
 
     // ئایکۆن و ناوی بەشەکان (بەستراوەتەوە بە کۆدەکەوە، پێویست بە مێنیوی کۆن نییە)
-    var DATA = {"converter": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M20 7H4M16 3l4 4-4 4M4 17h16M8 21l-4-4 4-4\"/></svg>", "label": "گۆڕینی فایل"}, "rtl": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11\"/></svg>", "label": "چاککردنی RTL"}, "revrtl": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M7 20V4M7 20l-3-3M7 20l3-3M17 4v16M17 4l-3 3M17 4l3 3\"/></svg>", "label": "پێچەوانەکردنەوەی RTL"}, "merge": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"8\" y=\"8\" width=\"13\" height=\"13\" rx=\"2.5\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M4 16a2 2 0 0 1-2-2V4.5A2.5 2.5 0 0 1 4.5 2H14a2 2 0 0 1 2 2\"/></svg>", "label": "تێکەڵکردنی دوو فایل"}, "sdh": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"9\" y=\"2\" width=\"6\" height=\"13\" rx=\"3\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M19 10v1a7 7 0 0 1-14 0v-1M12 18v4M8.5 22h7\"/></svg>", "label": "پاککردنەوەی دەنگەکان (SDH)"}, "shortcuts": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M2 14h4M10 8h4M18 16h4\"/></svg>", "label": "کورتکراوەکانی کیبۆرد"}, "img": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"3\"/><circle stroke-width=\"1.85\" cx=\"9\" cy=\"9\" r=\"2\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21\"/></svg>", "label": "گۆڕینی وێنە بۆ لینک"}, "mkv": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"m16 13 5.2 3.5a.5.5 0 0 0 .8-.4V7.9a.5.5 0 0 0-.8-.4L16 11\"/><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"2\" y=\"6\" width=\"14\" height=\"12\" rx=\"2.5\"/></svg>", "label": "دەرهێنەری فایل لە MKV"}, "servers": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7\"/></svg>", "label": "کۆدی سێرڤەرەکان"}, "history": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><circle stroke-width=\"1.85\" cx=\"12\" cy=\"12\" r=\"9.25\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M12 7v5l3 2\"/></svg>", "label": "مێژووی کارەکان"}, "crf": {"icon": '<svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M12 14l4-4M3.3 17a10 10 0 1 1 17.4 0"/></svg>', "label": "پشکنینی CRF"}, "install": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M21 15v3.5A2.5 2.5 0 0 1 18.5 21h-13A2.5 2.5 0 0 1 3 18.5V15M7 10l5 5 5-5M12 15V3\"/></svg>", "label": "دابەزاندنی ئەپ"}};
+    var DATA = {"converter": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M20 7H4M16 3l4 4-4 4M4 17h16M8 21l-4-4 4-4\"/></svg>", "label": "گۆڕینی فایل"}, "rtl": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11\"/></svg>", "label": "چاککردنی RTL"}, "revrtl": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M7 20V4M7 20l-3-3M7 20l3-3M17 4v16M17 4l-3 3M17 4l3 3\"/></svg>", "label": "پێچەوانەکردنەوەی RTL"}, "merge": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"8\" y=\"8\" width=\"13\" height=\"13\" rx=\"2.5\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M4 16a2 2 0 0 1-2-2V4.5A2.5 2.5 0 0 1 4.5 2H14a2 2 0 0 1 2 2\"/></svg>", "label": "تێکەڵکردنی دوو فایل"}, "sdh": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"9\" y=\"2\" width=\"6\" height=\"13\" rx=\"3\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M19 10v1a7 7 0 0 1-14 0v-1M12 18v4M8.5 22h7\"/></svg>", "label": "پاککردنەوەی دەنگەکان (SDH)"}, "shortcuts": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M2 14h4M10 8h4M18 16h4\"/></svg>", "label": "کورتکراوەکانی کیبۆرد"}, "img": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"3\"/><circle stroke-width=\"1.85\" cx=\"9\" cy=\"9\" r=\"2\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21\"/></svg>", "label": "گۆڕینی وێنە بۆ لینک"}, "mkv": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"m16 13 5.2 3.5a.5.5 0 0 0 .8-.4V7.9a.5.5 0 0 0-.8-.4L16 11\"/><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"2\" y=\"6\" width=\"14\" height=\"12\" rx=\"2.5\"/></svg>", "label": "دەرهێنەری فایل لە MKV"}, "servers": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7\"/></svg>", "label": "کۆدی سێرڤەرەکان"}, "history": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><circle stroke-width=\"1.85\" cx=\"12\" cy=\"12\" r=\"9.25\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M12 7v5l3 2\"/></svg>", "label": "مێژووی کارەکان"}, "install": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M21 15v3.5A2.5 2.5 0 0 1 18.5 21h-13A2.5 2.5 0 0 1 3 18.5V15M7 10l5 5 5-5M12 15V3\"/></svg>", "label": "دابەزاندنی ئەپ"}};
     SECS.forEach(function (s) {
         var d = DATA[s.k];
         s.icon = d ? d.icon : '';
@@ -16645,7 +16177,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
     var center = document.querySelector('.kf-bar-center');
     if (wm && center) center.insertBefore(wm, center.firstChild);
 
-    var KEEP = { converter: 1, rtl: 1, revrtl: 1, merge: 1, sdh: 1, img: 1, mkv: 1, crf: 1 }, visited = {};
+    var KEEP = { converter: 1, rtl: 1, revrtl: 1, merge: 1, sdh: 1, img: 1, mkv: 1 }, visited = {};
     var nav = window.kfNav = {
         secs: SECS,
         isHome: function () { return document.body.classList.contains('startup-bg'); },
@@ -17731,11 +17263,6 @@ var G=[
  feats:['خوێندنەوەی فایلی گەورە لەسەر مۆبایل','لیستی هەموو ژێرنووس و دەنگەکان بە زمان','ناوی تایبەت بۆ فایلی دەرچوو'],
  steps:[{h:'بەکارهێنان',rows:[[E('box','کرتە بکە بۆ کردنەوەی فایلەکان',1)],[E('el','خەریکی پشکنینە... 45%',2)],[E('txt','ناوی فایلی دەرچوو',3)],[E('btn','ژێرنووس 4',4),E('btn','دەنگ (Audio) 2',4)]],
   notes:['فایلی MKV یان WebM لە ئامێرەکەت هەڵبژێرە.','ڕێژەی پشکنین.','ناوی فایلە دەرهێنراوەکان (ئارەزوومەندانە).','دەستی لێ بدە بۆ کردنەوەی لیستەکە، پاشان دەست لە هەر ژێرنووس یان دەنگێک بدە تا دابەزێت.']}]},
-{k:'crf',name:'پشکنینی CRF',intro:'ڤیدیۆیەکی MP4 یان MKV هەڵدەبژێریت و دەزانیت بە چ CRFـێک کۆد کراوە، تا هەمان شت بەکاربهێنیت.',
- feats:['بەهای CRF بۆ ڤیدیۆی x264 و x265','فەرمانی ffmpeg و ڕێنمایی HandBrake ئامادەیە','ئەگەر CRF نەبوو: bitrate ی هاوشێوە و خەمڵێنەری CRF','فایلەکە ناناردرێت؛ هەموو شتێک لەسەر ئامێرەکەتە'],
- steps:[{h:'بەکارهێنان',rows:[[E('box','ڤیدیۆکە (MKV یان MP4) هەڵبژێرە',1)],[E('el','CRF 18 — کوالیتی بەرز',2)],[E('btn','کۆپیکردنی ژمارەی CRF',3)],[E('el','ئەگەر CRF نەبوو: bitrate ≈ 8000 kbps',4)],[E('txt','original.mkv + test.mkv',5)]],
-  notes:['فایلەکە لە Files هەڵبژێرە؛ خۆکار دەپشکنرێت.','ژمارەی کەمتر = کوالیتی بەرزتر و قەبارەی گەورەتر. ڕێنمایی HandBrake (RF) و فەرمانی ffmpeg لەژێریدا دەردەکەوێت.','ژمارەکە کۆپی دەکات.','بەشی «زانیاری زیاتر» ڕێکخستنەکانی ئینکۆدەر پیشان دەدات. ئەگەر ڤیدیۆکە بە bitrate (2-pass) کۆد کرابوو، CRF نییە و تەنها bitrate پیشان دەدرێت.','بۆ دۆزینەوەی CRFـی هاوشێوە: دوو فەرمانی ffmpeg ی ناو بەشەکە بکە (٦٠ چرکە)، پاشان فایلی original.mkv و test.mkv هەڵبژێرە؛ CRF ی نزیک خۆکار دەژمێردرێت.'],
-  tip:'CRF لە ناو MP4/MKV پاشەکەوت ناکرێت؛ تەنها x264 و x265 دەقی ڕێکخستنەکانیان دەنووسنە ناو ڤیدیۆکە. بۆیە ئەگەر ڤیدیۆکە بە ئینکۆدەری هاردوێر یان AV1 کۆد کرابێت، CRF نادۆزرێتەوە و خەمڵێنەرەکە بەکاردێت.'}]},
 {k:'servers',name:'کۆدی سێرڤەرەکان',intro:'لینکی سێرڤەرەکانی ئەڵقەکان دەکات بە کۆدێکی ڕێکخراو بۆ ماڵپەڕ.',
  feats:['ناسینەوەی ژمارەی ئەڵقە لە هەر شوێنێک','ناوی سێرڤەر خۆکار بە ئینگلیزی؛ Vidmoly و Google drive یەکەمن','ڕاستکردنەوەی لینک بۆ embed','ڕێکخستنەوەی کۆدی کۆن'],
  steps:[{h:'بەکارهێنان',rows:[[E('btn','Paste',1),E('btn','نموونە',2),E('btn','پاککردنەوە',3)],[E('txt','12\nhttps://vidmoly.org/embed-...',4)],[E('el','☑ embed',5),E('el','☑ ڕیزکردن',5),E('el','ئەڵقەی سەرەتا',6)],[E('txt','<کۆدی دەرچوو>',7)],[E('btn','کۆپیکردنی کۆد',8),E('btn','داگرتن (.html)',8)]],

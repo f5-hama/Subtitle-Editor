@@ -2352,6 +2352,8 @@ function kfTogglePw(btn){
     let mkvDurationTicks = 0;
     let mkvScanId = 0;
     let mkvChunkSize = 32 * 1024 * 1024; // ٣٢ مێگابایت بۆ خێراترین کێشانی داتا
+    let mkvCuesLoc = -1;      // شوێنی Cues (لە SeekHead)
+    let mkvTagsLocs = [];     // شوێنەکانی Tags (بۆ NUMBER_OF_FRAMES)
 
     function openMkvExtractorModal() {
         const modal = document.getElementById('mkv-extractor-modal');
@@ -2591,16 +2593,18 @@ function kfTogglePw(btn){
             p += hl + s;
         }
     }
+    function mkvHex(u8) { let s = ''; for (let i = 0; i < u8.length; i++) s += (u8[i] < 16 ? '0' : '') + u8[i].toString(16); return s.replace(/^(00)+(?=..)/, ''); }
     function mkvLatin1(u8) { let s = ''; for (let i = 0; i < u8.length; i++) s += String.fromCharCode(u8[i]); return s.replace(/\0+$/, ''); }
 
     function mkvParseTrackEntry(r, start, end) {
         const t = {
             trackNumber: 0, type: 0, codecId: '', name: '', lang: '', langIetf: '', codecPrivate: null,
-            channels: 1, sampling: 8000, outSampling: 0, bitDepth: 0, codecDelay: 0, seekPreRoll: 0, encoded: false, isDefault: 1
+            channels: 1, sampling: 8000, outSampling: 0, bitDepth: 0, codecDelay: 0, seekPreRoll: 0, encoded: false, isDefault: 1, uid: ''
         };
         mkvEachChild(r, start, end, (id, dp, sz) => {
             switch (id) {
                 case 0xD7: t.trackNumber = r.u(dp, sz); break;
+                case 0x73C5: t.uid = mkvHex(r.bytes(dp, sz)); break;
                 case 0x83: t.type = r.u(dp, sz); break;
                 case 0x86: t.codecId = mkvLatin1(r.bytes(dp, sz)); break;
                 case 0x536E: t.name = new TextDecoder('utf-8').decode(r.bytes(dp, sz)).replace(/\0+$/, ''); break;
@@ -2666,6 +2670,7 @@ function kfTogglePw(btn){
         const size = file.size;
         let pos = 0, first = true, resync = 0;
         let tracks = null, title = '', scale = 1000000, dur = 0, segStart = 0;
+        let cuesLoc = -1; const tagsLocs = [];
 
         while (pos < size) {
             if (!r.has(pos, 16) && !await r.ensure(pos, 16)) break;
@@ -2693,6 +2698,21 @@ function kfTogglePw(btn){
                 mkvEachChild(r, body, body + sz, (cid, dp, cs) => {
                     if (cid === 0xAE) tracks.push(mkvParseTrackEntry(r, dp, dp + cs));
                 });
+            } else if (id === 0x114D9B74 && sz <= 65536 && await r.ensure(body, sz)) {
+                // SeekHead: شوێنی Cues و Tags
+                mkvEachChild(r, body, body + sz, (cid, dp, cs) => {
+                    if (cid !== 0x4DBB) return;
+                    let sid = '', sp = -1;
+                    mkvEachChild(r, dp, dp + cs, (c2, d2, s2) => {
+                        if (c2 === 0x53AB) sid = mkvHex(r.bytes(d2, s2)).toUpperCase();
+                        else if (c2 === 0x53AC) sp = r.u(d2, s2);
+                    });
+                    if (sp < 0) return;
+                    if (sid === '1C53BB6B' && cuesLoc < 0) cuesLoc = segStart + sp;
+                    else if (sid === '1254C367') tagsLocs.push(segStart + sp);
+                });
+            } else if (id === 0x1254C367) {
+                tagsLocs.push(pos);
             }
             pos = body + sz;
         }
@@ -2701,6 +2721,8 @@ function kfTogglePw(btn){
         if (!tracks || tracks.length === 0) throw new Error('تراکەکانی فایلی MKV نەدۆزرایەوە.');
 
         mkvSegmentDataStart = segStart;
+        mkvCuesLoc = cuesLoc;
+        mkvTagsLocs = [...new Set(tagsLocs)];
         mkvTimecodeScale = scale;
         mkvDurationTicks = dur || 0;
         mkvParsedTracks = tracks;
@@ -2773,10 +2795,11 @@ function kfTogglePw(btn){
         return frames;
     }
 
-            async function mkvWalk(file, startPos, wanted, handler, myId, onProgress) {
-        const r = new MkvFastReader(file, mkvChunkSize);
-        const size = file.size;
-        let pos = startPos || 0, cluTc = 0, cnt = 0, lastUi = Date.now(), resync = 0;
+            async function mkvWalk(file, startPos, wanted, handler, myId, onProgress, opts) {
+        opts = opts || {};
+        const r = opts.reader || new MkvFastReader(file, mkvChunkSize);
+        const size = opts.end !== undefined ? Math.min(opts.end, file.size) : file.size;
+        let pos = startPos || 0, cluTc = opts.cluTc || 0, cnt = 0, lastUi = Date.now(), resync = 0;
         let gActive = false, gEnd = 0, gItem = null, gDur = 0, gExtras = null;
         
         const singleTrack = (wanted && wanted.size === 1) ? [...wanted][0] : null;
@@ -2880,6 +2903,155 @@ function kfTogglePw(btn){
     }
 
 
+
+
+    // ---------- دەرهێنانی زۆر خێرا بە Cues (پشتڕاستکراوە بە NUMBER_OF_FRAMES) ----------
+    // تەنها ئەو بلۆکانە دەخوێنێتەوە کە Cues ئاماژەیان پێدەدات، نەک هەموو فایلەکە.
+    // ئەگەر ژمارەی بلۆکەکان لەگەڵ NUMBER_OF_FRAMES یەکسان نەبوو، null دەگەڕێنێتەوە
+    // و ڕێگای کۆنی (خوێندنەوەی تەواو) بەکاردێت، بۆیە هیچ دێڕێک ون نابێت.
+    async function mkvReadFrameCount(file, track) {
+        if (!track.uid || !mkvTagsLocs.length) return 0;
+        let result = 0;
+        for (const loc of mkvTagsLocs) {
+            const r = new MkvFastReader(file, 64 * 1024);
+            if (!await r.ensure(loc, 16)) continue;
+            if (r.id(loc) !== 0x1254C367) continue;
+            const il = r.rl, sz = r.vint(loc + il);
+            if (sz <= 0 || sz > 8 * 1024 * 1024) continue;
+            const body = loc + il + r.rl;
+            if (!await r.ensure(body, sz)) continue;
+            mkvEachChild(r, body, body + sz, (tid, tdp, tsz) => {
+                if (tid !== 0x7373) return;
+                let match = false, count = 0;
+                mkvEachChild(r, tdp, tdp + tsz, (cid, dp, cs) => {
+                    if (cid === 0x63C0) {
+                        mkvEachChild(r, dp, dp + cs, (c2, d2, s2) => {
+                            if (c2 === 0x63C5 && mkvHex(r.bytes(d2, s2)) === track.uid) match = true;
+                        });
+                    } else if (cid === 0x67C8) {
+                        let name = '', val = '';
+                        mkvEachChild(r, dp, dp + cs, (c2, d2, s2) => {
+                            if (c2 === 0x45A3) name = new TextDecoder('utf-8').decode(r.bytes(d2, s2));
+                            else if (c2 === 0x4487) val = new TextDecoder('utf-8').decode(r.bytes(d2, s2));
+                        });
+                        if (name.replace(/\0+$/, '') === 'NUMBER_OF_FRAMES') count = parseInt(val, 10) || 0;
+                    }
+                });
+                if (match && count > 0) result = count;
+            });
+        }
+        return result;
+    }
+
+    async function mkvReadCueEntries(file, trackNumber) {
+        if (mkvCuesLoc < 0) return null;
+        const r = new MkvFastReader(file, 1024 * 1024);
+        if (!await r.ensure(mkvCuesLoc, 16)) return null;
+        if (r.id(mkvCuesLoc) !== 0x1C53BB6B) return null;
+        const il = r.rl, sz = r.vint(mkvCuesLoc + il);
+        if (sz <= 0 || sz > 64 * 1024 * 1024) return null;
+        const body = mkvCuesLoc + il + r.rl;
+        if (!await r.ensure(body, sz)) return null;
+        const seen = new Set(), out = [];
+        mkvEachChild(r, body, body + sz, (pid, pdp, psz) => {
+            if (pid !== 0xBB) return;
+            mkvEachChild(r, pdp, pdp + psz, (cid, dp, cs) => {
+                if (cid !== 0xB7) return;
+                let tr = -1, cl = -1, rel = -1;
+                mkvEachChild(r, dp, dp + cs, (c2, d2, s2) => {
+                    if (c2 === 0xF7) tr = r.u(d2, s2);
+                    else if (c2 === 0xF1) cl = r.u(d2, s2);
+                    else if (c2 === 0xF0) rel = r.u(d2, s2);
+                });
+                if (tr !== trackNumber || cl < 0) return;
+                const key = cl + ':' + rel;
+                if (seen.has(key)) return;
+                seen.add(key);
+                out.push({ cl: mkvSegmentDataStart + cl, rel });
+            });
+        });
+        if (!out.length) return null;
+        out.sort((a, b) => (a.cl - b.cl) || (a.rel - b.rel));
+        // ئەگەر بۆ کلەستەرێک ئاماژەی گشتی (بێ شوێنی ناوخۆیی) هەبوو، هەموو ئاماژە تایبەتەکانی ئەو کلەستەرە پێویست نین
+        const wholeClusters = new Set(out.filter(e => e.rel < 0).map(e => e.cl));
+        return out.filter(e => e.rel < 0 || !wholeClusters.has(e.cl));
+    }
+
+    // سەرەتای کلەستەر: ID، قەبارە و Timecode
+    async function mkvClusterInfo(file, clusterPos) {
+        const r = new MkvFastReader(file, 256);
+        if (!await r.ensure(clusterPos, 16)) return null;
+        if (r.id(clusterPos) !== 0x1F43B675) return null;
+        const il = r.rl, sz = r.vint(clusterPos + il);
+        if (sz < 0) return null;
+        const body = clusterPos + il + r.rl;
+        let tc = -1;
+        let p = body;
+        for (let i = 0; i < 16 && p < body + sz; i++) {
+            if (!r.has(p, 16) && !await r.ensure(p, 16)) break;
+            const id = r.id(p); if (id < 0) break;
+            const l1 = r.rl;
+            const s = r.vint(p + l1); if (s < 0) break;
+            const hl = l1 + r.rl;
+            if (id === 0xE7) {
+                if (!r.has(p + hl, s) && !await r.ensure(p + hl, s)) break;
+                tc = r.u(p + hl, s);
+                break;
+            }
+            if (id === 0xA3 || id === 0xA0 || id === 0xA1) break;
+            p += hl + s;
+        }
+        if (tc < 0) return null;
+        return { body, end: body + sz, tc };
+    }
+
+    async function mkvCueExtract(file, track, handler, myId, onProgress, expected, getCount, resetFn, opts) {
+        opts = opts || {};
+        const entries = await mkvReadCueEntries(file, track.trackNumber);
+        if (!entries) return false;
+        if (entries.length > expected * 2 + 64) return false;       // Cues شتێکی ناسروشتی تێدایە
+        const wanted = new Set([track.trackNumber]);
+        const infoCache = new Map();
+        const getInfo = (cl) => {
+            if (!infoCache.has(cl)) infoCache.set(cl, mkvClusterInfo(file, cl));
+            return infoCache.get(cl);
+        };
+        const BATCH = 24, WIN = 16 * 1024;
+        for (let i = 0; i < entries.length; i += BATCH) {
+            if (myId !== mkvScanId) throw new Error('cancelled');
+            const slice = entries.slice(i, i + BATCH);
+            // خوێندنەوەی هاوکاتی (پێشوەخت)، پاشان پرۆسێسکردن بە ڕیزبەندی فایل
+            const loaded = await Promise.all(slice.map(async (e) => {
+                const info = await getInfo(e.cl);
+                if (!info) return null;
+                if (e.rel < 0 || opts.ignoreRel) return { info, e, reader: null };
+                const abs = info.body + e.rel;
+                const rd = new MkvFastReader(file, WIN);
+                if (!await rd.ensure(abs, 16)) return null;
+                return { info, e, reader: rd, abs };
+            }));
+            for (const it of loaded) {
+                if (!it) return false;
+                if (!it.reader) {
+                    // کلەستەرەکە بە تەواوی دەخوێنرێتەوە
+                    if (it.info.__done) continue;
+                    it.info.__done = true;
+                    await mkvWalk(file, it.info.body, wanted, handler, myId, null, { end: it.info.end });
+                    continue;
+                }
+                const r = it.reader, abs = it.abs;
+                const id = r.id(abs);
+                if (id !== 0xA3 && id !== 0xA0) return false;
+                const il = r.rl, sz = r.vint(abs + il);
+                if (sz < 0) return false;
+                const end = abs + il + r.rl + sz;
+                await mkvWalk(file, abs, wanted, handler, myId, null, { reader: r, end, cluTc: it.info.tc });
+            }
+            if (onProgress) onProgress(Math.min(1, (i + BATCH) / entries.length));
+        }
+        if (getCount() !== expected) { resetFn(); return false; }
+        return true;
+    }
 
     // ---------- ژێرنووس (MKVToolNix Engine) ----------
     function mkvEndTimes(blocks) {
@@ -3078,10 +3250,28 @@ function kfTogglePw(btn){
                 }
             };
 
-            await mkvWalk(currentMkvFile, mkvSegmentDataStart, new Set([targetTrackNumber]), handler, myId, frac => {
-                const percent = Math.round(5 + frac * 92);
-                setMkvProgress(Math.min(97, percent), `دەرهێنان... (${blocks.length} ${isPgs ? 'وێنە' : 'دێڕ'})`);
-            });
+            // ١) ڕێگای زۆر خێرا (Cues) — تەنها ئەگەر ژمارەی دێڕەکان بە NUMBER_OF_FRAMES پشتڕاست بووەوە
+            let fastOk = false;
+            try {
+                const expected = await mkvReadFrameCount(currentMkvFile, track);
+                if (expected > 0) {
+                    fastOk = await mkvCueExtract(currentMkvFile, track, handler, myId, frac => {
+                        setMkvProgress(Math.min(97, Math.round(5 + frac * 92)), `دەرهێنانی زۆر خێرا... (${blocks.length} ${isPgs ? 'وێنە' : 'دێڕ'})`);
+                    }, expected, () => blocks.length, () => { blocks.length = 0; order = 0; });
+                }
+            } catch (fe) {
+                if (fe && fe.message === 'cancelled') throw fe;
+                console.warn('MKV fast path failed, using full scan:', fe);
+                fastOk = false;
+            }
+            if (!fastOk) {
+                blocks.length = 0; order = 0;
+                // ٢) ڕێگای ئاسایی: خوێندنەوەی تەواوی فایل (هەمیشە دروست)
+                await mkvWalk(currentMkvFile, mkvSegmentDataStart, new Set([targetTrackNumber]), handler, myId, frac => {
+                    const percent = Math.round(5 + frac * 92);
+                    setMkvProgress(Math.min(97, percent), `دەرهێنان... (${blocks.length} ${isPgs ? 'وێنە' : 'دێڕ'})`);
+                });
+            }
 
             if (myId !== mkvScanId) return;
 

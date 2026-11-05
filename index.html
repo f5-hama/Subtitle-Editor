@@ -1148,6 +1148,24 @@ html.kf-wide .action-bar .btn-outline { width: auto; min-width: 170px; padding: 
     background: var(--primary);
     border-radius: 999px;
 }
+.c-progress-bar-wrap { touch-action: none; user-select: none; -webkit-user-select: none; }
+.c-progress-thumb {
+    position: absolute;
+    top: 50%;
+    left: 0%;
+    width: 14px;
+    height: 14px;
+    margin-left: -7px;
+    margin-top: -7px;
+    border-radius: 50%;
+    background: var(--primary);
+    border: 2px solid #fff;
+    box-shadow: 0 0 4px rgba(0,0,0,0.6);
+    pointer-events: none;
+    z-index: 2;
+    transition: transform 0.12s;
+}
+.c-progress-bar-wrap.dragging .c-progress-thumb { transform: scale(1.35); }
 
 /* دوگمەکانی کۆنتڕۆڵ */
 .c-controls-row {
@@ -3844,7 +3862,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
                 </div>
 
                 <div style="display:flex; gap:6px; margin-bottom:8px;">
-                    <input type="text" id="mergeFontInput" class="input-field" placeholder="ناوی فۆنت بنووسە، بۆ نموونە Speda Bold..." style="padding:7px; font-size:12px; flex:1;" onkeydown="if(event.key==='Enter'){event.preventDefault();addMergeFont();}">
+                    <input type="text" id="mergeFontInput" class="input-field" placeholder="ناوی فۆنتی بارکراو بنووسە..." style="padding:7px; font-size:12px; flex:1;" onkeydown="if(event.key==='Enter'){event.preventDefault();addMergeFont();}">
                     <button type="button" class="btn" style="width:auto; padding:6px 12px; font-size:11.5px;" onclick="addMergeFont()">زیادکردن</button>
                 </div>
 
@@ -4103,6 +4121,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
                         <div class="c-progress-track">
                             <div class="c-progress-fill" id="customProgressFill"></div>
                         </div>
+                        <div class="c-progress-thumb" id="customProgressThumb"></div>
                     </div>
 
                     <div class="c-controls-row">
@@ -4262,23 +4281,10 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
             <div style="margin-bottom: 10px; background: rgba(142, 182, 155, 0.08); border-radius: 10px; padding: 8px 10px; border: 1px solid var(--border-color); text-align: start;">
                 <label style="font-size: 11.5px; font-weight: bold; color: var(--primary); display:block; margin-bottom:5px;">فۆنتی ئەم دێڕە (بەتاڵ = وەک خۆی):</label>
                 <div style="display:flex; gap:6px; align-items:center;">
-                    <input type="text" id="techFontName" list="techFontNameList" class="tech-input" style="flex:1; min-width:0; direction:ltr; text-align:left;" placeholder="Speda, Ali_K_Samik, Arial ...">
+                    <input type="text" id="techFontName" list="techFontNameList" class="tech-input" style="flex:1; min-width:0; direction:ltr; text-align:left;" placeholder="ناوی فۆنتی بارکراو ...">
                     <button type="button" class="tech-toggle-btn" style="flex:none; padding:5px 8px;" onclick="clearTechFontName()">وەک خۆی</button>
                 </div>
-                <datalist id="techFontNameList">
-                    <option value="Speda"></option>
-                    <option value="Ali_K_Samik"></option>
-                    <option value="Ali_K_Alwand"></option>
-                    <option value="Rabar_021"></option>
-                    <option value="Rudaw"></option>
-                    <option value="NRT Reg"></option>
-                    <option value="Unikurd Web"></option>
-                    <option value="KurdForest"></option>
-                    <option value="Noto Naskh Arabic"></option>
-                    <option value="Arial"></option>
-                    <option value="Tahoma"></option>
-                    <option value="Roboto"></option>
-                </datalist>
+                <datalist id="techFontNameList"></datalist>
                 <div style="font-size:10px; color:var(--text-muted); margin-top:4px;">ناوی فۆنتەکە بە دەست بنووسە؛ وەک <span dir="ltr">{\fn...}</span> لەسەر دێڕەکە دادەنرێت.</div>
             </div>
 
@@ -9831,6 +9837,50 @@ initMainVideoGestures();
             resetControlsHideTimer();
         }
 
+        (function initProgressDrag() {
+            function setup() {
+                var wrap = document.getElementById('customProgressWrap');
+                if (!wrap || wrap._dragInit) return;
+                wrap._dragInit = true;
+                var dragging = false;
+                function apply(e) {
+                    var video = document.getElementById('preview-video');
+                    if (!video || !video.duration) return;
+                    var rect = wrap.getBoundingClientRect();
+                    var pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                    var fill = document.getElementById('customProgressFill');
+                    var thumb = document.getElementById('customProgressThumb');
+                    if (fill) fill.style.width = (pos * 100) + '%';
+                    if (thumb) thumb.style.left = (pos * 100) + '%';
+                    video.currentTime = pos * video.duration;
+                    if (typeof resetControlsHideTimer === 'function') resetControlsHideTimer();
+                }
+                wrap.addEventListener('pointerdown', function(e) {
+                    e.stopPropagation();
+                    dragging = true;
+                    wrap.classList.add('dragging');
+                    try { wrap.setPointerCapture(e.pointerId); } catch (err) {}
+                    apply(e);
+                });
+                wrap.addEventListener('pointermove', function(e) {
+                    if (!dragging) return;
+                    e.stopPropagation();
+                    apply(e);
+                });
+                function end(e) {
+                    if (!dragging) return;
+                    dragging = false;
+                    wrap.classList.remove('dragging');
+                    try { wrap.releasePointerCapture(e.pointerId); } catch (err) {}
+                }
+                wrap.addEventListener('pointerup', end);
+                wrap.addEventListener('pointercancel', end);
+                // کلیکی ئاسایی پێشتر لە pointerdown بەڕێوە چووە
+                wrap.onclick = function(e) { e.stopPropagation(); };
+            }
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup); else setup();
+        })();
+
         function toggleCustomMute() {
             const video = document.getElementById('preview-video');
             if (!video) return;
@@ -10120,7 +10170,12 @@ function renderSubtitlesNow() {
         if (video.duration) {
             var pct = (ct / video.duration) * 100;
             var fill = document.getElementById('customProgressFill');
-            if (fill) fill.style.width = pct + '%';
+            var pWrapEl = document.getElementById('customProgressWrap');
+            if (!(pWrapEl && pWrapEl.classList.contains('dragging'))) {
+                if (fill) fill.style.width = pct + '%';
+                var thumbEl = document.getElementById('customProgressThumb');
+                if (thumbEl) thumbEl.style.left = pct + '%';
+            }
             var timeText = document.getElementById('customTimeText');
             if (timeText) {
                 var formattedStr = formatPlayerTime(ct) + ' / ' + formatPlayerTime(video.duration);
@@ -16717,27 +16772,33 @@ if (shift) {
   });
 }
 
-// Font names are local device preferences, not shared project records.
+// Font name suggestions: ONLY fonts the user loaded in the Fonts section (FontStore).
 const fontInput = el('mergeFontInput');
 if (fontInput) {
-  let saved = []; try { saved = JSON.parse(localStorage.getItem('kf_font_name_suggestions') || '[]'); } catch {}
-  const names = new Set(['Speda Bold', 'KurdForest', ...saved.filter(x => typeof x === 'string')]);
   const list = document.createElement('datalist'); list.id = 'kf-saved-fonts';
   fontInput.setAttribute('list', list.id); fontInput.setAttribute('autocomplete', 'off');
   fontInput.parentElement.after(list);
-  function render() {
-    list.replaceChildren();
-    [...names].forEach(name => {
-      const option = document.createElement('option'); option.value = name; list.appendChild(option);
-    });
-  }
-  const add = window.addMergeFont;
-  window.addMergeFont = function() {
-    fontInput.value.split(/[,;\n]+/).map(x => x.trim()).filter(Boolean).forEach(name => names.add(name));
-    try { localStorage.setItem('kf_font_name_suggestions', JSON.stringify([...names])); } catch {}
-    render(); return add();
-  }; render();
 }
+function kfRefreshFontDatalists() {
+  let names = [];
+  try {
+    names = FontStore.list().filter(f => f && f.ok).flatMap(f => (f.names && f.names.length ? f.names : [])).filter(Boolean);
+  } catch (e) {}
+  names = [...new Set(names)];
+  ['techFontNameList', 'kf-saved-fonts'].forEach(id => {
+    const dl = document.getElementById(id); if (!dl) return;
+    dl.replaceChildren();
+    names.forEach(n => { const o = document.createElement('option'); o.value = n; dl.appendChild(o); });
+  });
+}
+window.kfRefreshFontDatalists = kfRefreshFontDatalists;
+try { FontStore.onChange(kfRefreshFontDatalists); } catch (e) {}
+['techFontName', 'mergeFontInput'].forEach(id => {
+  const inp = document.getElementById(id);
+  if (inp) { inp.addEventListener('focus', kfRefreshFontDatalists); inp.addEventListener('input', kfRefreshFontDatalists); }
+});
+kfRefreshFontDatalists();
+window.addEventListener('load', () => setTimeout(kfRefreshFontDatalists, 800));
 
 const tabs = el('kf-tabs');
 if (tabs) {

@@ -3862,7 +3862,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
                 </div>
 
                 <div style="display:flex; gap:6px; margin-bottom:8px;">
-                    <input type="text" id="mergeFontInput" class="input-field" placeholder="ناوی فۆنتی بارکراو بنووسە..." style="padding:7px; font-size:12px; flex:1;" onkeydown="if(event.key==='Enter'){event.preventDefault();addMergeFont();}">
+                    <input type="text" id="mergeFontInput" class="input-field" placeholder="ناوی فۆنت بنووسە..." style="padding:7px; font-size:12px; flex:1;" onkeydown="if(event.key==='Enter'){event.preventDefault();addMergeFont();}">
                     <button type="button" class="btn" style="width:auto; padding:6px 12px; font-size:11.5px;" onclick="addMergeFont()">زیادکردن</button>
                 </div>
 
@@ -12292,7 +12292,7 @@ var FontStore = (function () {
         if (!(info.winA + info.winD) && (info.hheaA + info.hheaD) > 0) { info.winA = info.hheaA; info.winD = info.hheaD; }
         var nm = await tableView(dir, 'name');
         if (nm && nm.byteLength >= 6) {
-            var cnt = nm.getUint16(2, false), so = nm.getUint16(4, false), seen = {};
+            var cnt = nm.getUint16(2, false), so = nm.getUint16(4, false), seen = {}, famBest = {};
             for (var i = 0; i < cnt; i++) {
                 var o = 6 + i * 12;
                 if (o + 12 > nm.byteLength) break;
@@ -12301,8 +12301,15 @@ var FontStore = (function () {
                 if (id !== 1 && id !== 4 && id !== 6 && id !== 16 && id !== 21) continue;
                 if (so + off + len > nm.byteLength) continue;
                 var s = decodeName(nm, so + off, len, plat);
+                if (s && (id === 1 || id === 16 || id === 4)) {
+                    // ناوی سەرەکیی فۆنت: Windows + ئینگلیزی باشترینە
+                    var sc = (plat === 3 ? 2 : 0) + ((plat === 3 && nm.getUint16(o + 4, false) === 0x409) ? 1 : 0);
+                    if (!famBest[id] || sc > famBest[id].sc) famBest[id] = { s: s, sc: sc };
+                }
                 if (s && !seen[s.toLowerCase()]) { seen[s.toLowerCase()] = 1; info.names.push(s); }
             }
+            var fb = famBest[1] || famBest[16] || famBest[4];
+            if (fb) info.family = fb.s;
         }
         return info;
     }
@@ -16782,7 +16789,7 @@ if (fontInput) {
 function kfRefreshFontDatalists() {
   let names = [];
   try {
-    names = FontStore.list().filter(f => f && f.ok).flatMap(f => (f.names && f.names.length ? f.names : [])).filter(Boolean);
+    names = FontStore.list().filter(f => f && f.ok).map(f => (f.info && f.info.family) || (f.names && f.names[0]) || '').filter(Boolean);
   } catch (e) {}
   names = [...new Set(names)];
   ['techFontNameList', 'kf-saved-fonts'].forEach(id => {

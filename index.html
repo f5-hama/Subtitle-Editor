@@ -2811,7 +2811,12 @@ function kfTogglePw(btn){
         let gActive = false, gEnd = 0, gItem = null, gDur = 0, gExtras = null;
         
         const singleTrack = (wanted && wanted.size === 1) ? [...wanted][0] : null;
-        const fastTrackByte = (singleTrack !== null && singleTrack >= 1 && singleTrack < 127) ? (0x80 | singleTrack) : null;
+        // خشتەی بازدان: بۆ یەک یان چەند تراک (هەموو ژمارەکان < ١٢٧)
+        let fastSet = null;
+        if (wanted && wanted.size >= 1 && [...wanted].every(n => n >= 1 && n < 127)) {
+            fastSet = new Uint8Array(256);
+            for (const n of wanted) fastSet[0x80 | n] = 1;
+        }
 
         const commit = () => {
             if (gActive) { if (gItem) handler.done(gItem, gDur, gExtras); gActive = false; gItem = null; }
@@ -2823,7 +2828,7 @@ function kfTogglePw(btn){
             if (!r.has(pos, 16) && !await r.ensure(pos, 16)) break;
 
             const o = pos - r.cs;
-            if (r.u8[o] === 0xA3 && fastTrackByte !== null) {
+            if (r.u8[o] === 0xA3 && fastSet !== null) {
                 const b1 = r.u8[o + 1];
                 let sz = -1, hl = 0;
                 if (b1 & 0x80) { sz = b1 & 0x7F; hl = 2; }
@@ -2833,7 +2838,7 @@ function kfTogglePw(btn){
 
                 if (sz > 3 && hl > 0) {
                     const bodyO = (pos + hl) - r.cs;
-                    if (bodyO < r.u8.length && r.u8[bodyO] !== fastTrackByte) {
+                    if (bodyO < r.u8.length && !fastSet[r.u8[bodyO]]) {
                         pos = pos + hl + sz;
                         continue;
                     }
@@ -3275,10 +3280,49 @@ function kfTogglePw(btn){
             if (!fastOk) {
                 blocks.length = 0; order = 0;
                 // ٢) ڕێگای ئاسایی: خوێندنەوەی تەواوی فایل (هەمیشە دروست)
-                await mkvWalk(currentMkvFile, mkvSegmentDataStart, new Set([targetTrackNumber]), handler, myId, frac => {
-                    const percent = Math.round(5 + frac * 92);
-                    setMkvProgress(Math.min(97, percent), `دەرهێنان... (${blocks.length} ${isPgs ? 'وێنە' : 'دێڕ'})`);
-                });
+                // وەک mkvextract: ئەگەر ژێرنووسی دەقیی تریش هەبوو، لە هەمان پاسدا دەردەهێنرێن و کاش دەکرێن،
+                // بۆ ئەوەی بۆ تراکی دواتر فایلەکە دووبارە نەخوێنرێتەوە.
+                const others = isPgs ? [] : mkvParsedTracks.filter(t =>
+                    t.trackNumber !== targetTrackNumber && !t.encoded && !mkvIsPgs(t) &&
+                    (t.type === 17 || t.codecId.startsWith('S_')) &&
+                    !window.__mkvCache[mkvScanId + ':' + t.trackNumber]);
+                if (others.length === 0) {
+                    await mkvWalk(currentMkvFile, mkvSegmentDataStart, new Set([targetTrackNumber]), handler, myId, frac => {
+                        const percent = Math.round(5 + frac * 92);
+                        setMkvProgress(Math.min(97, percent), `دەرهێنان... (${blocks.length} ${isPgs ? 'وێنە' : 'دێڕ'})`);
+                    });
+                } else {
+                    const per = new Map();
+                    for (const tn of [targetTrackNumber, ...others.map(t => t.trackNumber)]) per.set(tn, { blocks: [], order: 0 });
+                    const multi = {
+                        capture(ev) {
+                            const st = per.get(ev.track);
+                            const frames = mkvUnlace(ev.reader, ev.dataPos, ev.hdr, ev.dataLen, ev.flags);
+                            if (!st || !frames || frames.length === 0) return null;
+                            return frames.map(f => ({ tn: ev.track, t: (ev.cluster + ev.rel) * scale, d: 0, o: st.order++, text: dec.decode(f) }));
+                        },
+                        done(items, dur) {
+                            const arr = Array.isArray(items) ? items : [items];
+                            const d = Array.isArray(items) ? (dur * scale) / items.length : dur * scale;
+                            for (const it of arr) { it.d = d; per.get(it.tn).blocks.push(it); }
+                        }
+                    };
+                    await mkvWalk(currentMkvFile, mkvSegmentDataStart, new Set(per.keys()), multi, myId, frac => {
+                        const percent = Math.round(5 + frac * 92);
+                        setMkvProgress(Math.min(97, percent), `دەرهێنان... (${per.get(targetTrackNumber).blocks.length} دێڕ)`);
+                    });
+                    if (myId !== mkvScanId) return;
+                    for (const t of others) {
+                        try {
+                            const ob = per.get(t.trackNumber).blocks;
+                            if (ob.length === 0) continue;
+                            ob.sort((a, b) => (a.t - b.t) || (a.o - b.o));
+                            const r2 = mkvBuildSubtitleFile(t, ob, mkvGetBaseName());
+                            window.__mkvCache[mkvScanId + ':' + t.trackNumber] = { res: r2, fileName: `${mkvGetBaseName()}_[${mkvLangTag(t, x => !mkvIsPgs(x))}].${r2.ext}` };
+                        } catch (_) { /* تراکی تر کێشەی هەبوو: بەبێ کاش دەمێنێتەوە */ }
+                    }
+                    for (const b of per.get(targetTrackNumber).blocks) blocks.push(b);
+                }
             }
 
             if (myId !== mkvScanId) return;

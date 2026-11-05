@@ -1682,6 +1682,10 @@ html.kf-wide .kf-ps-card {
 html.kf-wide #kf-prof-sheet.in .kf-ps-card { transform: translate(-50%, -50%); opacity: 1; }
 html.kf-wide .kf-ps-grip { display: none; }
 </style>
+<style>
+#techFontName::-webkit-calendar-picker-indicator, #mergeFontInput::-webkit-calendar-picker-indicator { display: none !important; opacity: 0; pointer-events: none; }
+#techFontName, #mergeFontInput { appearance: none; -webkit-appearance: none; }
+</style>
 </head>
 <body class="startup-bg auth-locked">
 
@@ -12364,6 +12368,7 @@ var FontStore = (function () {
         try { info = await parseInfo(buf); } catch (e) { info = null; }
         var base = String(fileName || 'font').replace(/\.[^.]+$/, '');
         var names = (info && info.names.length) ? info.names.slice() : [base];
+        if (base && !names.some(function (n) { return n.toLowerCase() === base.toLowerCase(); })) names.push(base);
         var entry = { id: 'f' + Date.now() + Math.floor(Math.random() * 1e4), fileName: fileName, size: buf.byteLength, names: names, info: info, persistedId: null, bytes: buf, ok: false, error: '', cssFamily: '' };
         var desc = { weight: String((info && info.weight) || 400), style: (info && info.italic) ? 'italic' : 'normal' };
         for (var i = 0; i < names.length; i++) {
@@ -13251,7 +13256,7 @@ function renderFontsModal() {
             return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--border-color);border-radius:9px;margin-bottom:5px;font-size:12px;">' +
                 '<div style="flex:1;min-width:0;overflow:hidden;">' +
                     '<div class="kf-font-scrollable" onclick="kfToggleFontScroll(this)" style="direction:ltr;text-align:left;overflow-x:auto;overflow-y:hidden;white-space:nowrap;scrollbar-width:none;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;padding:2px 0;cursor:grab;">' +
-                        kfEsc(f.names.join(' • ') || f.fileName) +
+                        kfEsc(String(f.fileName || '').replace(/\.[^.]+$/, '') || f.names.join(' • ')) +
                     '</div>' + st +
                 '</div>' +
                 '<button type="button" class="btn btn-outline" style="width:auto;flex:0 0 auto;padding:3px 10px;font-size:11px;color:#ef4444;border-color:rgba(239,68,68,.4);" onclick="kfRemoveFont(\'' + f.id + '\')">سڕینەوە</button>' +
@@ -16789,7 +16794,7 @@ if (fontInput) {
 function kfRefreshFontDatalists() {
   let names = [];
   try {
-    names = FontStore.list().filter(f => f && f.ok).map(f => (f.info && f.info.family) || (f.names && f.names[0]) || '').filter(Boolean);
+    names = FontStore.list().filter(f => f && f.ok).map(f => String(f.fileName || '').replace(/\.[^.]+$/, '').trim() || (f.names && f.names[0]) || '').filter(Boolean);
   } catch (e) {}
   names = [...new Set(names)];
   ['techFontNameList', 'kf-saved-fonts'].forEach(id => {

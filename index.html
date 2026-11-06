@@ -18409,7 +18409,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
 
     function modalVisible() {
         var m = document.getElementById('sub-style-modal');
-        return !!(m && m.offsetParent !== null);
+        return !!(m && m.getClientRects().length > 0 && getComputedStyle(m).visibility !== 'hidden');
     }
     function build() {
         box = document.createElement('div');

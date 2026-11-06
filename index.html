@@ -18407,6 +18407,20 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
         return hslToHex(hsl.h, Math.max(0, Math.min(1, s)), Math.max(0, Math.min(1, l)));
     }
 
+    function lineObj() {
+        try { return (typeof currentStylingIndex !== 'undefined' && currentStylingIndex >= 0 && originalData[currentStylingIndex]) || null; } catch (e) { return null; }
+    }
+    function loadTune(fn) {
+        var o = lineObj(), t = o && o.kfTune && o.kfTune[fn];
+        return t ? { l: +t.l || 0, s: +t.s || 0 } : { l: 0, s: 0 };
+    }
+    function saveTune() {
+        var o = lineObj();
+        if (!o || !state.fn || !L) return;
+        if (!o.kfTune) o.kfTune = {};
+        o.kfTune[state.fn] = { l: +L.value, s: +S.value };
+    }
+
     function modalVisible() {
         var m = document.getElementById('sub-style-modal');
         return !!(m && m.getClientRects().length > 0 && getComputedStyle(m).visibility !== 'hidden');
@@ -18420,8 +18434,8 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
             '<div class="kft-row"><span class="kft-end">کاڵ</span><input type="range" id="kftS" min="-100" max="100" value="0" step="1"><span class="kft-end">زیندوو</span></div>' +
             '<div class="kft-foot"><button type="button" class="kft-btn" id="kftReset">ڕێکخستنەوە</button><button type="button" class="kft-btn" id="kftClose">داخستن</button></div>';
         L = box.querySelector('#kftL'); S = box.querySelector('#kftS');
-        L.addEventListener('input', apply); S.addEventListener('input', apply);
-        box.querySelector('#kftReset').addEventListener('click', function () { L.value = 0; S.value = 0; apply(); });
+        L.addEventListener('input', function () { saveTune(); apply(); }); S.addEventListener('input', function () { saveTune(); apply(); });
+        box.querySelector('#kftReset').addEventListener('click', function () { L.value = 0; S.value = 0; saveTune(); apply(); });
         box.querySelector('#kftClose').addEventListener('click', hide);
     }
     function scroller(el) {
@@ -18487,11 +18501,13 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
         if (box.parentNode !== anchor.parentNode || box.previousElementSibling !== anchor || !box.classList.contains('open')) {
             keepStill(anchor, function () { anchor.parentNode.insertBefore(box, anchor.nextSibling); box.classList.add('open'); });
         }
-        L.value = 0; S.value = 0;
+        var t = loadTune(fn);
+        L.value = t.l; S.value = t.s;
         box.querySelector('#kftSw').style.background = state.base;
         box.querySelector('#kftHex').textContent = state.base;
         paintTracks();
         box.classList.add('open');
+        if (t.l || t.s) apply();     // ڕێکخستنەکانی پێشووی ئەم دێڕە لەسەر ڕەنگە نوێیەکە جێبەجێ دەکرێن
     }
     window.kfColorTuner = { open: open, hide: hide };
 

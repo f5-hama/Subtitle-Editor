@@ -18363,7 +18363,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
 <script>
 /* ===== دەستکاریکردنی ڕەنگ (تۆخ / ڕووناک / کاڵ / زیندوو) لە بەشی تەکنیک ===== */
 (function () {
-    var NAMES = ['setCustomPaletteColor', 'setNoteSymbolColor', 'setNoteTextColor', 'setStrokeColor', 'setShadowColor'];
+    var NAMES = ['setCustomPaletteColor', 'setSymbolColor', 'setNoteSymbolColor', 'setNoteTextColor', 'setStrokeColor', 'setShadowColor'];
     var state = { fn: null, base: null, el: null };
     var box = null, L = null, S = null;
 
@@ -18474,7 +18474,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
             return row ? (row.parentElement || row) : null;
         }
         if (btn && btn.parentElement) return btn.parentElement;
-        var id = fn === 'setStrokeColor' ? 'strokeColorPicker' : (fn === 'setShadowColor' ? 'shadowColorPicker' : (fn === 'setNoteSymbolColor' ? 'noteSymbolColorChoice' : 'noteTextColorChoice'));
+        var id = fn === 'setStrokeColor' ? 'strokeColorPicker' : (fn === 'setShadowColor' ? 'shadowColorPicker' : (fn === 'setSymbolColor' ? 'symbolColorChoice' : (fn === 'setNoteSymbolColor' ? 'noteSymbolColorChoice' : 'noteTextColorChoice')));
         var inp = document.getElementById(id);
         return inp ? (inp.parentElement.querySelector('div') || inp.parentElement) : null;
     }
@@ -18499,7 +18499,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
     document.addEventListener('click', function (e) {
         var b = e.target && e.target.closest ? e.target.closest('#sub-style-modal .palette-btn') : null;
         if (!b || b.closest('#kfColorTuner')) return;
-        var m = /^\s*(setCustomPaletteColor|setNoteSymbolColor|setNoteTextColor|setStrokeColor|setShadowColor)\(\s*'(#[0-9A-Fa-f]{6})'/.exec(b.getAttribute('onclick') || '');
+        var m = /^\s*(setCustomPaletteColor|setSymbolColor|setNoteSymbolColor|setNoteTextColor|setStrokeColor|setShadowColor)\(\s*'(#[0-9A-Fa-f]{6})'/.exec(b.getAttribute('onclick') || '');
         if (!m) { hide(); return; }
         open(m[1], m[2], b);
     }, false);

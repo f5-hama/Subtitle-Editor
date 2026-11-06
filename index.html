@@ -13909,24 +13909,26 @@ var ServerLinks = (function () {
    ڕووکاری «کۆدی سێرڤەرەکان» — مۆداڵی ناو مێنیو
    ===================================================================== */
 var KF_SRV_KEY = 'kf_srv_v1';
+try { localStorage.removeItem(KF_SRV_KEY); } catch (e) { }   // ئەوەی پێشتر بۆ هەمیشە پاشەکەوت کرابوو پاک دەکرێتەوە
+var kfSrvMem = null;      // تەنها لە ماوەی کارکردنی ماڵپەڕەکەدا دەمێنێتەوە و دوای دەرچوون/دووبارە بارکردنەوە نامێنێت
 var kfSrvTimer = null;
 
 function kfSrvEl(id) { return document.getElementById(id); }
 
 function kfSrvSave() {
     try {
-        localStorage.setItem(KF_SRV_KEY, JSON.stringify({
+        kfSrvMem = {
             input: kfSrvEl('kfSrvInput').value,
             normalize: kfSrvEl('kfSrvNormalize').checked,
             sort: kfSrvEl('kfSrvSort').checked,
             startEp: kfSrvEl('kfSrvStartEp').value
-        }));
-    } catch (e) { /* localStorage بەردەست نییە */ }
+        };
+    } catch (e) { }
 }
 
 function kfSrvRestore() {
     try {
-        var v = JSON.parse(localStorage.getItem(KF_SRV_KEY) || 'null');
+        var v = kfSrvMem;
         if (!v) return;
         kfSrvEl('kfSrvInput').value = v.input || '';
         kfSrvEl('kfSrvNormalize').checked = v.normalize !== false;
@@ -18581,7 +18583,13 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
         if (!b || b.closest('.kf-tuner')) return;
         var oc = b.getAttribute('onclick') || '';
         var m = HEX_RE.exec(oc);
-        if (m && b.classList.contains('palette-btn')) { openBox(m[1], m[2], b); return; }
+        if (m && b.classList.contains('palette-btn')) {
+            var pe = pending[m[1]];
+            // ئەگەر ئەم خانەیە هەمان ڕەنگی دەستکاریکراوە، ڕەنگەکە دووبارە دەستکاری ناکرێت (ڕێگری لە گۆڕانی بەردەوام)
+            if (pe && /^#[0-9A-Fa-f]{6}$/.test(pe.b || '') && tune(pe.b, +pe.l, +pe.s) === m[2].toUpperCase()) { openBox(m[1], pe.b, b, true); return; }
+            openBox(m[1], m[2], b);
+            return;
+        }
         var k = KEEP_RE.exec(oc);
         if (k) { dropTune(k[1]); hideBox(k[1]); }
     }, false);

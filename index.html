@@ -59,7 +59,7 @@ html.kf-wide:root body.editor-bg #preview-video, html.kf-wide:root body .custom-
 html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-container { margin-top: 16px !important; }
 </style>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#080a0d">
+    <meta name="theme-color" content="#f4efe4">
 
     <style id="kf-shell-critical">
     /* مێنیو و شریتی سەرەوە تا ئامادە نەبن نابینرێن (ڕێگری لە تروسکەی مێنیو لە کاتی کردنەوەی ماڵپەڕ) */
@@ -1701,6 +1701,115 @@ html.kf-wide .kf-ps-grip { display: none; }
 .kf-tuner input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: #fff; border: 2px solid var(--primary); }
 .kf-tuner .kft-foot { display: flex; gap: 6px; margin-top: 6px; }
 .kf-tuner .kft-btn { flex: 1; padding: 5px 4px; font-size: 11px; border-radius: 8px; border: 1px solid var(--border-color); background: transparent; color: inherit; cursor: pointer; font-family: inherit; }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;800&display=swap" rel="stylesheet">
+<style id="kf-new-design">
+/* ===== KF · دیزاینی نوێ: "کاغەز و مەرەکەب" (Paper & Ink) ===== */
+:root{
+ --paper:#f4efe4; --paper-2:#fbf8f0; --ink:#1c1a16; --ink-2:#4a453b;
+ --gl-fill:#fbf8f0; --gl-fill-2:#efe8d8; --gl-fill-dark:#e8e0cc; --gl-panel:#fbf8f0; --gl-menu:#fbf8f0;
+ --gl-border:#1c1a16; --gl-border-soft:rgba(28,26,22,.22); --gl-hi:none; --gl-blur:none;
+ --gl-shadow:4px 4px 0 #1c1a16; --gl-shadow-lg:6px 6px 0 #1c1a16;
+ --bg-color:#f4efe4; --card-bg:#fbf8f0; --card-border:#1c1a16; --border-color:rgba(28,26,22,.35);
+ --text-main:#1c1a16; --text-muted:#6a6355;
+ --shadow-sm:2px 2px 0 #1c1a16; --shadow-md:4px 4px 0 #1c1a16; --shadow-lg:6px 6px 0 #1c1a16;
+ --kf-fixed-surface:#1c1a16; --kf-fixed-ink:#f4efe4;
+}
+html:root,html:root body{background-color:var(--paper)!important;color:var(--ink)!important;
+ font-family:"Vazirmatn","Noto Naskh Arabic","Noto Sans Arabic","Segoe UI",Tahoma,system-ui,sans-serif!important}
+html:root{background-image:radial-gradient(rgba(28,26,22,.09) 1px,transparent 1.2px)!important;background-size:18px 18px!important;background-attachment:fixed!important;background-repeat:repeat!important}
+html:root body{background:transparent!important}
+#kf-bg{display:none!important}
+
+/* ڕووبەرە سەرەکییەکان: ڕەق، بێ شووشە */
+html:root body .glass-card,html:root body .custom-modal-content,html:root body .header-tools-container,
+html:root body .floating-search-bar,html:root body .action-bar,html:root body #code-review-panel,
+html:root body .auth-card,html:root body .owner-panel-card{
+ background:var(--paper-2)!important;color:var(--ink)!important;border:2px solid var(--ink)!important;
+ border-radius:10px!important;box-shadow:var(--gl-shadow)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+html:root body .custom-modal-overlay{background:rgba(28,26,22,.55)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+html:root body .custom-modal-content h1,html:root body .custom-modal-content h2,html:root body .custom-modal-content h3,
+html:root body .glass-card h2,html:root body .glass-card h3,html:root body label{color:var(--ink)!important}
+html:root body .custom-modal-content p,html:root body .custom-modal-content small,html:root body .file-name-display{color:var(--text-muted)!important}
+html:root body #video-container{background:#14110d!important;border:2px solid var(--ink)!important;box-shadow:var(--gl-shadow)!important;border-radius:10px!important;color:#f4efe4!important}
+
+/* دوگمەکان */
+html:root body .btn,html:root body button.btn,html:root body .auth-form .btn{
+ background:var(--primary)!important;color:var(--ink)!important;border:2px solid var(--ink)!important;
+ border-radius:8px!important;font-weight:800!important;box-shadow:3px 3px 0 var(--ink)!important;
+ text-shadow:none!important;transition:transform .08s,box-shadow .08s!important}
+html:root body .btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--ink)!important}
+html:root body .btn:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)!important}
+html:root body .btn-outline,html:root body .btn-google,html:root body .btn-secondary{
+ background:var(--paper-2)!important;color:var(--ink)!important;border:2px solid var(--ink)!important;border-radius:8px!important;box-shadow:3px 3px 0 var(--ink)!important}
+html:root body .btn-danger,html:root body .btn.danger{background:#e4573d!important;color:#fff!important}
+
+/* خانەی نووسین */
+html:root body input:not([type=range]):not([type=checkbox]):not([type=radio]):not([type=file]):not([type=color]),
+html:root body textarea,html:root body select,html:root body .custom-select-btn,html:root body .auth-field{
+ background:#fff!important;color:var(--ink)!important;border:2px solid var(--ink)!important;border-radius:8px!important;box-shadow:none!important}
+html:root body .auth-field input{border:0!important;background:transparent!important}
+html:root body input::placeholder,html:root body textarea::placeholder{color:#9a927f!important}
+html:root body input:focus,html:root body textarea:focus,html:root body select:focus,html:root body .auth-field:focus-within{
+ outline:3px solid var(--primary)!important;outline-offset:1px!important}
+html:root body .custom-select-menu{background:var(--paper-2)!important;border:2px solid var(--ink)!important;border-radius:8px!important;box-shadow:var(--gl-shadow)!important;backdrop-filter:none!important;color:var(--ink)!important}
+html:root body .custom-select-menu *{color:var(--ink)!important}
+
+/* شریتی سەرەوە */
+html:root body #kf-bar{background:var(--paper-2)!important;color:var(--ink)!important;border-bottom:2px solid var(--ink)!important;
+ box-shadow:0 4px 0 rgba(28,26,22,.12)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+html:root body .kf-bar-btn{background:var(--paper)!important;color:var(--ink)!important;border:2px solid var(--ink)!important;border-radius:8px!important;box-shadow:2px 2px 0 var(--ink)!important}
+html:root body .kf-bar-logo{color:var(--ink)!important;letter-spacing:.14em!important}
+html:root body .kf-bar-logo b{color:#fff!important;background:var(--ink);padding:1px 7px;border-radius:5px}
+html:root body #welcome-msg,html:root body #kf-sec-title,html:root body .kf-prof-name{color:var(--ink)!important}
+html:root body #kf-tabs .kf-item{background:transparent!important;color:var(--ink-2)!important;border-radius:8px!important;border:2px solid transparent!important;font-weight:700}
+html:root body #kf-tabs .kf-item:hover{background:var(--gl-fill-2)!important}
+html:root body #kf-tabs .kf-item.active{background:var(--primary)!important;color:var(--ink)!important;border-color:var(--ink)!important;box-shadow:2px 2px 0 var(--ink)}
+
+/* مێنیوی ڕاست */
+html:root body #kf-drawer{background:var(--paper-2)!important;color:var(--ink)!important;border-left:2px solid var(--ink)!important;
+ box-shadow:-8px 0 0 rgba(28,26,22,.15)!important;backdrop-filter:none!important}
+html:root body #kf-drawer .kf-item{color:var(--ink)!important;border-radius:8px!important;font-weight:700}
+html:root body #kf-drawer .kf-item:hover{background:var(--gl-fill-2)!important}
+html:root body #kf-drawer .kf-item.active{background:var(--primary)!important;border:2px solid var(--ink)!important}
+html:root body .kf-drawer-head{border-bottom:2px dashed var(--ink)!important}
+html:root body #kf-scrim.show{background:rgba(28,26,22,.5)!important;backdrop-filter:none!important}
+
+/* چوونەژوورەوە */
+html:root body #auth-screen,html:root body #auth-loading{background:var(--paper)!important;color:var(--ink)!important}
+html:root body .auth-logo{color:var(--ink)!important}
+html:root body .auth-tab{background:transparent!important;color:var(--ink-2)!important;border:2px solid transparent!important;border-radius:8px!important;font-weight:800}
+html:root body .auth-tab.active{background:var(--primary)!important;color:var(--ink)!important;border-color:var(--ink)!important}
+html:root body .auth-links a{color:var(--ink)!important;text-decoration:underline!important}
+html:root body .kf-mark .tier,html:root body .kf-mark .trunk,html:root body .kf-mark .ground{stroke:var(--ink)!important}
+
+/* شاشەی سێتەپ و فایل */
+html:root body .file-box{background:#fff!important;border:2px dashed var(--ink)!important;border-radius:10px!important;color:var(--ink)!important}
+html:root body .file-box:hover{background:var(--gl-fill-2)!important}
+html:root body .upload-icon{color:var(--ink)!important;background:var(--primary)!important;border:2px solid var(--ink)!important;border-radius:10px!important}
+
+/* دەستکاریکەر */
+html:root body.editor-bg .subtitle-card{background:#fff!important;border:2px solid var(--ink)!important;border-radius:10px!important;box-shadow:3px 3px 0 var(--ink)!important;color:var(--ink)!important}
+html:root body.editor-bg .subtitle-orig{background:var(--gl-fill-2)!important;color:var(--ink)!important;border-radius:8px!important}
+html:root body.editor-bg .subtitle-kurd textarea{background:#fff!important;color:var(--ink)!important;border:2px solid var(--ink)!important}
+html:root body.editor-bg .subtitle-time,html:root body.editor-bg .subtitle-header{color:var(--ink-2)!important}
+html:root body.editor-bg #subtitles-container{background:transparent!important}
+html:root body .action-bar button,html:root body .action-bar .icon-btn{color:var(--ink)!important}
+html:root body #progress-container{background:var(--gl-fill-dark)!important;border:2px solid var(--ink)!important;border-radius:99px!important}
+html:root body #progress-bar{background:var(--primary)!important}
+
+/* تۆست و چاپتەر */
+html:root body #toast-container>*,html:root body .toast{background:var(--ink)!important;color:var(--paper)!important;border:2px solid var(--ink)!important;border-radius:8px!important;box-shadow:3px 3px 0 var(--primary)!important}
+html:root body .kf-codec-help{background:var(--ink)!important;color:var(--paper)!important}
+::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:var(--ink);border-radius:99px;border:2px solid var(--paper)}
+::-webkit-scrollbar-track{background:transparent}
+@media (max-width:767px){
+ html:root body .custom-modal-content{border-radius:14px 14px 0 0!important;box-shadow:0 -4px 0 var(--ink)!important}
+ html:root body .glass-card{box-shadow:3px 3px 0 var(--ink)!important}
+ html:root body input,html:root body textarea,html:root body select{font-size:16px!important}
+}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
 </style>
 </head>
 <body class="startup-bg auth-locked">

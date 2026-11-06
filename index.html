@@ -1688,19 +1688,19 @@ html.kf-wide .kf-ps-grip { display: none; }
 <style>
 #techFontName::-webkit-calendar-picker-indicator, #mergeFontInput::-webkit-calendar-picker-indicator { display: none !important; opacity: 0; pointer-events: none; }
 #techFontName, #mergeFontInput { appearance: none; -webkit-appearance: none; }
-#kfColorTuner { display: none; width: 100%; max-width: 100%; box-sizing: border-box; flex: 0 0 auto; margin: 6px 0 8px; padding: 8px 10px; border-radius: 10px; background: rgba(0,0,0,.28); border: 1px solid var(--border-color); direction: rtl; }
-#kfColorTuner.open { display: block; }
-#kfColorTuner .kft-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 11px; font-weight: 700; color: var(--primary); }
-#kfColorTuner .kft-title { flex: 1; }
-#kfColorTuner .kft-sw { width: 18px; height: 18px; border-radius: 5px; border: 1px solid rgba(255,255,255,.35); }
-#kfColorTuner .kft-hex { direction: ltr; font-size: 10.5px; font-weight: 700; color: var(--text-muted); }
-#kfColorTuner .kft-row { display: flex; align-items: center; gap: 8px; margin: 7px 0; direction: ltr; }
-#kfColorTuner .kft-end { font-size: 10.5px; color: var(--text-muted); min-width: 40px; text-align: center; }
-#kfColorTuner input[type=range] { flex: 1; min-width: 0; -webkit-appearance: none; appearance: none; height: 10px; border-radius: 6px; background: var(--kft-grad, #555); outline: none; margin: 0; }
-#kfColorTuner input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%; background: #fff; border: 2px solid var(--primary); box-shadow: 0 1px 4px rgba(0,0,0,.5); }
-#kfColorTuner input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: #fff; border: 2px solid var(--primary); }
-#kfColorTuner .kft-foot { display: flex; gap: 6px; margin-top: 6px; }
-#kfColorTuner .kft-btn { flex: 1; padding: 5px 4px; font-size: 11px; border-radius: 8px; border: 1px solid var(--border-color); background: transparent; color: inherit; cursor: pointer; font-family: inherit; }
+.kf-tuner { display: none; width: 100%; max-width: 100%; box-sizing: border-box; flex: 0 0 auto; margin: 6px 0 8px; padding: 8px 10px; border-radius: 10px; background: rgba(0,0,0,.28); border: 1px solid var(--border-color); direction: rtl; }
+.kf-tuner.open { display: block; }
+.kf-tuner .kft-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 11px; font-weight: 700; color: var(--primary); }
+.kf-tuner .kft-title { flex: 1; }
+.kf-tuner .kft-sw { width: 18px; height: 18px; border-radius: 5px; border: 1px solid rgba(255,255,255,.35); }
+.kf-tuner .kft-hex { direction: ltr; font-size: 10.5px; font-weight: 700; color: var(--text-muted); }
+.kf-tuner .kft-row { display: flex; align-items: center; gap: 8px; margin: 7px 0; direction: ltr; }
+.kf-tuner .kft-end { font-size: 10.5px; color: var(--text-muted); min-width: 40px; text-align: center; }
+.kf-tuner input[type=range] { flex: 1; min-width: 0; -webkit-appearance: none; appearance: none; height: 10px; border-radius: 6px; background: var(--kft-grad, #555); outline: none; margin: 0; }
+.kf-tuner input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%; background: #fff; border: 2px solid var(--primary); box-shadow: 0 1px 4px rgba(0,0,0,.5); }
+.kf-tuner input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: #fff; border: 2px solid var(--primary); }
+.kf-tuner .kft-foot { display: flex; gap: 6px; margin-top: 6px; }
+.kf-tuner .kft-btn { flex: 1; padding: 5px 4px; font-size: 11px; border-radius: 8px; border: 1px solid var(--border-color); background: transparent; color: inherit; cursor: pointer; font-family: inherit; }
 </style>
 </head>
 <body class="startup-bg auth-locked">
@@ -18361,12 +18361,14 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
 </script>
 
 <script>
-/* ===== دەستکاریکردنی ڕەنگ (تۆخ / ڕووناک / کاڵ / زیندوو) لە بەشی تەکنیک ===== */
+/* ===== دەستکاریکردنی ڕەنگ (تۆخ / ڕووناک / کاڵ / زیندوو) لە بەشی تەکنیک — یەک دەستکاریکەر بۆ هەر پالەتێک ===== */
 (function () {
     var NAMES = ['setCustomPaletteColor', 'setSymbolColor', 'setNoteSymbolColor', 'setNoteTextColor', 'setStrokeColor', 'setShadowColor'];
-    var state = { fn: null, base: null, el: null };
-    var box = null, L = null, S = null;
+    var NAMES_RE = NAMES.join('|');
+    var boxes = {};                 // fn -> { el, L, S, sw, hx, base, btn }
+    var pending = {};               // fn -> { l, s, b }   (کۆپییەکی کاتی تا «جێبەجێکردن»)
 
+    /* ---------- ڕەنگ ---------- */
     function hexToRgb(h) {
         h = String(h).replace('#', '');
         return { r: parseInt(h.substr(0, 2), 16), g: parseInt(h.substr(2, 2), 16), b: parseInt(h.substr(4, 2), 16) };
@@ -18407,32 +18409,28 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
         return hslToHex(hsl.h, Math.max(0, Math.min(1, s)), Math.max(0, Math.min(1, l)));
     }
 
+    /* ---------- داتای دێڕ ---------- */
     function lineObj() {
         try { return (typeof currentStylingIndex !== 'undefined' && currentStylingIndex >= 0 && originalData[currentStylingIndex]) || null; } catch (e) { return null; }
     }
-    // لە کاتی کراوەبوونی مۆداڵەکە لە کۆپییەکی کاتی کار دەکرێت؛ تەنها بە «جێبەجێکردن» لەسەر خودی دێڕەکە دەپارێزرێت
-    var pending = { last: null };
     function cloneTune(o) {
-        try { return JSON.parse(JSON.stringify((o && o.kfTune) || {})); } catch (e) { return {}; }
+        try {
+            var c = JSON.parse(JSON.stringify((o && o.kfTune) || {}));
+            delete c.last;                       // کلیلی کۆنی وەشانی پێشوو
+            return c;
+        } catch (e) { return {}; }
     }
     function loadTune(fn) {
         var t = pending[fn];
         return t ? { l: +t.l || 0, s: +t.s || 0 } : { l: 0, s: 0 };
     }
-    function saveTune() {
-        if (!state.fn || !L) return;
-        if (+L.value === 0 && +S.value === 0) {
-            delete pending[state.fn];
-            if (pending.last === state.fn) pending.last = null;
-            return;
-        }
-        pending[state.fn] = { l: +L.value, s: +S.value, b: state.base };
-        pending.last = state.fn;
+    function saveTune(fn) {
+        var b = boxes[fn];
+        if (!b) return;
+        if (+b.L.value === 0 && +b.S.value === 0) { delete pending[fn]; return; }
+        pending[fn] = { l: +b.L.value, s: +b.S.value, b: b.base };
     }
-    function dropTune(fn) {
-        delete pending[fn];
-        if (pending.last === fn) pending.last = null;
-    }
+    function dropTune(fn) { delete pending[fn]; }
     function stillApplied(fn, hex) {
         try {
             var bgr = hexToAssBgr(hex).toUpperCase();
@@ -18444,43 +18442,17 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
             return !!ta && ta.value.toUpperCase().indexOf('&H' + bgr) >= 0;
         } catch (e) { return false; }
     }
-    function restore() {
-        Object.keys(pending).forEach(function (k) {
-            if (k === 'last') return;
-            var e = pending[k];
-            if (!e || !/^#[0-9A-Fa-f]{6}$/.test(e.b || '') || !stillApplied(k, tune(e.b, +e.l, +e.s))) delete pending[k];
-        });
-        var fn = pending.last;
-        if (!fn || !pending[fn]) {
-            fn = Object.keys(pending).filter(function (k) { return k !== 'last'; })[0] || null;
-            pending.last = fn;
-        }
-        if (fn) open(fn, pending[fn].b, null, true);
-    }
     function commit() {
         var o = lineObj();
         if (!o) return;
-        var has = Object.keys(pending).some(function (k) { return k !== 'last'; });
-        if (has) { try { o.kfTune = JSON.parse(JSON.stringify(pending)); } catch (e) {} }
+        if (Object.keys(pending).length) { try { o.kfTune = JSON.parse(JSON.stringify(pending)); } catch (e) {} }
         else delete o.kfTune;
     }
 
+    /* ---------- شوێن و سکرۆڵ ---------- */
     function modalVisible() {
         var m = document.getElementById('sub-style-modal');
         return !!(m && m.getClientRects().length > 0 && getComputedStyle(m).visibility !== 'hidden');
-    }
-    function build() {
-        box = document.createElement('div');
-        box.id = 'kfColorTuner';
-        box.innerHTML =
-            '<div class="kft-head"><span class="kft-title">دەستکاریکردنی ڕەنگ</span><span class="kft-sw" id="kftSw"></span><span class="kft-hex" id="kftHex"></span></div>' +
-            '<div class="kft-row"><span class="kft-end">تۆخ</span><input type="range" id="kftL" min="-100" max="100" value="0" step="1"><span class="kft-end">ڕووناک</span></div>' +
-            '<div class="kft-row"><span class="kft-end">کاڵ</span><input type="range" id="kftS" min="-100" max="100" value="0" step="1"><span class="kft-end">زیندوو</span></div>' +
-            '<div class="kft-foot"><button type="button" class="kft-btn" id="kftReset">ڕێکخستنەوە</button><button type="button" class="kft-btn" id="kftClose">داخستن</button></div>';
-        L = box.querySelector('#kftL'); S = box.querySelector('#kftS');
-        L.addEventListener('input', function () { saveTune(); apply(); }); S.addEventListener('input', function () { saveTune(); apply(); });
-        box.querySelector('#kftReset').addEventListener('click', function () { L.value = 0; S.value = 0; saveTune(); apply(); });
-        box.querySelector('#kftClose').addEventListener('click', hide);
     }
     function scroller(el) {
         for (var n = el && el.parentElement; n; n = n.parentElement) {
@@ -18496,30 +18468,6 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
         var d = ref.getBoundingClientRect().top - t0;
         if (d && sc) sc.scrollTop += d;
     }
-    function hide() {
-        if (box && box.classList.contains('open')) {
-            keepStill(box.previousElementSibling || box.parentElement, function () { box.classList.remove('open'); });
-        }
-        state.fn = null; state.base = null; state.el = null;
-    }
-
-    function paintTracks() {
-        if (!state.base) return;
-        L.style.setProperty('--kft-grad', 'linear-gradient(to right,#000,' + state.base + ',#fff)');
-        S.style.setProperty('--kft-grad', 'linear-gradient(to right,' + tune(state.base, 0, -100) + ',' + state.base + ',' + tune(state.base, 0, 100) + ')');
-    }
-    function apply() {
-        if (!state.fn || !state.base) return;
-        if (!modalVisible()) { hide(); return; }
-        var hex = tune(state.base, +L.value, +S.value);
-        box.querySelector('#kftSw').style.background = hex;
-        box.querySelector('#kftHex').textContent = hex;
-        var fn = window[state.fn];
-        if (typeof fn !== 'function') return;
-        window.__kfQuiet = true;                      // لە کاتی کێشانی سلایدەر نامەی دووبارە نەیەت
-        try { fn(hex, null); } finally { window.__kfQuiet = false; }
-        if (state.fn === 'setCustomPaletteColor' && state.el && state.el.classList) state.el.classList.add('active');
-    }
     function anchorFor(fn, btn) {
         if (!btn) btn = document.querySelector('#sub-style-modal .palette-btn[onclick^="' + fn + '("]');
         if (fn === 'setCustomPaletteColor') return document.getElementById('myCustomColorGrid') || (btn && btn.parentElement);
@@ -18532,50 +18480,118 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
             var row = pal && pal.parentElement;
             return row ? (row.parentElement || row) : null;
         }
-        if (btn && btn.parentElement) return btn.parentElement;
-        var id = fn === 'setStrokeColor' ? 'strokeColorPicker' : (fn === 'setShadowColor' ? 'shadowColorPicker' : (fn === 'setSymbolColor' ? 'symbolColorChoice' : (fn === 'setNoteSymbolColor' ? 'noteSymbolColorChoice' : 'noteTextColorChoice')));
-        var inp = document.getElementById(id);
-        return inp ? (inp.parentElement.querySelector('div') || inp.parentElement) : null;
+        return btn && btn.parentElement ? btn.parentElement : null;
     }
-    function open(fn, hex, btn, silent) {
-        if (NAMES.indexOf(fn) < 0 || !/^#[0-9A-Fa-f]{6}$/.test(hex || '')) { hide(); return; }
-        if (!box) build();
+
+    /* ---------- دروستکردنی دەستکاریکەرێک بۆ پالەتێک ---------- */
+    function getBox(fn) {
+        if (boxes[fn]) return boxes[fn];
+        var el = document.createElement('div');
+        el.className = 'kf-tuner';
+        el.innerHTML =
+            '<div class="kft-head"><span class="kft-title">دەستکاریکردنی ڕەنگ</span><span class="kft-sw"></span><span class="kft-hex"></span></div>' +
+            '<div class="kft-row"><span class="kft-end">تۆخ</span><input type="range" class="kft-l" min="-100" max="100" value="0" step="1"><span class="kft-end">ڕووناک</span></div>' +
+            '<div class="kft-row"><span class="kft-end">کاڵ</span><input type="range" class="kft-s" min="-100" max="100" value="0" step="1"><span class="kft-end">زیندوو</span></div>' +
+            '<div class="kft-foot"><button type="button" class="kft-btn kft-reset">ڕێکخستنەوە</button><button type="button" class="kft-btn kft-close">داخستن</button></div>';
+        var b = { el: el, L: el.querySelector('.kft-l'), S: el.querySelector('.kft-s'), sw: el.querySelector('.kft-sw'), hx: el.querySelector('.kft-hex'), base: null, btn: null };
+        b.L.addEventListener('input', function () { saveTune(fn); apply(fn); });
+        b.S.addEventListener('input', function () { saveTune(fn); apply(fn); });
+        el.querySelector('.kft-reset').addEventListener('click', function () { b.L.value = 0; b.S.value = 0; saveTune(fn); apply(fn); });
+        el.querySelector('.kft-close').addEventListener('click', function () { hideBox(fn); });
+        boxes[fn] = b;
+        return b;
+    }
+    function paintTracks(b) {
+        if (!b.base) return;
+        b.L.style.setProperty('--kft-grad', 'linear-gradient(to right,#000,' + b.base + ',#fff)');
+        b.S.style.setProperty('--kft-grad', 'linear-gradient(to right,' + tune(b.base, 0, -100) + ',' + b.base + ',' + tune(b.base, 0, 100) + ')');
+    }
+    function showColor(b) {
+        var hex = tune(b.base, +b.L.value, +b.S.value);
+        b.sw.style.background = hex;
+        b.hx.textContent = hex;
+        return hex;
+    }
+    function apply(fn) {
+        var b = boxes[fn];
+        if (!b || !b.base) return;
+        if (!modalVisible()) { hideAll(); return; }
+        var hex = showColor(b);
+        var f = window[fn];
+        if (typeof f !== 'function') return;
+        window.__kfQuiet = true;                       // لە کاتی کێشانی سلایدەر نامەی دووبارە نەیەت
+        try { f(hex, null); } finally { window.__kfQuiet = false; }
+        if (fn === 'setCustomPaletteColor' && b.btn && b.btn.classList) b.btn.classList.add('active');
+    }
+    function hideBox(fn) {
+        var b = boxes[fn];
+        if (!b || !b.el.classList.contains('open')) return;
+        keepStill(b.el.previousElementSibling || b.el.parentElement, function () { b.el.classList.remove('open'); });
+    }
+    function hideAll() {
+        Object.keys(boxes).forEach(function (fn) { boxes[fn].el.classList.remove('open'); });
+    }
+
+    function openBox(fn, hex, btn, silent) {
+        if (NAMES.indexOf(fn) < 0 || !/^#[0-9A-Fa-f]{6}$/.test(hex || '')) return;
         var anchor = anchorFor(fn, btn);
         if (!anchor || !anchor.parentNode) return;
-        state.fn = fn; state.base = hex.toUpperCase(); state.el = btn || null;
-        if (box.parentNode !== anchor.parentNode || box.previousElementSibling !== anchor || !box.classList.contains('open')) {
-            keepStill(anchor, function () { anchor.parentNode.insertBefore(box, anchor.nextSibling); box.classList.add('open'); });
+        var b = getBox(fn);
+        b.base = hex.toUpperCase(); b.btn = btn || null;
+
+        // شادۆ دوای Outline دادەنرێت ئەگەر هەردووکیان کراوە بن
+        var ref = anchor;
+        if (fn === 'setShadowColor') {
+            var sb = boxes.setStrokeColor;
+            if (sb && sb.el.classList.contains('open') && sb.el.previousElementSibling === anchor) ref = sb.el;
+        }
+        if (b.el.parentNode !== ref.parentNode || b.el.previousElementSibling !== ref || !b.el.classList.contains('open')) {
+            keepStill(ref, function () { ref.parentNode.insertBefore(b.el, ref.nextSibling); b.el.classList.add('open'); });
+        }
+        if (fn === 'setStrokeColor') {          // Outline هەمیشە پێش Shadow
+            var sh = boxes.setShadowColor;
+            if (sh && sh.el.classList.contains('open') && sh.el.parentNode === b.el.parentNode && sh.el.previousElementSibling !== b.el) {
+                b.el.parentNode.insertBefore(sh.el, b.el.nextSibling);
+            }
         }
         var t = loadTune(fn);
-        L.value = t.l; S.value = t.s;
-        var shown = (t.l || t.s) ? tune(state.base, t.l, t.s) : state.base;
-        box.querySelector('#kftSw').style.background = shown;
-        box.querySelector('#kftHex').textContent = shown;
-        paintTracks();
-        box.classList.add('open');
-        if ((t.l || t.s) && !silent) apply();     // ڕێکخستنەکانی پێشووی ئەم دێڕە لەسەر ڕەنگە نوێیەکە جێبەجێ دەکرێن
+        b.L.value = t.l; b.S.value = t.s;
+        showColor(b);
+        paintTracks(b);
+        b.el.classList.add('open');
+        if ((t.l || t.s) && !silent) apply(fn);     // ڕێکخستنەکانی پێشووی ئەم دێڕە لەسەر ڕەنگە نوێیەکە جێبەجێ دەکرێن
     }
-    window.kfColorTuner = { open: open, hide: hide };
+
+    // کاتێک مۆداڵەکە دەکرێتەوە: هەموو ئەو پالەتانەی پێشتر دەستکاری کراون کراوە دەبنەوە
+    function restore() {
+        Object.keys(pending).forEach(function (fn) {
+            var e = pending[fn];
+            if (NAMES.indexOf(fn) < 0 || !e || !/^#[0-9A-Fa-f]{6}$/.test(e.b || '') || !stillApplied(fn, tune(e.b, +e.l, +e.s))) { delete pending[fn]; return; }
+            openBox(fn, e.b, null, true);
+        });
+    }
+
+    window.kfColorTuner = { open: openBox, hide: hideAll };
 
     // دوای کلیکی هەر خانەیەکی ڕەنگ لە مۆداڵی تەکنیک (دوای ئەوەی فەنکشنە ئەسڵییەکە جێبەجێ بوو)
+    var HEX_RE = new RegExp("^\\s*(" + NAMES_RE + ")\\(\\s*'(#[0-9A-Fa-f]{6})'");
+    var KEEP_RE = new RegExp("^\\s*(" + NAMES_RE + ")\\(\\s*'(KEEP|NONE)'");
     document.addEventListener('click', function (e) {
         var b = e.target && e.target.closest ? e.target.closest('#sub-style-modal [onclick]') : null;
-        if (!b || b.closest('#kfColorTuner')) return;
+        if (!b || b.closest('.kf-tuner')) return;
         var oc = b.getAttribute('onclick') || '';
-        var m = /^\s*(setCustomPaletteColor|setSymbolColor|setNoteSymbolColor|setNoteTextColor|setStrokeColor|setShadowColor)\(\s*'(#[0-9A-Fa-f]{6})'/.exec(oc);
-        if (m && b.classList.contains('palette-btn')) { open(m[1], m[2], b); return; }
-        var k = /^\s*(setCustomPaletteColor|setSymbolColor|setNoteSymbolColor|setNoteTextColor|setStrokeColor|setShadowColor)\(\s*'(KEEP|NONE)'/.exec(oc);
-        if (k) { dropTune(k[1]); hide(); return; }
-        if (b.classList.contains('palette-btn')) hide();
+        var m = HEX_RE.exec(oc);
+        if (m && b.classList.contains('palette-btn')) { openBox(m[1], m[2], b); return; }
+        var k = KEEP_RE.exec(oc);
+        if (k) { dropTune(k[1]); hideBox(k[1]); }
     }, false);
 
-    // کاتێک مۆداڵەکە بۆ دێڕێکی نوێ دەکرێتەوە، دەستکاریکەری ڕەنگ دابخرێت
     var _open = window.openSubStyleModal;
     if (typeof _open === 'function') {
         window.openSubStyleModal = function () {
-            hide();
+            hideAll();
             var r = _open.apply(this, arguments);
-            try { pending = cloneTune(lineObj()); pending.last = pending.last || null; restore(); } catch (e) { console.warn('kfTuner restore', e); }
+            try { pending = cloneTune(lineObj()); restore(); } catch (e) { console.warn('kfTuner restore', e); }
             return r;
         };
     }

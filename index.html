@@ -1711,8 +1711,8 @@ html:root body #toast-container .toast.kf-t { position: absolute; top: 0; left: 
 .toast.kf-t.kf-info { --kf-tc: #f5c542; --kf-tb: rgba(245,197,66,.18); }
 html:root body #toast-container .toast.kf-t.kf-error { color: #fecaca; }
 html:root body #toast-container .toast.kf-t.kf-warning { color: #fde68a; }
-.kf-t .kf-t-ic { flex: 0 0 auto; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; background: var(--kf-tb); color: var(--kf-tc); }
-.kf-t .kf-t-ic svg { width: 12px; height: 12px; }
+.kf-t .kf-t-ic { flex: 0 0 auto; width: 22px; height: 22px; display: grid; place-items: center; color: var(--kf-tc); }
+.kf-t .kf-t-ic svg { width: 22px; height: 22px; display: block; filter: drop-shadow(0 1px 3px rgba(0,0,0,.35)); }
 .kf-t .kf-t-tx { flex: 1; min-width: 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
 .kf-t .kf-t-more { flex: 0 0 auto; font-size: 10px; font-weight: 800; color: var(--kf-tc); background: var(--kf-tb); border-radius: 9px; padding: 1px 7px; direction: ltr; }
 .kf-t .kf-t-more:empty { display: none; }
@@ -5039,14 +5039,14 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
     <script>
         /* ===== تۆست: دووبارە نابێتەوە، لە سەرەوە، لەسەر یەک کەڵەکە دەبن، بە دەست لا دەبرێن ===== */
         var KF_TOAST_ICONS = {
-            success: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
-            error: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
-            warning: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5v7"/><path d="M12 17.5v.01"/></svg>',
-            info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 10.5v7"/><path d="M12 6.5v.01"/></svg>'
+            success: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.5" fill="currentColor"/><path d="M7.4 12.6l3.3 3.3 5.9-6.8" fill="none" stroke="#0f172a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+            error: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.5" fill="currentColor"/><path d="M8.4 8.4l7.2 7.2M15.6 8.4l-7.2 7.2" fill="none" stroke="#0f172a" stroke-width="2.6" stroke-linecap="round"/></svg>',
+            warning: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8L22.3 20.6H1.7L12 2.8z" fill="currentColor" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M12 9.4v5.2" fill="none" stroke="#0f172a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.5" r="1.4" fill="#0f172a"/></svg>',
+            info: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.5" fill="currentColor"/><path d="M12 10.8v5.6" fill="none" stroke="#0f172a" stroke-width="2.6" stroke-linecap="round"/><circle cx="12" cy="7.6" r="1.5" fill="#0f172a"/></svg>'
         };
 
         function kfToastState() {
-            return window.__kfToast || (window.__kfToast = { items: [], timer: null, MAX: 5 });
+            return window.__kfToast || (window.__kfToast = { items: [], timer: null, MAX: 3 });
         }
 
         function kfToastLayout() {
@@ -5085,15 +5085,16 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
             var KT = kfToastState();
             if (KT.timer) return;
             KT.timer = setInterval(function () {
-                if (!KT.items.length) { clearInterval(KT.timer); KT.timer = null; return; }
-                var now = Date.now();
-                KT.items.slice().forEach(function (it) {
-                    if (it.paused) return;
-                    var left = it.deadline - now;
-                    if (left <= 0) { kfToastRemove(it, 0, -1); return; }
-                    var bar = it.el.querySelector('.kf-t-bar');
-                    if (bar) bar.style.transform = 'scaleX(' + Math.max(0, left / it.ttl) + ')';
-                });
+                if (!KT.items.length) { clearInterval(KT.timer); KT.timer = null; KT.last = 0; return; }
+                var now = Date.now(), dt = now - (KT.last || now);
+                KT.last = now;
+                // تەنها کاتی تۆستی پێشەوە دەڕوات؛ ئەوانی تر چاوەڕێی نۆرەی خۆیان دەکەن. پەنجە لەسەر بێت، کاتەکە دەوەستێت.
+                var it = KT.items[0];
+                if (KT.holding || it.paused) return;
+                it.remaining -= dt;
+                if (it.remaining <= 0) { kfToastRemove(it, 0, -1); return; }
+                var bar = it.el.querySelector('.kf-t-bar');
+                if (bar) bar.style.transform = 'scaleX(' + Math.max(0, it.remaining / it.ttl) + ')';
             }, 80);
         }
 
@@ -5113,13 +5114,13 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
             message = String(message == null ? '' : message);
             type = (type === 'success' || type === 'error' || type === 'warning') ? type : 'info';
             var key = type + '|' + message;
-            var ttl = type === 'error' ? 4200 : (type === 'warning' ? 3600 : 2600);
+            var ttl = type === 'error' ? 3000 : (type === 'warning' ? 2400 : 1700);
 
             // هەمان نامە پێشتر هەیە: دووبارە دانانرێت، تەنها دەهێنرێتە پێشەوە و کاتەکەی نوێ دەبێتەوە
             for (var i = 0; i < KT.items.length; i++) {
                 if (KT.items[i].key === key) {
                     var old = KT.items.splice(i, 1)[0];
-                    old.ttl = ttl; old.deadline = Date.now() + ttl;
+                    old.ttl = ttl; old.remaining = ttl;
                     KT.items.unshift(old);
                     kfToastLayout();
                     old.el.classList.remove('kf-pulse'); void old.el.offsetWidth; old.el.classList.add('kf-pulse');
@@ -5136,7 +5137,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
             el.style.transform = 'translateY(-16px) scale(.96)';
             container.appendChild(el);
 
-            var item = { el: el, key: key, ttl: ttl, deadline: Date.now() + ttl, paused: false };
+            var item = { el: el, key: key, ttl: ttl, remaining: ttl, paused: false };
             KT.items.unshift(item);
             while (KT.items.length > KT.MAX) kfToastRemove(KT.items[KT.items.length - 1], 0, -1);
 
@@ -5145,6 +5146,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
             el.addEventListener('pointerdown', function (e) {
                 if (KT.items[0] !== item) return;
                 drag = true; moved = false; sx = e.clientX; sy = e.clientY; dx = 0; dy = 0;
+                KT.holding = true;
                 item.paused = true;
                 el.style.transition = 'none';
                 try { el.setPointerCapture(e.pointerId); } catch (err) { }
@@ -5160,9 +5162,10 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
             function endDrag(cancel) {
                 if (!drag) return;
                 drag = false;
+                KT.holding = false;
                 el.style.transition = '';
                 item.paused = false;
-                item.deadline = Date.now() + 1800;
+                item.remaining = Math.max(item.remaining, 1200);
                 if (!cancel && (!moved || dy < -28 || Math.abs(dx) > 70)) { kfToastRemove(item, dx, dy); return; }
                 kfToastLayout();
             }

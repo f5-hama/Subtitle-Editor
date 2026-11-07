@@ -1753,17 +1753,19 @@ html:root body #toast-container .toast.kf-t.kf-warning { color: #fde68a; }
 /* ---------- باکگراوندی خاڵ‌خاڵ: لە سەرەوە ڕوونە و بەرەبەرە بەرەو خوارەوە و لاکان لەناو دەچێت ---------- */
 #kf-dots { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; contain: strict; }
 #kf-dots i { position: absolute; inset: 0; display: block; }
-#kf-dots .kfd-glow { background: radial-gradient(70% 38% at 50% 0%, color-mix(in srgb, var(--primary, #8EB69B) 24%, transparent), transparent 72%); }
+#kf-dots .kfd-glow { background: radial-gradient(70% 38% at 50% 0%, rgba(142,182,155,.24), transparent 72%); background: radial-gradient(70% 38% at 50% 0%, color-mix(in srgb, var(--primary, #8EB69B) 24%, transparent), transparent 72%); }
 #kf-dots .kfd-a, #kf-dots .kfd-b {
     background-size: 26px 26px;
     -webkit-mask-image: radial-gradient(ellipse 92% 78% at 50% 0%, #000 0%, rgba(0,0,0,.62) 42%, transparent 100%);
             mask-image: radial-gradient(ellipse 92% 78% at 50% 0%, #000 0%, rgba(0,0,0,.62) 42%, transparent 100%);
 }
 #kf-dots .kfd-a {
+    background-image: radial-gradient(circle at center, rgba(235,245,238,.95) 1.15px, transparent 1.7px);
     background-image: radial-gradient(circle at center, color-mix(in srgb, var(--primary, #8EB69B) 55%, #fff) 1.15px, transparent 1.7px);
     opacity: .55;
 }
 #kf-dots .kfd-b {
+    background-image: radial-gradient(circle at center, rgba(215,235,222,.95) 1.35px, transparent 1.9px);
     background-image: radial-gradient(circle at center, color-mix(in srgb, var(--primary, #8EB69B) 35%, #fff) 1.35px, transparent 1.9px);
     background-position: 13px 13px;
     opacity: .12;

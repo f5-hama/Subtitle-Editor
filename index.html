@@ -1749,9 +1749,32 @@ html:root body #toast-container .toast.kf-t.kf-warning { color: #fde68a; }
 .kfp-foot { display: flex; gap: 8px; }
 .kfp-foot button { flex: 1; padding: 9px 6px; border-radius: 12px; font-size: 12.5px; font-weight: 800; cursor: pointer; font-family: inherit; border: 1px solid var(--border-color); background: transparent; color: inherit; }
 .kfp-foot .kfp-ok { background: linear-gradient(135deg, #d9a937, #a8761c); border-color: rgba(255,214,102,.55); color: #fff; }
+
+/* ---------- باکگراوندی خاڵ‌خاڵ: لە سەرەوە ڕوونە و بەرەبەرە بەرەو خوارەوە و لاکان لەناو دەچێت ---------- */
+#kf-dots { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; contain: strict; }
+#kf-dots i { position: absolute; inset: 0; display: block; }
+#kf-dots .kfd-glow { background: radial-gradient(70% 38% at 50% 0%, color-mix(in srgb, var(--primary, #8EB69B) 24%, transparent), transparent 72%); }
+#kf-dots .kfd-a, #kf-dots .kfd-b {
+    background-size: 26px 26px;
+    -webkit-mask-image: radial-gradient(ellipse 92% 78% at 50% 0%, #000 0%, rgba(0,0,0,.62) 42%, transparent 100%);
+            mask-image: radial-gradient(ellipse 92% 78% at 50% 0%, #000 0%, rgba(0,0,0,.62) 42%, transparent 100%);
+}
+#kf-dots .kfd-a {
+    background-image: radial-gradient(circle at center, color-mix(in srgb, var(--primary, #8EB69B) 55%, #fff) 1.15px, transparent 1.7px);
+    opacity: .55;
+}
+#kf-dots .kfd-b {
+    background-image: radial-gradient(circle at center, color-mix(in srgb, var(--primary, #8EB69B) 35%, #fff) 1.35px, transparent 1.9px);
+    background-position: 13px 13px;
+    opacity: .12;
+    animation: kfdTwinkle 7s ease-in-out infinite alternate;
+}
+@keyframes kfdTwinkle { from { opacity: .08; } to { opacity: .65; } }
+@media (prefers-reduced-motion: reduce) { #kf-dots .kfd-b { animation: none; opacity: .22; } }
 </style>
 </head>
 <body class="startup-bg auth-locked">
+<div id="kf-dots" aria-hidden="true"><i class="kfd-glow"></i><i class="kfd-a"></i><i class="kfd-b"></i></div>
 
 <style id="kf-auth-css">
 /* ============ شاشەی بارکردن: لۆگۆی جوڵاو ============ */
@@ -3807,6 +3830,10 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
                     <span data-i18n="scNextLine">چوونە دێڕی دواتر</span>
                     <kbd dir="ltr" style="background:var(--border-color); padding: 3px 7px; border-radius: 6px; font-weight: bold; font-size: 11.5px;">Tab</kbd>
                 </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; gap:8px; padding: 7px 10px; background: rgba(142, 182, 155, 0.08); border-radius: 8px;">
+                    <span>چوونە دێڕی پێشوو</span>
+                    <kbd dir="ltr" style="background:var(--border-color); padding: 3px 7px; border-radius: 6px; font-weight: bold; font-size: 11.5px; white-space:nowrap;">Shift + Tab</kbd>
+                </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 7px 10px; background: rgba(142, 182, 155, 0.08); border-radius: 8px;">
                     <span data-i18n="scSave">سەیڤکردن و داگرتن</span>
                     <kbd dir="ltr" style="background:var(--border-color); padding: 3px 7px; border-radius: 6px; font-weight: bold; font-size: 11.5px;">Ctrl + S</kbd>
@@ -3821,7 +3848,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; gap:8px; padding: 7px 10px; background: rgba(142, 182, 155, 0.08); border-radius: 8px;">
                     <span>پێشەوەچوون (Redo)</span>
-                    <kbd dir="ltr" style="background:var(--border-color); padding: 3px 7px; border-radius: 6px; font-weight: bold; font-size: 11.5px; white-space:nowrap;">Ctrl + Y</kbd>
+                    <kbd dir="ltr" style="background:var(--border-color); padding: 3px 7px; border-radius: 6px; font-weight: bold; font-size: 11.5px; white-space:nowrap;">Ctrl + Y &nbsp;/&nbsp; Ctrl + Shift + Z</kbd>
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; gap:8px; padding: 7px 10px; background: rgba(142, 182, 155, 0.08); border-radius: 8px;">
                     <span>پێش/پاشخستنی ورد (٠.٢ چرکە)</span>
@@ -3833,6 +3860,10 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; gap:8px; padding: 7px 10px; background: rgba(142, 182, 155, 0.08); border-radius: 8px;">
                     <span>کردنەوەی پەنجەرەی تەکنیک بۆ ئەم دێڕە</span>
+                    <kbd dir="ltr" style="background:var(--border-color); padding: 3px 7px; border-radius: 6px; font-weight: bold; font-size: 11.5px; white-space:nowrap;">Ctrl + Enter</kbd>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; gap:8px; padding: 7px 10px; background: rgba(142, 182, 155, 0.08); border-radius: 8px;">
+                    <span>جێبەجێکردنی تەکنیک (کاتێک پەنجەرەی تەکنیک کراوەیە)</span>
                     <kbd dir="ltr" style="background:var(--border-color); padding: 3px 7px; border-radius: 6px; font-weight: bold; font-size: 11.5px; white-space:nowrap;">Ctrl + Enter</kbd>
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; gap:8px; padding: 7px 10px; background: rgba(142, 182, 155, 0.08); border-radius: 8px;">
@@ -3853,11 +3884,15 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; gap:8px; padding: 7px 10px; background: rgba(142, 182, 155, 0.08); border-radius: 8px;">
                     <span>سڕینەوەی ئەم دێڕە</span>
-                    <kbd dir="ltr" style="background:var(--border-color); padding: 3px 7px; border-radius: 6px; font-weight: bold; font-size: 11.5px; white-space:nowrap;">Alt + Delete</kbd>
+                    <kbd dir="ltr" style="background:var(--border-color); padding: 3px 7px; border-radius: 6px; font-weight: bold; font-size: 11.5px; white-space:nowrap;">Alt + Delete &nbsp;/&nbsp; Backspace</kbd>
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; gap:8px; padding: 7px 10px; background: rgba(142, 182, 155, 0.08); border-radius: 8px;">
                     <span>سڕینەوەی هەموو دێڕی بەتاڵ</span>
                     <kbd dir="ltr" style="background:var(--border-color); padding: 3px 7px; border-radius: 6px; font-weight: bold; font-size: 11.5px; white-space:nowrap;">Ctrl + Shift + E</kbd>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; gap:8px; padding: 7px 10px; background: rgba(142, 182, 155, 0.08); border-radius: 8px;">
+                    <span>داخستنی ئەم لیستە و بازنەی ڕەنگ</span>
+                    <kbd dir="ltr" style="background:var(--border-color); padding: 3px 7px; border-radius: 6px; font-weight: bold; font-size: 11.5px; white-space:nowrap;">Esc</kbd>
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; gap:8px; padding: 7px 10px; background: rgba(142, 182, 155, 0.08); border-radius: 8px;">
                     <span>کردنەوەی ئەم لیستەی کورتکراوەکان</span>
@@ -17756,7 +17791,7 @@ var G=[
  steps:[{h:'بەکارهێنان',rows:[[E('box','فایلەکان هەڵبژێرە',1)],[E('btn','پاککردنەوە و داگرتن',2)]],
   notes:['فایلی ئینگلیزی (یان هەر زمانێک) هەڵبژێرە.','فایلە پاککراوەکان دادەبەزن؛ ئەوانە ئامادەن بۆ وەرگێڕان.']}]},
 {k:'shortcuts',name:'کورتکراوەکان',intro:'کورتکراوەکانی کیبۆرد کاری ئیدیتەر زۆر خێراتر دەکەن (بۆ کۆمپیوتەر). هەر کاتێک Ctrl+K لێبدە بۆ بینینی لیستەکە.',
- feats:['Ctrl+Space کارپێکردن/ڕاگرتن','Ctrl+← / → پێش/پاشخستن ٢ چرکە؛ لەگەڵ Shift ٠.٢ چرکە','Tab دێڕی دواتر؛ Ctrl+↑ / ↓ دێڕی پێشوو/دواتر','Ctrl+S سەیڤ، Ctrl+F گەڕان، Ctrl+Z / Ctrl+Y','Ctrl+Enter تەکنیک، Ctrl+J چوونە سەر کاتی دێڕ','Ctrl+B ئەستوور، Ctrl+I لار، Ctrl+M ♪','Alt+Delete سڕینەوەی دێڕ، Ctrl+Shift+E سڕینەوەی بەتاڵەکان'],
+ feats:['Ctrl+Space کارپێکردن/ڕاگرتن','Ctrl+← / → پێش/پاشخستن ٢ چرکە؛ لەگەڵ Shift ٠.٢ چرکە','Tab دێڕی دواتر، Shift+Tab دێڕی پێشوو؛ Ctrl+↑ / ↓ دێڕی پێشوو/دواتر','Ctrl+S سەیڤ، Ctrl+F گەڕان، Ctrl+Z گەڕانەوە، Ctrl+Y یان Ctrl+Shift+Z پێشەوەچوون','Ctrl+Enter کردنەوەی تەکنیک (لەناو پەنجەرەکەدا: جێبەجێکردن)، Ctrl+J چوونە سەر کاتی دێڕ','Ctrl+B ئەستوور، Ctrl+I لار، Ctrl+M ♪','Alt+Delete یان Alt+Backspace سڕینەوەی دێڕ، Ctrl+Shift+E سڕینەوەی بەتاڵەکان','Esc داخستنی لیستی کورتکراوەکان و بازنەی ڕەنگ'],
  steps:[{h:'نموونە',rows:[[E('el','Ctrl',1),E('el','+'),E('el','Space',1),E('lbl','کارپێکردن/ڕاگرتن')],[E('el','Ctrl',2),E('el','+'),E('el','Enter',2),E('lbl','تەکنیکی ئەم دێڕە')]],
   notes:['لە کاتی نووسیندا، بەبێ بەجێهێشتنی کیبۆرد ڤیدیۆکە ڕابگرە و کاری پێبکەرەوە.','لەناو هەر خانەیەکی وەرگێڕان، ڕاستەوخۆ پەنجەرەی تەکنیکی ئەو دێڕە دەکاتەوە.']}]},
 {k:'img',name:'وێنە بۆ لینک',intro:'وێنەیەک بار دەکات بۆ ImgBB و لینکی ڕاستەوخۆت دەداتێ (بۆ پۆستەر و وێنەی ماڵپەڕ).',
@@ -18888,6 +18923,49 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
         window.applySubStyleToLine = function () { try { commit(); } catch (e) {} return _apply.apply(this, arguments); };
     }
 })();
+</script>
+
+<script>
+/* کورتکراوە نوێیەکان: Ctrl+Enter = جێبەجێکردن لەناو پەنجەرەی تەکنیک ، Esc = داخستنی لیستی کورتکراوەکان و بازنەی ڕەنگ */
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+        var pk = document.querySelector('.kfp-ov.open');
+        if (pk) { pk.classList.remove('open'); e.preventDefault(); return; }
+        var sc = document.getElementById('shortcuts-modal');
+        if (sc && sc.style.display === 'flex') { sc.style.display = 'none'; e.preventDefault(); }
+        return;
+    }
+    if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key === 'Enter') {
+        var m = document.getElementById('sub-style-modal');
+        var visible = m && m.getClientRects().length > 0 && getComputedStyle(m).visibility !== 'hidden';
+        if (visible && typeof applySubStyleToLine === 'function') {
+            e.preventDefault();
+            e.stopImmediatePropagation();      // ڕێگری لەوەی کۆدی «کردنەوەی تەکنیک»ی ژێر پەنجەرەکە دووبارە کار بکات
+            applySubStyleToLine();
+        }
+    }
+}, true);
+</script>
+
+<script>
+/* Tab = بڕۆ بۆ نووسینی دێڕی دواتر ، Shift+Tab = دێڕی پێشوو (تەنها لەناو کارتەکانی ئەدیتۆر) */
+document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Tab' || e.ctrlKey || e.altKey || e.metaKey) return;
+    if (typeof isEditing !== 'undefined' && !isEditing) return;
+    var ta = document.activeElement;
+    if (!ta || ta.tagName !== 'TEXTAREA' || !ta.closest) return;
+    var card = ta.closest('.subtitle-card');
+    if (!card) return;
+    var idx = parseInt(card.getAttribute('data-index'), 10);
+    if (isNaN(idx)) return;
+    var target = document.querySelector('.subtitle-card[data-index="' + (e.shiftKey ? idx - 1 : idx + 1) + '"]');
+    var t = target && (target.querySelector('.subtitle-kurd textarea') || target.querySelector('textarea'));
+    if (!t) return;                       // دێڕی دواتر/پێشوو نییە: Tab ڕەفتاری ئاسایی دەمێنێت
+    e.preventDefault();
+    t.focus();
+    try { t.setSelectionRange(t.value.length, t.value.length); } catch (err) { }
+    try { target.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (err) { }
+}, true);
 </script>
 </body>
 </html>

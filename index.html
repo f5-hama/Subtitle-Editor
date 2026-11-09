@@ -1816,20 +1816,29 @@ html[data-kf-bg="wave"] .kf-web .kfb-wave, html[data-kf-bg="stars"] .kf-web .kfb
 .kf-bgtile.active { border-color: var(--primary); box-shadow: 0 0 10px var(--primary-glow, rgba(245,197,66,.35)); }
 .kf-bgtile.active .kf-bgname { color: var(--primary); }
 
-/* ---------- گەڕان: لیستی ئەنجامەکان لە سەرەوەی پەنجەرەی گەڕان (قەبارەی جێگیر، لەناو خۆی دەجوڵێت) ---------- */
-.kf-find { margin: 0 0 8px; }
-.kf-find-list { position: relative; max-height: var(--kf-find-max, 190px); overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; scrollbar-width: thin; border: 1px solid var(--border-color); border-radius: 12px; background: rgba(0, 0, 0, .24); }
-.kf-find-row { display: flex; align-items: baseline; gap: 9px; width: 100%; box-sizing: border-box; margin: 0; padding: 8px 11px; border: 0; border-bottom: 1px solid rgba(255, 255, 255, .07); border-radius: 0; background: transparent; color: var(--text-main, #e6e9ef); font: inherit; font-size: 12.5px; line-height: 1.65; text-align: start; direction: rtl; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.kf-find-row:last-child { border-bottom: 0; }
-.kf-find-row:active { background: rgba(255, 255, 255, .07); }
-.kf-find-row.active { background: rgba(142, 182, 155, .16); background: color-mix(in srgb, var(--primary) 15%, transparent); box-shadow: inset -3px 0 0 var(--primary); }
-.kf-find-n { flex: 0 0 auto; min-width: 28px; font-size: 10.5px; font-weight: 800; color: var(--text-muted); direction: ltr; text-align: left; }
-.kf-find-t { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; unicode-bidi: plaintext; }
-.kf-find-t mark { background: rgba(142, 182, 155, .24); background: color-mix(in srgb, var(--primary) 24%, transparent); color: var(--primary); font-weight: 800; border-radius: 4px; padding: 0 2px; }
-.kf-find-near .kf-find-t { opacity: .88; }
-.kf-find-near .kf-find-t mark { background: transparent; opacity: .85; font-weight: 700; text-decoration: underline dotted; text-underline-offset: 3px; }
-.kf-find-label { padding: 5px 11px; text-align: center; font-size: 10.5px; font-weight: 700; color: var(--text-muted); background: rgba(255, 255, 255, .045); border-bottom: 1px solid rgba(255, 255, 255, .07); }
-.kf-find-more, .kf-find-empty { padding: 8px 11px; text-align: center; font-size: 11px; color: var(--text-muted); }
+/* ---------- ئاگادارکردنەوەی ڤیدیۆی نەخوێنراو + پەنجەرەی چارەسەر ---------- */
+.kfv-banner { position: absolute; left: 8px; right: 8px; top: 8px; z-index: 40; display: flex; align-items: center; gap: 9px; padding: 9px 10px; border-radius: 14px; background: rgba(20, 26, 38, .97); border: 1px solid rgba(251, 191, 36, .5); box-shadow: 0 8px 22px rgba(0, 0, 0, .5); direction: rtl; color: #fde68a; font-size: 12px; line-height: 1.5; }
+.kfv-b-ic { flex: 0 0 auto; width: 22px; height: 22px; color: #fbbf24; }
+.kfv-b-ic svg { width: 22px; height: 22px; display: block; }
+.kfv-b-tx { flex: 1; min-width: 0; }
+.kfv-b-tx b { display: block; color: #fff; font-size: 12.5px; }
+.kfv-b-sub { display: block; color: #cbd5e1; font-size: 10.8px; direction: ltr; text-align: right; word-break: break-word; }
+.kfv-btn { flex: 0 0 auto; padding: 6px 11px; border-radius: 9px; border: 1px solid var(--border-color); background: rgba(255, 255, 255, .07); color: #fff; font: inherit; font-size: 11.5px; font-weight: 700; cursor: pointer; }
+.kfv-btn.go { background: linear-gradient(135deg, #d9a937, #a8761c); border-color: rgba(255, 214, 102, .55); }
+.kfv-ov { position: fixed; inset: 0; z-index: 100000; display: none; align-items: center; justify-content: center; padding: 14px; box-sizing: border-box; background: rgba(0, 0, 0, .64); }
+.kfv-ov.open { display: flex; }
+.kfv-sheet { width: min(430px, 100%); max-height: 90vh; overflow-y: auto; overscroll-behavior: contain; box-sizing: border-box; padding: 14px; border-radius: 20px; background: rgba(22, 28, 42, .98); border: 1px solid rgba(255, 255, 255, .12); box-shadow: 0 18px 50px rgba(0, 0, 0, .6); direction: rtl; color: #eef2f7; font-size: 12.5px; line-height: 1.75; }
+.kfv-sheet h3 { margin: 0 0 6px; font-size: 14px; color: var(--primary); }
+.kfv-sheet p { margin: 6px 0; }
+.kfv-info { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; padding: 9px 11px; margin: 8px 0; border-radius: 12px; background: rgba(0, 0, 0, .26); border: 1px solid var(--border-color); font-size: 12px; }
+.kfv-info span { color: var(--text-muted); }
+.kfv-info b { direction: ltr; text-align: right; color: #fff; }
+.kfv-fix { margin: 10px 0 0; padding: 10px 11px; border-radius: 12px; border: 1px solid var(--border-color); background: rgba(255, 255, 255, .04); }
+.kfv-fix h4 { margin: 0 0 3px; font-size: 12.5px; color: #fff; }
+.kfv-fix small { display: block; color: var(--text-muted); font-size: 11px; line-height: 1.6; }
+.kfv-code { display: block; direction: ltr; text-align: left; white-space: pre-wrap; word-break: break-all; margin: 7px 0; padding: 8px 9px; border-radius: 9px; background: #0b0f19; border: 1px solid rgba(255, 255, 255, .1); color: #a5f3c4; font: 11px/1.55 ui-monospace, Menlo, Consolas, monospace; user-select: all; }
+.kfv-foot { display: flex; gap: 8px; margin-top: 12px; }
+.kfv-foot .kfv-btn { flex: 1; padding: 9px 6px; font-size: 12.5px; }
 </style>
 </head>
 <body class="startup-bg auth-locked">
@@ -4229,7 +4238,6 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
                 <span id="searchMatchInfo" style="font-size: 11.5px; font-weight: bold; color: var(--primary); background: rgba(142,182,155,0.14); border: 1px solid rgba(142,182,155,0.3); padding: 2px 8px; border-radius: 20px; direction: ltr; display: none; margin-inline-start: auto; margin-inline-end: 8px;"></span>
                 <button class="close-search-btn" onclick="toggleSearchBar()"><svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M18 6 6 18M6 6l12 12"/></svg></button>
             </div>
-            <div class="kf-find" id="kfFind" style="display:none"><div class="kf-find-list" id="kfFindList"></div></div>
             <div class="search-row">
                 <div class="search-input-group" style="flex: 2;"><input type="text" id="searchInput" data-i18n="searchPlh" placeholder="گەڕان بەدوای..." oninput="updateSearchMatchInfo()" onkeydown="if(event.key === 'Enter') findNext(1)"></div>
                 <button class="search-btn" style="flex: 0; padding: 7px 10px;" onclick="findNext(-1)" title="Previous"><svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="m6 15 6-6 6 6"/></svg></button>
@@ -5903,7 +5911,7 @@ window.onload = () => {
                     currentSearchIndex = idx + 1;
                     const card = textareas[idx].closest('.subtitle-card');
                     document.querySelectorAll('.subtitle-card.search-hit').forEach(c => c.classList.remove('search-hit'));
-                    if (window.kfFindReveal) window.kfFindReveal(card); else card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     card.classList.add('search-hit');
                     clearTimeout(window.__kfSearchHitTimer);
                     window.__kfSearchHitTimer = setTimeout(() => card.classList.remove('search-hit'), 1500);
@@ -19121,211 +19129,328 @@ document.addEventListener('keydown', function (e) {
 </script>
 
 
-<script>
-/* ===== گەڕان: لیستی ئەنجامەکان (تەواو + نزیک)، ڕەنگکردنی پیتی دۆزراوە، لێدان بۆ چوونە سەر دێڕ ===== */
-(function () {
-    var MAX_ROWS = 120, MAX_NEAR = 24, WIN = 62;
-    var state = { sig: '', dirty: true, timer: null, exact: [], near: [] };
-    var $ = function (id) { return document.getElementById(id); };
 
-    // ---- ئاسانکردنی نووسینی کوردی/عەرەبی بۆ ئەنجامە نزیکەکان ----
-    var MAP = { 'ي': 'ی', 'ى': 'ی', 'ێ': 'ی', 'ك': 'ک', 'ە': 'ه', 'ھ': 'ه', 'ہ': 'ه', 'ة': 'ه', 'ۆ': 'و', 'ؤ': 'و', 'ڕ': 'ر', 'ڵ': 'ل', 'أ': 'ا', 'إ': 'ا', 'آ': 'ا', 'ٱ': 'ا', 'ئ': 'ا' };
-    function loose(s) {
-        s = String(s); var n = '', map = [];
-        for (var i = 0; i < s.length; i++) {
-            var ch = s.charAt(i), c = ch.charCodeAt(0);
-            if ((c >= 0x064B && c <= 0x065F) || c === 0x0670 || c === 0x0640 || c === 0x200C || c === 0x200D || c === 0x200E || c === 0x200F || (c >= 0x0300 && c <= 0x036F)) continue;
-            if (c >= 0x0660 && c <= 0x0669) ch = String.fromCharCode(48 + c - 0x0660);
-            else if (c >= 0x06F0 && c <= 0x06F9) ch = String.fromCharCode(48 + c - 0x06F0);
-            else { var lc = ch.toLowerCase(); if (lc.length === 1) ch = lc; if (MAP[ch]) ch = MAP[ch]; }
-            n += ch; map.push(i);
-        }
-        return { n: n, map: map };
+<script>
+/* ===== پشکنینی ڤیدیۆی نەخوێنراو: دەزانێت بۆچی وێنەکە ڕەشە و چارەسەر پیشان دەدات ===== */
+/* ---- Matroska / MP4 header inspection (pure functions, no DOM) ---- */
+var KFV = (function () {
+    var ID = { SEGMENT: 0x18538067, TRACKS: 0x1654AE6B, ENTRY: 0xAE, NUM: 0xD7, TYPE: 0x83, CODEC: 0x86, PRIV: 0x63A2,
+               VIDEO: 0xE0, AUDIO: 0xE1, PW: 0xB0, PH: 0xBA, LANG: 0x22B59C, CHANNELS: 0x9F, CLUSTER: 0x1F43B675 };
+
+    function readId(u8, p) {
+        var b = u8[p]; if (b === undefined) return null;
+        var len = 1, mask = 0x80;
+        while (len <= 4 && !(b & mask)) { len++; mask >>= 1; }
+        if (len > 4 || p + len > u8.length) return null;
+        var id = 0; for (var i = 0; i < len; i++) id = id * 256 + u8[p + i];
+        return [id, len];
     }
-    function allIndexes(hay, needle) {
-        var out = [], from = 0, at;
-        if (!needle) return out;
-        while ((at = hay.indexOf(needle, from)) !== -1) { out.push(at); from = at + Math.max(1, needle.length); }
+    function readSize(u8, p) {
+        var b = u8[p]; if (b === undefined) return null;
+        var len = 1, mask = 0x80;
+        while (len <= 8 && !(b & mask)) { len++; mask >>= 1; }
+        if (len > 8 || p + len > u8.length) return null;
+        var val = b & (mask - 1), ones = (val === mask - 1);
+        for (var i = 1; i < len; i++) { var bb = u8[p + i]; if (bb !== 0xFF) ones = false; val = val * 256 + bb; }
+        return [ones ? -1 : val, len];
+    }
+    function uint(u8, a, b) { var v = 0; for (var i = a; i < b && i < a + 6; i++) v = v * 256 + u8[i]; return v; }
+    function str(u8, a, b) { var s = ''; for (var i = a; i < b; i++) { if (!u8[i]) break; s += String.fromCharCode(u8[i]); } return s; }
+
+    function parseMkv(u8) {
+        var tracks = [], done = false;
+        function children(start, end, onChild) {
+            var p = start;
+            while (p < end) {
+                var idr = readId(u8, p); if (!idr) break;
+                var szr = readSize(u8, p + idr[1]); if (!szr) break;
+                var ds = p + idr[1] + szr[1], size = szr[0], de = size < 0 ? end : Math.min(end, ds + size);
+                onChild(idr[0], ds, de);
+                if (size < 0 || ds + size > end) break;
+                p = ds + size;
+            }
+        }
+        function entry(start, end) {
+            var t = {};
+            children(start, end, function (id, ds, de) {
+                if (id === ID.NUM) t.num = uint(u8, ds, de);
+                else if (id === ID.TYPE) t.type = uint(u8, ds, de);
+                else if (id === ID.CODEC) t.codec = str(u8, ds, de);
+                else if (id === ID.PRIV) t.priv = u8.subarray(ds, de);
+                else if (id === ID.LANG) t.lang = str(u8, ds, de);
+                else if (id === ID.VIDEO) children(ds, de, function (i2, a, b) { if (i2 === ID.PW) t.w = uint(u8, a, b); else if (i2 === ID.PH) t.h = uint(u8, a, b); });
+                else if (id === ID.AUDIO) children(ds, de, function (i2, a, b) { if (i2 === ID.CHANNELS) t.ch = uint(u8, a, b); });
+            });
+            tracks.push(t);
+        }
+        function top(start, end) {
+            children(start, end, function (id, ds, de) {
+                if (done) return;
+                if (id === ID.SEGMENT) top(ds, de);
+                else if (id === ID.TRACKS) children(ds, de, function (i2, a, b) { if (i2 === ID.ENTRY) entry(a, b); });
+                else if (id === ID.CLUSTER && tracks.length) done = true;
+            });
+        }
+        top(0, u8.length);
+        var v = tracks.filter(function (t) { return t.type === 1; })[0];
+        return {
+            container: 'mkv',
+            video: v ? describeVideo(v.codec, v.priv, v.w, v.h) : null,
+            audio: tracks.filter(function (t) { return t.type === 2; }).map(function (t) { return { codec: t.codec || '', lang: t.lang || '', ch: t.ch || 0 }; }),
+            subs: tracks.filter(function (t) { return t.type === 17; }).length
+        };
+    }
+
+    // ---- HEVC (hvcC) ----
+    function parseHvcC(p) {
+        if (!p || p.length < 23) return null;
+        return { space: p[1] >> 6, tier: (p[1] >> 5) & 1, profile: p[1] & 31,
+                 compat: ((p[2] << 24) | (p[3] << 16) | (p[4] << 8) | p[5]) >>> 0, cons: Array.prototype.slice.call(p, 6, 12),
+                 level: p[12], chroma: p[16] & 3, bits: (p[17] & 7) + 8 };
+    }
+    function hevcString(h) {
+        var rev = 0, c = h.compat; for (var i = 0; i < 32; i++) { rev = (rev * 2 + (c & 1)) >>> 0; c = c >>> 1; }
+        var cons = h.cons.slice(); while (cons.length > 1 && cons[cons.length - 1] === 0) cons.pop();
+        return 'hvc1.' + ['', 'A', 'B', 'C'][h.space] + h.profile + '.' + rev.toString(16).toUpperCase() + '.' + (h.tier ? 'H' : 'L') + h.level + '.' +
+               cons.map(function (x) { return x.toString(16).toUpperCase(); }).join('.');
+    }
+    // ---- H.264 (avcC + SPS) ----
+    function bitReader(b) {
+        var pos = 0;
+        function bit() { var v = (b[pos >> 3] >> (7 - (pos & 7))) & 1; pos++; return v; }
+        function ue() { var z = 0; while (!bit() && z < 32) z++; var v = 0; for (var i = 0; i < z; i++) v = v * 2 + bit(); return Math.pow(2, z) - 1 + v; }
+        return { bit: bit, ue: ue };
+    }
+    function parseAvcC(p) {
+        if (!p || p.length < 8) return null;
+        var o = { profile: p[1], compat: p[2], level: p[3], chroma: 1, bits: 8 };
+        if ([100, 110, 122, 244, 44, 83, 86, 118, 128, 138, 139, 134, 135].indexOf(o.profile) >= 0 && (p[5] & 31) >= 1) {
+            var len = (p[6] << 8) | p[7], sps = [];
+            for (var i = 0; i < len - 4 && 8 + 4 + i < p.length; i++) {            // strip emulation-prevention bytes (00 00 03)
+                var v = p[8 + 4 + i];
+                if (sps.length >= 2 && sps[sps.length - 1] === 0 && sps[sps.length - 2] === 0 && v === 3) continue;
+                sps.push(v);
+            }
+            try {
+                var r = bitReader(sps); r.ue();                                    // seq_parameter_set_id
+                o.chroma = r.ue(); if (o.chroma === 3) r.bit();
+                o.bits = r.ue() + 8;
+            } catch (e) { }
+        }
+        return o;
+    }
+    var HEVC_PROFILE = { 1: 'Main', 2: 'Main 10', 3: 'Main Still Picture', 4: 'Rext', 9: 'SCC', 11: 'SCC' };
+    var AVC_PROFILE = { 66: 'Baseline', 77: 'Main', 88: 'Extended', 100: 'High', 110: 'High 10', 122: 'High 4:2:2', 244: 'High 4:4:4', 44: 'CAVLC 4:4:4' };
+    function hex2(n) { return ('0' + n.toString(16)).slice(-2); }
+
+    function describeVideo(codecId, priv, w, h) {
+        var v = { w: w || 0, h: h || 0, codec: 'unknown', id: codecId || '' };
+        if (codecId === 'V_MPEGH/ISO/HEVC') {
+            v.codec = 'hevc';
+            var hv = parseHvcC(priv);
+            if (hv) { v.profile = HEVC_PROFILE[hv.profile] || ('idc ' + hv.profile); v.profileIdc = hv.profile; v.bits = hv.bits; v.chroma = hv.chroma; v.cstr = hevcString(hv); }
+        } else if (codecId === 'V_MPEG4/ISO/AVC') {
+            v.codec = 'h264';
+            var av = parseAvcC(priv);
+            if (av) { v.profile = AVC_PROFILE[av.profile] || ('idc ' + av.profile); v.profileIdc = av.profile; v.bits = av.bits; v.chroma = av.chroma; v.cstr = 'avc1.' + hex2(av.profile) + hex2(av.compat) + hex2(av.level); }
+        } else if (codecId === 'V_AV1') v.codec = 'av1';
+        else if (codecId === 'V_VP9') v.codec = 'vp9';
+        else if (codecId === 'V_VP8') v.codec = 'vp8';
+        else if (/^V_MPEG4\/ISO\/ASP|V_MS\/VFW/.test(codecId || '')) v.codec = 'mpeg4';
+        else if (/^V_MPEG2/.test(codecId || '')) v.codec = 'mpeg2';
+        return v;
+    }
+
+    // ---- MP4: look for the codec boxes (moov may be at the start or the end) ----
+    function findBox(u8, name, from) {
+        var a = name.charCodeAt(0), b = name.charCodeAt(1), c = name.charCodeAt(2), d = name.charCodeAt(3);
+        for (var i = from || 0; i + 4 < u8.length; i++) if (u8[i] === a && u8[i + 1] === b && u8[i + 2] === c && u8[i + 3] === d) return i;
+        return -1;
+    }
+    function scanMp4(u8) {
+        var i = findBox(u8, 'hvcC');
+        if (i >= 0) { var hv = parseHvcC(u8.subarray(i + 4, i + 4 + 80)); if (hv) return mp4v('hevc', hv.profile, HEVC_PROFILE, hv.bits, hv.chroma, hevcString(hv)); }
+        i = findBox(u8, 'avcC');
+        if (i >= 0) { var av = parseAvcC(u8.subarray(i + 4, i + 4 + 120)); if (av) return mp4v('h264', av.profile, AVC_PROFILE, av.bits, av.chroma, 'avc1.' + hex2(av.profile) + hex2(av.compat) + hex2(av.level)); }
+        if (findBox(u8, 'av1C') >= 0) return { container: 'mp4', video: { codec: 'av1', w: 0, h: 0 }, audio: [], subs: 0 };
+        return { container: 'mp4', video: null, audio: [], subs: 0 };
+    }
+    function mp4v(codec, idc, names, bits, chroma, cstr) {
+        return { container: 'mp4', video: { codec: codec, profile: names[idc] || ('idc ' + idc), profileIdc: idc, bits: bits, chroma: chroma, cstr: cstr, w: 0, h: 0 }, audio: [], subs: 0 };
+    }
+
+    function inspectBytes(head, tail) {
+        if (head[0] === 0x1A && head[1] === 0x45 && head[2] === 0xDF && head[3] === 0xA3) return parseMkv(head);
+        if (String.fromCharCode(head[4], head[5], head[6], head[7]) === 'ftyp') {
+            var r = scanMp4(head); if (!r.video && tail) r = scanMp4(tail); return r;
+        }
+        return { container: 'other', video: null, audio: [], subs: 0 };
+    }
+    return { inspectBytes: inspectBytes, parseMkv: parseMkv, scanMp4: scanMp4, hevcString: hevcString };
+})();
+
+(function () {
+    var video = document.getElementById('preview-video');
+    if (!video) return;
+    var S = { blob: null, info: null, infoP: Promise.resolve(null), shown: false, timer: null };
+    var MB2 = 2 * 1024 * 1024;
+
+    function inspect(blob) {
+        return blob.slice(0, MB2).arrayBuffer().then(function (hb) {
+            var head = new Uint8Array(hb);
+            if ((head[0] === 0x47 && head[188] === 0x47) || (head[4] === 0x47 && head[196] === 0x47)) return { container: 'ts', video: null, audio: [], subs: 0, size: blob.size };
+            var mp4 = String.fromCharCode(head[4], head[5], head[6], head[7]) === 'ftyp' && blob.size > MB2;
+            var tailP = mp4 ? blob.slice(Math.max(0, blob.size - MB2)).arrayBuffer() : Promise.resolve(null);
+            return tailP.then(function (tb) { var r = KFV.inspectBytes(head, tb ? new Uint8Array(tb) : null); r.size = blob.size; return r; });
+        });
+    }
+
+    var CODEC = { hevc: 'HEVC (H.265)', h264: 'H.264 (AVC)', av1: 'AV1', vp9: 'VP9', vp8: 'VP8', mpeg4: 'MPEG-4 / Xvid', mpeg2: 'MPEG-2', unknown: '؟' };
+    var CHROMA = { 0: '4:0:0', 1: '4:2:0', 2: '4:2:2', 3: '4:4:4' };
+    var AUDIO = { 'A_AAC': 'AAC', 'A_AC3': 'AC-3 (Dolby)', 'A_EAC3': 'E-AC-3', 'A_DTS': 'DTS', 'A_FLAC': 'FLAC', 'A_OPUS': 'Opus', 'A_VORBIS': 'Vorbis', 'A_MPEG/L3': 'MP3', 'A_TRUEHD': 'TrueHD' };
+    var AUDIO_BAD = { 'A_AC3': 1, 'A_EAC3': 1, 'A_DTS': 1, 'A_TRUEHD': 1 };
+    function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+    function aName(a) { var k = (a.codec || '').replace(/\/.*$/, function (m) { return m; }); return AUDIO[a.codec] || AUDIO[k] || a.codec || '؟'; }
+
+    // ---- هەموو زانیارییەکان وەک ڕیزی تەنک ----
+    function rows(info) {
+        var r = [], v = info && info.video;
+        if (!info) return r;
+        r.push(['کۆنتەینەر', (info.container || '').toUpperCase()]);
+        if (v) {
+            r.push(['کۆدەکی ڤیدیۆ', CODEC[v.codec] || v.codec]);
+            if (v.profile) r.push(['Profile', v.profile]);
+            if (v.bits) r.push(['قووڵایی ڕەنگ', v.bits + '-bit']);
+            if (v.chroma !== undefined) r.push(['Chroma', CHROMA[v.chroma] || v.chroma]);
+            if (v.w && v.h) r.push(['ڕەزۆلووشن', v.w + ' × ' + v.h]);
+        }
+        if (info.audio && info.audio.length) r.push(['دەنگ', info.audio.map(function (a) { return aName(a) + (a.lang && a.lang !== 'und' ? ' (' + a.lang + ')' : ''); }).join('، ')]);
+        if (info.size) r.push(['قەبارە', (info.size / 1048576 >= 1024 ? (info.size / 1073741824).toFixed(2) + ' GB' : Math.round(info.size / 1048576) + ' MB')]);
+        return r;
+    }
+    function summary(info) {
+        var v = info && info.video; if (!v) return '';
+        return [CODEC[v.codec] || v.codec, v.profile, v.bits ? v.bits + '-bit' : '', v.chroma !== undefined ? CHROMA[v.chroma] : '', (info.container || '').toUpperCase()].filter(Boolean).join(' · ');
+    }
+    function reason(info) {
+        var v = info && info.video;
+        if (!v) return 'وێبگەڕەکەت نەیتوانی وێنەی ئەم ڤیدیۆیە بخوێنێتەوە. ئەمە زۆرجار دەگەڕێتەوە بۆ کۆدەکی ڤیدیۆکە (نەک تێکچوونی فایلەکە).';
+        if (v.codec === 'hevc') {
+            if (v.profileIdc === 4 || (v.chroma !== undefined && v.chroma > 1))
+                return 'ئەم ڤیدیۆیە HEVC ـە لە جۆری «' + (v.profile || 'Rext') + '» (' + (CHROMA[v.chroma] || '') + '، ' + (v.bits || '') + '-bit). زۆربەی مۆبایل و وێبگەڕەکان تەنها HEVC Main و Main 10 (4:2:0) بە سەختەواڵە دەکەنەوە، بۆیە ئەمەیان ناخوێنرێتەوە. ئەپی MX Player دەیخوێنێتەوە چونکە دیکۆدەری نەرمەواڵەی خۆی هەیە.';
+            return 'ئەم ڤیدیۆیە HEVC ـە. کرۆم HEVC تەنها کاتێک دەکاتەوە کە ئامێرەکە بە سەختەواڵە پشتگیری بکات، و زۆرجار تەنها لەناو MP4، نەک MKV.';
+        }
+        if (v.codec === 'h264' && ((v.bits && v.bits > 8) || (v.chroma !== undefined && v.chroma > 1)))
+            return 'ئەم H.264 ـە ' + (v.bits || '') + '-bit (' + (v.profile || '') + ') ـە، و کرۆم تەنها H.264 ی ٨-bit ی ٤:٢:٠ دەکاتەوە.';
+        if (v.codec === 'mpeg4' || v.codec === 'mpeg2') return 'ئەم کۆدەکە کۆنە (' + CODEC[v.codec] + ') و وێبگەڕەکان ناخوێننەوە.';
+        return 'کۆدەکی ڤیدیۆکە (' + (CODEC[v.codec] || '؟') + ') لەم ئامێر/وێبگەڕەدا پشتگیری ناکرێت.';
+    }
+    // ---- فەرمانەکانی ffmpeg ----
+    function cmds(info, name) {
+        var nm = name || 'input.mkv', base = nm.replace(/\.[^.]+$/, '');
+        var q = function (s) { return '"' + s.replace(/"/g, '\\"') + '"'; };
+        var v = info && info.video, out = {};
+        var cs = v && v.cstr;
+        var mp4ok = !!(cs && video.canPlayType && video.canPlayType('video/mp4; codecs="' + cs + '"'));
+        // گۆڕینی کۆنتەینەر (بێ کەمبوونەوەی کوالێتی): تەنها ئەگەر ئامێرەکە کۆدەکەکە لەناو MP4 بخوێنێتەوە
+        out.remux = (info && info.container === 'mkv' && v && (v.codec === 'hevc' || v.codec === 'h264') && mp4ok)
+            ? 'ffmpeg -i ' + q(nm) + ' -map 0:v:0 -map 0:a:0? -c copy' + (v.codec === 'hevc' ? ' -tag:v hvc1' : '') + ' -movflags +faststart ' + q(base + '.mp4') : null;
+        // گۆڕین بۆ H.264 (هەمان ڕەزۆلووشن، چونکە قەبارەی ژێرنووس بە ڕەزۆلووشنی ڤیدیۆ حیساب دەکرێت)
+        out.transcode = 'ffmpeg -i ' + q(nm) + ' -map 0:v:0 -map 0:a:0? -c:v libx264 -preset veryfast -crf 24 -pix_fmt yuv420p -c:a aac -b:a 128k -sn -movflags +faststart ' + q(base + '_h264.mp4');
+        out.mp4ok = mp4ok;
         return out;
     }
-    function exactRanges(text, term) {                       // هەمان گەڕانی پێشوو (substring، بێ گوێدانە گەورە/بچووکی پیتی لاتین)
-        var t = term.toLowerCase(), v = text.toLowerCase();
-        return allIndexes(v, t).map(function (i) { return [i, i + t.length]; });
-    }
-    function looseRanges(text, term) {
-        var L = loose(text), q = loose(term).n;
-        if (!q) return [];
-        return allIndexes(L.n, q).map(function (i) { return [L.map[i], L.map[i + q.length - 1] + 1]; });
-    }
-    function lev(a, b, max) {                                  // دووری Levenshtein (بە ڕاگرتنی زوو)
-        var la = a.length, lb = b.length;
-        if (Math.abs(la - lb) > max) return max + 1;
-        var prev = [], cur = [], i, j;
-        for (j = 0; j <= lb; j++) prev[j] = j;
-        for (i = 1; i <= la; i++) {
-            cur[0] = i; var rowMin = i;
-            for (j = 1; j <= lb; j++) {
-                var cost = a.charCodeAt(i - 1) === b.charCodeAt(j - 1) ? 0 : 1;
-                cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
-                if (cur[j] < rowMin) rowMin = cur[j];
-            }
-            if (rowMin > max) return max + 1;
-            var t = prev; prev = cur; cur = t;
-        }
-        return prev[lb];
-    }
-    var TOKEN = /[^\s.,;:!?،؛؟"'“”‘’()\[\]{}«»\-–—…\/\\|<>]+/g;
-    function fuzzyRange(text, term) {                          // نزیکترین وشە/وشەکان بە دووری ڕێگەپێدراو (AUTO: کورت = ٠، ناوەند = ١، درێژ = ٢)
-        var q = loose(term).n.replace(/\s+/g, ' ').trim();
-        var thr = q.length <= 2 ? 0 : (q.length <= 5 ? 1 : 2);
-        if (!thr) return null;
-        var qw = q.split(' '), k = qw.length, toks = [], m;
-        TOKEN.lastIndex = 0;
-        while ((m = TOKEN.exec(text))) toks.push({ s: m.index, e: m.index + m[0].length, n: loose(m[0]).n });
-        var best = null;
-        for (var i = 0; i + k <= toks.length; i++) {
-            var cand = toks.slice(i, i + k).map(function (t) { return t.n; }).join(' ');
-            if (q.length <= 5 && cand.charAt(0) !== q.charAt(0)) continue;      // وشەی کورت: پیتی یەکەم دەبێت یەک بێت (کەمکردنەوەی تێکەڵاوی)
-            var d = lev(cand, q, thr);
-            if (d <= thr && d > 0 && (!best || d < best.d)) best = { d: d, r: [toks[i].s, toks[i + k - 1].e] };
-        }
-        return best;
-    }
 
-    // ---- بنیاتنانی ئەنجامەکان ----
-    function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-    function snippet(text, ranges) {
-        // بۆ نیشاندان: دێڕی نوێ (\n) دەبێتە « ↵ »؛ پەنجەرەیەک لە دەوروبەری یەکەم دۆزراوە دەبڕدرێت
-        var fmt = function (s) { return esc(s).replace(/\n/g, ' ↵ '); };
-        var first = ranges[0][0], start = Math.max(0, first - 22), end = Math.min(text.length, start + WIN);
-        if (end === text.length) start = Math.max(0, end - WIN);
-        var html = start > 0 ? '…' : '', pos = start;
-        ranges.forEach(function (r) {
-            var a = Math.max(r[0], start), b = Math.min(r[1], end);
-            if (b <= a || a < pos) return;
-            html += fmt(text.slice(pos, a)) + '<mark>' + fmt(text.slice(a, b)) + '</mark>';
-            pos = b;
+    // ---- ڕووکار ----
+    function copy(text) {
+        var done = function () { try { showToast('کۆپی کرا', 'success'); } catch (e) { } };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, function () { fallback(); });
+        else fallback();
+        function fallback() { var t = document.createElement('textarea'); t.value = text; t.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); done(); } catch (e) { } document.body.removeChild(t); }
+    }
+    var ov = null;
+    function openDialog() {
+        var info = S.info, nm = (S.blob && S.blob.name) || '', c = cmds(info, nm), html = '';
+        html += '<h3>ئەم ڤیدیۆیە بۆچی نابینرێت؟</h3><p>' + esc(reason(info)) + '</p>';
+        var rs = rows(info);
+        if (rs.length) html += '<div class="kfv-info">' + rs.map(function (r) { return '<span>' + esc(r[0]) + '</span><b>' + esc(r[1]) + '</b>'; }).join('') + '</div>';
+        var badAudio = info && info.audio && info.audio.some(function (a) { return AUDIO_BAD[a.codec]; });
+        if (badAudio) html += '<p>تێبینی: دەنگی ئەم فایلە (' + esc(aName(info.audio[0])) + ') لە کرۆمدا ڕەنگە نەخوێنرێتەوە. فەرمانی خوارەوە دەنگیش دەگۆڕێت بۆ AAC.</p>';
+        html += '<p><b>فایلەکە تێک نییە.</b> تەنها وێبگەڕەکە ناتوانێت وێنەکەی بخوێنێتەوە. دوو چارەسەر هەیە:</p>';
+        var n = 1;
+        if (c.remux) html += '<div class="kfv-fix"><h4>' + (n++) + '. گۆڕینی کۆنتەینەر بۆ MP4 (بێ کەمبوونەوەی کوالێتی، چەند چرکەیەک)</h4><small>ئامێرەکەت ئەم کۆدەکە لەناو MP4 دەخوێنێتەوە، تەنها MKV ـەکە کێشەیە.</small><code class="kfv-code">' + esc(c.remux) + '</code><button type="button" class="kfv-btn" data-copy="remux">کۆپی</button></div>';
+        html += '<div class="kfv-fix"><h4>' + (n++) + '. گۆڕین بۆ H.264 (بۆ هەموو وێبگەڕێک)</h4><small>هەمان ڕەزۆلووشن دەمێنێتەوە. دەنگیش دەبێتە AAC، و ژێرنووسی ناو فایلەکە لادەبرێت (-sn) چونکە ئەپەکە فایلی ژێرنووسی جیاوازی هەیە. کاتی گۆڕین بە ئامێرەکەت دەبەستێت.</small><code class="kfv-code">' + esc(c.transcode) + '</code><button type="button" class="kfv-btn" data-copy="transcode">کۆپی</button></div>';
+        html += '<p style="margin-top:10px"><b>بەبێ وێنە بەردەوامبە:</b> دەتوانیت دەقەکان و کاتەکان هەر دەستکاری بکەیت. ڤیدیۆ گۆڕدراوەکە تەنها بۆ پێشاندانی دەستکاریکردنە، و هەر ڤیدیۆ ئەسڵییەکە بۆ هاردسەب بەکاردێنیت.</p>';
+        html += '<div class="kfv-foot"><button type="button" class="kfv-btn" data-act="close">داخستن</button></div>';
+        if (!ov) {
+            ov = document.createElement('div'); ov.className = 'kfv-ov';
+            ov.innerHTML = '<div class="kfv-sheet"></div>';
+            document.body.appendChild(ov);
+            ov.addEventListener('pointerdown', function (e) { if (e.target === ov) ov.classList.remove('open'); });
+            ov.addEventListener('click', function (e) {
+                var b = e.target.closest ? e.target.closest('button') : null; if (!b) return;
+                if (b.getAttribute('data-act') === 'close') ov.classList.remove('open');
+                var k = b.getAttribute('data-copy'); if (k && S.cmd && S.cmd[k]) copy(S.cmd[k]);
+            });
+        }
+        S.cmd = c;
+        ov.querySelector('.kfv-sheet').innerHTML = html;
+        ov.classList.add('open');
+    }
+    var banner = null;
+    function hideBanner() { if (banner && banner.parentNode) banner.parentNode.removeChild(banner); banner = null; }
+    function showBanner(kind) {
+        var w = document.getElementById('video-player-wrapper'); if (!w) return;
+        hideBanner();
+        if (getComputedStyle(w).position === 'static') w.style.position = 'relative';
+        banner = document.createElement('div'); banner.className = 'kfv-banner'; banner.setAttribute('role', 'alert');
+        var sum = summary(S.info);
+        banner.innerHTML = '<span class="kfv-b-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8L22.3 20.6H1.7L12 2.8z" fill="currentColor" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M12 9.4v5.2" fill="none" stroke="#0f172a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.5" r="1.4" fill="#0f172a"/></svg></span>' +
+            '<span class="kfv-b-tx"><b>وێنەی ئەم ڤیدیۆیە لەم وێبگەڕەدا نابینرێت</b><span class="kfv-b-sub">' + (sum ? esc(sum) : 'کۆدەکەکە پشتگیری ناکرێت') + '</span></span>' +
+            '<button type="button" class="kfv-btn go" data-b="fix">چارەسەر</button><button type="button" class="kfv-btn" data-b="x" aria-label="داخستن">×</button>';
+        banner.addEventListener('click', function (e) {
+            var b = e.target.closest ? e.target.closest('button') : null; if (!b) return;
+            e.stopPropagation();
+            if (b.getAttribute('data-b') === 'fix') openDialog(); else hideBanner();
         });
-        return html + fmt(text.slice(pos, end)) + (end < text.length ? '…' : '');
+        ['pointerdown', 'touchstart', 'mousedown'].forEach(function (n) { banner.addEventListener(n, function (e) { e.stopPropagation(); }); });
+        w.appendChild(banner);
+        try { showToast('وێنەی ڤیدیۆکە نابینرێت، چارەسەر لەسەر ڤیدیۆکە دەبینیت', 'warning'); } catch (e) { }
     }
-    function compute(term) {
-        var tas = document.querySelectorAll('.subtitle-kurd textarea');
-        var exact = [], near = [];
-        for (var i = 0; i < tas.length; i++) {
-            var text = tas[i].value;
-            var er = exactRanges(text, term);
-            if (er.length) { exact.push({ i: i, text: text, r: er }); continue; }
-            var lr = looseRanges(text, term);
-            if (lr.length) { near.push({ i: i, text: text, r: lr, d: 0 }); continue; }
-            var fz = fuzzyRange(text, term);
-            if (fz) near.push({ i: i, text: text, r: [fz.r], d: fz.d });
-        }
-        near.sort(function (a, b) { return a.d - b.d || a.i - b.i; });
-        return { exact: exact, near: near };
-    }
-    function row(it, cls) {
-        return '<button type="button" class="kf-find-row' + (cls ? ' ' + cls : '') + '" data-i="' + it.i + '"><span class="kf-find-n">#' + (it.i + 1) + '</span><span class="kf-find-t" dir="auto">' + snippet(it.text, it.r) + '</span></button>';
-    }
-    function activeIdx() { return (typeof currentSearchIndex !== 'undefined') ? currentSearchIndex - 1 : -1; }
-    function markActive(scrollTo) {
-        var list = $('kfFindList'); if (!list) return;
-        var cur = activeIdx(), hit = null;
-        list.querySelectorAll('.kf-find-row').forEach(function (b) {
-            var on = +b.getAttribute('data-i') === cur;
-            b.classList.toggle('active', on);
-            if (on) hit = b;
+    function problem(kind) {
+        if (S.shown) return;
+        S.shown = true;
+        S.infoP.then(function (info) {
+            if (info && info.container === 'ts') { S.shown = false; return; }          // MPEG-TS بە پلەیەری خۆی دەخوێنرێتەوە
+            if (S.shown) showBanner(kind);
         });
-        if (hit && scrollTo) {
-            var top = hit.offsetTop, bot = top + hit.offsetHeight;
-            if (top < list.scrollTop) list.scrollTop = Math.max(0, top - 4);
-            else if (bot > list.scrollTop + list.clientHeight) list.scrollTop = bot - list.clientHeight + 4;
-        }
-    }
-    function sizeBox() {
-        var panel = $('searchBarPanel'); if (!panel) return;
-        var vv = window.visualViewport, h = (vv ? vv.height : window.innerHeight) / (window.__kfZoom || 1);
-        panel.style.setProperty('--kf-find-max', Math.round(Math.max(96, Math.min(240, h * 0.27))) + 'px');
-    }
-    function render() {
-        var panel = $('searchBarPanel'), box = $('kfFind'), list = $('kfFindList'), si = $('searchInput');
-        if (!panel || !box || !list || !si) return;
-        var term = si.value.trim();
-        if (!term || panel.style.display !== 'block') { box.style.display = 'none'; list.innerHTML = ''; state.sig = ''; return; }
-        sizeBox();
-        var sig = term + '#' + document.querySelectorAll('.subtitle-kurd textarea').length;
-        if (sig === state.sig && !state.dirty) { markActive(true); return; }
-        state.sig = sig; state.dirty = false;
-        var res = compute(term), html = '';
-        var showN = res.exact.slice(0, MAX_ROWS);
-        if (!res.exact.length && res.near.length) html += '<div class="kf-find-label">هیچ ئەنجامێکی تەواو نییە — ئەمانە نزیکن</div>';
-        html += showN.map(function (it) { return row(it, ''); }).join('');
-        if (res.exact.length > MAX_ROWS) html += '<div class="kf-find-more">+' + (res.exact.length - MAX_ROWS) + ' دێڕی تر — پیتێکی تر بنووسە بۆ کەمکردنەوە</div>';
-        if (res.exact.length && res.near.length) html += '<div class="kf-find-label">نزیکەکان</div>';
-        html += res.near.slice(0, MAX_NEAR).map(function (it) { return row(it, 'kf-find-near'); }).join('');
-        if (!res.exact.length && !res.near.length) html = '<div class="kf-find-empty">هیچ ئەنجامێک نییە</div>';
-        list.innerHTML = html;
-        list.scrollTop = 0;
-        box.style.display = 'block';
-        markActive(false);
-    }
-    function schedule() { clearTimeout(state.timer); state.timer = setTimeout(render, 90); }
-
-    // ---- گەیشتن بە دێڕ (لەناو شوێنی بەتاڵی سەرەوە، نەک لە پشت پەنجەرەی گەڕان و کیبۆرد) ----
-    function scroller(el) {
-        for (var n = el && el.parentElement; n; n = n.parentElement) {
-            var oy = getComputedStyle(n).overflowY;
-            if ((oy === 'auto' || oy === 'scroll') && n.scrollHeight > n.clientHeight) return n;
-        }
-        return null;
-    }
-    function reveal(card) {
-        try {
-            var panel = $('searchBarPanel');
-            var sc = scroller(card);
-            var freeBottom = (panel && panel.style.display === 'block') ? panel.getBoundingClientRect().top : window.innerHeight;
-            var freeTop = sc ? Math.max(sc.getBoundingClientRect().top, 0) + 6 : 70;
-            var r = card.getBoundingClientRect();
-            var delta = (r.height > freeBottom - freeTop - 10) ? (r.top - freeTop) : ((r.top + r.height / 2) - (freeTop + freeBottom) / 2);
-            if (sc) sc.scrollBy({ top: delta, behavior: 'smooth' }); else window.scrollBy({ top: delta, behavior: 'smooth' });
-        } catch (e) { card.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
-    }
-    window.kfFindReveal = reveal;
-    function goto(idx) {
-        var ta = document.querySelectorAll('.subtitle-kurd textarea')[idx]; if (!ta) return;
-        currentSearchIndex = idx + 1;                          // بۆ ئەوەی «گۆڕین» لەسەر ئەم دێڕە کار بکات
-        var card = ta.closest('.subtitle-card');
-        document.querySelectorAll('.subtitle-card.search-hit').forEach(function (c) { c.classList.remove('search-hit'); });
-        if (card) {
-            reveal(card);
-            card.classList.add('search-hit');
-            clearTimeout(window.__kfSearchHitTimer);
-            window.__kfSearchHitTimer = setTimeout(function () { card.classList.remove('search-hit'); }, 1800);
-        }
-        if (typeof updateSearchMatchInfo === 'function') updateSearchMatchInfo();
-        markActive(false);
     }
 
-    // ---- هەڵواسین بە فەنکشنە هەبووەکانەوە ----
-    var listEl = $('kfFindList');
-    if (listEl) listEl.addEventListener('click', function (e) {
-        var b = e.target.closest ? e.target.closest('.kf-find-row') : null;
-        if (b) goto(+b.getAttribute('data-i'));
+    // ---- دۆزینەوەی کێشە لە کاتی کارکردندا ----
+    video.addEventListener('loadstart', function () { S.shown = false; hideBanner(); clearTimeout(S.timer); });
+    video.addEventListener('emptied', function () { hideBanner(); });
+    video.addEventListener('loadedmetadata', function () { if (video.videoWidth === 0 && video.duration > 0) problem('novideo'); });
+    video.addEventListener('error', function () { if (video.error && video.getAttribute('src')) problem('error'); });
+    video.addEventListener('playing', function () {
+        clearTimeout(S.timer);
+        S.timer = setTimeout(function () {
+            if (video.paused || video.ended || video.currentTime < 0.3 || !video.getVideoPlaybackQuality) return;
+            var info = S.info, v = info && info.video;
+            var suspicious = !v || v.codec === 'hevc' || v.codec === 'mpeg4' || v.codec === 'mpeg2' || (v.bits && v.bits > 8) || (v.chroma !== undefined && v.chroma > 1);
+            if (suspicious && video.getVideoPlaybackQuality().totalVideoFrames === 0) problem('noframes');
+        }, 1800);
     });
-    function wrap(name, after) {
-        var orig = window[name];
-        if (typeof orig !== 'function') return;
-        window[name] = function () { var r = orig.apply(this, arguments); try { after(); } catch (e) { } return r; };
+
+    // ---- هەڵواسین بە playVideoSource ـەوە ----
+    var orig = window.playVideoSource;
+    if (typeof orig === 'function') {
+        window.playVideoSource = function (src, blob) {
+            S.blob = blob || null; S.info = null; S.shown = false;
+            S.infoP = blob ? inspect(blob).then(function (i) { S.info = i; return i; }, function () { return null; }) : Promise.resolve(null);
+            return orig.apply(this, arguments);
+        };
     }
-    wrap('updateSearchMatchInfo', schedule);
-    wrap('toggleSearchBar', function () { state.dirty = true; sizeBox(); schedule(); });
-    wrap('replaceText', function () { state.dirty = true; schedule(); });
-    wrap('replaceAllText', function () { state.dirty = true; schedule(); });
-    document.addEventListener('input', function (e) {
-        var t = e.target;
-        if (t && t.matches && t.matches('.subtitle-kurd textarea')) { state.dirty = true; var p = $('searchBarPanel'); if (p && p.style.display === 'block') schedule(); }
-    }, true);
-    if (window.visualViewport) { window.visualViewport.addEventListener('resize', sizeBox); }
-    window.__kfFindCore = { loose: loose, exactRanges: exactRanges, looseRanges: looseRanges, fuzzyRange: fuzzyRange, snippet: snippet, lev: lev };
+    window.__kfvDiag = { rows: rows, summary: summary, reason: reason, cmds: cmds, inspect: inspect };
 })();
 </script>
 </body>

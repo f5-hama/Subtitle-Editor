@@ -3310,7 +3310,7 @@ function kfTogglePw(btn){
             if (!header || !/\[Events\]/i.test(header)) {
                 if (!header) header = `[Script Info]\r\nTitle: ${baseName}\r\nScriptType: v4.00+\r\nWrapStyle: 0\r\nScaledBorderAndShadow: yes`;
                 header += '\r\n\r\n[Events]\r\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text';
-            } else if (!/Format:\s*Layer/i.test(header)) {
+            } else if (!/\[Events\][\s\S]*?Format:/i.test(header)) {
                 header += '\r\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text';
             }
 
@@ -3346,13 +3346,19 @@ function kfTogglePw(btn){
         }
 
         if (mkvIsVtt(track)) {
-            const out = ['WEBVTT\r\n'];
+            const hd = track.codecPrivate && track.codecPrivate.length ? new TextDecoder('utf-8').decode(track.codecPrivate).replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n').trim() : '';
+            const out = [(/^WEBVTT/.test(hd) ? hd : 'WEBVTT') + '\r\n'];
+            let n = 0;
             blocks.forEach((b, i) => {
-                const clean = b.text.replace(/\\N/g, '\r\n').replace(/\r/g, '').trim();
-                if (!clean) return;
-                out.push(`${formatTimeVTT(times[i][0])} --> ${formatTimeVTT(times[i][1])}\r\n${clean}\r\n`);
+                const ls = b.text.replace(/\r/g, '').split('\n');
+                // بلۆکی Matroska: دێڕی ١ = settings، دێڕی ٢ = identifier، ئەوانی تر = دەق
+                const st = ls.length >= 3 ? ls[0].trim() : '', id = ls.length >= 3 ? ls[1].trim() : '';
+                const body = (ls.length >= 3 ? ls.slice(2) : ls).join('\r\n').trim();
+                if (!body) return;
+                n++;
+                out.push((id ? id + '\r\n' : '') + `${formatTimeVTT(times[i][0])} --> ${formatTimeVTT(times[i][1])}${st ? ' ' + st : ''}\r\n${body}\r\n`);
             });
-            return { content: '\uFEFF' + out.join('\r\n'), ext: 'vtt', count: blocks.length };
+            return { content: '\uFEFF' + out.join('\r\n'), ext: 'vtt', count: n };
         }
 
         const out = [];
@@ -3397,6 +3403,10 @@ function kfTogglePw(btn){
         if (!track) return;
         if (track.encoded) { showToast('ئەم تراکە کۆدکراوە (زلیب/هێدەر) و پشتگیری ناکرێت.', 'error'); return; }
 
+        if (!/S_TEXT\/(UTF8|ASCII|SSA|ASS|WEBVTT)|^S_(SSA|ASS)$|S_HDMV\/PGS/i.test(track.codecId || '')) {
+            showToast('ئەم جۆرە ژێرنووسە (' + (track.codecId || '?') + ') هێشتا پشتگیری ناکرێت.', 'warning');
+            return;
+        }
         const isPgs = mkvIsPgs(track);
         if (openInEditor && isPgs) {
             showToast('ژێرنووسی وێنەیی (PGS) تەنها دادەبەزێت و ناکرێت لە ئەدیتۆری دەق بکرێتەوە.', 'warning');
@@ -19364,17 +19374,17 @@ var KFV = (function () {
     }
     async function pickAudio(trackNo, native, label) {
         var my = ++S.n; stopAud();
-        if (native) { S.ui.firstChild.textContent = '🔊 ' + label; return; }
-        S.ui.firstChild.textContent = '… ' + label;
+        if (native) { setLab(label); return; }
+        setLab('… ' + label);
         try {
             var blob = await extractAudioTrack(trackNo, true);
             if (!blob || my !== S.n) return;
             var a = new Audio(); S.url = URL.createObjectURL(blob); a.src = S.url; a.volume = video.volume;
-            a.onerror = function () { stopAud(); S.ui.firstChild.textContent = '🔊'; showToast('ئەم دەنگە لەم وێبگەڕەدا ناخوێنرێتەوە', 'error'); };
+            a.onerror = function () { stopAud(); setLab('دەنگ'); showToast('ئەم دەنگە لەم وێبگەڕەدا ناخوێنرێتەوە', 'error'); };
             S.aud = a; bindAud(a); video.muted = true;
             a.currentTime = video.currentTime; if (!video.paused) a.play().catch(function () { });
-            S.ui.firstChild.textContent = '🔊 ' + label;
-        } catch (e) { S.ui.firstChild.textContent = '🔊'; }
+            setLab(label);
+        } catch (e) { setLab('دەنگ'); }
     }
     async function openMenu() {
         var old = S.ui.querySelector('.kfa-menu'); if (old) { old.remove(); return; }
@@ -19382,7 +19392,7 @@ var KFV = (function () {
         try { if (!mkvParsedTracks.length || mkvParsedTracks._f !== S.blob) { await scanMkvTracks(S.blob, id); mkvParsedTracks._f = S.blob; } } catch (e) { return; }
         var ts = mkvParsedTracks.filter(function (t) { return t.type === 2; });
         var nat = ts.find(function (t) { return t.isDefault; }) || ts[0];
-        var m = el('div', 'position:absolute;top:100%;left:0;margin-top:6px;min-width:190px;max-height:55vh;overflow:auto;background:#111827;border:1px solid #334155;border-radius:12px;padding:4px;direction:ltr;');
+        var q = S.ui.getBoundingClientRect(), m = el('div', 'position:absolute;' + (q.top > innerHeight / 2 ? 'bottom:100%;margin-bottom:6px;' : 'top:100%;margin-top:6px;') + (q.left > innerWidth / 2 ? 'right:0;' : 'left:0;') + 'min-width:190px;max-height:45vh;overflow:auto;background:#111827;border:1px solid #334155;border-radius:12px;padding:4px;direction:ltr;');
         m.className = 'kfa-menu';
         ts.forEach(function (t, i) {
             var lb = (t.name || t.lang || 'und') + ' · ' + (t.codecId || '').replace('A_', '');
@@ -19393,16 +19403,29 @@ var KFV = (function () {
         });
         S.ui.appendChild(m);
     }
+    var ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
+    function setLab(t) { if (S.ui) S.ui.querySelector('.kfa-t').textContent = t; }
     function showUi() {
         if (S.ui) return;
-        if (getComputedStyle(wrap).position === 'static') wrap.style.position = 'relative';
-        var u = el('div', 'position:absolute;top:calc(10px + env(safe-area-inset-top,0px));left:10px;z-index:30;');
-        var b = el('button', 'padding:7px 11px;border-radius:999px;border:1px solid rgba(255,255,255,.3);background:rgba(15,23,42,.8);color:#fff;font-size:12px;');
-        b.type = 'button'; b.textContent = '🔊 دەنگ'; b.onclick = function (ev) { ev.stopPropagation(); openMenu(); };
-        u.appendChild(b);
-        ['pointerdown', 'touchstart', 'mousedown'].forEach(function (n) { u.addEventListener(n, function (e) { e.stopPropagation(); }); });
-        wrap.appendChild(u); S.ui = u;
+        var r = wrap.getBoundingClientRect(), p = S.pos || { x: r.left + 10, y: Math.max(r.top, 0) + 10 };
+        var u = el('div', 'position:fixed;z-index:9998;touch-action:none;'); S.ui = u;
+        var b = el('button', 'display:flex;align-items:center;gap:7px;max-width:78vw;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,.3);background:rgba(15,23,42,.85);color:#fff;font-size:12px;touch-action:none;cursor:grab;');
+        b.type = 'button'; b.innerHTML = ICON + '<span class="kfa-t" style="overflow:hidden;white-space:nowrap;text-overflow:ellipsis">دەنگ</span>';
+        u.appendChild(b); document.body.appendChild(u);
+        function place(x, y) {
+            var w = u.offsetWidth, h = u.offsetHeight;
+            x = Math.min(Math.max(4, x), innerWidth - w - 4); y = Math.min(Math.max(4, y), innerHeight - h - 4);
+            u.style.left = x + 'px'; u.style.top = y + 'px'; S.pos = { x: x, y: y };
+        }
+        place(p.x, p.y);
+        var sx, sy, ox, oy, drag = false, pid = null;
+        b.addEventListener('pointerdown', function (ev) { pid = ev.pointerId; sx = ev.clientX; sy = ev.clientY; var q = u.getBoundingClientRect(); ox = q.left; oy = q.top; drag = false; b.setPointerCapture(pid); ev.stopPropagation(); });
+        b.addEventListener('pointermove', function (ev) { if (ev.pointerId !== pid) return; var dx = ev.clientX - sx, dy = ev.clientY - sy; if (!drag && Math.hypot(dx, dy) < 6) return; drag = true; place(ox + dx, oy + dy); });
+        b.addEventListener('pointerup', function (ev) { if (ev.pointerId !== pid) return; pid = null; if (!drag) openMenu(); });
+        b.addEventListener('pointercancel', function () { pid = null; });
+        ['touchstart', 'mousedown', 'click'].forEach(function (n) { u.addEventListener(n, function (ev) { ev.stopPropagation(); }); });
     }
+    setInterval(function () { if (S.ui) S.ui.style.display = wrap.getClientRects().length ? '' : 'none'; }, 400);
     // ئەگەر ڤیدیۆکە نەخوێنرایەوە، بە جۆری MIME ی جیاواز هەوڵ دەدرێتەوە؛ ئەگەر نەشبوو هیچ ناکرێت
     video.addEventListener('error', function () {
         if (!S.blob || !video.getAttribute('src') || S.tries >= 2) return;
@@ -19422,6 +19445,99 @@ var KFV = (function () {
             return orig.apply(this, arguments);
         };
     }
+})();
+
+// ================= مێژوو: کۆد (کۆپی / ناردن / داخلکردن) =================
+(function () {
+    var b64e = function (u) { var s = ''; for (var i = 0; i < u.length; i += 8192) s += String.fromCharCode.apply(null, u.subarray(i, i + 8192)); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+    var b64d = function (t) { t = t.replace(/-/g, '+').replace(/_/g, '/'); while (t.length % 4) t += '='; var b = atob(t), u = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; };
+    var pipe = async function (d, C) { return new Uint8Array(await new Response(new Blob([d]).stream().pipeThrough(new C('gzip'))).arrayBuffer()); };
+    window.kfHistEncode = async function (item) { var o = Object.assign({}, item); delete o.id; return 'KF1:' + b64e(await pipe(new TextEncoder().encode(JSON.stringify(o)), CompressionStream)); };
+    window.kfHistDecode = async function (code) {
+        code = (code || '').trim().replace(/\s+/g, ''); var i = code.indexOf('KF1:'); if (i < 0) throw new Error('bad');
+        var o = JSON.parse(new TextDecoder().decode(await pipe(b64d(code.slice(i + 4)), DecompressionStream)));
+        if (!o || !o.fileName || !Array.isArray(o.originalData)) throw new Error('bad'); o.id = 'hist_' + Date.now(); return o;
+    };
+    function sheet(code, imp) {
+        var ov = document.createElement('div'); ov.style.cssText = 'position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px;';
+        var bx = document.createElement('div'); bx.style.cssText = 'width:100%;max-width:460px;background:#111827;color:#fff;border:1px solid #334155;border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px;';
+        var ta = document.createElement('textarea'); ta.value = code || ''; ta.readOnly = !imp; ta.placeholder = 'KF1:...'; ta.style.cssText = 'height:34vh;direction:ltr;font:12px monospace;background:#0b1220;color:#e5e7eb;border:1px solid #334155;border-radius:10px;padding:8px;resize:none;';
+        var row = document.createElement('div'); row.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;';
+        function btn(t, f, primary) { var x = document.createElement('button'); x.type = 'button'; x.textContent = t; x.className = primary ? 'btn' : 'btn btn-outline'; x.style.cssText = 'flex:1;width:auto;padding:9px 10px;font-size:13px;'; x.onclick = f; row.appendChild(x); }
+        var close = function () { ov.remove(); };
+        var copy = function () { ta.select(); (navigator.clipboard ? navigator.clipboard.writeText(ta.value) : Promise.reject()).catch(function () { document.execCommand('copy'); }).then(function () { showToast('کۆدەکە کۆپی کرا', 'success'); }); };
+        if (imp) {
+            btn('لکاندن', function () { navigator.clipboard.readText().then(function (t) { ta.value = t; }).catch(function () { showToast('لکاندن نەکرا، بە دەست بیلکێنە', 'warning'); }); });
+            btn('داخلکردن', async function () {
+                try { var o = await kfHistDecode(ta.value); saveToHistory(o); close(); openHistoryModal(); showToast('گەڕایەوە بۆ مێژوو: ' + o.fileName, 'success'); }
+                catch (e) { showToast('کۆدەکە ڕاست نییە', 'error'); }
+            }, true);
+        } else {
+            btn('کۆپی', copy, true);
+            if (navigator.share) btn('ناردن', function () { navigator.share({ title: 'KurdForest', text: ta.value }).catch(function () { }); });
+        }
+        btn('داخستن', close);
+        bx.appendChild(ta); bx.appendChild(row); ov.appendChild(bx); ov.onclick = function (ev) { if (ev.target === ov) close(); }; document.body.appendChild(ov);
+    }
+    var base = window.openHistoryModal;
+    if (typeof base === 'function') window.openHistoryModal = function () {
+        var r = base.apply(this, arguments);
+        document.querySelectorAll('#historyListContainer .history-item').forEach(function (it) {
+            var rb = it.querySelector('button[onclick^="restoreFromHistory"]'); if (!rb || it.querySelector('.kf-code-btn')) return;
+            var id = (rb.getAttribute('onclick').match(/'([^']*)'/) || [])[1];
+            var c = document.createElement('button'); c.type = 'button'; c.className = 'btn btn-outline kf-code-btn'; c.textContent = 'کۆد'; c.style.cssText = 'padding:5px 9px;font-size:11px;width:auto;';
+            c.onclick = async function () { var h = getHistory().find(function (x) { return x && x.id === id; }); if (!h) return; try { sheet(await kfHistEncode(h), false); } catch (e) { showToast('دروستکردنی کۆد سەرکەوتوو نەبوو', 'error'); } };
+            rb.parentNode.insertBefore(c, rb);
+        });
+        var cl = document.querySelector('#history-modal button[onclick^="clearAllHistory"]');
+        if (cl && !document.getElementById('kf-imp-btn')) {
+            var m = document.createElement('button'); m.type = 'button'; m.id = 'kf-imp-btn'; m.className = 'btn btn-outline'; m.textContent = 'داخلکردنی کۆد'; m.onclick = function () { sheet('', true); };
+            cl.parentNode.insertBefore(m, cl);
+        }
+        return r;
+    };
+})();
+
+// ================= دوو بەش لەژێر ڤیدیۆ: ژێرنووس / کۆدی وێنە (تەنها بینین؛ داتا و کۆپی AI دەست لێ نادرێت) =================
+(function () {
+    var wrap = document.getElementById('video-player-wrapper'), cont = document.getElementById('subtitles-container');
+    if (!wrap || !cont) return;
+    var DR = /\\p\s*[1-9]/, bar = null, mode = 'all', tm = 0;
+    var st = document.createElement('style');
+    st.textContent = '.kf-draw-view .subtitle-card:not([data-kf-draw]){display:none!important}.kf-draw-view .subtitle-card[data-kf-draw],.kf-fade .subtitle-card{animation:kfIn .32s ease both}@keyframes kfIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}';
+    document.head.appendChild(st);
+    function setMode(m, quiet) {
+        mode = m; cont.classList.toggle('kf-draw-view', m === 'draw');
+        if (m === 'all') { cont.classList.add('kf-fade'); setTimeout(function () { cont.classList.remove('kf-fade'); }, 400); }
+        if (bar) bar.querySelectorAll('button').forEach(function (x) { var on = x.dataset.m === m; x.style.background = on ? '#14b8a6' : 'transparent'; x.style.color = on ? '#04211e' : 'inherit'; });
+        if (!quiet) { var c = cont.querySelector(m === 'draw' ? '.subtitle-card[data-kf-draw]' : '.subtitle-card'); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    }
+    function ui(n, tot) {
+        if (!n) { if (bar) bar.style.display = 'none'; if (mode !== 'all') setMode('all', true); return; }
+        if (!bar) {
+            bar = document.createElement('div'); bar.dir = 'rtl';
+            bar.style.cssText = 'display:flex;gap:4px;margin:8px 10px;padding:4px;border:1px solid rgba(148,163,184,.3);border-radius:999px;';
+            [['all', 'ژێرنووس'], ['draw', 'کۆدی وێنە']].forEach(function (a) {
+                var b = document.createElement('button'); b.type = 'button'; b.dataset.m = a[0]; b.style.cssText = 'flex:1;padding:8px 6px;border:0;border-radius:999px;font-size:13px;font-weight:600;transition:background .25s,color .25s;'; b.onclick = function () { setMode(a[0]); }; bar.appendChild(b);
+            });
+            var host = wrap.closest('#editor-screen') ? wrap : cont; host.parentNode.insertBefore(bar, host === wrap ? wrap.nextSibling : cont);
+            setMode(mode, true);
+        }
+        bar.style.display = ''; bar.children[0].textContent = 'ژێرنووس (' + tot + ')'; bar.children[1].textContent = 'کۆدی وێنە (' + n + ')';
+    }
+    function mark() {
+        var n = 0, tot = 0;
+        cont.querySelectorAll('.subtitle-card').forEach(function (c) {
+            tot++; var od = (typeof originalData !== 'undefined' && originalData[+c.dataset.index]) || {}, ta = c.querySelector('textarea');
+            var d = DR.test((od.rawText || '') + '\n' + (ta ? ta.value : '')); if (d) n++;
+            if (d !== c.hasAttribute('data-kf-draw')) { if (d) c.setAttribute('data-kf-draw', ''); else c.removeAttribute('data-kf-draw'); }
+        });
+        ui(n, tot);
+    }
+    var deb = function () { clearTimeout(tm); tm = setTimeout(mark, 120); };
+    new MutationObserver(deb).observe(cont, { childList: true });
+    cont.addEventListener('focusout', deb);
+    mark();
 })();
 </script>
 </body>

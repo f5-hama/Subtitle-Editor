@@ -3616,7 +3616,51 @@ function kfTogglePw(btn){
         return h;
     }
 
-            async function extractAudioTrack(targetTrackNumber) {
+            function mkvOpusSamples(p) {
+        const c = p[0] >> 3, f = p[0] & 3; let d;
+        if (c < 12) d = [480, 960, 1920, 2880][c & 3];
+        else if (c < 16) d = (c & 1) ? 960 : 480;
+        else d = [120, 240, 480, 960][c & 3];
+        return d * (f === 0 ? 1 : f === 3 ? (p[1] & 63) : 2);
+    }
+    // Ogg Opus وەک mkvextract: OpusHead (لە CodecPrivate) + OpusTags + پەیجەکان
+    function mkvOggOpus(track, pkts) {
+        const T = new Uint32Array(256);
+        for (let i = 0; i < 256; i++) { let r = i << 24; for (let j = 0; j < 8; j++) r = (r & 0x80000000) ? ((r << 1) ^ 0x04C11DB7) : (r << 1); T[i] = r >>> 0; }
+        const out = []; let seq = 0;
+        const page = (type, gran, list) => {
+            const segs = []; let len = 0;
+            for (const p of list) { let n = p.length; while (n >= 255) { segs.push(255); n -= 255; } segs.push(n); len += p.length; }
+            const b = new Uint8Array(27 + segs.length + len), dv = new DataView(b.buffer);
+            b.set([79, 103, 103, 83, 0, type]);
+            dv.setUint32(6, gran % 4294967296, true); dv.setUint32(10, Math.floor(gran / 4294967296), true);
+            dv.setUint32(14, 0x4b4d5654, true); dv.setUint32(18, seq++, true);
+            b[26] = segs.length; b.set(segs, 27);
+            let o = 27 + segs.length; for (const p of list) { b.set(p, o); o += p.length; }
+            let c = 0; for (let i = 0; i < b.length; i++) c = ((c << 8) ^ T[((c >>> 24) ^ b[i]) & 255]) >>> 0;
+            dv.setUint32(22, c, true); out.push(b);
+        };
+        const head = track.codecPrivate && track.codecPrivate.length >= 19 ? track.codecPrivate
+            : new Uint8Array([79, 112, 117, 115, 72, 101, 97, 100, 1, track.channels || 2, 56, 1, 128, 187, 0, 0, 0, 0, 0]);
+        const pre = head[10] | (head[11] << 8);
+        page(2, 0, [head]);
+        page(0, 0, [new Uint8Array([79, 112, 117, 115, 84, 97, 103, 115, 3, 0, 0, 0, 109, 107, 118, 0, 0, 0, 0])]);
+        let g = pre, grp = [], sc = 0;
+        pkts.forEach((p, i) => {
+            g += mkvOpusSamples(p); grp.push(p); sc += Math.floor(p.length / 255) + 1;
+            if (sc >= 200 || i === pkts.length - 1) { page(i === pkts.length - 1 ? 4 : 0, g, grp); grp = []; sc = 0; }
+        });
+        return out;
+    }
+    function mkvWavHeader(track, dataLen) {
+        const ch = track.channels || 2, sr = Math.round(track.sampling || 48000), bits = track.bitDepth || 16;
+        const b = new Uint8Array(44), dv = new DataView(b.buffer);
+        b.set([82, 73, 70, 70], 0); dv.setUint32(4, 36 + dataLen, true); b.set([87, 65, 86, 69, 102, 109, 116, 32], 8);
+        dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, ch, true); dv.setUint32(24, sr, true);
+        dv.setUint32(28, sr * ch * bits / 8, true); dv.setUint16(32, ch * bits / 8, true); dv.setUint16(34, bits, true);
+        b.set([100, 97, 116, 97], 36); dv.setUint32(40, dataLen, true); return b;
+    }
+    async function extractAudioTrack(targetTrackNumber, wantBlob) {
         if (!currentMkvFile) return;
         const track = mkvParsedTracks.find(t => t.trackNumber === targetTrackNumber);
         if (!track) return;
@@ -3627,6 +3671,8 @@ function kfTogglePw(btn){
         const isAc3 = /A_AC3/i.test(codecId);
         const isEac3 = /A_EAC3/i.test(codecId);
         const isMp3 = /A_MPEG\/L3/i.test(codecId);
+        const isOpus = /A_OPUS/i.test(codecId), isFlac = /A_FLAC/i.test(codecId), isDts = /A_DTS/i.test(codecId);
+        const isThd = /A_TRUEHD|A_MLP/i.test(codecId), isPcm = /A_PCM\/INT\/LIT/i.test(codecId);
 
         let outExt = 'mka';
         let mimeType = 'audio/x-matroska';
@@ -3634,6 +3680,11 @@ function kfTogglePw(btn){
         else if (isAc3) { outExt = 'ac3'; mimeType = 'audio/ac3'; }
         else if (isEac3) { outExt = 'eac3'; mimeType = 'audio/eac3'; }
         else if (isMp3) { outExt = 'mp3'; mimeType = 'audio/mpeg'; }
+        else if (isOpus) { outExt = 'opus'; mimeType = 'audio/ogg'; }
+        else if (isFlac) { outExt = 'flac'; mimeType = 'audio/flac'; }
+        else if (isDts) { outExt = 'dts'; mimeType = 'audio/vnd.dts'; }
+        else if (isThd) { outExt = /MLP/i.test(codecId) ? 'mlp' : 'thd'; mimeType = 'application/octet-stream'; }
+        else if (isPcm) { outExt = 'wav'; mimeType = 'audio/wav'; }
 
         const myId = mkvScanId;
         const prog = document.getElementById('mkvProgressContainer');
@@ -3680,7 +3731,12 @@ function kfTogglePw(btn){
 
             setMkvProgress(99, 'دروستکردنی فایلی دەنگ...');
 
-            const finalBlob = new Blob(audioChunks, { type: mimeType });
+            let parts = audioChunks;
+            if (isOpus) parts = mkvOggOpus(track, audioChunks);
+            else if (isFlac) { const cp = track.codecPrivate || new Uint8Array(0), mg = cp.length > 3 && cp[0] === 0x66 && cp[1] === 0x4C; parts = (mg ? [cp] : [new Uint8Array([102, 76, 97, 67]), cp]).concat(audioChunks); }
+            else if (isPcm) parts = [mkvWavHeader(track, audioChunks.reduce((n, x) => n + x.length, 0))].concat(audioChunks);
+            const finalBlob = new Blob(parts, { type: mimeType });
+            if (wantBlob) { if (prog) prog.style.display = 'none'; return finalBlob; }
             const fileName = `${mkvGetBaseName()}_[${mkvLangTag(track, t => t.type === 2 || t.codecId.startsWith('A_'))}].${outExt}`;
             const url = URL.createObjectURL(finalBlob);
             const a = document.createElement('a');
@@ -19290,167 +19346,82 @@ var KFV = (function () {
 })();
 
 (function () {
-    var video = document.getElementById('preview-video');
-    if (!video) return;
-    var S = { blob: null, info: null, infoP: Promise.resolve(null), shown: false, timer: null };
-    var MB2 = 2 * 1024 * 1024;
-
-    function inspect(blob) {
-        return blob.slice(0, MB2).arrayBuffer().then(function (hb) {
-            var head = new Uint8Array(hb);
-            if ((head[0] === 0x47 && head[188] === 0x47) || (head[4] === 0x47 && head[196] === 0x47)) return { container: 'ts', video: null, audio: [], subs: 0, size: blob.size };
-            var mp4 = String.fromCharCode(head[4], head[5], head[6], head[7]) === 'ftyp' && blob.size > MB2;
-            var tailP = mp4 ? blob.slice(Math.max(0, blob.size - MB2)).arrayBuffer() : Promise.resolve(null);
-            return tailP.then(function (tb) { var r = KFV.inspectBytes(head, tb ? new Uint8Array(tb) : null); r.size = blob.size; return r; });
+    var video = document.getElementById('preview-video'), wrap = document.getElementById('video-player-wrapper');
+    if (!video || !wrap) return;
+    var S = { blob: null, tries: 0, aud: null, url: null, ui: null, n: 0 };
+    var el = function (t, css) { var x = document.createElement(t); if (css) x.style.cssText = css; return x; };
+    function stopAud() { if (S.aud) { S.aud.pause(); S.aud.src = ''; S.aud = null; } if (S.url) { URL.revokeObjectURL(S.url); S.url = null; } video.muted = false; }
+    function clearUi() { stopAud(); if (S.ui) { S.ui.remove(); S.ui = null; } }
+    // دەنگی جیاواز لەگەڵ ڤیدیۆ هاوکات دەکرێت
+    function bindAud(a) {
+        var sync = function () { try { a.currentTime = video.currentTime; } catch (e) { } };
+        video.onplay2 = null;
+        ['play', 'playing'].forEach(function (n) { video.addEventListener(n, function () { if (S.aud === a) { sync(); a.play().catch(function () { }); } }); });
+        ['pause', 'waiting'].forEach(function (n) { video.addEventListener(n, function () { if (S.aud === a) a.pause(); }); });
+        ['seeked', 'ratechange'].forEach(function (n) { video.addEventListener(n, function () { if (S.aud === a) { a.playbackRate = video.playbackRate; sync(); } }); });
+        video.addEventListener('volumechange', function () { if (S.aud === a && !video.muted) { a.volume = video.volume; video.muted = true; } });
+        video.addEventListener('timeupdate', function () { if (S.aud === a && Math.abs(a.currentTime - video.currentTime) > 0.35) sync(); });
+    }
+    async function pickAudio(trackNo, native, label) {
+        var my = ++S.n; stopAud();
+        if (native) { S.ui.firstChild.textContent = '🔊 ' + label; return; }
+        S.ui.firstChild.textContent = '… ' + label;
+        try {
+            var blob = await extractAudioTrack(trackNo, true);
+            if (!blob || my !== S.n) return;
+            var a = new Audio(); S.url = URL.createObjectURL(blob); a.src = S.url; a.volume = video.volume;
+            a.onerror = function () { stopAud(); S.ui.firstChild.textContent = '🔊'; showToast('ئەم دەنگە لەم وێبگەڕەدا ناخوێنرێتەوە', 'error'); };
+            S.aud = a; bindAud(a); video.muted = true;
+            a.currentTime = video.currentTime; if (!video.paused) a.play().catch(function () { });
+            S.ui.firstChild.textContent = '🔊 ' + label;
+        } catch (e) { S.ui.firstChild.textContent = '🔊'; }
+    }
+    async function openMenu() {
+        var old = S.ui.querySelector('.kfa-menu'); if (old) { old.remove(); return; }
+        currentMkvFile = S.blob; var id = ++mkvScanId;
+        try { if (!mkvParsedTracks.length || mkvParsedTracks._f !== S.blob) { await scanMkvTracks(S.blob, id); mkvParsedTracks._f = S.blob; } } catch (e) { return; }
+        var ts = mkvParsedTracks.filter(function (t) { return t.type === 2; });
+        var nat = ts.find(function (t) { return t.isDefault; }) || ts[0];
+        var m = el('div', 'position:absolute;top:100%;left:0;margin-top:6px;min-width:190px;max-height:55vh;overflow:auto;background:#111827;border:1px solid #334155;border-radius:12px;padding:4px;direction:ltr;');
+        m.className = 'kfa-menu';
+        ts.forEach(function (t, i) {
+            var lb = (t.name || t.lang || 'und') + ' · ' + (t.codecId || '').replace('A_', '');
+            var b = el('button', 'display:block;width:100%;text-align:left;padding:9px 10px;border:0;background:none;color:#fff;font-size:13px;border-radius:8px;');
+            b.type = 'button'; b.textContent = (i + 1) + '. ' + lb;
+            b.onclick = function (ev) { ev.stopPropagation(); m.remove(); pickAudio(t.trackNumber, t === nat, lb); };
+            m.appendChild(b);
         });
+        S.ui.appendChild(m);
     }
-
-    var CODEC = { hevc: 'HEVC (H.265)', h264: 'H.264 (AVC)', av1: 'AV1', vp9: 'VP9', vp8: 'VP8', mpeg4: 'MPEG-4 / Xvid', mpeg2: 'MPEG-2', unknown: '؟' };
-    var CHROMA = { 0: '4:0:0', 1: '4:2:0', 2: '4:2:2', 3: '4:4:4' };
-    var AUDIO = { 'A_AAC': 'AAC', 'A_AC3': 'AC-3 (Dolby)', 'A_EAC3': 'E-AC-3', 'A_DTS': 'DTS', 'A_FLAC': 'FLAC', 'A_OPUS': 'Opus', 'A_VORBIS': 'Vorbis', 'A_MPEG/L3': 'MP3', 'A_TRUEHD': 'TrueHD' };
-    var AUDIO_BAD = { 'A_AC3': 1, 'A_EAC3': 1, 'A_DTS': 1, 'A_TRUEHD': 1 };
-    function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
-    function aName(a) { var k = (a.codec || '').replace(/\/.*$/, function (m) { return m; }); return AUDIO[a.codec] || AUDIO[k] || a.codec || '؟'; }
-
-    // ---- هەموو زانیارییەکان وەک ڕیزی تەنک ----
-    function rows(info) {
-        var r = [], v = info && info.video;
-        if (!info) return r;
-        r.push(['کۆنتەینەر', (info.container || '').toUpperCase()]);
-        if (v) {
-            r.push(['کۆدەکی ڤیدیۆ', CODEC[v.codec] || v.codec]);
-            if (v.profile) r.push(['Profile', v.profile]);
-            if (v.bits) r.push(['قووڵایی ڕەنگ', v.bits + '-bit']);
-            if (v.chroma !== undefined) r.push(['Chroma', CHROMA[v.chroma] || v.chroma]);
-            if (v.w && v.h) r.push(['ڕەزۆلووشن', v.w + ' × ' + v.h]);
-        }
-        if (info.audio && info.audio.length) r.push(['دەنگ', info.audio.map(function (a) { return aName(a) + (a.lang && a.lang !== 'und' ? ' (' + a.lang + ')' : ''); }).join('، ')]);
-        if (info.size) r.push(['قەبارە', (info.size / 1048576 >= 1024 ? (info.size / 1073741824).toFixed(2) + ' GB' : Math.round(info.size / 1048576) + ' MB')]);
-        return r;
+    function showUi() {
+        if (S.ui) return;
+        if (getComputedStyle(wrap).position === 'static') wrap.style.position = 'relative';
+        var u = el('div', 'position:absolute;top:calc(10px + env(safe-area-inset-top,0px));left:10px;z-index:30;');
+        var b = el('button', 'padding:7px 11px;border-radius:999px;border:1px solid rgba(255,255,255,.3);background:rgba(15,23,42,.8);color:#fff;font-size:12px;');
+        b.type = 'button'; b.textContent = '🔊 دەنگ'; b.onclick = function (ev) { ev.stopPropagation(); openMenu(); };
+        u.appendChild(b);
+        ['pointerdown', 'touchstart', 'mousedown'].forEach(function (n) { u.addEventListener(n, function (e) { e.stopPropagation(); }); });
+        wrap.appendChild(u); S.ui = u;
     }
-    function summary(info) {
-        var v = info && info.video; if (!v) return '';
-        return [CODEC[v.codec] || v.codec, v.profile, v.bits ? v.bits + '-bit' : '', v.chroma !== undefined ? CHROMA[v.chroma] : '', (info.container || '').toUpperCase()].filter(Boolean).join(' · ');
-    }
-    function reason(info) {
-        var v = info && info.video;
-        if (!v) return 'وێبگەڕەکەت نەیتوانی وێنەی ئەم ڤیدیۆیە بخوێنێتەوە. ئەمە زۆرجار دەگەڕێتەوە بۆ کۆدەکی ڤیدیۆکە (نەک تێکچوونی فایلەکە).';
-        if (v.codec === 'hevc') {
-            if (v.profileIdc === 4 || (v.chroma !== undefined && v.chroma > 1))
-                return 'ئەم ڤیدیۆیە HEVC ـە لە جۆری «' + (v.profile || 'Rext') + '» (' + (CHROMA[v.chroma] || '') + '، ' + (v.bits || '') + '-bit). زۆربەی مۆبایل و وێبگەڕەکان تەنها HEVC Main و Main 10 (4:2:0) بە سەختەواڵە دەکەنەوە، بۆیە ئەمەیان ناخوێنرێتەوە. ئەپی MX Player دەیخوێنێتەوە چونکە دیکۆدەری نەرمەواڵەی خۆی هەیە.';
-            return 'ئەم ڤیدیۆیە HEVC ـە. کرۆم HEVC تەنها کاتێک دەکاتەوە کە ئامێرەکە بە سەختەواڵە پشتگیری بکات، و زۆرجار تەنها لەناو MP4، نەک MKV.';
-        }
-        if (v.codec === 'h264' && ((v.bits && v.bits > 8) || (v.chroma !== undefined && v.chroma > 1)))
-            return 'ئەم H.264 ـە ' + (v.bits || '') + '-bit (' + (v.profile || '') + ') ـە، و کرۆم تەنها H.264 ی ٨-bit ی ٤:٢:٠ دەکاتەوە.';
-        if (v.codec === 'mpeg4' || v.codec === 'mpeg2') return 'ئەم کۆدەکە کۆنە (' + CODEC[v.codec] + ') و وێبگەڕەکان ناخوێننەوە.';
-        return 'کۆدەکی ڤیدیۆکە (' + (CODEC[v.codec] || '؟') + ') لەم ئامێر/وێبگەڕەدا پشتگیری ناکرێت.';
-    }
-    // ---- فەرمانەکانی ffmpeg ----
-    function cmds(info, name) {
-        var nm = name || 'input.mkv', base = nm.replace(/\.[^.]+$/, '');
-        var q = function (s) { return '"' + s.replace(/"/g, '\\"') + '"'; };
-        var v = info && info.video, out = {};
-        var cs = v && v.cstr;
-        var mp4ok = !!(cs && video.canPlayType && video.canPlayType('video/mp4; codecs="' + cs + '"'));
-        // گۆڕینی کۆنتەینەر (بێ کەمبوونەوەی کوالێتی): تەنها ئەگەر ئامێرەکە کۆدەکەکە لەناو MP4 بخوێنێتەوە
-        out.remux = (info && info.container === 'mkv' && v && (v.codec === 'hevc' || v.codec === 'h264') && mp4ok)
-            ? 'ffmpeg -i ' + q(nm) + ' -map 0:v:0 -map 0:a:0? -c copy' + (v.codec === 'hevc' ? ' -tag:v hvc1' : '') + ' -movflags +faststart ' + q(base + '.mp4') : null;
-        // گۆڕین بۆ H.264 (هەمان ڕەزۆلووشن، چونکە قەبارەی ژێرنووس بە ڕەزۆلووشنی ڤیدیۆ حیساب دەکرێت)
-        out.transcode = 'ffmpeg -i ' + q(nm) + ' -map 0:v:0 -map 0:a:0? -c:v libx264 -preset veryfast -crf 24 -pix_fmt yuv420p -c:a aac -b:a 128k -sn -movflags +faststart ' + q(base + '_h264.mp4');
-        out.mp4ok = mp4ok;
-        return out;
-    }
-
-    // ---- ڕووکار ----
-    function copy(text) {
-        var done = function () { try { showToast('کۆپی کرا', 'success'); } catch (e) { } };
-        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, function () { fallback(); });
-        else fallback();
-        function fallback() { var t = document.createElement('textarea'); t.value = text; t.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); done(); } catch (e) { } document.body.removeChild(t); }
-    }
-    var ov = null;
-    function openDialog() {
-        var info = S.info, nm = (S.blob && S.blob.name) || '', c = cmds(info, nm), html = '';
-        html += '<h3>ئەم ڤیدیۆیە بۆچی نابینرێت؟</h3><p>' + esc(reason(info)) + '</p>';
-        var rs = rows(info);
-        if (rs.length) html += '<div class="kfv-info">' + rs.map(function (r) { return '<span>' + esc(r[0]) + '</span><b>' + esc(r[1]) + '</b>'; }).join('') + '</div>';
-        var badAudio = info && info.audio && info.audio.some(function (a) { return AUDIO_BAD[a.codec]; });
-        if (badAudio) html += '<p>تێبینی: دەنگی ئەم فایلە (' + esc(aName(info.audio[0])) + ') لە کرۆمدا ڕەنگە نەخوێنرێتەوە. فەرمانی خوارەوە دەنگیش دەگۆڕێت بۆ AAC.</p>';
-        html += '<p><b>فایلەکە تێک نییە.</b> تەنها وێبگەڕەکە ناتوانێت وێنەکەی بخوێنێتەوە. دوو چارەسەر هەیە:</p>';
-        var n = 1;
-        if (c.remux) html += '<div class="kfv-fix"><h4>' + (n++) + '. گۆڕینی کۆنتەینەر بۆ MP4 (بێ کەمبوونەوەی کوالێتی، چەند چرکەیەک)</h4><small>ئامێرەکەت ئەم کۆدەکە لەناو MP4 دەخوێنێتەوە، تەنها MKV ـەکە کێشەیە.</small><code class="kfv-code">' + esc(c.remux) + '</code><button type="button" class="kfv-btn" data-copy="remux">کۆپی</button></div>';
-        html += '<div class="kfv-fix"><h4>' + (n++) + '. گۆڕین بۆ H.264 (بۆ هەموو وێبگەڕێک)</h4><small>هەمان ڕەزۆلووشن دەمێنێتەوە. دەنگیش دەبێتە AAC، و ژێرنووسی ناو فایلەکە لادەبرێت (-sn) چونکە ئەپەکە فایلی ژێرنووسی جیاوازی هەیە. کاتی گۆڕین بە ئامێرەکەت دەبەستێت.</small><code class="kfv-code">' + esc(c.transcode) + '</code><button type="button" class="kfv-btn" data-copy="transcode">کۆپی</button></div>';
-        html += '<p style="margin-top:10px"><b>بەبێ وێنە بەردەوامبە:</b> دەتوانیت دەقەکان و کاتەکان هەر دەستکاری بکەیت. ڤیدیۆ گۆڕدراوەکە تەنها بۆ پێشاندانی دەستکاریکردنە، و هەر ڤیدیۆ ئەسڵییەکە بۆ هاردسەب بەکاردێنیت.</p>';
-        html += '<div class="kfv-foot"><button type="button" class="kfv-btn" data-act="close">داخستن</button></div>';
-        if (!ov) {
-            ov = document.createElement('div'); ov.className = 'kfv-ov';
-            ov.innerHTML = '<div class="kfv-sheet"></div>';
-            document.body.appendChild(ov);
-            ov.addEventListener('pointerdown', function (e) { if (e.target === ov) ov.classList.remove('open'); });
-            ov.addEventListener('click', function (e) {
-                var b = e.target.closest ? e.target.closest('button') : null; if (!b) return;
-                if (b.getAttribute('data-act') === 'close') ov.classList.remove('open');
-                var k = b.getAttribute('data-copy'); if (k && S.cmd && S.cmd[k]) copy(S.cmd[k]);
-            });
-        }
-        S.cmd = c;
-        ov.querySelector('.kfv-sheet').innerHTML = html;
-        ov.classList.add('open');
-    }
-    var banner = null;
-    function hideBanner() { if (banner && banner.parentNode) banner.parentNode.removeChild(banner); banner = null; }
-    function showBanner(kind) {
-        var w = document.getElementById('video-player-wrapper'); if (!w) return;
-        hideBanner();
-        if (getComputedStyle(w).position === 'static') w.style.position = 'relative';
-        banner = document.createElement('div'); banner.className = 'kfv-banner'; banner.setAttribute('role', 'alert');
-        var sum = summary(S.info);
-        banner.innerHTML = '<span class="kfv-b-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8L22.3 20.6H1.7L12 2.8z" fill="currentColor" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M12 9.4v5.2" fill="none" stroke="#0f172a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.5" r="1.4" fill="#0f172a"/></svg></span>' +
-            '<span class="kfv-b-tx"><b>وێنەی ئەم ڤیدیۆیە لەم وێبگەڕەدا نابینرێت</b><span class="kfv-b-sub">' + (sum ? esc(sum) : 'کۆدەکەکە پشتگیری ناکرێت') + '</span></span>' +
-            '<button type="button" class="kfv-btn go" data-b="fix">چارەسەر</button><button type="button" class="kfv-btn" data-b="x" aria-label="داخستن">×</button>';
-        banner.addEventListener('click', function (e) {
-            var b = e.target.closest ? e.target.closest('button') : null; if (!b) return;
-            e.stopPropagation();
-            if (b.getAttribute('data-b') === 'fix') openDialog(); else hideBanner();
-        });
-        ['pointerdown', 'touchstart', 'mousedown'].forEach(function (n) { banner.addEventListener(n, function (e) { e.stopPropagation(); }); });
-        w.appendChild(banner);
-        try { showToast('وێنەی ڤیدیۆکە نابینرێت، چارەسەر لەسەر ڤیدیۆکە دەبینیت', 'warning'); } catch (e) { }
-    }
-    function problem(kind) {
-        if (S.shown) return;
-        S.shown = true;
-        S.infoP.then(function (info) {
-            if (info && info.container === 'ts') { S.shown = false; return; }          // MPEG-TS بە پلەیەری خۆی دەخوێنرێتەوە
-            if (S.shown) showBanner(kind);
-        });
-    }
-
-    // ---- دۆزینەوەی کێشە لە کاتی کارکردندا ----
-    video.addEventListener('loadstart', function () { S.shown = false; hideBanner(); clearTimeout(S.timer); });
-    video.addEventListener('emptied', function () { hideBanner(); });
-    video.addEventListener('loadedmetadata', function () { if (video.videoWidth === 0 && video.duration > 0) problem('novideo'); });
-    video.addEventListener('error', function () { if (video.error && video.getAttribute('src')) problem('error'); });
-    video.addEventListener('playing', function () {
-        clearTimeout(S.timer);
-        S.timer = setTimeout(function () {
-            if (video.paused || video.ended || video.currentTime < 0.3 || !video.getVideoPlaybackQuality) return;
-            var info = S.info, v = info && info.video;
-            var suspicious = !v || v.codec === 'hevc' || v.codec === 'mpeg4' || v.codec === 'mpeg2' || (v.bits && v.bits > 8) || (v.chroma !== undefined && v.chroma > 1);
-            if (suspicious && video.getVideoPlaybackQuality().totalVideoFrames === 0) problem('noframes');
-        }, 1800);
+    // ئەگەر ڤیدیۆکە نەخوێنرایەوە، بە جۆری MIME ی جیاواز هەوڵ دەدرێتەوە؛ ئەگەر نەشبوو هیچ ناکرێت
+    video.addEventListener('error', function () {
+        if (!S.blob || !video.getAttribute('src') || S.tries >= 2) return;
+        var types = ['video/webm', 'video/mp4'], t = types[S.tries++], t0 = video.currentTime;
+        var u = URL.createObjectURL(new Blob([S.blob], { type: t }));
+        video.src = u; video.load(); video.addEventListener('loadedmetadata', function f() { video.removeEventListener('loadedmetadata', f); try { video.currentTime = t0; } catch (e) { } });
     });
-
-    // ---- هەڵواسین بە playVideoSource ـەوە ----
+    video.addEventListener('emptied', function () { if (!video.getAttribute('src')) clearUi(); });
     var orig = window.playVideoSource;
     if (typeof orig === 'function') {
         window.playVideoSource = function (src, blob) {
-            S.blob = blob || null; S.info = null; S.shown = false;
-            S.infoP = blob ? inspect(blob).then(function (i) { S.info = i; return i; }, function () { return null; }) : Promise.resolve(null);
+            clearUi(); S.blob = blob || null; S.tries = 0;
+            if (blob) blob.slice(0, 2 * 1024 * 1024).arrayBuffer().then(function (hb) {
+                var h = new Uint8Array(hb);
+                if (h[0] === 0x1A && h[1] === 0x45 && h[2] === 0xDF && h[3] === 0xA3) { var r = KFV.parseMkv(h); if (r.audio.length > 1) showUi(); }
+            }).catch(function () { });
             return orig.apply(this, arguments);
         };
     }
-    window.__kfvDiag = { rows: rows, summary: summary, reason: reason, cmds: cmds, inspect: inspect };
 })();
 </script>
 </body>

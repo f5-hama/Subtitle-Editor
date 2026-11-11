@@ -3268,8 +3268,91 @@ function kfTogglePw(btn){
         });
     }
 
-        function mkvBuildSubtitleFile(track, blocks, baseName) {
+        /*
+     * تێبینی سەرچاوە و مۆڵەت:
+     * لۆجیکی دەرهێنانی Ogg Vorbis و VobSub (.idx/.sub) و ASS/SSA لەم بەشەدا بە JavaScript نووسراوەتەوە
+     * بەپێی شێوازی کارکردنی mkvextract لە MKVToolNix (src/extract/xtr_ogg.cpp، xtr_vobsub.cpp، xtr_textsubs.cpp).
+     * MKVToolNix لەژێر مۆڵەتی GNU GPL v2 بڵاوکراوەتەوە: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
+     * بەشی ئەلگۆریتمی MPEG-PS لە VobSub بنەڕەتەکەی هی Mike Matsnev ـە.
+     * ئەگەر ئەم پرۆژەیە بڵاو دەکرێتەوە، مۆڵەتی GPL v2 لەبەرچاو بگیرێت.
+     */
+    function mkvXiph(cp) {
+        if (!cp || cp[0] !== 2) return null; let p = 1, n = [];
+        for (let k = 0; k < 2; k++) { let v = 0; while (cp[p] === 255) { v += 255; p++; } v += cp[p++]; n.push(v); }
+        const a = cp.subarray(p, p + n[0]), b = cp.subarray(p + n[0], p + n[0] + n[1]), c = cp.subarray(p + n[0] + n[1]);
+        return [a, b, c];
+    }
+    // وەک vorbis_packet_blocksize: مۆدەکانی setup header لە کۆتاییەوە دەدۆزرێتەوە
+    function mkvVorbisInfo(h) {
+        const id = h[0], su = h[2], bit = (u, i) => (u[i >> 3] >> (i & 7)) & 1, rd = (u, i, n) => { let v = 0; for (let k = 0; k < n; k++) v |= bit(u, i + k) << k; return v >>> 0; };
+        const bs0 = 1 << (id[28] & 15), bs1 = 1 << (id[28] >> 4);
+        let F = -1; for (let i = su.length * 8 - 1; i >= 0; i--) if (bit(su, i)) { F = i; break; }
+        for (let m = 64; m >= 1; m--) {
+            const st = F - 41 * m; if (st < 6 || rd(su, st - 6, 6) !== m - 1) continue;
+            const fl = []; let ok = true;
+            for (let k = 0; k < m && ok; k++) { const q = st + 41 * k; fl.push(bit(su, q)); if (rd(su, q + 1, 16) || rd(su, q + 17, 16)) ok = false; }
+            if (ok) return { bs0, bs1, fl, bits: Math.max(1, 32 - Math.clz32(m - 1)) - (m === 1 ? 1 : 0), rate: id[12] | id[13] << 8 | id[14] << 16 | id[15] << 24 };
+        }
+        return null;
+    }
+    function mkvOggPager() {
+        const T = new Uint32Array(256); for (let i = 0; i < 256; i++) { let r = i << 24; for (let j = 0; j < 8; j++) r = (r & 0x80000000) ? ((r << 1) ^ 0x04C11DB7) : (r << 1); T[i] = r >>> 0; }
+        const out = []; let seq = 0;
+        out.page = (type, gran, list) => {
+            const segs = []; let len = 0; for (const p of list) { let n = p.length; while (n >= 255) { segs.push(255); n -= 255; } segs.push(n); len += p.length; }
+            const b = new Uint8Array(27 + segs.length + len), dv = new DataView(b.buffer); b.set([79, 103, 103, 83, 0, type]);
+            dv.setUint32(6, gran % 4294967296, true); dv.setUint32(10, Math.floor(gran / 4294967296), true); dv.setUint32(14, 0x4b4d5654, true); dv.setUint32(18, seq++, true);
+            b[26] = segs.length; b.set(segs, 27); let o = 27 + segs.length; for (const p of list) { b.set(p, o); o += p.length; }
+            let c = 0; for (let i = 0; i < b.length; i++) c = ((c << 8) ^ T[((c >>> 24) ^ b[i]) & 255]) >>> 0; dv.setUint32(22, c, true); out.push(b);
+        };
+        return out;
+    }
+    // Ogg Vorbis وەک xtr_oggvorbis_c: granulepos = ژمارەی نموونەکان بە (blocksize+previous)/4
+    function mkvOggVorbis(track, pkts) {
+        const h = mkvXiph(track.codecPrivate); if (!h) return null; const vi = mkvVorbisInfo(h); if (!vi) return null;
+        const o = mkvOggPager(); o.page(2, 0, [h[0]]); o.page(0, 0, [h[1], h[2]]);
+        let prev = -1, smp = 0, grp = [], gr = 0, bytes = 0;
+        pkts.forEach((p, i) => {
+            let bsz = vi.bs0;
+            if (p.length && !(p[0] & 1)) { let m = 0; for (let k = 0; k < vi.bits; k++) m |= ((p[0] >> (1 + k)) & 1) << k; bsz = vi.fl[m] ? vi.bs1 : vi.bs0; }
+            if (prev !== -1) smp += (bsz + prev) / 4; prev = bsz;
+            gr = i === 0 ? 0 : smp; grp.push(p); bytes += p.length;
+            if (bytes >= 4096 || i === pkts.length - 1) { o.page(i === pkts.length - 1 ? 4 : 0, gr, grp); grp = []; bytes = 0; }
+        });
+        return o;
+    }
+    function mkvIsVob(t) { return /S_VOBSUB/i.test((t && t.codecId) || ''); }
+    // وەک xtr_vobsub_c: پاکێجی MPEG-PS (٢٠٤٨ بایت) بۆ .sub و فایلی .idx
+    function mkvBuildVobsub(track, blocks, baseName) {
+        const parts = [], idx = []; let pos = 0; const w = u => { parts.push(u); pos += u.length; };
+        const ps = c => new Uint8Array([0, 0, 1, 0xba, 0x40 | ((c >> 27) & 0x38) | 4 | ((c >> 28) & 3), (c >> 20) & 255, ((c >> 12) & 0xf8) | 4 | ((c >> 13) & 3), (c >> 5) & 255, ((c << 3) & 0xf8) | 4, 1, 1, 0x89, 0xc3, 0xf8]);
+        const pad = n => new Uint8Array(n).fill(255);
+        for (const b of blocks) {
+            let d = b.rawBytes; if (!d || !d.length) continue;
+            const c = Math.floor(b.t * 90); idx.push([Math.floor(b.t), pos]);
+            let size = d.length, padding = (2048 - (size + 29)) & 2047, first = size + 29 > 2048 ? 2048 - 29 : size;
+            let hl = 5, len = first + 9; if (padding < 6 && first === size) { hl += padding; len += padding; }
+            w(ps(c)); w(new Uint8Array([0, 0, 1, 0xbd, len >> 8, len & 255, 0x81, 0x80, hl, 0x20 | ((c >> 29) & 0x0e) | 1, (c >> 22) & 255, ((c >> 14) & 0xfe) | 1, (c >> 7) & 255, ((c << 1) & 255) | 1]));
+            if (padding > 0 && padding < 6 && first === size) w(pad(padding)); w(new Uint8Array([0x20])); w(d.subarray(0, first));
+            while (first < size) {
+                size -= first; d = d.subarray(first); padding = (2048 - (size + 24)) & 2047; first = size + 24 > 2048 ? 2048 - 24 : size;
+                let l2 = first + 4, h2 = 0; if (padding < 6 && first === size) { h2 = padding; l2 += padding; }
+                w(ps(c)); w(new Uint8Array([0, 0, 1, 0xbd, l2 >> 8, l2 & 255, 0x81, 0, h2]));
+                if (padding > 0 && padding < 6 && first === size) w(pad(padding)); w(new Uint8Array([0x20])); w(d.subarray(0, first));
+            }
+            if (padding >= 6) { padding -= 6; w(new Uint8Array([0, 0, 1, 0xbe, padding >> 8, padding & 255])); w(pad(padding)); }
+        }
+        const L = { eng: 'en', jpn: 'ja', ara: 'ar', kur: 'ku', tur: 'tr', fre: 'fr', fra: 'fr', ger: 'de', deu: 'de', spa: 'es', ita: 'it', rus: 'ru', por: 'pt', chi: 'zh', zho: 'zh', kor: 'ko', hin: 'hi', per: 'fa', fas: 'fa' };
+        const hdr = '# VobSub index file, v7 (do not modify this line!)\n', cp = track.codecPrivate ? new TextDecoder('utf-8').decode(track.codecPrivate) : '';
+        const z = (n, k) => String(n).padStart(k, '0');
+        let t = (cp.slice(0, 25).toLowerCase() === hdr.slice(0, 25).toLowerCase() ? '' : hdr) + cp + `\nid: ${L[track.lang] || 'en'}, index: 0\n`;
+        for (const [ms, p] of idx) t += `timestamp: ${z(Math.floor(ms / 3600000) % 60, 2)}:${z(Math.floor(ms / 60000) % 60, 2)}:${z(Math.floor(ms / 1000) % 60, 2)}:${z(ms % 1000, 3)}, filepos: ${Math.floor(p / 4294967296).toString(16)}${z((p % 4294967296).toString(16), 8)}\n`;
+        return { blob: new Blob(parts, { type: 'application/octet-stream' }), ext: 'sub', count: idx.length, extra: { blob: new Blob(['\uFEFF'.slice(1) + t], { type: 'text/plain' }), ext: 'idx' } };
+    }
+    function mkvBuildSubtitleFile(track, blocks, baseName) {
         const times = mkvEndTimes(blocks);
+
+        if (mkvIsVob(track)) return mkvBuildVobsub(track, blocks, baseName);
 
         if (mkvIsPgs(track)) {
             const chunks = [];
@@ -3301,48 +3384,32 @@ function kfTogglePw(btn){
         }
 
         if (mkvIsAss(track)) {
+            const isSsa = /S_TEXT\/SSA|^S_SSA$/i.test(track.codecId || '');
             let header = '';
-            if (track.codecPrivate && track.codecPrivate.length > 0) {
-                header = new TextDecoder('utf-8').decode(track.codecPrivate)
-                    .replace(/^\uFEFF/, '').replace(/\r\n?/g, '\r\n').trim();
+            if (track.codecPrivate && track.codecPrivate.length > 0) header = new TextDecoder('utf-8').decode(track.codecPrivate).replace(/^\uFEFF/, '').replace(/\r\n?/g, '\r\n').trim();
+            if (!header) header = `[Script Info]\r\nTitle: ${baseName}\r\nScriptType: v4.00+\r\nWrapStyle: 0\r\nScaledBorderAndShadow: yes`;
+            let ev = header.search(/\[Events\]/i);
+            if (ev < 0 || !/Format:/i.test(header.slice(ev))) {
+                header += '\r\n\r\n[Events]\r\nFormat: ' + (isSsa ? 'Marked, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text' : 'Layer, Start, End, Style, Actor, MarginL, MarginR, MarginV, Effect, Text');
+                ev = header.search(/\[Events\]/i);
             }
-
-            if (!header || !/\[Events\]/i.test(header)) {
-                if (!header) header = `[Script Info]\r\nTitle: ${baseName}\r\nScriptType: v4.00+\r\nWrapStyle: 0\r\nScaledBorderAndShadow: yes`;
-                header += '\r\n\r\n[Events]\r\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text';
-            } else if (!/\[Events\][\s\S]*?Format:/i.test(header)) {
-                header += '\r\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text';
-            }
-
-            const parsedBlocks = blocks.map((b, i) => {
-                const raw = b.text;
-                const commaIdx = raw.indexOf(',');
-                const ro = commaIdx > 0 ? parseInt(raw.slice(0, commaIdx), 10) : b.o;
-                return { raw, ro, st: formatTimeASS(times[i][0]), en: formatTimeASS(times[i][1]) };
+            const fm = /Format:([^\r\n]*)/i.exec(header.slice(ev));
+            let fmt = fm[1].toLowerCase().split(',').map(x => x.trim());
+            if (fmt.indexOf('text') < 0) { fmt.push('text'); header = header.slice(0, ev) + header.slice(ev).replace(fm[0], fm[0].replace(/\s+$/, '') + ', Text'); }
+            fmt = fmt.map(x => x === 'actor' ? 'name' : x);
+            const KF = ['readorder', 'layer', 'style', 'name', 'marginl', 'marginr', 'marginv', 'effect', 'text'];
+            const items = [];
+            blocks.forEach((b, i) => {
+                const raw = b.text.replace(/\r/g, '').replace(/\n/g, '\\N'), f = []; let p = 0;
+                for (let k = 0; k < 8; k++) { const c = raw.indexOf(',', p); if (c < 0) break; f.push(raw.slice(p, c)); p = c + 1; }
+                f.push(raw.slice(p)); while (f.length < 9) f.push('');
+                const ro = parseInt(f[0], 10); if (isNaN(ro)) return;
+                const st = formatTimeASS(times[i][0]), en = formatTimeASS(times[i][1]);
+                const line = 'Dialogue: ' + fmt.map(n => n === 'marked' ? 'Marked=0' : n === 'start' ? st : n === 'end' ? en : (KF.indexOf(n) >= 0 ? f[KF.indexOf(n)] : '')).join(',');
+                items.push({ ro, line, i });
             });
-            parsedBlocks.sort((a, b) => a.ro - b.ro);
-
-            const lines = [];
-            parsedBlocks.forEach(item => {
-                const raw = item.raw.replace(/\r/g, '').replace(/\n/g, '\\N');
-                const f = [];
-                let p = 0, ok = true;
-                for (let k = 0; k < 8; k++) {
-                    const c = raw.indexOf(',', p);
-                    if (c < 0) { ok = false; break; }
-                    f.push(raw.slice(p, c));
-                    p = c + 1;
-                }
-
-                if (ok) {
-                    const layer = f[1].trim() || '0';
-                    lines.push(`Dialogue: ${layer},${item.st},${item.en},${f[2]},${f[3]},${f[4]},${f[5]},${f[6]},${f[7]},${raw.slice(p)}`);
-                } else if (item.raw.trim()) {
-                    lines.push(`Dialogue: 0,${item.st},${item.en},Default,,0,0,0,,${item.raw}`);
-                }
-            });
-
-            return { content: '\uFEFF' + header + '\r\n' + lines.join('\r\n') + '\r\n', ext: 'ass', count: lines.length };
+            items.sort((a, b) => (a.ro - b.ro) || (a.i - b.i));
+            return { content: '\uFEFF' + header + '\r\n' + items.map(x => x.line).join('\r\n') + '\r\n', ext: 'ass', count: items.length };
         }
 
         if (mkvIsVtt(track)) {
@@ -3394,6 +3461,7 @@ function kfTogglePw(btn){
             } else {
                 triggerDownload(res.content, fileName);
             }
+            if (res.extra) setTimeout(() => { const u2 = URL.createObjectURL(res.extra.blob), a2 = document.createElement('a'); a2.href = u2; a2.download = fileName.replace(/\.[^.]+$/, '.' + res.extra.ext); document.body.appendChild(a2); a2.click(); setTimeout(() => { a2.remove(); URL.revokeObjectURL(u2); }, 60000); }, 600);
             showToast(`فایلەکە بە سەرکەوتوویی دابەزێندرا (${res.count} دانە)`, 'success');
         }
     }
@@ -3403,11 +3471,11 @@ function kfTogglePw(btn){
         if (!track) return;
         if (track.encoded) { showToast('ئەم تراکە کۆدکراوە (زلیب/هێدەر) و پشتگیری ناکرێت.', 'error'); return; }
 
-        if (!/S_TEXT\/(UTF8|ASCII|SSA|ASS|WEBVTT)|^S_(SSA|ASS)$|S_HDMV\/PGS/i.test(track.codecId || '')) {
+        if (!/S_TEXT\/(UTF8|ASCII|SSA|ASS|WEBVTT)|^S_(SSA|ASS)$|S_HDMV\/PGS|S_VOBSUB/i.test(track.codecId || '')) {
             showToast('ئەم جۆرە ژێرنووسە (' + (track.codecId || '?') + ') هێشتا پشتگیری ناکرێت.', 'warning');
             return;
         }
-        const isPgs = mkvIsPgs(track);
+        const isPgs = mkvIsPgs(track) || mkvIsVob(track);
         if (openInEditor && isPgs) {
             showToast('ژێرنووسی وێنەیی (PGS) تەنها دادەبەزێت و ناکرێت لە ئەدیتۆری دەق بکرێتەوە.', 'warning');
             return;
@@ -3482,7 +3550,7 @@ function kfTogglePw(btn){
                 // وەک mkvextract: ئەگەر ژێرنووسی دەقیی تریش هەبوو، لە هەمان پاسدا دەردەهێنرێن و کاش دەکرێن،
                 // بۆ ئەوەی بۆ تراکی دواتر فایلەکە دووبارە نەخوێنرێتەوە.
                 const others = isPgs ? [] : mkvParsedTracks.filter(t =>
-                    t.trackNumber !== targetTrackNumber && !t.encoded && !mkvIsPgs(t) &&
+                    t.trackNumber !== targetTrackNumber && !t.encoded && !mkvIsPgs(t) && !mkvIsVob(t) &&
                     (t.type === 17 || t.codecId.startsWith('S_')) &&
                     !window.__mkvCache[mkvScanId + ':' + t.trackNumber]);
                 if (others.length === 0) {
@@ -3681,7 +3749,7 @@ function kfTogglePw(btn){
         const isAc3 = /A_AC3/i.test(codecId);
         const isEac3 = /A_EAC3/i.test(codecId);
         const isMp3 = /A_MPEG\/L3/i.test(codecId);
-        const isOpus = /A_OPUS/i.test(codecId), isFlac = /A_FLAC/i.test(codecId), isDts = /A_DTS/i.test(codecId);
+        const isVorbis = /A_VORBIS/i.test(codecId), isOpus = /A_OPUS/i.test(codecId), isFlac = /A_FLAC/i.test(codecId), isDts = /A_DTS/i.test(codecId);
         const isThd = /A_TRUEHD|A_MLP/i.test(codecId), isPcm = /A_PCM\/INT\/LIT/i.test(codecId);
 
         let outExt = 'mka';
@@ -3691,6 +3759,7 @@ function kfTogglePw(btn){
         else if (isEac3) { outExt = 'eac3'; mimeType = 'audio/eac3'; }
         else if (isMp3) { outExt = 'mp3'; mimeType = 'audio/mpeg'; }
         else if (isOpus) { outExt = 'opus'; mimeType = 'audio/ogg'; }
+        else if (isVorbis) { outExt = 'ogg'; mimeType = 'audio/ogg'; }
         else if (isFlac) { outExt = 'flac'; mimeType = 'audio/flac'; }
         else if (isDts) { outExt = 'dts'; mimeType = 'audio/vnd.dts'; }
         else if (isThd) { outExt = /MLP/i.test(codecId) ? 'mlp' : 'thd'; mimeType = 'application/octet-stream'; }
@@ -3743,6 +3812,7 @@ function kfTogglePw(btn){
 
             let parts = audioChunks;
             if (isOpus) parts = mkvOggOpus(track, audioChunks);
+            else if (isVorbis) { const og = mkvOggVorbis(track, audioChunks); if (og) parts = og; else { outExt = 'mka'; mimeType = 'audio/x-matroska'; } }
             else if (isFlac) { const cp = track.codecPrivate || new Uint8Array(0), mg = cp.length > 3 && cp[0] === 0x66 && cp[1] === 0x4C; parts = (mg ? [cp] : [new Uint8Array([102, 76, 97, 67]), cp]).concat(audioChunks); }
             else if (isPcm) parts = [mkvWavHeader(track, audioChunks.reduce((n, x) => n + x.length, 0))].concat(audioChunks);
             const finalBlob = new Blob(parts, { type: mimeType });

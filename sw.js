@@ -21,7 +21,8 @@ self.addEventListener('fetch', (event) => {
 
     event.respondWith((async () => {
         try {
-            const networkResponse = await fetch(req);
+            // no-cache: هەمیشە لە سێرڤەر دەپرسێت (ETag)، بۆ ئەوەی کاشی HTTPـی گیتهەب (١٠ خولەک) وەشانی کۆن نەگەڕێنێتەوە
+            const networkResponse = await fetch(req, { cache: 'no-cache' });
             if (networkResponse && networkResponse.status === 200) {
                 const cloned = networkResponse.clone();
                 // waitUntil: دڵنیابوون لەوەی سەیڤکردنەکە تەواو دەبێت

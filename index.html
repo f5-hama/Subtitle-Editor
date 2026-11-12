@@ -3447,6 +3447,7 @@ function kfTogglePw(btn){
             isAssFormat = mkvIsAss(track);
             isVttFormat = mkvIsVtt(track);
             originalData = isAssFormat ? parseASSContent(res.content, true) : (isVttFormat ? parseVTTContent(res.content) : parseSRTContent(res.content));
+            censorAddedList = [];
             buildEditorUI([]);
             showToast(`${res.count} دێڕی ژێرنووس دەرهێنرا و لە ئەدیتۆر کرایەوە!`, 'success');
         } else {
@@ -5665,6 +5666,7 @@ function restoreFromHistory(id) {
         isVttFormat = item.isVttFormat || false;
         assHeaderLines = item.assHeaderLines || [];
         rawAssMasterEvents = item.rawAssMasterEvents || [];
+        censorAddedList = (item.addedLines || []).map(x => Object.assign({}, x)); if (typeof kfAddedRefresh === 'function') kfAddedRefresh();
         const modal = document.getElementById('history-modal');
         if (modal) modal.style.display = 'none';
         subtitleNotes = item.notes || [];
@@ -7761,7 +7763,8 @@ function saveSession() {
             savedState: getCurrentState(), 
             notes: subtitleNotes,
             scrollPos: scrollInfo.scrollTop,
-            lastLineIndex: scrollInfo.lineIndex
+            lastLineIndex: scrollInfo.lineIndex,
+            addedLines: (typeof censorAddedList !== 'undefined' ? censorAddedList : [])
         };
         localStorage.setItem('kf_autosave_session', JSON.stringify(session));
 
@@ -7779,7 +7782,8 @@ function saveSession() {
             assHeaderLines,
             rawAssMasterEvents,
             scrollPos: scrollInfo.scrollTop,
-            lastLineIndex: scrollInfo.lineIndex
+            lastLineIndex: scrollInfo.lineIndex,
+            addedLines: (typeof censorAddedList !== 'undefined' ? censorAddedList : [])
         });
     } catch(e) {
         console.warn("Storage full, session skipped safely.");
@@ -7802,6 +7806,7 @@ function resumeSession() {
             isVttFormat = session.isVttFormat || false; 
             assHeaderLines = session.assHeaderLines || [];
             rawAssMasterEvents = session.rawAssMasterEvents || [];
+            censorAddedList = (session.addedLines || []).map(x => Object.assign({}, x)); if (typeof kfAddedRefresh === 'function') kfAddedRefresh();
             subtitleNotes = session.notes || [];
             buildEditorUI(session.savedState || []);
             
@@ -7854,6 +7859,7 @@ async function startEditing() {
         isVttFormat = fOrig.name.toLowerCase().endsWith('.vtt') || origText.startsWith('WEBVTT'); 
 
         originalData = isAssFormat ? parseASSContent(origText, true) : (isVttFormat ? parseVTTContent(origText) : parseSRTContent(origText));
+        censorAddedList = [];
         
         if (!originalData || originalData.length === 0) {
             showToast("هیچ دێڕێکی ژێرنووس لەم فایلەدا نەدۆزرایەوە!", "warning");
@@ -10899,7 +10905,7 @@ var LibassRenderer = (function () {
         // سانسۆرەکان دەچنە بەرزترین چینی فایلەکە (Layer 99)
         if (typeof censorAddedList !== 'undefined' && censorAddedList.length > 0) {
             censorAddedList.forEach(function(c) {
-                events.push('Dialogue: 99,' + c.stTime + ',' + c.enTime + ',Default,,0,0,0,,' + c.rawText);
+                events.push('Dialogue: 99,' + c.stTime + ',' + c.enTime + ',' + (c.style || 'Default') + ',,0,0,0,,' + c.rawText);
             });
         }
 
@@ -11275,23 +11281,31 @@ function buildDownloadContent(useOriginal) {
         const targetFormat = isAssFormat ? 'ass' : (isVttFormat ? 'vtt' : 'srt');
 
         if (targetFormat === 'srt') {
-            let outIdx = 0;
+            const _x = (!useOriginal && typeof kfExtraTextLines === 'function') ? kfExtraTextLines() : [];
+            let _e = [];
             originalData.forEach((item, idx) => {
                 let userText = textareas[idx] ? textareas[idx].value.trim() : "";
                 // لە فایلی دەستکاریکراو تەنها ئەو دێڕانە دەخرێتە ڕوو کە نووسراون
                 if (!useOriginal && userText === "") return;
                 let lines = userText !== "" ? userText : (item.rawText || item.text);
-                outIdx++;
-                finalContent += `${outIdx}\n${formatTimeSRT(item.startSec)} --> ${formatTimeSRT(item.endSec)}\n${lines}\n\n`;
+                _e.push({ s: item.startSec, e: item.endSec, t: lines });
             });
+            _x.forEach(c => _e.push({ s: c.startSec, e: c.endSec, t: c.text }));
+            if (_x.length) _e = _e.map((v, i) => [v, i]).sort((a, b) => (a[0].s - b[0].s) || (a[1] - b[1])).map(a => a[0]);
+            _e.forEach((v, i) => { finalContent += `${i + 1}\n${formatTimeSRT(v.s)} --> ${formatTimeSRT(v.e)}\n${v.t}\n\n`; });
         } else if (targetFormat === 'vtt') {
             finalContent = "WEBVTT\n\n";
+            const _x = (!useOriginal && typeof kfExtraTextLines === 'function') ? kfExtraTextLines() : [];
+            let _e = [];
             originalData.forEach((item, idx) => {
                 let userText = textareas[idx] ? textareas[idx].value.trim() : "";
                 if (!useOriginal && userText === "") return;
                 let lines = userText !== "" ? userText : (item.rawText || item.text);
-                finalContent += `${formatTimeVTT(item.startSec)} --> ${formatTimeVTT(item.endSec)}\n${lines}\n\n`;
+                _e.push({ s: item.startSec, e: item.endSec, t: lines });
             });
+            _x.forEach(c => _e.push({ s: c.startSec, e: c.endSec, t: c.text }));
+            if (_x.length) _e = _e.map((v, i) => [v, i]).sort((a, b) => (a[0].s - b[0].s) || (a[1] - b[1])).map(a => a[0]);
+            _e.forEach(v => { finalContent += `${formatTimeVTT(v.s)} --> ${formatTimeVTT(v.e)}\n${v.t}\n\n`; });
         } else if (targetFormat === 'ass') {
             let titleName = currentFileName ? currentFileName.replace(/\.[^/.]+$/, "") : "Subtitle";
             
@@ -11382,8 +11396,8 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         }
         if (typeof censorAddedList !== 'undefined' && censorAddedList.length > 0 && targetFormat === 'ass') {
             censorAddedList.forEach(function(c) {
-                if (!finalContent.includes(c.rawText)) {
-                    finalContent += `Dialogue: 99,${c.stTime},${c.enTime},Default,,0,0,0,,${c.rawText}\n`;
+                if (c.kind === 'text' || !finalContent.includes(c.rawText)) {
+                    finalContent += `Dialogue: 99,${c.stTime},${c.enTime},${c.style || 'Default'},,0,0,0,,${c.rawText}\n`;
                 }
             });
         }
@@ -15642,12 +15656,13 @@ function addCurrentCensorToSubtitles() {
 function renderCensorListUI() {
     const listEl = document.getElementById('censorAddedList');
     if (!listEl) return;
-    if (censorAddedList.length === 0) {
+    const cl = censorAddedList.filter(c => c.kind !== 'text');
+    if (cl.length === 0) {
         listEl.innerHTML = '<div style="font-size:11px; color:var(--text-muted); text-align:center; padding:4px;">هیچ سانسۆرێک زیاد نەکراوە</div>';
         return;
     }
 
-    listEl.innerHTML = censorAddedList.map((c, idx) => `
+    listEl.innerHTML = cl.map((c, idx) => `
         <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:5px 8px; border-radius:6px; margin-bottom:4px; font-size:11px;">
             <span>سانسۆری #${idx + 1} (${c.type}) [${c.stTime} → ${c.enTime}]</span>
             <button type="button" class="btn btn-outline" style="width:auto; padding:2px 6px; font-size:10px; color:#ef4444; border-color:#ef4444;" onclick="removeCensorItem(${c.id})">سڕینەوە</button>
@@ -19521,11 +19536,38 @@ var KFV = (function () {
 (function () {
     var b64e = function (u) { var s = ''; for (var i = 0; i < u.length; i += 8192) s += String.fromCharCode.apply(null, u.subarray(i, i + 8192)); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
     var b64d = function (t) { t = t.replace(/-/g, '+').replace(/_/g, '/'); while (t.length % 4) t += '='; var b = atob(t), u = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; };
-    var pipe = async function (d, C) { return new Uint8Array(await new Response(new Blob([d]).stream().pipeThrough(new C('gzip'))).arrayBuffer()); };
-    window.kfHistEncode = async function (item) { var o = Object.assign({}, item); delete o.id; return 'KF1:' + b64e(await pipe(new TextEncoder().encode(JSON.stringify(o)), CompressionStream)); };
+    var pipe = async function (d, C, f) { return new Uint8Array(await new Response(new Blob([d]).stream().pipeThrough(new C(f || 'gzip'))).arrayBuffer()); };
+    var deq = function (a, b) { if (a === b) return true; if (!a || !b || typeof a !== 'object' || typeof b !== 'object' || Array.isArray(a) !== Array.isArray(b)) return false; var ka = Object.keys(a); if (ka.length !== Object.keys(b).length) return false; return ka.every(function (k) { return deq(a[k], b[k]); }); };
+    var A = ['layer', 'style', 'name', 'marginL', 'marginR', 'marginV', 'effect', 'eventType'];
+    // فیلدە لێکدەرچووەکان (text، parsedLines، assPrefix، startSec...) لە کۆدەکەدا نانووسرێن و کاتی داخلکردن دروست دەکرێنەوە
+    function rebuild(o) {
+        return o.o.map(function (r) {
+            var u = r[0], t = r[1], raw = r[2], pr = (t || '').split(' --> '), st = pr[0], en = pr[1], pl, it, tx = function (p) { return p.map(function (l) { return l.text; }).join('\n'); };
+            if (o.m === 'a') {
+                var m = {}; A.forEach(function (k, n) { m[k] = r[3 + n]; }); pl = extLines(raw);
+                it = { id: u, uid: u, time: t, startSec: timeToSeconds(st), endSec: timeToSeconds(en), rawText: raw, assMeta: { eventType: m.eventType, layer: m.layer, style: m.style, name: m.name, marginL: m.marginL, marginR: m.marginR, marginV: m.marginV, effect: m.effect }, assPrefix: m.eventType + ': ' + m.layer + ',' + st + ',' + en + ',' + m.style + ',' + m.name + ',' + m.marginL + ',' + m.marginR + ',' + m.marginV + ',' + m.effect + ',', parsedLines: pl, text: tx(pl) };
+            } else { pl = extLines(raw.replace(/\n/g, '\\N')); it = { id: u, uid: u, time: t, startSec: timeToSeconds(st), endSec: timeToSeconds(en), rawText: raw, assPrefix: '', parsedLines: pl, text: tx(pl) }; }
+            return it;
+        });
+    }
+    window.kfHistEncode = async function (item) {
+        var od = item.originalData || [], fmt = item.isAssFormat ? 'a' : item.isVttFormat ? 'v' : 's', slim = null;
+        try {
+            var o = { v: 2, f: item.fileName, d: item.date, m: fmt, c: item.count, s: item.savedState, n: item.notes, h: item.assHeaderLines, p: item.scrollPos, l: item.lastLineIndex, a: item.addedLines,
+                e: (item.rawAssMasterEvents || []).map(function (x) { return x.isTech ? x.rawLine : x.uid; }),
+                o: od.map(function (x) { return fmt === 'a' ? [x.uid, x.time, x.rawText].concat(A.map(function (k) { return x.assMeta[k]; })) : [x.uid, x.time, x.rawText]; }) };
+            if (deq(rebuild(o), od)) slim = o;
+        } catch (e) { }
+        if (slim) return 'KF2:' + b64e(await pipe(new TextEncoder().encode(JSON.stringify(slim)), CompressionStream, 'deflate-raw'));
+        var f = Object.assign({}, item); delete f.id; return 'KF1:' + b64e(await pipe(new TextEncoder().encode(JSON.stringify(f)), CompressionStream));
+    };
     window.kfHistDecode = async function (code) {
-        code = (code || '').trim().replace(/\s+/g, ''); var i = code.indexOf('KF1:'); if (i < 0) throw new Error('bad');
-        var o = JSON.parse(new TextDecoder().decode(await pipe(b64d(code.slice(i + 4)), DecompressionStream)));
+        code = (code || '').trim().replace(/\s+/g, ''); var j = code.indexOf('KF2:'), i = code.indexOf('KF1:'), o;
+        if (j >= 0) {
+            var z = JSON.parse(new TextDecoder().decode(await pipe(b64d(code.slice(j + 4)), DecompressionStream, 'deflate-raw')));
+            o = { id: '', fileName: z.f, date: z.d, format: z.m === 'a' ? 'ass' : z.m === 'v' ? 'vtt' : 'srt', count: z.c, originalData: rebuild(z), savedState: z.s, notes: z.n, isAssFormat: z.m === 'a', isVttFormat: z.m === 'v', assHeaderLines: z.h || [], rawAssMasterEvents: (z.e || []).map(function (x) { return typeof x === 'string' ? { isTech: true, rawLine: x } : { isTech: false, uid: x }; }), scrollPos: z.p, lastLineIndex: z.l, addedLines: z.a || [] };
+        } else if (i >= 0) o = JSON.parse(new TextDecoder().decode(await pipe(b64d(code.slice(i + 4)), DecompressionStream)));
+        else throw new Error('bad');
         if (!o || !o.fileName || !Array.isArray(o.originalData)) throw new Error('bad'); o.id = 'hist_' + Date.now(); return o;
     };
     function sheet(code, imp) {
@@ -19568,46 +19610,156 @@ var KFV = (function () {
     };
 })();
 
-// ================= دوو بەش لەژێر ڤیدیۆ: ژێرنووس / کۆدی وێنە (تەنها بینین؛ داتا و کۆپی AI دەست لێ نادرێت) =================
+// ================= دوو بەش لەژێر ڤیدیۆ: ژێرنووس / کۆدی وێنە =================
+// دێڕە تەکنیکییەکان (\p1..\p9) لە rawAssMasterEvents ـدان نەک originalData؛ بۆیە لێرە ڕاستەوخۆ rawLine ـەکەیان دەستکاری دەکرێت.
+// originalData و کۆپی بۆ AI هیچ دەستکاری ناکرێن.
 (function () {
-    var wrap = document.getElementById('video-player-wrapper'), cont = document.getElementById('subtitles-container');
+    var wrap = document.getElementById('video-player-wrapper'), cont = document.getElementById('subtitles-container'), edScr = document.getElementById('editor-screen');
     if (!wrap || !cont) return;
-    var DR = /\\p\s*[1-9]/, bar = null, mode = 'all', tm = 0;
+    var DR = /\\p[1-9](?![a-zA-Z])/, bar = null, panel = null, sent = null, io = null, mode = 'all', list = [], shown = 0, tm = 0, sv = 0, last = -1, CH = 25;
     var st = document.createElement('style');
-    st.textContent = '.kf-draw-view .subtitle-card:not([data-kf-draw]){display:none!important}.kf-draw-view .subtitle-card[data-kf-draw],.kf-fade .subtitle-card{animation:kfIn .32s ease both}@keyframes kfIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}';
+    st.textContent = '.kf-dc{margin:10px;padding:10px;border:1px solid rgba(148,163,184,.3);border-radius:14px;background:rgba(15,23,42,.35);animation:kfIn .32s ease both}.kf-dc-h{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:12px;opacity:.9;direction:ltr}.kf-dc textarea{width:100%;min-height:96px;box-sizing:border-box;direction:ltr;text-align:left;font:12px/1.45 monospace;color:inherit;background:rgba(0,0,0,.28);border:1px solid rgba(148,163,184,.3);border-radius:10px;padding:8px;resize:vertical}.kf-dc button{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;border:1px solid rgba(148,163,184,.4);background:none;color:inherit;flex:none}@keyframes kfIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}';
     document.head.appendChild(st);
+    function scan() { list = []; var m = (typeof rawAssMasterEvents !== 'undefined' && rawAssMasterEvents) || []; m.forEach(function (ev) { if (ev && ev.isTech && ev.rawLine && /^\s*Dialogue:/.test(ev.rawLine) && DR.test(ev.rawLine)) list.push(ev); }); }
+    function cut(l) { var n = 0; for (var i = l.indexOf(':') + 1; i < l.length; i++) if (l[i] === ',' && ++n === 9) return i + 1; return -1; }
+    function card(ev, n) {
+        var p = (typeof parseAssDialogueLine === 'function' && parseAssDialogueLine(ev.rawLine)) || {}, c = cut(ev.rawLine), d = document.createElement('div'); d.className = 'kf-dc';
+        var h = document.createElement('div'); h.className = 'kf-dc-h';
+        var b = document.createElement('button'); b.type = 'button'; b.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5.8v12.4a1.3 1.3 0 0 0 2 1.1l9.8-6.2a1.3 1.3 0 0 0 0-2.2L9 4.7A1.3 1.3 0 0 0 7 5.8z"/></svg>';
+        b.onclick = function () { var v = document.getElementById('preview-video'); if (v && v.getAttribute('src') && p.st) { v.currentTime = timeToSeconds(p.st); v.play(); } };
+        var t = document.createElement('span'); t.textContent = '#' + n + '  ' + (p.st || '') + ' --> ' + (p.en || '') + (p.style ? '  ·  ' + p.style : '');
+        h.appendChild(b); h.appendChild(t); d.appendChild(h);
+        var ta = document.createElement('textarea'); ta.spellcheck = false; ta.value = c < 0 ? ev.rawLine : ev.rawLine.slice(c);
+        ta.oninput = function () { var cc = cut(ev.rawLine); if (cc < 0) return; ev.rawLine = ev.rawLine.slice(0, cc) + ta.value.replace(/\r?\n/g, '\\N'); clearTimeout(sv); sv = setTimeout(function () { if (typeof saveSession === 'function') saveSession(); }, 700); };
+        d.appendChild(ta); return d;
+    }
+    function more() { var end = Math.min(shown + CH, list.length); for (; shown < end; shown++) panel.insertBefore(card(list[shown], shown + 1), sent); if (shown >= list.length && io) io.disconnect(); }
+    function openDraw() {
+        scan(); last = list.length; if (!list.length) return setMode('all', true);
+        if (!panel) { panel = document.createElement('div'); sent = document.createElement('div'); sent.style.height = '1px'; panel.appendChild(sent); cont.parentNode.insertBefore(panel, cont); io = new IntersectionObserver(function (e) { if (e[0].isIntersecting) more(); }, { rootMargin: '500px' }); }
+        panel.querySelectorAll('.kf-dc').forEach(function (x) { x.remove(); }); shown = 0;
+        var cs = getComputedStyle(cont); ['flex', 'height', 'maxHeight', 'minHeight', 'overflowY', 'overflowX', 'padding', 'width'].forEach(function (k) { panel.style[k] = cs[k]; });
+        cont.style.display = 'none'; panel.style.display = ''; more(); io.disconnect(); io.observe(sent);
+    }
+    function closeDraw() { if (panel) panel.style.display = 'none'; cont.style.display = ''; }
+    function paint() { if (bar) bar.querySelectorAll('button').forEach(function (x) { var on = x.dataset.m === mode; x.style.background = on ? '#14b8a6' : 'transparent'; x.style.color = on ? '#04211e' : 'inherit'; }); }
     function setMode(m, quiet) {
-        mode = m; cont.classList.toggle('kf-draw-view', m === 'draw');
-        if (m === 'all') { cont.classList.add('kf-fade'); setTimeout(function () { cont.classList.remove('kf-fade'); }, 400); }
-        if (bar) bar.querySelectorAll('button').forEach(function (x) { var on = x.dataset.m === m; x.style.background = on ? '#14b8a6' : 'transparent'; x.style.color = on ? '#04211e' : 'inherit'; });
-        if (!quiet) { var c = cont.querySelector(m === 'draw' ? '.subtitle-card[data-kf-draw]' : '.subtitle-card'); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+        mode = m; if (m === 'draw') openDraw(); else closeDraw(); paint();
+        if (!quiet) { var t = m === 'draw' ? panel : cont; if (t) { t.scrollTop = 0; t.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } }
     }
     function ui(n, tot) {
         if (!n) { if (bar) bar.style.display = 'none'; if (mode !== 'all') setMode('all', true); return; }
         if (!bar) {
-            bar = document.createElement('div'); bar.dir = 'rtl';
-            bar.style.cssText = 'display:flex;gap:4px;margin:8px 10px;padding:4px;border:1px solid rgba(148,163,184,.3);border-radius:999px;';
-            [['all', 'ژێرنووس'], ['draw', 'کۆدی وێنە']].forEach(function (a) {
-                var b = document.createElement('button'); b.type = 'button'; b.dataset.m = a[0]; b.style.cssText = 'flex:1;padding:8px 6px;border:0;border-radius:999px;font-size:13px;font-weight:600;transition:background .25s,color .25s;'; b.onclick = function () { setMode(a[0]); }; bar.appendChild(b);
-            });
-            var host = wrap.closest('#editor-screen') ? wrap : cont; host.parentNode.insertBefore(bar, host === wrap ? wrap.nextSibling : cont);
-            setMode(mode, true);
+            bar = document.createElement('div'); bar.dir = 'rtl'; bar.style.cssText = 'display:flex;gap:4px;margin:8px 10px;padding:4px;border:1px solid rgba(148,163,184,.3);border-radius:999px;';
+            [['all', 'ژێرنووس'], ['draw', 'کۆدی وێنە']].forEach(function (a) { var b = document.createElement('button'); b.type = 'button'; b.dataset.m = a[0]; b.style.cssText = 'flex:1;padding:8px 6px;border:0;border-radius:999px;font-size:13px;font-weight:600;transition:background .25s,color .25s;'; b.onclick = function () { setMode(a[0]); }; bar.appendChild(b); });
+            if (wrap.closest('#editor-screen')) wrap.parentNode.insertBefore(bar, wrap.nextSibling); else cont.parentNode.insertBefore(bar, cont); paint();
         }
         bar.style.display = ''; bar.children[0].textContent = 'ژێرنووس (' + tot + ')'; bar.children[1].textContent = 'کۆدی وێنە (' + n + ')';
     }
-    function mark() {
-        var n = 0, tot = 0;
-        cont.querySelectorAll('.subtitle-card').forEach(function (c) {
-            tot++; var od = (typeof originalData !== 'undefined' && originalData[+c.dataset.index]) || {}, ta = c.querySelector('textarea');
-            var d = DR.test((od.rawText || '') + '\n' + (ta ? ta.value : '')); if (d) n++;
-            if (d !== c.hasAttribute('data-kf-draw')) { if (d) c.setAttribute('data-kf-draw', ''); else c.removeAttribute('data-kf-draw'); }
-        });
-        ui(n, tot);
-    }
-    var deb = function () { clearTimeout(tm); tm = setTimeout(mark, 120); };
-    new MutationObserver(deb).observe(cont, { childList: true });
-    cont.addEventListener('focusout', deb);
+    function mark(force) { scan(); ui(list.length, cont.querySelectorAll('.subtitle-card').length); if (mode === 'draw' && list.length && (force || last !== list.length)) openDraw(); }
+    var deb = function (f) { clearTimeout(tm); tm = setTimeout(function () { mark(f === true); }, 150); };
+    new MutationObserver(function () { deb(true); }).observe(cont, { childList: true });
+    if (edScr) new MutationObserver(function () { deb(false); }).observe(edScr, { attributes: true, attributeFilter: ['style'] });
     mark();
+})();
+
+// ================= زیادکردنی دێڕ (بە ڤیدیۆ، وەک بەشی سانسۆر) =================
+// دێڕەکان لە censorAddedList دەمێننەوە (kind:'text') بۆ ئەوەی پێشبینینی libass و هەناردەی ASS خۆکارانە بیانگرێتەوە.
+(function () {
+    var $ = function (id) { return document.getElementById(id); }, M, V, OV, SL, T0, T1, TX, ST, AN, LS, CNT, seq = 0, tm = 0;
+    var ANS = [[2, 'ژێرەوە'], [8, 'سەرەوە'], [5, 'ناوەڕاست']];
+    var PLAY = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5.8v12.4a1.3 1.3 0 0 0 2 1.1l9.8-6.2a1.3 1.3 0 0 0 0-2.2L9 4.7A1.3 1.3 0 0 0 7 5.8z"/></svg>';
+    var TRASH = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg>';
+    var esc = function (t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); };
+    var items = function () { return censorAddedList.filter(function (c) { return c.kind === 'text'; }); };
+    var byId = function (id) { return items().filter(function (c) { return c.id === id; })[0]; };
+    var raw = function (c) { return '{\\an' + c.an + '}' + c.text.replace(/\r?\n/g, '\\N'); };
+    function styles() { var n = []; try { n = collectStylesAndInlines((assHeaderLines || []).join('\n')).styles; } catch (e) { } return n.length ? n : ['Default']; }
+    function opts(list, cur) { return list.map(function (x) { var v = Array.isArray(x) ? x[0] : x, l = Array.isArray(x) ? x[1] : x; return '<option value="' + esc(v) + '"' + (String(v) === String(cur) ? ' selected' : '') + '>' + esc(l) + '</option>'; }).join(''); }
+    function sync() { clearTimeout(tm); tm = setTimeout(function () { try { if (typeof LibassRenderer !== 'undefined' && LibassRenderer.isEnabled()) LibassRenderer.sync(true); } catch (e) { } try { if (typeof saveSession === 'function') saveSession(); } catch (e) { } }, 400); }
+    function ov() {
+        var t = V.currentTime || 0, a = items().filter(function (c) { return t >= c.startSec && t < c.endSec; }), d = TX.value.trim();
+        if (d) { var s = timeToSeconds(T0.value), e = timeToSeconds(T1.value); if (t >= s && t < (e > s ? e : s + 3)) a = a.concat([{ text: d, an: +AN.value, draft: 1 }]); }
+        OV.innerHTML = a.map(function (c) { return '<div class="kfal-o a' + c.an + '"' + (c.draft ? ' style="opacity:.65"' : '') + '>' + esc(c.text) + '</div>'; }).join('');
+    }
+    function tick() { if (V.duration && !V._s) SL.value = V.currentTime / V.duration * 1000; $('kfalTime').textContent = formatTimeASS(V.currentTime || 0); ov(); }
+    function renderList() {
+        var a = items(), sl = styles(); CNT.textContent = '(' + a.length + ')';
+        LS.innerHTML = a.length ? a.map(function (c, i) {
+            var l2 = sl.indexOf(c.style) < 0 ? sl.concat([c.style]) : sl;
+            return '<div class="kfal-c" data-id="' + c.id + '"><div class="kfal-h"><b>#' + (i + 1) + '</b><span>' + c.stTime + ' → ' + c.enTime + '</span><button type="button" class="btn btn-outline" data-a="go" title="بڕۆ بۆ ئێرە">' + PLAY + '</button><button type="button" class="btn btn-outline" data-a="del" style="color:#ef4444;border-color:#ef4444">' + TRASH + '</button></div>'
+                + '<div class="kfal-r"><input data-f="st" class="input-field" value="' + c.stTime + '" style="direction:ltr;text-align:center"><input data-f="en" class="input-field" value="' + c.enTime + '" style="direction:ltr;text-align:center"></div>'
+                + '<textarea data-f="text" class="input-field" rows="2" style="width:100%;resize:vertical">' + esc(c.text) + '</textarea>'
+                + '<div class="kfal-r"><select data-f="style" class="input-field">' + opts(l2, c.style) + '</select><select data-f="an" class="input-field">' + opts(ANS, c.an) + '</select></div></div>';
+        }).join('') : '<div style="font-size:11px;color:var(--text-muted);text-align:center;padding:10px">هیچ دێڕێک زیاد نەکراوە</div>';
+    }
+    function upd(el, f, v) {
+        var card = el.closest('.kfal-c'), c = byId(+card.dataset.id); if (!c) return;
+        if (f === 'st' || f === 'en') {
+            var s = timeToSeconds(v); if (isNaN(s)) { el.value = f === 'st' ? c.stTime : c.enTime; return; }
+            if (f === 'st') { c.startSec = s; c.stTime = formatTimeASS(s); el.value = c.stTime; } else { c.endSec = s; c.enTime = formatTimeASS(s); el.value = c.enTime; }
+            card.querySelector('.kfal-h span').textContent = c.stTime + ' → ' + c.enTime;
+        } else if (f === 'text') c.text = v; else if (f === 'style') c.style = v; else if (f === 'an') c.an = +v;
+        c.rawText = raw(c); sync(); ov();
+    }
+    function add() {
+        var tx = TX.value.trim(); if (!tx) { showToast('دەقی دێڕەکە بنووسە', 'warning'); return; }
+        var s = timeToSeconds(T0.value), e = timeToSeconds(T1.value); if (isNaN(s)) s = V.currentTime || 0; if (!(e > s)) e = s + 3;
+        var c = { id: Date.now() + (seq++), stTime: formatTimeASS(s), enTime: formatTimeASS(e), startSec: s, endSec: e, type: 'text', kind: 'text', text: tx, style: ST.value || 'Default', an: +AN.value };
+        c.rawText = raw(c); censorAddedList.push(c); TX.value = ''; T0.value = formatTimeASS(e); T1.value = formatTimeASS(e + 3);
+        renderList(); sync(); ov(); showToast('دێڕ زیادکرا: [' + c.stTime + ' → ' + c.enTime + ']', 'success'); LS.lastElementChild && LS.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    function build() {
+        var st = document.createElement('style');
+        st.textContent = '.kfal-bx{display:flex;flex-direction:column;gap:6px;margin-bottom:8px;background:rgba(0,0,0,.3);padding:8px;border-radius:10px;border:1px solid var(--border-color)}.kfal-r{display:flex;gap:8px}.kfal-f{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--text-muted)}.kfal-f label{display:flex;justify-content:space-between;align-items:center}.kfal-r>*{flex:1;min-width:0}.kfal-c{background:rgba(255,255,255,.05);border:1px solid var(--border-color);border-radius:12px;padding:8px;margin-top:8px;display:flex;flex-direction:column;gap:6px;animation:kfalIn .3s ease both}.kfal-h{display:flex;align-items:center;gap:6px;font-size:11.5px}.kfal-h span{flex:1;direction:ltr;opacity:.8}.kfal-h button{width:30px;height:28px;padding:0;display:inline-flex;align-items:center;justify-content:center}.kfal-o{position:absolute;left:6%;right:6%;text-align:center;color:#fff;font-weight:700;font-size:15px;line-height:1.3;text-shadow:0 0 3px #000,0 0 3px #000,0 0 3px #000}.kfal-o.a2{bottom:8%}.kfal-o.a8{top:8%}.kfal-o.a5{top:50%;transform:translateY(-50%)}@keyframes kfalIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}';
+        document.head.appendChild(st);
+        M = document.createElement('div'); M.id = 'kf-addline-modal'; M.className = 'custom-modal-overlay';
+        M.innerHTML = '<div class="custom-modal-content" style="max-width:460px;width:100%;max-height:calc(var(--kf-vh,1vh)*94);overflow-y:auto;text-align:start;padding:14px;">'
+            + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><h3 style="margin:0;color:var(--primary);font-size:15px;">زیادکردنی دێڕ</h3><button type="button" class="btn btn-outline" id="kfalClose" style="width:auto;padding:3px 8px;font-size:11px;">داخستن</button></div>'
+            + '<div id="kfalVc"><div style="position:relative;width:100%;background:#000;border-radius:10px;overflow:hidden;border:1.5px solid var(--border-color);"><video id="kfalV" playsinline style="width:100%;max-height:220px;display:block;object-fit:contain;"></video><div id="kfalOv" style="position:absolute;inset:0;pointer-events:none;"></div></div>'
+            + '<div style="margin:10px 0 6px;direction:ltr;"><input type="range" id="kfalSl" min="0" max="1000" value="0" step="0.5" style="width:100%;accent-color:var(--primary);height:6px;"></div>'
+            + '<div class="kfal-bx"><div style="display:flex;justify-content:space-between;font-size:11.5px;"><span style="color:var(--text-muted)">کاتی ئێستا:</span><b id="kfalTime" style="color:var(--primary);direction:ltr">0:00:00.00</b></div><div id="kfalSteps" style="display:flex;gap:5px;direction:ltr;"></div></div></div>'
+            + '<div class="kfal-bx"><div class="kfal-r"><div class="kfal-f"><label>دەستپێک <button type="button" class="btn btn-outline kfal-now" data-t="0" style="width:auto;padding:1px 6px;font-size:9.5px">ئێستا</button></label><input id="kfalT0" class="input-field" value="0:00:00.00" style="direction:ltr;text-align:center"></div><div class="kfal-f"><label>کۆتایی <button type="button" class="btn btn-outline kfal-now" data-t="1" style="width:auto;padding:1px 6px;font-size:9.5px">ئێستا</button></label><input id="kfalT1" class="input-field" value="0:00:03.00" style="direction:ltr;text-align:center"></div></div>'
+            + '<textarea id="kfalTX" class="input-field" rows="2" placeholder="دەقی دێڕەکە لێرە بنووسە..." style="width:100%;resize:vertical"></textarea>'
+            + '<div class="kfal-r"><select id="kfalST" class="input-field"></select><select id="kfalAN" class="input-field">' + opts(ANS, 2) + '</select></div>'
+            + '<button type="button" class="btn" id="kfalAdd" style="padding:10px;font-size:12.5px;">زیادکردنی دێڕ</button></div>'
+            + '<div style="margin-top:12px;font-weight:700;font-size:13px;color:var(--primary);">دێڕە زیادکراوەکان <span id="kfalCnt"></span></div><div id="kfalLs"></div></div>';
+        document.body.appendChild(M);
+        V = $('kfalV'); OV = $('kfalOv'); SL = $('kfalSl'); T0 = $('kfalT0'); T1 = $('kfalT1'); TX = $('kfalTX'); ST = $('kfalST'); AN = $('kfalAN'); LS = $('kfalLs'); CNT = $('kfalCnt');
+        [[-1, '-1s'], [-0.1, '-0.1s'], [0, 'Play/Pause'], [0.1, '+0.1s'], [1, '+1s']].forEach(function (a) {
+            var b = document.createElement('button'); b.type = 'button'; b.className = a[0] ? 'btn btn-outline' : 'btn'; b.style.cssText = 'flex:' + (a[0] ? 1 : 1.5) + ';padding:4px 0;font-size:11px;'; b.textContent = a[1];
+            b.onclick = function () { if (!a[0]) { V.paused ? V.play() : V.pause(); } else { V.currentTime = Math.max(0, (V.currentTime || 0) + a[0]); tick(); } }; $('kfalSteps').appendChild(b);
+        });
+        V.addEventListener('timeupdate', tick);
+        SL.addEventListener('input', function () { if (!V.duration) return; V._s = true; V.currentTime = SL.value / 1000 * V.duration; tick(); });
+        SL.addEventListener('change', function () { V._s = false; });
+        M.querySelectorAll('.kfal-now').forEach(function (b) { b.onclick = function () { (b.dataset.t === '0' ? T0 : T1).value = formatTimeASS(V.currentTime || 0); ov(); }; });
+        [TX, T0, T1, AN].forEach(function (x) { x.addEventListener('input', ov); x.addEventListener('change', ov); });
+        $('kfalAdd').onclick = add; $('kfalClose').onclick = function () { V.pause(); M.style.display = 'none'; };
+        LS.addEventListener('input', function (e) { if (e.target.dataset.f === 'text') upd(e.target, 'text', e.target.value); });
+        LS.addEventListener('change', function (e) { var f = e.target.dataset.f; if (f && f !== 'text') upd(e.target, f, e.target.value); });
+        LS.addEventListener('click', function (e) {
+            var b = e.target.closest('button[data-a]'); if (!b) return; var c = byId(+b.closest('.kfal-c').dataset.id); if (!c) return;
+            if (b.dataset.a === 'del') { censorAddedList.splice(censorAddedList.indexOf(c), 1); renderList(); sync(); ov(); } else { V.currentTime = c.startSec; tick(); }
+        });
+    }
+    window.kfExtraTextLines = function () { return items().map(function (c) { return { startSec: c.startSec, endSec: c.endSec, text: c.text }; }); };
+    window.kfAddedRefresh = function () { if (M) { renderList(); ov(); } try { if (typeof LibassRenderer !== 'undefined' && LibassRenderer.isEnabled()) LibassRenderer.sync(true); } catch (e) { } };
+    window.kfOpenAddLine = function () {
+        if (!M) build();
+        var mv = $('preview-video'), has = !!(mv && mv.getAttribute('src')), t0 = has ? (mv.currentTime || 0) : 0, sl = styles();
+        $('kfalVc').style.display = has ? '' : 'none';
+        ST.innerHTML = opts(sl, sl.indexOf('Default') >= 0 ? 'Default' : sl[0]);
+        function ready() { V.currentTime = t0; T0.value = formatTimeASS(t0); T1.value = formatTimeASS(t0 + 3); tick(); }
+        if (has) { if (V.src !== mv.src) { V.src = mv.src; V.onloadedmetadata = ready; } else ready(); } else { T0.value = formatTimeASS(0); T1.value = formatTimeASS(3); }
+        renderList(); M.style.display = 'flex';
+    };
+    var u = $('btn-undo');
+    if (u) {
+        var b = document.createElement('button'); b.className = 'top-btn'; b.id = 'kf-addline-btn'; b.title = 'زیادکردنی دێڕ'; b.setAttribute('onclick', 'kfOpenAddLine()'); b.style.color = 'var(--primary)';
+        b.innerHTML = '<svg class="icon" style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85"><path d="M3 6h12M3 12h8M3 18h12M18 9v6M15 12h6"/></svg>';
+        u.parentNode.insertBefore(b, u);
+    }
 })();
 </script>
 </body>

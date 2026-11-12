@@ -19575,8 +19575,8 @@ var KFV = (function () {
     var fdb = function () { try { return firebase.firestore(); } catch (e) { return null; } };
     var rnd = function (n) { var a = new Uint8Array(n); crypto.getRandomValues(a); return Array.from(a, function (x) { return AL[x % AL.length]; }).join(''); };
     // کۆدی کورت: دەقە درێژەکە لە Firestore دەپارێزرێت و تەنها ٨ پیت دەگەڕێتەوە
-    window.kfShorten = async function (code) { var d = fdb(); if (!d) throw new Error('offline'); var id = rnd(8); await d.collection('shared_codes').doc(id).set({ data: code, t: firebase.firestore.FieldValue.serverTimestamp() }); return 'KF-' + id; };
-    var expand = async function (sc) { var d = fdb(); if (!d) throw new Error('offline'); var doc = await d.collection('shared_codes').doc(sc.replace(/^KF-/i, '').toUpperCase()).get(); if (!doc.exists) throw new Error('nf'); return doc.data().data; };
+    window.kfShorten = async function (code) { var d = fdb(); if (!d) throw new Error('offline'); var id = rnd(8); await d.collection('shared_codes').doc(id).set({ data: code, t: firebase.firestore.FieldValue.serverTimestamp(), exp: firebase.firestore.Timestamp.fromMillis(Date.now() + 30 * 864e5) }); return 'KF-' + id; };
+    var expand = async function (sc) { var d = fdb(); if (!d) throw new Error('offline'); var doc = await d.collection('shared_codes').doc(sc.replace(/^KF-/i, '').toUpperCase()).get(); if (!doc.exists) throw new Error('nf'); var x = doc.data(); if (x.exp && x.exp.toMillis && x.exp.toMillis() < Date.now()) throw new Error('nf'); return x.data; };
     var _dec = window.kfHistDecode;
     window.kfHistDecode = async function (code) { code = (code || '').trim(); if (SHORT.test(code.replace(/\s+/g, ''))) code = await expand(code.replace(/\s+/g, '')); return _dec(code); };
     function saveFile(name, text) {

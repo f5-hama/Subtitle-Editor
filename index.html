@@ -7974,7 +7974,9 @@ function getCurrentSnapshot() {
     return {
         originalData: JSON.parse(JSON.stringify(originalData)),
         kurdishState: Array.from(document.querySelectorAll('.subtitle-kurd textarea')).map(t => t.value),
-        notes: Array.from(typeof subtitleNotes !== 'undefined' ? subtitleNotes : [], function (n) { return n || ''; })
+        notes: Array.from(typeof subtitleNotes !== 'undefined' ? subtitleNotes : [], function (n) { return n || ''; }),
+        master: JSON.parse(JSON.stringify(typeof rawAssMasterEvents !== 'undefined' ? rawAssMasterEvents : [])),
+        censor: JSON.parse(JSON.stringify(typeof censorAddedList !== 'undefined' ? censorAddedList : []))
     };
 }
 
@@ -8006,6 +8008,10 @@ function restoreSnapshot(snapshot) {
     const countChanged = originalData.length !== snapshot.originalData.length;
     originalData = JSON.parse(JSON.stringify(snapshot.originalData));
     if (Array.isArray(snapshot.notes) && typeof subtitleNotes !== 'undefined') subtitleNotes = snapshot.notes.slice();
+    // دێڕی وێنە (تەکنیکی) و سانسۆرەکانیش دەگەڕێنرێنەوە
+    if (Array.isArray(snapshot.master)) rawAssMasterEvents = JSON.parse(JSON.stringify(snapshot.master));
+    if (Array.isArray(snapshot.censor)) { censorAddedList = JSON.parse(JSON.stringify(snapshot.censor)); try { renderCensorListUI(); } catch (e) { } }
+    try { if (window.kfVbRefresh) window.kfVbRefresh(); } catch (e) { }
     
     // ئەگەر دێڕ سڕابێتەوە یان زیاد بووبێت، کارتەکان نوێ دەکاتەوە
     if (countChanged) {
@@ -8036,6 +8042,7 @@ function restoreSnapshot(snapshot) {
 }
 
 function undo() { 
+    try { if (window.kfVbFlush) window.kfVbFlush(); } catch (e) { }
     if (historyStack.length > 1) { 
         redoStack.push(historyStack.pop()); 
         let previous = historyStack[historyStack.length - 1]; 
@@ -15690,6 +15697,7 @@ function addCurrentCensorToSubtitles() {
     renderCensorListUI();
     // ناردنی دەستبەجێی سانسۆرەکە بۆ ناو libass
     if (typeof LibassRenderer !== 'undefined' && LibassRenderer.isEnabled()) LibassRenderer.sync(true);
+    try { window.kfHist && window.kfHist(); } catch (e) { }
     if (wasEditing) { try { saveSession(); } catch (e) { } closeCensorModal(); showToast(`سانسۆر نوێکرایەوە: [${stTime} → ${enTime}]`, "success"); return; }
     showToast(`سانسۆر زیادکرا: [${stTime} → ${enTime}]`, "success");
 }
@@ -15743,6 +15751,7 @@ function removeCensorItem(id) {
     if (idx !== -1) {
         censorAddedList.splice(idx, 1);
         renderCensorListUI();
+        try { window.kfHist && window.kfHist(); saveSession(); } catch (e) { }
         if (typeof LibassRenderer !== 'undefined' && LibassRenderer.isEnabled()) LibassRenderer.sync(true);
         showToast("سانسۆر سڕایەوە", "info");
     }
@@ -19769,13 +19778,16 @@ var KFV = (function () {
     function styleList() { var o = {}, a = []; (typeof originalData !== 'undefined' ? originalData : []).forEach(function (x) { var s = x.assMeta && x.assMeta.style; if (s === undefined) return; if (!(s in o)) { o[s] = 0; a.push(s); } o[s]++; }); return a.map(function (s) { return [s, o[s]]; }); }
     var PLAYI = '<svg style="width:13px;height:13px;" fill="currentColor" viewBox="0 0 24 24"><path d="M7 5.8v12.4a1.3 1.3 0 0 0 2 1.1l9.8-6.2a1.3 1.3 0 0 0 0-2.2L9 4.7a1.3 1.3 0 0 0-2 1.1z"/></svg>';
     var TRASHI = '<svg style="width:13px;height:13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-width="1.85" d="M3 6h18M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6M5.5 6l.9 13.1A2 2 0 0 0 8.4 21h7.2a2 2 0 0 0 2-1.9L18.5 6M10 11v5M14 11v5"/></svg>';
-    function sav() { clearTimeout(sv); sv = setTimeout(function () { if (typeof saveSession === 'function') saveSession(); }, 700); }
+    function hist() { try { historyStack.push(getCurrentSnapshot()); if (historyStack.length > 40) historyStack.shift(); redoStack = []; if (typeof updateUndoRedoButtons === 'function') updateUndoRedoButtons(); } catch (e) { } }
+    window.kfHist = hist;
+    function sav(now) { clearTimeout(sv); var run = function () { sv = 0; hist(); if (typeof saveSession === 'function') saveSession(); }; if (now === true) run(); else sv = setTimeout(run, 700); }
+    window.kfVbFlush = function () { if (sv) { clearTimeout(sv); sv = 0; hist(); if (typeof saveSession === 'function') saveSession(); } };
     function cenCard(o) {
         var c = o.cen, d = document.createElement('div'); d.className = 'kf-dc kf-added';
         d.innerHTML = '<div class="subtitle-header"><div style="display:flex; gap:6px; align-items:center;"><div class="subtitle-line-num">#' + o.no + '</div><button type="button" class="play-sub-btn" title="کارپێکردن">' + PLAYI + '</button><button type="button" class="play-sub-btn kf-cen-tech" title="دەستکاری لە بەشی سانسۆر"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex:none"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.4 2.6a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4 9.4-9.4z"/></svg></button><button type="button" class="delete-sub-btn" title="سڕینەوە">' + TRASHI + '</button></div><div class="subtitle-time">' + (c.stTime || '') + ' --> ' + (c.enTime || '') + '</div></div><div><span class="kf-added-tag">سانسۆر — خۆت زیادت کردووە</span></div><div class="kf-dk"><textarea spellcheck="false"></textarea></div>';
         d.querySelector('.play-sub-btn').onclick = function () { var v = $('preview-video'); if (v && v.getAttribute('src')) { v.currentTime = c.startSec || timeToSeconds(c.stTime); v.play(); } };
         d.querySelector('.kf-cen-tech').onclick = function () { if (window.kfEditCensor) window.kfEditCensor(c.id); };
-        d.querySelector('.delete-sub-btn').onclick = function () { var i = censorAddedList.indexOf(c); if (i < 0) return; censorAddedList.splice(i, 1); try { renderCensorListUI(); } catch (e) { } try { if (LibassRenderer.isEnabled()) LibassRenderer.sync(true); } catch (e) { } sav(); mark(true); };
+        d.querySelector('.delete-sub-btn').onclick = function () { var i = censorAddedList.indexOf(c); if (i < 0) return; censorAddedList.splice(i, 1); try { renderCensorListUI(); } catch (e) { } try { if (LibassRenderer.isEnabled()) LibassRenderer.sync(true); } catch (e) { } sav(true); mark(true); };
         var ta = d.querySelector('textarea'); ta.value = c.rawText || '';
         ta.oninput = function () { c.rawText = ta.value.replace(/\r?\n/g, '\\N'); sav(); try { if (LibassRenderer.isEnabled()) LibassRenderer.sync(true); } catch (e) { } };
         return d;
@@ -19785,13 +19797,13 @@ var KFV = (function () {
         var ev = o.ev, p = (typeof parseAssDialogueLine === 'function' && parseAssDialogueLine(ev.rawLine)) || {}, c = cut(ev.rawLine), d = document.createElement('div'); d.className = 'kf-dc';
         d.innerHTML = '<div class="subtitle-header"><div style="display:flex; gap:6px; align-items:center;"><div class="subtitle-line-num">#' + o.no + '</div><button type="button" class="play-sub-btn" title="کارپێکردن">' + PLAYI + '</button><button type="button" class="delete-sub-btn" title="سڕینەوە">' + TRASHI + '</button></div><div class="subtitle-time">' + (p.st || '') + ' --> ' + (p.en || '') + '</div></div><div class="kf-dk"><textarea spellcheck="false"></textarea></div>';
         d.querySelector('.play-sub-btn').onclick = function () { var v = $('preview-video'); if (v && v.getAttribute('src') && p.st) { v.currentTime = timeToSeconds(p.st); v.play(); } };
-        d.querySelector('.delete-sub-btn').onclick = function () { var i = rawAssMasterEvents.indexOf(ev); if (i < 0) return; rawAssMasterEvents.splice(i, 1); undoBuf = { ev: ev, i: i }; sav(); mark(true); showUndo(); };
+        d.querySelector('.delete-sub-btn').onclick = function () { var i = rawAssMasterEvents.indexOf(ev); if (i < 0) return; rawAssMasterEvents.splice(i, 1); undoBuf = { ev: ev, i: i }; sav(true); mark(true); showUndo(); };
         var ta = d.querySelector('textarea'); ta.value = c < 0 ? ev.rawLine : ev.rawLine.slice(c);
         ta.oninput = function () { var cc = cut(ev.rawLine); if (cc < 0) return; ev.rawLine = ev.rawLine.slice(0, cc) + ta.value.replace(/\r?\n/g, '\\N'); sav(); };
         return d;
     }
     function showUndo() {
-        if (!panel) return; if (!ub) { ub = document.createElement('div'); ub.className = 'kf-ub'; ub.innerHTML = '<span>دێڕێک سڕایەوە</span><button type="button">گەڕاندنەوە</button>'; ub.querySelector('button').onclick = function () { if (!undoBuf) return; rawAssMasterEvents.splice(Math.min(undoBuf.i, rawAssMasterEvents.length), 0, undoBuf.ev); undoBuf = null; ub.style.display = 'none'; sav(); mark(true); }; }
+        if (!panel) return; if (!ub) { ub = document.createElement('div'); ub.className = 'kf-ub'; ub.innerHTML = '<span>دێڕێک سڕایەوە</span><button type="button">گەڕاندنەوە</button>'; ub.querySelector('button').onclick = function () { if (!undoBuf) return; rawAssMasterEvents.splice(Math.min(undoBuf.i, rawAssMasterEvents.length), 0, undoBuf.ev); undoBuf = null; ub.style.display = 'none'; sav(true); mark(true); }; }
         panel.insertBefore(ub, panel.firstChild); ub.style.display = 'flex'; clearTimeout(ubT); ubT = setTimeout(function () { ub.style.display = 'none'; undoBuf = null; }, 8000);
     }
     // شریتی سکرۆڵی خێرا (fast-scrub) بۆ بەشی کۆدی وێنەش

@@ -20230,7 +20230,7 @@ var KFV = (function () {
         if (!M) build();
         var mv = $('preview-video'), has = !!(mv && mv.getAttribute('src')), t0 = has ? (mv.currentTime || 0) : 0, tot = originalData.length;
         if (!tot) { showToast('هیچ دێڕێک نییە بۆ دەستکاریکردن', 'warning'); return; }
-        $('kfetVc').style.display = has ? '' : 'none'; $('kfetVc2').style.display = has ? '' : 'none'; CNT.textContent = '(١ - ' + tot + ')'; NI.max = tot; exFail = 0; INFO.style.display = 'none';
+        $('kfetVc').style.display = has ? '' : 'none'; $('kfetVc2').style.display = has ? '' : 'none'; CNT.textContent = '(1 - ' + tot + ')'; NI.max = tot; exFail = 0; INFO.style.display = 'none';
         M.style.display = 'flex';
         function ready() { fit(); load(cur >= 0 && cur < tot ? cur + 1 : 1); if (!raf) raf = requestAnimationFrame(loop); }
         if (has) { if (V.src !== mv.src) { V.src = mv.src; V.onloadedmetadata = function () { ready(); }; } else ready(); } else ready();

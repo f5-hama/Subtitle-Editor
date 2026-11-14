@@ -5274,7 +5274,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
             </div>
         </div>
 
-        <button type="button" class="btn" style="padding:10px; font-size:12.5px; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="addCurrentCensorToSubtitles()">
+        <button type="button" id="censorAddBtn" class="btn" style="padding:10px; font-size:12.5px; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="addCurrentCensorToSubtitles()">
     <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M12 5v14M5 12h14"/></svg>
     <span>زیادکردنی ئەم سانسۆرە بۆ کۆتایی فایلەکە</span>
 </button>
@@ -15263,7 +15263,10 @@ let censorType = 'black';
 let isCensorUserSeeking = false;
 
 /* ================= فەنکشنی کردنەوەی مۆداڵی سانسۆر ================= */
+function kfCensorLabel(editing) { var sp = document.querySelector('#censorAddBtn span'); if (sp) sp.textContent = editing ? 'نوێکردنەوەی ئەم سانسۆرە' : 'زیادکردنی ئەم سانسۆرە بۆ کۆتایی فایلەکە'; }
+window.kfCensorEditId = null;
 function openCensorModal() {
+    window.kfCensorEditId = null; kfCensorLabel(false);
     const mainVid = document.getElementById('preview-video');
     const cVid = document.getElementById('censorVideoPlayer');
     if (!mainVid || !mainVid.src) {
@@ -15319,6 +15322,7 @@ function closeCensorModal() {
     const cVid = document.getElementById('censorVideoPlayer');
     if (cVid) cVid.pause();
     document.getElementById('censor-modal').style.display = 'none';
+    window.kfCensorEditId = null; kfCensorLabel(false);
 }
 
 function toggleCensorPlay() {
@@ -15676,21 +15680,46 @@ function addCurrentCensorToSubtitles() {
         drawingAss = `{\\an7\\pos(${assX},${assY})\\bord0\\shad0\\blur20\\1c&H1A1A1A&\\p1}m 0 0 l ${assW} 0 l ${assW} ${assH} l 0 ${assH}{\\p0}`;
     }
 
-    censorAddedList.push({
-        id: Date.now(),
-        stTime: stTime,
-        enTime: enTime,
-        startSec: startSec,
-        endSec: endSec,
-        rawText: drawingAss,
-        type: censorType
-    });
+    const censorItem = { id: Date.now(), stTime: stTime, enTime: enTime, startSec: startSec, endSec: endSec, rawText: drawingAss, type: censorType };
+    const wasEditing = window.kfCensorEditId != null;
+    if (wasEditing) {
+        const ei = censorAddedList.findIndex(x => x.id === window.kfCensorEditId);
+        if (ei !== -1) { censorItem.id = window.kfCensorEditId; censorAddedList[ei] = censorItem; } else censorAddedList.push(censorItem);
+    } else censorAddedList.push(censorItem);
 
     renderCensorListUI();
     // ناردنی دەستبەجێی سانسۆرەکە بۆ ناو libass
     if (typeof LibassRenderer !== 'undefined' && LibassRenderer.isEnabled()) LibassRenderer.sync(true);
+    if (wasEditing) { try { saveSession(); } catch (e) { } closeCensorModal(); showToast(`سانسۆر نوێکرایەوە: [${stTime} → ${enTime}]`, "success"); return; }
     showToast(`سانسۆر زیادکرا: [${stTime} → ${enTime}]`, "success");
 }
+
+// کردنەوەی بەشی سانسۆر بۆ دەستکاریکردنی سانسۆرێکی زیادکراو
+window.kfEditCensor = function (id) {
+    const c = censorAddedList.find(x => x.id === id); if (!c) return;
+    openCensorModal();
+    if (document.getElementById('censor-modal').style.display !== 'flex') return;
+    window.kfCensorEditId = id; kfCensorLabel(true);
+    const cVid = document.getElementById('censorVideoPlayer');
+    function apply() {
+        document.getElementById('censorStartTime').value = c.stTime; document.getElementById('censorEndTime').value = c.enTime;
+        cVid.currentTime = Math.max(0, c.startSec || 0); try { updateCensorProgressBar(); } catch (e) { }
+        const t = c.type || 'black'; setCensorType(t);
+        const raw = c.rawText || '', cm = /\\1c&H([0-9A-Fa-f]{6})&/.exec(raw);
+        if (t === 'color' && cm) { const b = cm[1]; selectCensorColor(('#' + b.slice(4, 6) + b.slice(2, 4) + b.slice(0, 2)).toUpperCase(), null); }
+        const pm = /\\pos\((\d+),(\d+)\)/.exec(raw), sm = /m 0 0 l (\d+) 0 l \d+ (\d+)/.exec(raw);
+        const box = document.getElementById('censorBoxOverlay'), container = document.getElementById('censorVideoBox');
+        if (pm && sm && box && container) {
+            const res = getActiveScriptResolution(), cW = container.clientWidth, cH = container.clientHeight, vW = cVid.videoWidth || res.resX, vH = cVid.videoHeight || res.resY, vr = vW / vH;
+            let rW = cW, rH = cH, oX = 0, oY = 0;
+            if (cW / cH > vr) { rW = cH * vr; oX = (cW - rW) / 2; } else { rH = cW / vr; oY = (cH - rH) / 2; }
+            const kx = rW / res.resX, ky = rH / res.resY;
+            box.style.display = 'block'; box.style.left = (oX + (+pm[1]) * kx) + 'px'; box.style.top = (oY + (+pm[2]) * ky) + 'px'; box.style.width = ((+sm[1]) * kx) + 'px'; box.style.height = ((+sm[2]) * ky) + 'px';
+        }
+        try { updateCensorPreviewStyle(); } catch (e) { }
+    }
+    if (cVid.readyState >= 1) setTimeout(apply, 80); else cVid.addEventListener('loadedmetadata', function () { setTimeout(apply, 80); }, { once: true });
+};
 
 function renderCensorListUI() {
     const listEl = document.getElementById('censorAddedList');
@@ -18240,6 +18269,13 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
     // Firebase ڕێکنەخراوە — شاشەی هەژمار پاک دەهێڵینەوە
     document.addEventListener('DOMContentLoaded', function() {
       const s = document.getElementById('auth-screen');
+      let au = null; try { au = localStorage.getItem('kf_active_username'); } catch (e) { }
+      if (au && navigator.onLine === false) {
+        // ئینتەرنێت نییە و کتێبخانەی Firebase بار نەبووە، بەڵام پێشتر بە هەژمارێکی قبووڵکراو چووەتە ژوورەوە: بەردەوام دەبین
+        const l = document.getElementById('auth-loading');
+        setTimeout(function () { if (l) l.classList.add('hide'); if (s) s.classList.remove('show'); document.body.classList.remove('auth-locked'); }, 1200);
+        return;
+      }
       if (s) {
         s.classList.add('show');
         document.body.classList.add('auth-locked');
@@ -19736,8 +19772,9 @@ var KFV = (function () {
     function sav() { clearTimeout(sv); sv = setTimeout(function () { if (typeof saveSession === 'function') saveSession(); }, 700); }
     function cenCard(o) {
         var c = o.cen, d = document.createElement('div'); d.className = 'kf-dc kf-added';
-        d.innerHTML = '<div class="subtitle-header"><div style="display:flex; gap:6px; align-items:center;"><div class="subtitle-line-num">#' + o.no + '</div><button type="button" class="play-sub-btn" title="کارپێکردن">' + PLAYI + '</button><button type="button" class="delete-sub-btn" title="سڕینەوە">' + TRASHI + '</button></div><div class="subtitle-time">' + (c.stTime || '') + ' --> ' + (c.enTime || '') + '</div></div><div><span class="kf-added-tag">سانسۆر — خۆت زیادت کردووە</span></div><div class="kf-dk"><textarea spellcheck="false"></textarea></div>';
+        d.innerHTML = '<div class="subtitle-header"><div style="display:flex; gap:6px; align-items:center;"><div class="subtitle-line-num">#' + o.no + '</div><button type="button" class="play-sub-btn" title="کارپێکردن">' + PLAYI + '</button><button type="button" class="play-sub-btn kf-cen-tech" title="دەستکاری لە بەشی سانسۆر"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="13" height="10" rx="1.5" stroke-dasharray="3 2.4"/><path d="M14 20l1-4 6-6 3 3-6 6z" transform="translate(-3 0) scale(.85) translate(3 1)"/></svg></button><button type="button" class="delete-sub-btn" title="سڕینەوە">' + TRASHI + '</button></div><div class="subtitle-time">' + (c.stTime || '') + ' --> ' + (c.enTime || '') + '</div></div><div><span class="kf-added-tag">سانسۆر — خۆت زیادت کردووە</span></div><div class="kf-dk"><textarea spellcheck="false"></textarea></div>';
         d.querySelector('.play-sub-btn').onclick = function () { var v = $('preview-video'); if (v && v.getAttribute('src')) { v.currentTime = c.startSec || timeToSeconds(c.stTime); v.play(); } };
+        d.querySelector('.kf-cen-tech').onclick = function () { if (window.kfEditCensor) window.kfEditCensor(c.id); };
         d.querySelector('.delete-sub-btn').onclick = function () { var i = censorAddedList.indexOf(c); if (i < 0) return; censorAddedList.splice(i, 1); try { renderCensorListUI(); } catch (e) { } try { if (LibassRenderer.isEnabled()) LibassRenderer.sync(true); } catch (e) { } sav(); mark(true); };
         var ta = d.querySelector('textarea'); ta.value = c.rawText || '';
         ta.oninput = function () { c.rawText = ta.value.replace(/\r?\n/g, '\\N'); sav(); try { if (LibassRenderer.isEnabled()) LibassRenderer.sync(true); } catch (e) { } };

@@ -1,8 +1,18 @@
 const CACHE_NAME = 'subtitle-edit-live-cache';
 
-// دەستبەجێ دەستپێکردن بێ وەستان
+// کتێبخانەکانی Firebase لە دۆمەینێکی دیکەوە دێن (gstatic) و پێویستن بۆ چوونەژوورەوە؛ دەبێت بێ ئینتەرنێتیش بمێننەوە
+const EXTERNAL_PRECACHE = [
+    'https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js',
+    'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js',
+    'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js'
+];
+
+// دەستبەجێ دەستپێکردن بێ وەستان + پاشەکەوتکردنی پێشوەختەی کتێبخانەکانی Firebase
 self.addEventListener('install', (event) => {
     self.skipWaiting();
+    event.waitUntil(caches.open(CACHE_NAME).then((cache) => Promise.allSettled(
+        EXTERNAL_PRECACHE.map((url) => fetch(new Request(url, { mode: 'no-cors' })).then((res) => cache.put(url, res)))
+    )));
 });
 
 // کۆنترۆڵکردنی پەڕەکە بە خێرایی
@@ -23,7 +33,8 @@ self.addEventListener('fetch', (event) => {
         try {
             // no-cache: هەمیشە لە سێرڤەر دەپرسێت (ETag)، بۆ ئەوەی کاشی HTTPـی گیتهەب (١٠ خولەک) وەشانی کۆن نەگەڕێنێتەوە
             const networkResponse = await fetch(req, { cache: 'no-cache' });
-            if (networkResponse && networkResponse.status === 200) {
+            // status 200 بۆ فایلی ناوخۆیی، opaque بۆ فایلی دۆمەینی دیکە (وەک Firebase) کە status ـەکەی ٠ـە و پێشتر هەرگیز پاشەکەوت نەدەکرا
+            if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {
                 const cloned = networkResponse.clone();
                 // waitUntil: دڵنیابوون لەوەی سەیڤکردنەکە تەواو دەبێت
                 event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.put(req, cloned)));

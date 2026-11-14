@@ -8019,6 +8019,11 @@ function restoreSnapshot(snapshot) {
                 ta.value = snapshot.kurdishState[idx];
             }
         });
+        // کاتی سەر کارتەکانیش دەگەڕێنەوە (ئەگەر کاتی دێڕێک گۆڕدرابێت)
+        document.querySelectorAll('.subtitle-card').forEach(function (c) {
+            var od = originalData[+c.dataset.index], te = c.querySelector('.subtitle-time');
+            if (od && te && od.time && te.textContent !== od.time) te.textContent = od.time;
+        });
         updateProgress();
     }
     updateUndoRedoButtons();

@@ -4251,6 +4251,40 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
     </div>
 
 
+    <!-- مۆداڵی چاککردنی فایل (SRT / VTT / ASS) -->
+    <div id="fix-modal" class="custom-modal-overlay">
+        <div class="custom-modal-content">
+            <h3 class="custom-modal-title">چاککردنی فایل</h3>
+            <p style="font-size: 12.5px; color:var(--text-muted); margin-bottom:12px; line-height: 1.8;">کێشە باوەکانی فایلی ژێرنووس چاک دەکات. بۆ نموونە ئەگەر لە SRT دا بۆشایی نێوان دوو دێڕ نەبوو، خۆی دایدەنێت. فایلە چاککراوەکان بە ناوی <bdi dir="ltr">_Fixed</bdi> دادەبەزن.</p>
+
+            <div class="file-box" id="boxFix" style="margin-bottom: 14px; padding: 16px;">
+                <div class="upload-icon"><svg style="width:26px;height:26px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M21 15v3.5A2.5 2.5 0 0 1 18.5 21h-13A2.5 2.5 0 0 1 3 18.5V15M17 8l-5-5-5 5M12 3v12"/></svg></div>
+                <label>فایلەکان هەڵبژێرە (SRT, ASS, VTT):</label>
+                <div class="file-name-display" id="fixCountDisplay">هیچ فایلێک دیاری نەکراوە</div>
+                <input type="file" id="fixFileInput" accept=".srt,.ass,.ssa,.vtt" multiple onchange="updateFixCount(this)">
+            </div>
+
+            <div style="margin-bottom: 14px;">
+                <label style="display:block; font-size:12.5px; font-weight:bold; margin-bottom:6px; color:var(--text-main);">بژاردەکان:</label>
+                <div style="font-size:11.5px; color:var(--text-muted); margin-bottom:4px; line-height:1.7;">بۆشایی نێوان دێڕەکان (SRT/VTT)، ڕیزبەندی بەشەکان و هێڵی ونبووی ASS هەمیشە چاک دەکرێن.</div>
+                <label style="display:flex; align-items:center; gap:10px; font-size:13px; padding:7px 2px; cursor:pointer; line-height:1.6;"><input type="checkbox" id="fixOptRenumber" checked style="accent-color:var(--primary); width:16px; height:16px; flex:0 0 16px; margin:0;"><span>ژمارەکردنەوەی دێڕەکان بە ڕیز <bdi dir="ltr" style="opacity:.7;font-size:11px">SRT / VTT</bdi></span></label>
+                <label style="display:flex; align-items:center; gap:10px; font-size:13px; padding:7px 2px; cursor:pointer; line-height:1.6;"><input type="checkbox" id="fixOptTimes" checked style="accent-color:var(--primary); width:16px; height:16px; flex:0 0 16px; margin:0;"><span>چاککردنی کات (کۆتایی پێش سەرەتا)</span></label>
+                <label style="display:flex; align-items:center; gap:10px; font-size:13px; padding:7px 2px; cursor:pointer; line-height:1.6;"><input type="checkbox" id="fixOptSpaces" checked style="accent-color:var(--primary); width:16px; height:16px; flex:0 0 16px; margin:0;"><span>لابردنی بۆشایی زیادە لە دەق</span></label>
+                <label style="display:flex; align-items:center; gap:10px; font-size:13px; padding:7px 2px; cursor:pointer; line-height:1.6;"><input type="checkbox" id="fixOptEmpty" checked style="accent-color:var(--primary); width:16px; height:16px; flex:0 0 16px; margin:0;"><span>سڕینەوەی دێڕە بەتاڵەکان</span></label>
+                <label style="display:flex; align-items:center; gap:10px; font-size:13px; padding:7px 2px; cursor:pointer; line-height:1.6;"><input type="checkbox" id="fixOptJoin" checked style="accent-color:var(--primary); width:16px; height:16px; flex:0 0 16px; margin:0;"><span>لکاندنی دێڕە پچڕاوەکان بە دێڕی پێشوو <bdi dir="ltr" style="opacity:.7;font-size:11px">ASS</bdi></span></label>
+                <label style="display:flex; align-items:center; gap:10px; font-size:13px; padding:7px 2px; cursor:pointer; line-height:1.6;"><input type="checkbox" id="fixOptOverlap" style="accent-color:var(--primary); width:16px; height:16px; flex:0 0 16px; margin:0;"><span>چاککردنی تێپەڕبوونی کات (کۆتایی دێڕ بەسەر دێڕی دواتردا) <bdi dir="ltr" style="opacity:.7;font-size:11px">SRT / VTT</bdi></span></label>
+                <label style="display:flex; align-items:center; gap:10px; font-size:13px; padding:7px 2px; cursor:pointer; line-height:1.6;"><input type="checkbox" id="fixOptSort" style="accent-color:var(--primary); width:16px; height:16px; flex:0 0 16px; margin:0;"><span>ڕیزکردنی دێڕەکان بەگوێرەی کات</span></label>
+            </div>
+
+            <div id="fixReport" style="display:none; font-size:12px; line-height:1.7; margin-bottom:12px; max-height:200px; overflow:auto;"></div>
+
+            <div class="custom-modal-actions">
+                <button class="btn" onclick="executeFix()">چاککردن و داگرتن</button>
+                <button class="btn btn-outline" onclick="document.getElementById('fix-modal').style.display='none'">داخستن</button>
+            </div>
+        </div>
+    </div>
+
     <!-- مۆداڵی پێچەوانەکردنەوەی RTL (وەک Subtitle Edit: Reverse RTL start/end) -->
     <div id="rev-rtl-modal" class="custom-modal-overlay">
         <div class="custom-modal-content">
@@ -7140,6 +7174,345 @@ async function executeRtlFix() {
         setTimeout(() => showToast("ئاگاداری: SRT/VTTەکە تاگی <i>/<font>ی تێدایە. بۆ هارد سەب باشترە بیگۆڕیت بۆ ASS، یان لە FFmpeg دا force_style='Encoding=-1' بەکاربێنیت.", 'info'), 900);
     }
 }
+
+// ---------- مۆداڵی چاککردنی فایل (SRT / VTT / ASS) ----------
+const FixEngine = (function () {
+    const TL = /^\s*(\d+):(\d{1,2})(?::(\d{1,2}))?(?:[.,:](\d{1,3}))?\s*-+>\s*(\d+):(\d{1,2})(?::(\d{1,2}))?(?:[.,:](\d{1,3}))?(.*)$/;
+    const ASS_SECS = { 'script info': 'Script Info', 'v4 styles': 'V4 Styles', 'v4+ styles': 'V4+ Styles', 'events': 'Events', 'fonts': 'Fonts', 'graphics': 'Graphics' };
+    const EVT_RE = /^(Dialogue|Comment|Picture|Sound|Movie|Command)\s*:\s?(.*)$/i;
+
+    function pad(n, w) { n = String(n); while (n.length < w) n = '0' + n; return n; }
+    function splitLines(raw) { return raw.replace(/^﻿/, '').split(/\r\n|\r|\n/); }
+    function toMs(a, b, c, f) {
+        let h, m, s;
+        if (c === undefined) { h = 0; m = +a; s = +b; } else { h = +a; m = +b; s = +c; }
+        const ms = f ? parseInt((f + '00').slice(0, 3), 10) : 0;
+        return ((h * 60 + m) * 60 + s) * 1000 + ms;
+    }
+    function fmtMs(ms, sep) {
+        if (ms < 0) ms = 0;
+        return pad(Math.floor(ms / 3600000), 2) + ':' + pad(Math.floor(ms / 60000) % 60, 2) + ':' + pad(Math.floor(ms / 1000) % 60, 2) + sep + pad(ms % 1000, 3);
+    }
+
+    // ---------------- SRT / VTT ----------------
+    function fixSub(raw, isVtt, o) {
+        const nl = raw.indexOf('\r\n') >= 0 ? '\r\n' : '\n';
+        const lines = splitLines(raw);
+        const st = { blank: 0, blankInside: 0, num: 0, time: 0, space: 0, empty: 0, overlap: 0, sorted: 0 };
+        const T = [];
+        for (let i = 0; i < lines.length; i++) if (TL.test(lines[i])) T.push(i);
+        if (!T.length) return { content: raw, stats: st, noCues: true };
+
+        const blockStart = [];
+        const idIdx = [];
+        for (let k = 0; k < T.length; k++) {
+            const i = T[k], prev = k ? T[k - 1] : -1, j = i - 1;
+            let id = -1;
+            if (j > prev && lines[j].trim() !== '') {
+                const t = lines[j].trim();
+                if (/^\d+$/.test(t)) id = j;
+                else if (isVtt && !/^(WEBVTT|NOTE)\b/.test(t) && (j - 1 < 0 || (j - 1 > prev && lines[j - 1].trim() === ''))) id = j;
+            }
+            idIdx.push(id);
+            blockStart.push(id >= 0 ? id : i);
+        }
+
+        let cues = [];
+        for (let k = 0; k < T.length; k++) {
+            const endExcl = k + 1 < T.length ? blockStart[k + 1] : lines.length;
+            if (k + 1 < T.length && lines[endExcl - 1].trim() !== '') st.blank++;
+            const m = TL.exec(lines[T[k]]);
+            let start = toMs(m[1], m[2], m[3], m[4]), end = toMs(m[5], m[6], m[7], m[8]);
+            if (o.times && end < start) { const x = start; start = end; end = x; st.time++; }
+            const settings = (m[9] || '').trim();
+            let text = lines.slice(T[k] + 1, endExcl);
+            while (text.length && text[text.length - 1].trim() === '') text.pop();
+            const before = text.length;
+            text = text.filter(function (l) { return l.trim() !== ''; });
+            if (text.length < before) st.blankInside += before - text.length;
+            text = text.map(function (l) {
+                let t = l.replace(/\t/g, ' ');
+                if (o.spaces) t = t.replace(/ {2,}/g, ' ').trim();
+                if (t !== l) st.space++;
+                return t;
+            });
+            cues.push({ id: idIdx[k] >= 0 ? lines[idIdx[k]].trim() : '', start: start, end: end, settings: settings, text: text, origTime: lines[T[k]].trim() });
+        }
+        if (o.empty) {
+            const n = cues.length;
+            cues = cues.filter(function (c) { return c.text.length > 0; });
+            st.empty = n - cues.length;
+        }
+        if (o.sort) {
+            const before = cues.map(function (c) { return c; });
+            cues.sort(function (a, b) { return a.start - b.start; });
+            for (let i = 0; i < cues.length; i++) if (cues[i] !== before[i]) { st.sorted = 1; break; }
+        }
+        if (o.overlap) {
+            for (let i = 0; i + 1 < cues.length; i++) {
+                if (cues[i].end > cues[i + 1].start && cues[i + 1].start > cues[i].start) { cues[i].end = cues[i + 1].start; st.overlap++; }
+            }
+        }
+        const sep = isVtt ? '.' : ',';
+        const blocks = cues.map(function (c, i) {
+            const tm = fmtMs(c.start, sep) + ' --> ' + fmtMs(c.end, sep) + (c.settings ? ' ' + c.settings : '');
+            if (tm.replace(/\s+/g, ' ') !== c.origTime.replace(/\s+/g, ' ')) st.time++;
+            let idLine = '';
+            if (!isVtt) {
+                idLine = String(o.renumber ? i + 1 : (c.id || i + 1));
+                if (o.renumber && c.id !== String(i + 1)) st.num++;
+            } else if (c.id) {
+                if (/^\d+$/.test(c.id) && o.renumber) { idLine = String(i + 1); if (c.id !== idLine) st.num++; }
+                else idLine = c.id;
+            }
+            return (idLine ? idLine + nl : '') + tm + nl + c.text.join(nl);
+        });
+        let out;
+        if (isVtt) {
+            let h = lines.slice(0, blockStart[0]);
+            while (h.length && h[0].trim() === '') h.shift();
+            while (h.length && h[h.length - 1].trim() === '') h.pop();
+            if (!h.length || !/^WEBVTT/.test(h[0].trim())) { h.unshift('WEBVTT'); st.num++; }
+            const hh = [];
+            h.forEach(function (l) { if (l.trim() === '' && hh.length && hh[hh.length - 1].trim() === '') return; hh.push(l.trimEnd()); });
+            out = hh.join(nl) + nl + nl + blocks.join(nl + nl) + nl;
+        } else {
+            out = blocks.join(nl + nl) + nl;
+        }
+        return { content: out, stats: st };
+    }
+
+    // ---------------- ASS ----------------
+    function assTime(s) {
+        const m = /^\s*(\d+):(\d{1,2}):(\d{1,2})(?:[.,:](\d+))?\s*$/.exec(s);
+        if (!m) return null;
+        const frac = m[4] ? parseFloat('0.' + m[4]) : 0;
+        return Math.round((+m[1] * 3600 + +m[2] * 60 + +m[3] + frac) * 100);
+    }
+    function fmtAss(cs) {
+        if (cs < 0) cs = 0;
+        return Math.floor(cs / 360000) + ':' + pad(Math.floor(cs / 6000) % 60, 2) + ':' + pad(Math.floor(cs / 100) % 60, 2) + '.' + pad(cs % 100, 2);
+    }
+    function fixAss(raw, o) {
+        const nl = raw.indexOf('\r\n') >= 0 ? '\r\n' : '\n';
+        const st = { sect: 0, fmt: 0, split: 0, join: 0, pad: 0, time: 0, space: 0, empty: 0, dropped: 0, sorted: 0 };
+        const lines = splitLines(raw);
+        const secs = [], byName = {};
+        function getSec(name) { if (!byName[name]) { byName[name] = { name: name, lines: [] }; secs.push(byName[name]); } return byName[name]; }
+        let cur = null;
+        lines.forEach(function (ln) {
+            const hm = /^\s*\[\s*([^\]]+?)\s*\]\s*$/.exec(ln);
+            if (hm) {
+                const name = ASS_SECS[hm[1].toLowerCase()] || hm[1];
+                if (name !== hm[1]) st.sect++;
+                cur = getSec(name);
+                return;
+            }
+            if (!cur) {
+                if (ln.trim() === '') return;
+                if (/^\s*(Dialogue|Comment)\s*:/i.test(ln)) getSec('Events').lines.push(ln);
+                else getSec('Script Info').lines.push(ln);
+                st.sect++;
+                return;
+            }
+            cur.lines.push(ln);
+        });
+        const hasPlus = !!byName['V4+ Styles'];
+
+        const ev = byName['Events'];
+        if (ev) {
+            const items = [];
+            let fields = null, last = null;
+            ev.lines.forEach(function (l0) {
+                const parts = l0.split(/(?<=\S)\s*(?=(?:Dialogue|Comment)\s*:\s*[^,]*,\s*\d+:\d{1,2}:\d{1,2}[.,:]\d+\s*,)/);
+                if (parts.length > 1) st.split += parts.length - 1;
+                parts.forEach(function (p) {
+                    const ln = p.trim();
+                    if (ln === '') return;
+                    const fm = /^Format\s*:\s*(.*)$/i.exec(ln);
+                    if (fm) {
+                        if (!fields) { fields = fm[1].split(',').map(function (x) { return x.trim(); }); }
+                        else st.dropped++;
+                        return;
+                    }
+                    if (ln.charAt(0) === ';') { items.push({ raw: ln }); return; }
+                    const em = EVT_RE.exec(ln);
+                    if (em) { last = { type: em[1].charAt(0).toUpperCase() + em[1].slice(1).toLowerCase(), rest: em[2] }; items.push(last); return; }
+                    if (o.join && last && /^(Dialogue|Comment)$/.test(last.type)) { last.rest += '\\N' + ln; st.join++; return; }
+                    if (/^Style\s*:/i.test(ln)) { items.push({ raw: ln }); return; }
+                    st.dropped++;
+                });
+            });
+            if (!fields) {
+                fields = (byName['V4 Styles'] && !hasPlus ? ['Marked'] : ['Layer']).concat(['Start', 'End', 'Style', 'Name', 'MarginL', 'MarginR', 'MarginV', 'Effect', 'Text']);
+                st.fmt++;
+            }
+            const N = fields.length;
+            const lc = fields.map(function (f) { return f.toLowerCase(); });
+            const iS = lc.indexOf('start'), iE = lc.indexOf('end'), iL = Math.max(lc.indexOf('layer'), lc.indexOf('marked'));
+            const evts = [];
+            items.forEach(function (it) {
+                if (it.raw !== undefined || !/^(Dialogue|Comment)$/.test(it.type)) return;
+                const p = []; let rest = it.rest;
+                for (let k = 0; k < N - 1; k++) {
+                    const c = rest.indexOf(',');
+                    if (c < 0) break;
+                    p.push(rest.slice(0, c)); rest = rest.slice(c + 1);
+                }
+                p.push(rest);
+                if (p.length < N) { while (p.length < N) p.splice(p.length - 1, 0, ''); st.pad++; }
+                for (let k = 0; k < N - 1; k++) p[k] = p[k].trim();
+                [iS, iE].forEach(function (ix) {
+                    if (ix < 0) return;
+                    const cs = assTime(p[ix]);
+                    if (cs !== null) { const f = fmtAss(cs); if (f !== p[ix]) st.time++; p[ix] = f; }
+                });
+                if (iL >= 0 && !/^-?\d+$/.test(p[iL])) { p[iL] = '0'; st.time++; }
+                if (o.times && iS >= 0 && iE >= 0) {
+                    const a = assTime(p[iS]), b = assTime(p[iE]);
+                    if (a !== null && b !== null && b < a) { const x = p[iS]; p[iS] = p[iE]; p[iE] = x; st.time++; }
+                }
+                if (o.spaces) {
+                    const t = p[N - 1].replace(/^(?:\s|\\[Nn])+|(?:\s|\\[Nn])+$/g, '');
+                    if (t !== p[N - 1]) st.space++;
+                    p[N - 1] = t;
+                }
+                it.p = p;
+                it.start = iS >= 0 ? (assTime(p[iS]) || 0) : 0;
+                evts.push(it);
+            });
+            let outItems = items;
+            if (o.empty) {
+                outItems = items.filter(function (it) {
+                    if (!it.p || it.type !== 'Dialogue') return true;
+                    const t = it.p[N - 1];
+                    if (/\{[^}]*\\p\d/i.test(t)) return true;
+                    const bare = t.replace(/\{[^}]*\}/g, '').replace(/\\[Nnh]/g, '').trim();
+                    if (bare === '') { st.empty++; return false; }
+                    return true;
+                });
+            }
+            if (o.sort) {
+                const pos = [], vals = [];
+                outItems.forEach(function (it, i) { if (it.p) { pos.push(i); vals.push(it); } });
+                const sorted = vals.slice().sort(function (a, b) { return a.start - b.start; });
+                for (let i = 0; i < vals.length; i++) if (sorted[i] !== vals[i]) { st.sorted = 1; break; }
+                pos.forEach(function (ix, i) { outItems[ix] = sorted[i]; });
+            }
+            ev.lines = ['Format: ' + fields.join(', ')].concat(outItems.map(function (it) {
+                if (it.raw !== undefined) return it.raw;
+                if (it.p) return it.type + ': ' + it.p.join(',');
+                return it.type + ': ' + it.rest;
+            }));
+        }
+
+        secs.forEach(function (s) {
+            if (s.name === 'Events') return;
+            if (s.name === 'Fonts' || s.name === 'Graphics') {
+                while (s.lines.length && s.lines[s.lines.length - 1].trim() === '') s.lines.pop();
+                return;
+            }
+            s.lines = s.lines.map(function (l) { return l.trim(); }).filter(function (l) { return l !== ''; });
+        });
+        let si = byName['Script Info'];
+        if (!si) { si = { name: 'Script Info', lines: [] }; secs.unshift(si); st.sect++; }
+        if (!si.lines.some(function (l) { return /^ScriptType\s*:/i.test(l); })) {
+            let at = 0; while (at < si.lines.length && si.lines[at].charAt(0) === ';') at++;
+            si.lines.splice(at, 0, 'ScriptType: ' + (hasPlus || !byName['V4 Styles'] ? 'v4.00+' : 'v4.00'));
+            st.fmt++;
+        }
+        const si2 = secs.indexOf(si);
+        if (si2 > 0) { secs.splice(si2, 1); secs.unshift(si); }
+        const out = secs.map(function (s) { return '[' + s.name + ']' + (s.lines.length ? nl + s.lines.join(nl) : ''); }).join(nl + nl) + nl;
+        return { content: out, stats: st };
+    }
+
+    const LABELS = {
+        blank: 'بۆشایی نێوان دێڕەکان زیادکرا', blankInside: 'دێڕی بەتاڵی ناو دێڕەکان لابرا', num: 'ژمارەکان/سەرپەڕ ڕاستکرانەوە',
+        time: 'کات ڕاستکرایەوە', space: 'بۆشایی زیادە لابرا', empty: 'دێڕی بەتاڵ سڕایەوە', overlap: 'تێپەڕبوونی کات چاککرا',
+        sorted: 'دێڕەکان ڕیزکران', sect: 'بەشەکان ڕاستکرانەوە', fmt: 'هێڵی ونبوو زیادکرا', split: 'دێڕی لکاو جیاکرانەوە',
+        join: 'دێڕی پچڕاو لکێنرا', pad: 'خانەی کەم پڕکرانەوە', dropped: 'دێڕی ناپێویست لابرا'
+    };
+
+    function fixFile(raw, name, opts) {
+        const lower = (name || '').toLowerCase();
+        const isAss = /\.(ass|ssa)$/.test(lower) || raw.indexOf('[Events]') >= 0 || raw.indexOf('[Script Info]') >= 0;
+        const isVtt = !isAss && (/\.vtt$/.test(lower) || /^﻿?WEBVTT/.test(raw));
+        const r = isAss ? fixAss(raw, opts) : fixSub(raw, isVtt, opts);
+        let total = 0; const summary = [];
+        Object.keys(r.stats).forEach(function (k) { if (r.stats[k] > 0) { total += r.stats[k]; summary.push(LABELS[k] + ': ' + r.stats[k]); } });
+        return { content: r.content, ext: isAss ? 'ass' : (isVtt ? 'vtt' : 'srt'), stats: r.stats, total: total, summary: summary, noCues: !!r.noCues };
+    }
+    return { fixFile: fixFile };
+})();
+
+function openFixModal() {
+    document.getElementById('fix-modal').style.display = 'flex';
+    const inp = document.getElementById('fixFileInput');
+    if (inp) inp.value = '';
+    updateFixCount(inp || { files: [] });
+    const rep = document.getElementById('fixReport');
+    if (rep) { rep.style.display = 'none'; rep.innerHTML = ''; }
+}
+
+function updateFixCount(input) {
+    const display = document.getElementById('fixCountDisplay');
+    if (!display) return;
+    if (input && input.files && input.files.length > 0) {
+        display.innerText = input.files.length + ' ' + ((i18n[currentLang] && i18n[currentLang]['batchFilesSelected']) || 'فایل دیاریکراون');
+        display.style.color = 'var(--success)';
+    } else {
+        display.innerText = (i18n[currentLang] && i18n[currentLang]['batchNoFile']) || 'هیچ فایلێک دیاری نەکراوە';
+        display.style.color = 'var(--text-muted)';
+    }
+}
+
+async function executeFix() {
+    const fileInput = document.getElementById('fixFileInput');
+    const files = fileInput ? fileInput.files : null;
+    if (!files || files.length === 0) {
+        showToast((i18n[currentLang] && i18n[currentLang]['msgSelectBatch']) || 'تکایە سەرەتا فایل هەڵبژێرە!', 'error');
+        return;
+    }
+    const g = function (id) { const e = document.getElementById(id); return !!(e && e.checked); };
+    const opts = { renumber: g('fixOptRenumber'), times: g('fixOptTimes'), spaces: g('fixOptSpaces'), empty: g('fixOptEmpty'), join: g('fixOptJoin'), overlap: g('fixOptOverlap'), sort: g('fixOptSort') };
+    const rep = document.getElementById('fixReport');
+    if (rep) { rep.innerHTML = ''; rep.style.display = 'block'; }
+    let total = 0, done = 0;
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const row = document.createElement('div');
+        row.style.cssText = 'padding:7px 0; border-bottom:1px solid var(--border, rgba(128,128,128,.2));';
+        const nameEl = document.createElement('div');
+        nameEl.style.cssText = 'font-weight:bold; direction:ltr; text-align:left; word-break:break-all;';
+        nameEl.textContent = file.name;
+        const info = document.createElement('div');
+        info.style.cssText = 'color:var(--text-muted); margin-top:2px;';
+        row.appendChild(nameEl); row.appendChild(info);
+        try {
+            const raw = await file.text();
+            const r = FixEngine.fixFile(raw, file.name, opts);
+            if (r.noCues) {
+                info.textContent = 'هیچ دێڕێکی ژێرنووس نەدۆزرایەوە؛ فایلەکە دەستکاری نەکرا.';
+                info.style.color = 'var(--danger, #e5484d)';
+            } else {
+                const base = file.name.replace(/\.[^/.]+$/, '').replace(/_Fixed$/, '');
+                triggerDownload(r.content, base + '_Fixed.' + r.ext);
+                total += r.total; done++;
+                info.textContent = r.total ? r.summary.join(' • ') : 'کێشەیەک نەدۆزرایەوە (فایلەکە ڕێکخرا)';
+                info.style.color = r.total ? 'var(--success)' : 'var(--text-muted)';
+                await new Promise(function (res) { setTimeout(res, 600); });
+            }
+        } catch (e) {
+            info.textContent = 'هەڵە: ' + (e && e.message ? e.message : e);
+            info.style.color = 'var(--danger, #e5484d)';
+        }
+        if (rep) rep.appendChild(row);
+    }
+    if (done === 0) showToast('هیچ فایلێک چاک نەکرا', 'error');
+    else showToast('چاککردن تەواو بوو — ' + total + ' چاکسازی لە ' + done + ' فایل', 'success');
+}
+
 
         function openConverterModal() { document.getElementById('converter-modal').style.display = 'flex'; }
         
@@ -16704,6 +17077,7 @@ html.kf-in-section body.startup-bg::after { display: none !important; }
 html:root body.startup-bg #converter-modal,
 html:root body.startup-bg #rtl-fix-modal,
 html:root body.startup-bg #rev-rtl-modal,
+html:root body.startup-bg #fix-modal,
 html:root body.startup-bg #merge-modal,
 html:root body.startup-bg #sdh-modal,
 html:root body.startup-bg #shortcuts-modal,
@@ -16716,6 +17090,7 @@ html:root body.startup-bg #history-modal {
 html:root body.startup-bg #converter-modal > .custom-modal-content,
 html:root body.startup-bg #rtl-fix-modal > .custom-modal-content,
 html:root body.startup-bg #rev-rtl-modal > .custom-modal-content,
+html:root body.startup-bg #fix-modal > .custom-modal-content,
 html:root body.startup-bg #merge-modal > .custom-modal-content,
 html:root body.startup-bg #sdh-modal > .custom-modal-content,
 html:root body.startup-bg #shortcuts-modal > .custom-modal-content,
@@ -16728,6 +17103,7 @@ html:root body.startup-bg #history-modal > .custom-modal-content { animation: no
 html:root body.startup-bg #converter-modal,
 html:root body.startup-bg #rtl-fix-modal,
 html:root body.startup-bg #rev-rtl-modal,
+html:root body.startup-bg #fix-modal,
 html:root body.startup-bg #merge-modal,
 html:root body.startup-bg #sdh-modal,
 html:root body.startup-bg #shortcuts-modal,
@@ -16744,6 +17120,7 @@ html:root body.startup-bg #history-modal {
 html:root body.startup-bg #converter-modal > .custom-modal-content,
 html:root body.startup-bg #rtl-fix-modal > .custom-modal-content,
 html:root body.startup-bg #rev-rtl-modal > .custom-modal-content,
+html:root body.startup-bg #fix-modal > .custom-modal-content,
 html:root body.startup-bg #merge-modal > .custom-modal-content,
 html:root body.startup-bg #sdh-modal > .custom-modal-content,
 html:root body.startup-bg #shortcuts-modal > .custom-modal-content,
@@ -16773,6 +17150,7 @@ html.kf-wide #kf-drawer { display: none !important; }html.kf-wide .kf-bar-center
     }html.kf-wide:root body.startup-bg #converter-modal > .custom-modal-content,
 html.kf-wide:root body.startup-bg #rtl-fix-modal > .custom-modal-content,
 html.kf-wide:root body.startup-bg #rev-rtl-modal > .custom-modal-content,
+html.kf-wide:root body.startup-bg #fix-modal > .custom-modal-content,
 html.kf-wide:root body.startup-bg #merge-modal > .custom-modal-content,
 html.kf-wide:root body.startup-bg #sdh-modal > .custom-modal-content,
 html.kf-wide:root body.startup-bg #shortcuts-modal > .custom-modal-content,
@@ -17005,6 +17383,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
         { k: 'converter', fn: 'openConverterModal',   id: 'converter-modal',      label: 'گۆڕینی فایل' },
         { k: 'rtl',       fn: 'openRtlFixModal',      id: 'rtl-fix-modal',        label: 'چاککردنی RTL' },
         { k: 'revrtl',    fn: 'openRevRtlModal',      id: 'rev-rtl-modal',        label: 'پێچەوانەکردنەوەی RTL' },
+        { k: 'fix',       fn: 'openFixModal',         id: 'fix-modal',            label: 'چاککردنی فایل' },
         { k: 'merge',     fn: 'openMergeModal',       id: 'merge-modal',          label: 'تێکەڵکردنی دوو فایل' },
         { k: 'sdh',       fn: 'openSdhModal',         id: 'sdh-modal',            label: 'پاککردنەوەی دەنگەکان (SDH)' },
         { k: 'shortcuts', fn: 'openShortcutsModal',   id: 'shortcuts-modal',      label: 'کورتکراوەکانی کیبۆرد' },
@@ -17024,7 +17403,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
     if (!tabs || !list || !drawer) return;
 
     // ئایکۆن و ناوی بەشەکان (بەستراوەتەوە بە کۆدەکەوە، پێویست بە مێنیوی کۆن نییە)
-    var DATA = {"converter": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M20 7H4M16 3l4 4-4 4M4 17h16M8 21l-4-4 4-4\"/></svg>", "label": "گۆڕینی فایل"}, "rtl": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11\"/></svg>", "label": "چاککردنی RTL"}, "revrtl": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M7 20V4M7 20l-3-3M7 20l3-3M17 4v16M17 4l-3 3M17 4l3 3\"/></svg>", "label": "پێچەوانەکردنەوەی RTL"}, "merge": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"8\" y=\"8\" width=\"13\" height=\"13\" rx=\"2.5\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M4 16a2 2 0 0 1-2-2V4.5A2.5 2.5 0 0 1 4.5 2H14a2 2 0 0 1 2 2\"/></svg>", "label": "تێکەڵکردنی دوو فایل"}, "sdh": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"9\" y=\"2\" width=\"6\" height=\"13\" rx=\"3\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M19 10v1a7 7 0 0 1-14 0v-1M12 18v4M8.5 22h7\"/></svg>", "label": "پاککردنەوەی دەنگەکان (SDH)"}, "shortcuts": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M2 14h4M10 8h4M18 16h4\"/></svg>", "label": "کورتکراوەکانی کیبۆرد"}, "img": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"3\"/><circle stroke-width=\"1.85\" cx=\"9\" cy=\"9\" r=\"2\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21\"/></svg>", "label": "گۆڕینی وێنە بۆ لینک"}, "mkv": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"m16 13 5.2 3.5a.5.5 0 0 0 .8-.4V7.9a.5.5 0 0 0-.8-.4L16 11\"/><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"2\" y=\"6\" width=\"14\" height=\"12\" rx=\"2.5\"/></svg>", "label": "دەرهێنەری فایل لە MKV"}, "servers": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7\"/></svg>", "label": "کۆدی سێرڤەرەکان"}, "history": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><circle stroke-width=\"1.85\" cx=\"12\" cy=\"12\" r=\"9.25\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M12 7v5l3 2\"/></svg>", "label": "مێژووی کارەکان"}, "install": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M21 15v3.5A2.5 2.5 0 0 1 18.5 21h-13A2.5 2.5 0 0 1 3 18.5V15M7 10l5 5 5-5M12 15V3\"/></svg>", "label": "دابەزاندنی ئەپ"}};
+    var DATA = {"converter": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M20 7H4M16 3l4 4-4 4M4 17h16M8 21l-4-4 4-4\"/></svg>", "label": "گۆڕینی فایل"}, "rtl": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11\"/></svg>", "label": "چاککردنی RTL"}, "fix": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.2-.5-.5-2.2z\"/></svg>", "label": "چاککردنی فایل"}, "revrtl": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M7 20V4M7 20l-3-3M7 20l3-3M17 4v16M17 4l-3 3M17 4l3 3\"/></svg>", "label": "پێچەوانەکردنەوەی RTL"}, "merge": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"8\" y=\"8\" width=\"13\" height=\"13\" rx=\"2.5\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M4 16a2 2 0 0 1-2-2V4.5A2.5 2.5 0 0 1 4.5 2H14a2 2 0 0 1 2 2\"/></svg>", "label": "تێکەڵکردنی دوو فایل"}, "sdh": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"9\" y=\"2\" width=\"6\" height=\"13\" rx=\"3\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M19 10v1a7 7 0 0 1-14 0v-1M12 18v4M8.5 22h7\"/></svg>", "label": "پاککردنەوەی دەنگەکان (SDH)"}, "shortcuts": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M2 14h4M10 8h4M18 16h4\"/></svg>", "label": "کورتکراوەکانی کیبۆرد"}, "img": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"3\"/><circle stroke-width=\"1.85\" cx=\"9\" cy=\"9\" r=\"2\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21\"/></svg>", "label": "گۆڕینی وێنە بۆ لینک"}, "mkv": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"m16 13 5.2 3.5a.5.5 0 0 0 .8-.4V7.9a.5.5 0 0 0-.8-.4L16 11\"/><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"2\" y=\"6\" width=\"14\" height=\"12\" rx=\"2.5\"/></svg>", "label": "دەرهێنەری فایل لە MKV"}, "servers": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7\"/></svg>", "label": "کۆدی سێرڤەرەکان"}, "history": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><circle stroke-width=\"1.85\" cx=\"12\" cy=\"12\" r=\"9.25\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M12 7v5l3 2\"/></svg>", "label": "مێژووی کارەکان"}, "install": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M21 15v3.5A2.5 2.5 0 0 1 18.5 21h-13A2.5 2.5 0 0 1 3 18.5V15M7 10l5 5 5-5M12 15V3\"/></svg>", "label": "دابەزاندنی ئەپ"}};
     SECS.forEach(function (s) {
         var d = DATA[s.k];
         s.icon = d ? d.icon : '';
@@ -17071,7 +17450,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
     var center = document.querySelector('.kf-bar-center');
     if (wm && center) center.insertBefore(wm, center.firstChild);
 
-    var KEEP = { converter: 1, rtl: 1, revrtl: 1, merge: 1, sdh: 1, img: 1, mkv: 1 }, visited = {};
+    var KEEP = { converter: 1, rtl: 1, revrtl: 1, fix: 1, merge: 1, sdh: 1, img: 1, mkv: 1 }, visited = {};
     var nav = window.kfNav = {
         secs: SECS,
         isHome: function () { return document.body.classList.contains('startup-bg'); },
@@ -17174,6 +17553,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
             { id: 'convertFileInput', chips: true, reset: function (i) { if (typeof updateBatchCount === 'function') updateBatchCount(i); } },
             { id: 'rtlFixFileInput', chips: true, reset: function (i) { if (typeof updateRtlFixCount === 'function') updateRtlFixCount(i); } },
             { id: 'revRtlFileInput', chips: true, reset: function (i) { if (typeof updateRevRtlCount === 'function') updateRevRtlCount(i); } },
+            { id: 'fixFileInput', chips: true, reset: function (i) { if (typeof updateFixCount === 'function') updateFixCount(i); } },
             { id: 'sdhFileInput', chips: true, reset: function (i) { if (typeof updateSdhCount === 'function') updateSdhCount(i); } },
             { id: 'mergeBaseFile', reset: function (i) { if (typeof handleMergeBaseFileSelect === 'function') handleMergeBaseFileSelect(i); } },
             { id: 'mergeSourceFile', reset: function (i) { if (typeof handleMergeSourceFileSelect === 'function') handleMergeSourceFileSelect(i); } },
@@ -18143,6 +18523,10 @@ var G=[
  feats:['چەند فایلێک پێکەوە','تاگەکان و دێڕی ئینگلیزی دەستکاری ناکرێن','دووبارە جێبەجێکردن دەیگەڕێنێتەوە'],
  steps:[{h:'بەکارهێنان',rows:[[E('box','فایلەکان هەڵبژێرە (SRT, ASS, VTT)',1)],[E('btn','پێچەوانەکردنەوە و داگرتن',2)]],
   notes:['یەک یان چەند فایلێک هەڵبژێرە.','فایلە گۆڕاوەکان بە ناوی _RTL_Reversed دادەبەزن.']}]},
+{k:'fix',name:'چاککردنی فایل',intro:'کێشە باوەکانی SRT و VTT و ASS چاک دەکات، بۆ نموونە ئەگەر بۆشایی نێوان دوو دێڕ نەبوو خۆی دایدەنێت.',
+ feats:['چەند فایلێک پێکەوە','بۆشایی نێوان دێڕەکان و ژمارەکردنەوە','ڕاستکردنەوەی کات و لابردنی دێڕی بەتاڵ','ASS: بەشەکان، هێڵی ونبوو و دێڕی پچڕاو','ڕاپۆرتی چاکسازییەکان بۆ هەر فایلێک'],
+ steps:[{h:'بەکارهێنان',rows:[[E('box','فایلەکان هەڵبژێرە (SRT, ASS, VTT)',1)],[E('el','☑ ژمارەکردنەوەی دێڕەکان بە ڕیز',2),E('el','☑ سڕینەوەی دێڕە بەتاڵەکان',2)],[E('btn','چاککردن و داگرتن',3)]],
+  notes:['یەک یان چەند فایلێک هەڵبژێرە.','ئەو بژاردانە هەڵبژێرە کە دەتەوێت؛ بۆشایی نێوان دێڕەکان هەمیشە چاک دەکرێت.','فایلە چاککراوەکان بە ناوی _Fixed دادەبەزن و ڕاپۆرتەکە لە خوارەوە دەردەکەوێت.']}]},
 {k:'merge',name:'تێکەڵکردنی دوو فایل',intro:'دوو فایلی ژێرنووس تێکەڵ دەکات و ستایلەکانیان بەڕێوە دەبات؛ هەروەها لۆگۆی KURD FOREST زیاد دەکات.',
  feats:['فایلی سەرەکی + فایلی دووەم','بینین و سڕینەوەی ستایلەکان','دەستکاریکردنی ڕستەکانی فایلی دووەم','دیاریکردنی فۆنت بۆ ستایل/دێڕ','زیادکردنی لۆگۆ بە ٣ ستایلی جوڵە'],
  steps:[{h:'هەنگاوەکان',rows:[[E('box','١. فایلی سەرەکی (بنچینە)',1)],[E('btn','سڕینەوەی ستایلە بەتاڵەکان',2)],[E('box','٢. فایلی دووەم',3)],[E('btn','دەستکاریکردنی ڕستەکانی فایلی دووەم',4)],[E('el','فۆنتەکان: زیادکردن',5)],[E('el','☑ زیادکردنی لۆگۆی KURD FOREST',6),E('el','چەند جار؟ 2',7)],[E('btn','تێکەڵکردن و داگرتن',8)]],

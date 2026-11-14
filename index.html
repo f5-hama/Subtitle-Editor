@@ -1809,7 +1809,7 @@ html[data-kf-bg="wave"] .kf-web .kfb-wave, html[data-kf-bg="stars"] .kf-web .kfb
 .kf-bgtile { flex: 1 1 0; min-width: 0; padding: 3px; border: 2px solid transparent; border-radius: 12px; background: transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; color: var(--text-muted); font-family: inherit; transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; -webkit-tap-highlight-color: transparent; }
 .kf-bgtile:active { transform: scale(.94); }
 .kf-bgprev { position: relative; display: block; width: 100%; aspect-ratio: 1 / 1.08; border-radius: 9px; overflow: hidden; background: #0a0e17; border: 1px solid rgba(255,255,255,.09); color: var(--primary); }
-.kf-bgprev svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; filter: brightness(2.7); }
+.kf-bgprev svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; filter: drop-shadow(0 0 0 currentColor) drop-shadow(0 0 0 currentColor); }
 .kf-bgprev-aurora { background: radial-gradient(75% 60% at 14% 0%, var(--primary-glow, rgba(245,197,66,.35)), transparent 76%), radial-gradient(60% 50% at 92% 4%, var(--primary-glow, rgba(245,197,66,.35)), transparent 74%), #0a0e17; background-repeat: no-repeat; }
 .kf-bgname { font-size: 10.5px; font-weight: 700; line-height: 1.2; }
 .kf-bgtile.active { border-color: var(--primary); box-shadow: 0 0 10px var(--primary-glow, rgba(245,197,66,.35)); }
@@ -2822,6 +2822,7 @@ function kfTogglePw(btn){
         const file = input.files[0];
         const myId = ++mkvScanId;
         currentMkvFile = file;
+        mkvIoThr = 0;
         mkvParsedTracks = [];
         mkvDetectedTitle = '';
 
@@ -2985,6 +2986,28 @@ function kfTogglePw(btn){
 
     // فایلی بیتڕەیتی بەرز (≥ ١٢ مێگابیت/چرکە): پەنجەرەی خوێندنەوە بچووک دەکرێت بۆ ئەوەی فریمە گەورەکانی ڤیدیۆ نەخوێندرێنەوە.
     // فایلی ئاسایی هەروەک پێشوو (٣٢ مێگابایت) دەمێنێتەوە.
+    // ڕێکخستنی خۆکارانەی خێرایی خوێندنەوە (وەک بیرۆکەی mkvextract کە داتای بلۆکە گەورەکان بازدەدات):
+    // ئەگەر بلۆکەکان بچووکن، خوێندنەوەی گەورە (٨ مێگابایت) خێراترە؛ ئەگەر بلۆکەکان گەورەن، بازدان بەسەریانا خێراترە.
+    // سنووری نێوانیان لەسەر ئامێرەکە خۆی دەپێورێت (کاتی هەر خوێندنەوەیەک بەرامبەر خێرایی خوێندنەوەی گەورە).
+    let mkvIoThr = 0;
+    async function mkvCalibrateIo(file) {
+        if (mkvIoThr) return mkvIoThr;
+        let thr = 512 * 1024;
+        try {
+            const sz = file.size, M4 = 4 * 1024 * 1024;
+            if (sz > 24 * 1024 * 1024) {
+                const small = [], big = [];
+                for (let i = 0; i < 7; i++) { const p = Math.floor(sz * (0.07 + 0.11 * i)); const t = performance.now(); await file.slice(p, p + 4096).arrayBuffer(); small.push(performance.now() - t); }
+                for (let i = 0; i < 2; i++) { const p = Math.floor(sz * (0.2 + 0.4 * i)); const t = performance.now(); await file.slice(p, p + M4).arrayBuffer(); big.push(performance.now() - t); }
+                small.sort((a, b) => a - b);
+                const a = Math.max(0.05, small[small.length >> 1]);
+                const bw = M4 / Math.max(0.2, Math.min.apply(null, big) - a);     // بایت لە میلی‌چرکەیەکدا
+                thr = Math.max(128 * 1024, Math.min(2 * 1024 * 1024, a * bw));
+            }
+        } catch (_) { /* بەها ئاسایی دەمێنێتەوە */ }
+        mkvIoThr = thr;
+        return thr;
+    }
     function mkvAutoChunk(file) {
         const secs = mkvDurationTicks * (mkvTimecodeScale / 1e9);
         if (secs > 1 && file.size * 8 / secs >= 12e6) return 64 * 1024;
@@ -2993,8 +3016,11 @@ function kfTogglePw(btn){
 
             async function mkvWalk(file, startPos, wanted, handler, myId, onProgress, opts) {
         opts = opts || {};
-        const r = opts.reader || new MkvFastReader(file, mkvAutoChunk(file));
+        const BIG = 8 * 1024 * 1024, SMALL = 64 * 1024, thr = mkvIoThr || 512 * 1024;
+        const adaptive = !opts.reader && opts.end === undefined;
+        const r = opts.reader || new MkvFastReader(file, adaptive ? BIG : Math.max(SMALL, Math.min(BIG, (opts.end || 0) - (startPos || 0))));
         const size = opts.end !== undefined ? Math.min(opts.end, file.size) : file.size;
+        let skB = 0, skN = 0;
         let pos = startPos || 0, cluTc = opts.cluTc || 0, cnt = 0, lastUi = Date.now(), resync = 0;
         let gActive = false, gEnd = 0, gItem = null, gDur = 0, gExtras = null;
         
@@ -3012,6 +3038,7 @@ function kfTogglePw(btn){
 
         loop:
         while (pos < size) {
+            if (adaptive && skN >= 256) { r.CHUNK = (skB / skN) < thr ? BIG : SMALL; skB = 0; skN = 0; }
             if (gActive && pos >= gEnd) commit();
             if (!r.has(pos, 16) && !await r.ensure(pos, 16)) break;
 
@@ -3027,6 +3054,7 @@ function kfTogglePw(btn){
                 if (sz > 3 && hl > 0) {
                     const bodyO = (pos + hl) - r.cs;
                     if (bodyO < r.u8.length && !fastSet[r.u8[bodyO]]) {
+                        skB += sz; skN++;
                         pos = pos + hl + sz;
                         continue;
                     }
@@ -3087,7 +3115,7 @@ function kfTogglePw(btn){
                             if (items) {
                                 if (ev.isGroup) gItem = items; else handler.done(items, 0, null);
                             }
-                        }
+                        } else { skB += sz; skN++; }
                     }
                     pos = body + Math.max(sz, 0); continue;
                 default:
@@ -3546,6 +3574,7 @@ function kfTogglePw(btn){
             }
             if (!fastOk) {
                 blocks.length = 0; order = 0;
+                await mkvCalibrateIo(currentMkvFile);
                 // ٢) ڕێگای ئاسایی: خوێندنەوەی تەواوی فایل (هەمیشە دروست)
                 // وەک mkvextract: ئەگەر ژێرنووسی دەقیی تریش هەبوو، لە هەمان پاسدا دەردەهێنرێن و کاش دەکرێن،
                 // بۆ ئەوەی بۆ تراکی دواتر فایلەکە دووبارە نەخوێنرێتەوە.
@@ -7324,7 +7353,8 @@ const FixEngine = (function () {
             const items = [];
             let fields = null, last = null;
             ev.lines.forEach(function (l0) {
-                const parts = l0.split(/(?<=\S)\s*(?=(?:Dialogue|Comment)\s*:\s*\d+\s*,\s*\d+:\d{2}:\d{2}[.,]\d{1,3}\s*,\s*\d+:\d{2}:\d{2}[.,]\d{1,3}\s*,)/);
+                // بێ lookbehind (ئایفۆنی کۆن پشتگیری ناکات): پیتی پێش دێڕی لکاو دەپارێزرێت و دێڕێکی نوێی لێ دەدرێت
+                const parts = l0.replace(/(\S)\s*(?=(?:Dialogue|Comment)\s*:\s*\d+\s*,\s*\d+:\d{2}:\d{2}[.,]\d{1,3}\s*,\s*\d+:\d{2}:\d{2}[.,]\d{1,3}\s*,)/g, '$1\n').split('\n');
                 if (parts.length > 1) st.split += parts.length - 1;
                 parts.forEach(function (p) {
                     const ln = p.trim();

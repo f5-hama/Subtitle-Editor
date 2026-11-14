@@ -7324,7 +7324,7 @@ const FixEngine = (function () {
             const items = [];
             let fields = null, last = null;
             ev.lines.forEach(function (l0) {
-                const parts = l0.split(/(?<=\S)\s*(?=(?:Dialogue|Comment)\s*:\s*[^,]*,\s*\d+:\d{1,2}:\d{1,2}[.,:]\d+\s*,)/);
+                const parts = l0.split(/(?<=\S)\s*(?=(?:Dialogue|Comment)\s*:\s*\d+\s*,\s*\d+:\d{2}:\d{2}[.,]\d{1,3}\s*,\s*\d+:\d{2}:\d{2}[.,]\d{1,3}\s*,)/);
                 if (parts.length > 1) st.split += parts.length - 1;
                 parts.forEach(function (p) {
                     const ln = p.trim();
@@ -7458,6 +7458,8 @@ function openFixModal() {
 function updateFixCount(input) {
     const display = document.getElementById('fixCountDisplay');
     if (!display) return;
+    const rep = document.getElementById('fixReport');
+    if (rep) { rep.style.display = 'none'; rep.innerHTML = ''; }
     if (input && input.files && input.files.length > 0) {
         display.innerText = input.files.length + ' ' + ((i18n[currentLang] && i18n[currentLang]['batchFilesSelected']) || 'فایل دیاریکراون');
         display.style.color = 'var(--success)';

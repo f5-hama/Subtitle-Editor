@@ -19722,9 +19722,8 @@ var KFV = (function () {
     }
     function scan() { list = []; var m = (typeof rawAssMasterEvents !== 'undefined' && rawAssMasterEvents) || []; m.forEach(function (ev, i) { if (ev && ev.isTech && ev.rawLine && /^\s*Dialogue:/.test(ev.rawLine) && pure(ev.rawLine)) list.push({ ev: ev, no: i + 1 }); });
         try {
-            // ژمارەی سانسۆرەکان بەپێی فایلەکە: دوای هەموو دێڕەکانی فایلەکە دەست پێدەکات (هەروەک لە فایلی کۆتاییدا دەنووسرێن)
-            var seen = {}, base = m.length; m.forEach(function (ev) { if (ev && !ev.isTech) seen[ev.uid] = true; });
-            if (m.length) originalData.forEach(function (x) { if (x && !seen[x.uid]) base++; }); else base = originalData.length;
+            // ژمارەی سانسۆرەکان دوای ژمارەی دێڕە دیارەکانی لیستی ژێرنووس دەست پێدەکات (٣٥٠ ← یەکەم سانسۆر #٣٥١)
+            var base = originalData.length;
             censorAddedList.filter(function (c) { return c.kind !== 'text'; }).forEach(function (c, k) { list.push({ cen: c, no: base + k + 1 }); });
         } catch (e) { } }
     function styleList() { var o = {}, a = []; (typeof originalData !== 'undefined' ? originalData : []).forEach(function (x) { var s = x.assMeta && x.assMeta.style; if (s === undefined) return; if (!(s in o)) { o[s] = 0; a.push(s); } o[s]++; }); return a.map(function (s) { return [s, o[s]]; }); }

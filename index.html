@@ -7480,7 +7480,7 @@ async function executeFix() {
     const opts = { renumber: g('fixOptRenumber'), times: g('fixOptTimes'), spaces: g('fixOptSpaces'), empty: g('fixOptEmpty'), join: g('fixOptJoin'), overlap: g('fixOptOverlap'), sort: g('fixOptSort') };
     const rep = document.getElementById('fixReport');
     if (rep) { rep.innerHTML = ''; rep.style.display = 'block'; }
-    let total = 0, done = 0;
+    let total = 0, done = 0, bad = 0;
     for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const row = document.createElement('div');
@@ -7495,6 +7495,7 @@ async function executeFix() {
             const raw = await file.text();
             const r = FixEngine.fixFile(raw, file.name, opts);
             if (r.noCues) {
+                bad++;
                 info.textContent = 'هیچ دێڕێکی ژێرنووس نەدۆزرایەوە؛ فایلەکە دەستکاری نەکرا.';
                 info.style.color = 'var(--danger, #e5484d)';
             } else {
@@ -7506,6 +7507,7 @@ async function executeFix() {
                 await new Promise(function (res) { setTimeout(res, 600); });
             }
         } catch (e) {
+            bad++;
             info.textContent = 'هەڵە: ' + (e && e.message ? e.message : e);
             info.style.color = 'var(--danger, #e5484d)';
         }
@@ -7513,6 +7515,8 @@ async function executeFix() {
     }
     if (done === 0) showToast('هیچ فایلێک چاک نەکرا', 'error');
     else showToast('چاککردن تەواو بوو — ' + total + ' چاکسازی لە ' + done + ' فایل', 'success');
+    // وەک بەشەکانی تر: دوای داگرتن دەگەڕێتەوە شاشەی سەرەکی (ئەگەر هەڵە نەبوو)
+    if (done > 0 && bad === 0) { const fm = document.getElementById('fix-modal'); if (fm) fm.style.display = 'none'; }
 }
 
 

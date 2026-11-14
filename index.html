@@ -2989,13 +2989,13 @@ function kfTogglePw(btn){
     // ڕێکخستنی خۆکارانەی خێرایی خوێندنەوە (وەک بیرۆکەی mkvextract کە داتای بلۆکە گەورەکان بازدەدات):
     // ئەگەر بلۆکەکان بچووکن، خوێندنەوەی گەورە (٨ مێگابایت) خێراترە؛ ئەگەر بلۆکەکان گەورەن، بازدان بەسەریانا خێراترە.
     // سنووری نێوانیان لەسەر ئامێرەکە خۆی دەپێورێت (کاتی هەر خوێندنەوەیەک بەرامبەر خێرایی خوێندنەوەی گەورە).
-    let mkvIoThr = 0;
+    let mkvIoThr = 0, mkvIoA = 1, mkvIoBW = 400000;   // mkvIoA: کاتی هەر خوێندنەوەیەک (ms)، mkvIoBW: خێرایی خوێندنەوەی گەورە (بایت/ms)
     async function mkvCalibrateIo(file) {
         if (mkvIoThr) return mkvIoThr;
         let thr = 512 * 1024;
         try {
             const sz = file.size, M4 = 4 * 1024 * 1024;
-            if (sz > 24 * 1024 * 1024) {
+            if (sz > 96 * 1024 * 1024) {
                 const small = [], big = [];
                 for (let i = 0; i < 7; i++) { const p = Math.floor(sz * (0.07 + 0.11 * i)); const t = performance.now(); await file.slice(p, p + 4096).arrayBuffer(); small.push(performance.now() - t); }
                 for (let i = 0; i < 2; i++) { const p = Math.floor(sz * (0.2 + 0.4 * i)); const t = performance.now(); await file.slice(p, p + M4).arrayBuffer(); big.push(performance.now() - t); }
@@ -3003,6 +3003,7 @@ function kfTogglePw(btn){
                 const a = Math.max(0.05, small[small.length >> 1]);
                 const bw = M4 / Math.max(0.2, Math.min.apply(null, big) - a);     // بایت لە میلی‌چرکەیەکدا
                 thr = Math.max(128 * 1024, Math.min(2 * 1024 * 1024, a * bw));
+                mkvIoA = a; mkvIoBW = bw;
             }
         } catch (_) { /* بەها ئاسایی دەمێنێتەوە */ }
         mkvIoThr = thr;
@@ -3239,44 +3240,69 @@ function kfTogglePw(btn){
         const entries = await mkvReadCueEntries(file, track.trackNumber);
         if (!entries) return false;
         if (entries.length > expected * 2 + 64) return false;       // Cues شتێکی ناسروشتی تێدایە
+        await mkvCalibrateIo(file);
         const wanted = new Set([track.trackNumber]);
-        const infoCache = new Map();
-        const getInfo = (cl) => {
-            if (!infoCache.has(cl)) infoCache.set(cl, mkvClusterInfo(file, cl));
-            return infoCache.get(cl);
-        };
-        const BATCH = 24, WIN = 16 * 1024;
-        for (let i = 0; i < entries.length; i += BATCH) {
-            if (myId !== mkvScanId) throw new Error('cancelled');
-            const slice = entries.slice(i, i + BATCH);
-            // خوێندنەوەی هاوکاتی (پێشوەخت)، پاشان پرۆسێسکردن بە ڕیزبەندی فایل
-            const loaded = await Promise.all(slice.map(async (e) => {
-                const info = await getInfo(e.cl);
-                if (!info) return null;
-                if (e.rel < 0 || opts.ignoreRel) return { info, e, reader: null };
-                const abs = info.body + e.rel;
-                const rd = new MkvFastReader(file, WIN);
-                if (!await rd.ensure(abs, 16)) return null;
-                return { info, e, reader: rd, abs };
-            }));
-            for (const it of loaded) {
-                if (!it) return false;
-                if (!it.reader) {
-                    // کلەستەرەکە بە تەواوی دەخوێنرێتەوە
-                    if (it.info.__done) continue;
-                    it.info.__done = true;
-                    await mkvWalk(file, it.info.body, wanted, handler, myId, null, { end: it.info.end });
-                    continue;
-                }
-                const r = it.reader, abs = it.abs;
-                const id = r.id(abs);
-                if (id !== 0xA3 && id !== 0xA0) return false;
-                const il = r.rl, sz = r.vint(abs + il);
-                if (sz < 0) return false;
-                const end = abs + il + r.rl + sz;
-                await mkvWalk(file, abs, wanted, handler, myId, null, { reader: r, end, cluTc: it.info.tc });
+
+        // Cues بەپێی کلەستەر کۆدەکرێنەوە (پێشتر هەر بلۆکێک خوێندنەوەیەکی جیای هەبوو، بۆ ژێرنووسی ASSی قورس دەبوو بە ٣٠ هەزار خوێندنەوە)
+        const groups = [];
+        for (const e of entries) {
+            const g = groups[groups.length - 1];
+            if (g && g.cl === e.cl) g.list.push(e); else groups.push({ cl: e.cl, list: [e] });
+        }
+
+        // هەر کلەستەرێک: یان بە یەک خوێندنەوە (ئەگەر ژمارەی بلۆکەکان زۆرە)، یان بلۆک بە بلۆک (ئەگەر کەمن)
+        // بڕیارەکە لەسەر پێوانەی خێرایی ئامێرەکە دەدرێت: کاتی خوێندنەوەی هەموو کلەستەرەکە بەرامبەر کاتی چەند خوێندنەوەی بچووک.
+        const WHOLE_MAX = 24 * 1024 * 1024;
+        const prep = async (g) => {
+            const info = await mkvClusterInfo(file, g.cl);
+            if (!info) return null;
+            const len = info.end - info.body;
+            const whole = g.list.some(e => e.rel < 0) || opts.ignoreRel ||
+                (len > 0 && len <= WHOLE_MAX && g.list.length * mkvIoA > len / mkvIoBW);
+            if (whole) {
+                if (len <= 0 || len > 256 * 1024 * 1024) return null;
+                const rd = new MkvFastReader(file, len);
+                if (!await rd.ensure(info.body, len)) return null;
+                return { info, whole: true, rd };
             }
-            if (onProgress) onProgress(Math.min(1, (i + BATCH) / entries.length));
+            const items = await Promise.all(g.list.map(async (e) => {
+                const rd = new MkvFastReader(file, 16 * 1024);
+                const abs = info.body + e.rel;
+                if (!await rd.ensure(abs, 16)) return null;
+                return { rd, abs };
+            }));
+            if (items.some(x => !x)) return null;
+            return { info, whole: false, items };
+        };
+        const B = 6;
+        const prepBatch = (i) => Promise.all(groups.slice(i, i + B).map(prep));
+
+        let nextP = prepBatch(0);
+        try {
+            for (let i = 0; i < groups.length; i += B) {
+                if (myId !== mkvScanId) throw new Error('cancelled');
+                const cur = await nextP;
+                nextP = i + B < groups.length ? prepBatch(i + B) : null;     // خوێندنەوەی دەستەی دواتر لەگەڵ پرۆسێسکردنی ئەمە پێکەوە
+                for (const it of cur) {
+                    if (!it) return false;
+                    if (it.whole) {
+                        await mkvWalk(file, it.info.body, wanted, handler, myId, null, { reader: it.rd, end: it.info.end });
+                        continue;
+                    }
+                    for (const x of it.items) {
+                        const r = x.rd;
+                        const id = r.id(x.abs);
+                        if (id !== 0xA3 && id !== 0xA0) return false;
+                        const il = r.rl, sz = r.vint(x.abs + il);
+                        if (sz < 0) return false;
+                        const end = x.abs + il + r.rl + sz;
+                        await mkvWalk(file, x.abs, wanted, handler, myId, null, { reader: r, end, cluTc: it.info.tc });
+                    }
+                }
+                if (onProgress) onProgress(Math.min(1, (i + B) / groups.length));
+            }
+        } finally {
+            if (nextP) nextP.catch(() => {});
         }
         if (getCount() !== expected) { resetFn(); return false; }
         return true;

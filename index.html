@@ -3252,7 +3252,7 @@ function kfTogglePw(btn){
 
         // هەر کلەستەرێک: یان بە یەک خوێندنەوە (ئەگەر ژمارەی بلۆکەکان زۆرە)، یان بلۆک بە بلۆک (ئەگەر کەمن)
         // بڕیارەکە لەسەر پێوانەی خێرایی ئامێرەکە دەدرێت: کاتی خوێندنەوەی هەموو کلەستەرەکە بەرامبەر کاتی چەند خوێندنەوەی بچووک.
-        const WHOLE_MAX = 24 * 1024 * 1024;
+        const WHOLE_MAX = 16 * 1024 * 1024;
         const prep = async (g) => {
             const info = await mkvClusterInfo(file, g.cl);
             if (!info) return null;
@@ -3274,7 +3274,7 @@ function kfTogglePw(btn){
             if (items.some(x => !x)) return null;
             return { info, whole: false, items };
         };
-        const B = 6;
+        const B = 8;
         const prepBatch = (i) => Promise.all(groups.slice(i, i + B).map(prep));
 
         let nextP = prepBatch(0);
@@ -3851,6 +3851,7 @@ function kfTogglePw(btn){
                 done() {}
             };
 
+            await mkvCalibrateIo(currentMkvFile);
             await mkvWalk(currentMkvFile, mkvSegmentDataStart, new Set([targetTrackNumber]), handler, myId, frac => {
                 const percent = Math.round(3 + frac * 93);
                 setMkvProgress(Math.min(97, percent), `دەرهێنان... (${blockCount} فەریم)`);

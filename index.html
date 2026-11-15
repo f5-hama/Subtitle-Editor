@@ -3237,9 +3237,9 @@ function kfTogglePw(btn){
 
     async function mkvCueExtract(file, track, handler, myId, onProgress, expected, getCount, resetFn, opts) {
         opts = opts || {};
-        const entries = await mkvReadCueEntries(file, track.trackNumber);
+        const entries = await mkvReadCueEntries(file, opts.cueTrack || track.trackNumber);
         if (!entries) return false;
-        if (entries.length > expected * 2 + 64) return false;       // Cues شتێکی ناسروشتی تێدایە
+        if (!opts.cueTrack && entries.length > expected * 2 + 64) return false;       // Cues شتێکی ناسروشتی تێدایە
         await mkvCalibrateIo(file);
         const wanted = new Set([track.trackNumber]);
 
@@ -3253,20 +3253,21 @@ function kfTogglePw(btn){
         // هەر کلەستەرێک: یان بە یەک خوێندنەوە (ئەگەر ژمارەی بلۆکەکان زۆرە)، یان بلۆک بە بلۆک (ئەگەر کەمن)
         // بڕیارەکە لەسەر پێوانەی خێرایی ئامێرەکە دەدرێت: کاتی خوێندنەوەی هەموو کلەستەرەکە بەرامبەر کاتی چەند خوێندنەوەی بچووک.
         const WHOLE_MAX = 16 * 1024 * 1024;
-        const prep = async (g) => {
+        const forceWhole = !!opts.ignoreRel;
+        const prep = async (g, mode) => {
             const info = await mkvClusterInfo(file, g.cl);
             if (!info) return null;
             const len = info.end - info.body;
-            const whole = g.list.some(e => e.rel < 0) || opts.ignoreRel ||
-                (len > 0 && len <= WHOLE_MAX && g.list.length * mkvIoA > len / mkvIoBW);
+            const whole = forceWhole || g.list.some(e => e.rel < 0) || (mode === 'whole' && len > 0 && len <= WHOLE_MAX);
             if (whole) {
-                if (len <= 0 || len > 256 * 1024 * 1024) return null;
+                if (len <= 0 || len > (forceWhole ? 48 : 256) * 1024 * 1024) return null;
                 const rd = new MkvFastReader(file, len);
                 if (!await rd.ensure(info.body, len)) return null;
                 return { info, whole: true, rd };
             }
+            // پەنجەرەی بچووک: بلۆکی ژێرنووس بچووکە (نزیکەی ١ کیلۆبایت)، بۆیە ١٦ کیلۆبایت بەفیڕۆ دەچوو
             const items = await Promise.all(g.list.map(async (e) => {
-                const rd = new MkvFastReader(file, 16 * 1024);
+                const rd = new MkvFastReader(file, 4096);
                 const abs = info.body + e.rel;
                 if (!await rd.ensure(abs, 16)) return null;
                 return { rd, abs };
@@ -3275,7 +3276,28 @@ function kfTogglePw(btn){
             return { info, whole: false, items };
         };
         const B = 8;
-        const prepBatch = (i) => Promise.all(groups.slice(i, i + B).map(prep));
+        // خۆڕێکخستن: دەستەی یەکەم بە خوێندنەوەی تەواوی کلەستەر، دووەم بلۆک بە بلۆک؛ ئەوەی خێراترە بۆ ئامێرەکە دەمێنێتەوە
+        // (و هەر ١٢ دەستە جارێک ئەوی تر دووبارە تاقی دەکرێتەوە)
+        const cost = { whole: -1, sparse: -1 };
+        // ئەگەر بەپێی پێوانەی ئامێرەکە بلۆک بە بلۆک چەندین جار خاوترە (بلۆکی زۆر لە کلەستەرێکدا)، تاقیکردنەوەی نابێت
+        const avgEnt = entries.length / groups.length;
+        const span = groups.length > 1 ? (groups[groups.length - 1].cl - groups[0].cl) / (groups.length - 1) : 4e6;
+        const noSparse = forceWhole || (avgEnt * mkvIoA) / Math.max(0.01, span / mkvIoBW) > 4;
+        const pickMode = (bi) => {
+            if (noSparse || bi === 0) return 'whole';
+            if (bi === 1) return 'sparse';
+            const best = (cost.whole >= 0 && (cost.sparse < 0 || cost.whole <= cost.sparse)) ? 'whole' : 'sparse';
+            return (bi % 12 === 0) ? (best === 'whole' ? 'sparse' : 'whole') : best;
+        };
+        const prepBatch = async (i) => {
+            const mode = pickMode(i / B);
+            const t0 = performance.now();
+            const arr = await Promise.all(groups.slice(i, i + B).map(g => prep(g, mode)));
+            const per = (performance.now() - t0) / Math.max(1, arr.length);
+            cost[mode] = cost[mode] < 0 ? per : cost[mode] * 0.6 + per * 0.4;
+            if (window.__mkvDebug) window.__mkvDebug.push(mode + ':' + per.toFixed(1));
+            return arr;
+        };
 
         let nextP = prepBatch(0);
         try {
@@ -3852,10 +3874,29 @@ function kfTogglePw(btn){
             };
 
             await mkvCalibrateIo(currentMkvFile);
-            await mkvWalk(currentMkvFile, mkvSegmentDataStart, new Set([targetTrackNumber]), handler, myId, frac => {
-                const percent = Math.round(3 + frac * 93);
-                setMkvProgress(Math.min(97, percent), `دەرهێنان... (${blockCount} فەریم)`);
-            });
+            // ١) ڕێگای خێرا: کلەستەرەکان لە Cuesی ڤیدیۆوە دەناسرێنەوە و چەندیان پێکەوە دەخوێنرێنەوە (تەنها ئەگەر NUMBER_OF_FRAMES پشتڕاستی بکاتەوە)
+            let fastOk = false;
+            try {
+                const expected = await mkvReadFrameCount(currentMkvFile, track);
+                const vtrack = mkvParsedTracks.find(t => t.type === 1 || /^V_/.test(t.codecId || ''));
+                if (expected > 0 && vtrack) {
+                    fastOk = await mkvCueExtract(currentMkvFile, track, handler, myId, frac => {
+                        setMkvProgress(Math.min(97, Math.round(3 + frac * 93)), `دەرهێنانی زۆر خێرا... (${blockCount} فەریم)`);
+                    }, expected, () => blockCount, () => { audioChunks.length = 0; blockCount = 0; }, { cueTrack: vtrack.trackNumber, ignoreRel: true });
+                }
+            } catch (fe) {
+                if (fe && fe.message === 'cancelled') throw fe;
+                console.warn('MKV audio fast path failed, using full scan:', fe);
+                fastOk = false;
+            }
+            if (!fastOk) {
+                audioChunks.length = 0; blockCount = 0;
+                // ٢) ڕێگای ئاسایی: خوێندنەوەی تەواوی فایل
+                await mkvWalk(currentMkvFile, mkvSegmentDataStart, new Set([targetTrackNumber]), handler, myId, frac => {
+                    const percent = Math.round(3 + frac * 93);
+                    setMkvProgress(Math.min(97, percent), `دەرهێنان... (${blockCount} فەریم)`);
+                });
+            }
 
             if (myId !== mkvScanId) return;
             if (blockCount === 0) {

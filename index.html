@@ -2679,6 +2679,15 @@ function kfTogglePw(btn){
             this.u8 = new Uint8Array(0);
             this.dv = new DataView(this.u8.buffer);
             this.rl = 0;
+            this.pfDepth = 0; this.pq = [];       // خوێندنەوەی پێشوەختە: چەند پارچەی گەورەی دواتر پێکەوە دەخوێندرێنەوە
+        }
+        topUp() {
+            if (!this.pfDepth || this.CHUNK < 1048576) { this.pq.length = 0; return; }
+            let s = this.pq.length ? this.pq[this.pq.length - 1].e : this.ce;
+            while (this.pq.length < this.pfDepth && s < this.size) {
+                const e = Math.min(this.size, s + this.CHUNK), p = this.file.slice(s, e).arrayBuffer();
+                p.catch(() => {}); this.pq.push({ s, e, p }); s = e;
+            }
         }
         has(pos, n) {
             return pos >= this.cs && (pos + n <= this.ce || (this.ce >= this.size && pos < this.ce));
@@ -2687,12 +2696,28 @@ function kfTogglePw(btn){
             if (pos >= this.size) return false;
             n = Math.min(n, this.size - pos);
             if (this.has(pos, n)) return true;
-            const end = Math.min(this.size, pos + Math.max(n, this.CHUNK));
-            const buf = await this.file.slice(pos, end).arrayBuffer();
-            this.cs = pos;
-            this.ce = pos + buf.byteLength;
+            let buf = null, start = pos;
+            const q = this.pq;
+            if (q.length) {
+                while (q.length && q[0].e <= pos) q.shift();
+                const h = q[0];
+                if (h && pos >= h.s && pos + n <= h.e) { buf = await h.p; start = h.s; q.shift(); }
+                else if (h && pos >= this.cs && pos < this.ce && h.s === this.ce && pos + n <= h.e) {
+                    // سەرەتای تۆمارەکە لە کۆتایی پارچەی ئێستادایە و درێژەکەی لە پارچەی پێشوەختەدایە: پێکیان دەگرینەوە
+                    q.shift(); const nb = new Uint8Array(await h.p), keep = this.u8.subarray(pos - this.cs);
+                    const m = new Uint8Array(keep.length + nb.length); m.set(keep, 0); m.set(nb, keep.length); buf = m.buffer; start = pos;
+                }
+            }
+            if (!buf) {
+                q.length = 0;
+                const end = Math.min(this.size, pos + Math.max(n, this.CHUNK));
+                buf = await this.file.slice(pos, end).arrayBuffer();
+            }
+            this.cs = start;
+            this.ce = start + buf.byteLength;
             this.u8 = new Uint8Array(buf);
             this.dv = new DataView(buf);
+            this.topUp();
             return pos + n <= this.ce;
         }
         u8At(pos) { return this.u8[pos - this.cs]; }
@@ -3018,8 +3043,9 @@ function kfTogglePw(btn){
             async function mkvWalk(file, startPos, wanted, handler, myId, onProgress, opts) {
         opts = opts || {};
         const BIG = 8 * 1024 * 1024, SMALL = 64 * 1024, thr = mkvIoThr || 512 * 1024;
-        const adaptive = !opts.reader && opts.end === undefined;
+        const adaptive = !!opts.adaptive || (!opts.reader && opts.end === undefined);
         const r = opts.reader || new MkvFastReader(file, adaptive ? BIG : Math.max(SMALL, Math.min(BIG, (opts.end || 0) - (startPos || 0))));
+        if (!opts.reader) r.pfDepth = opts.pf !== undefined ? opts.pf : (adaptive ? 2 : 0);
         const size = opts.end !== undefined ? Math.min(opts.end, file.size) : file.size;
         let skB = 0, skN = 0;
         let pos = startPos || 0, cluTc = opts.cluTc || 0, cnt = 0, lastUi = Date.now(), resync = 0;
@@ -3139,6 +3165,30 @@ function kfTogglePw(btn){
     // تەنها ئەو بلۆکانە دەخوێنێتەوە کە Cues ئاماژەیان پێدەدات، نەک هەموو فایلەکە.
     // ئەگەر ژمارەی بلۆکەکان لەگەڵ NUMBER_OF_FRAMES یەکسان نەبوو، null دەگەڕێنێتەوە
     // و ڕێگای کۆنی (خوێندنەوەی تەواو) بەکاردێت، بۆیە هیچ دێڕێک ون نابێت.
+    // دابەشکردنی فایل بۆ چەند پارچە بە سنووری کلەستەر (لە Cues) تا چەند خوێندنەوە پێکەوە بڕۆن
+    async function mkvSplitPoints(file, startPos) {
+        if (mkvCuesLoc < 0 || file.size < 96 * 1024 * 1024) return [];
+        const ent = await mkvReadCueEntries(file, null); if (!ent || ent.length < 8) return [];
+        const pos = Array.from(new Set(ent.map(e => e.cl))).sort((a, b) => a - b);
+        const K = 4, out = [];
+        for (let k = 1; k < K; k++) {
+            const target = startPos + (file.size - startPos) * k / K;
+            let lo = 0, hi = pos.length - 1; while (lo < hi) { const m = (lo + hi) >> 1; if (pos[m] >= target) hi = m; else lo = m + 1; }
+            const c = pos[lo], prev = out.length ? out[out.length - 1] : startPos;
+            if (c > prev + 2 * 1048576 && c < file.size - 2 * 1048576) { const info = await mkvClusterInfo(file, c); if (info) out.push(c); }
+        }
+        return out;
+    }
+    async function mkvWalkPar(file, startPos, wanted, handler, myId, onProgress) {
+        let splits = []; try { splits = await mkvSplitPoints(file, startPos); } catch (e) { splits = []; }
+        if (!splits.length) return mkvWalk(file, startPos, wanted, handler, myId, onProgress);
+        const bounds = [startPos].concat(splits, [file.size]), K = bounds.length - 1, prog = new Array(K).fill(0);
+        const rep = () => { if (!onProgress) return; let s = 0, tt = 0; for (let i = 0; i < K; i++) { const l = bounds[i + 1] - bounds[i]; s += prog[i] * l; tt += l; } onProgress(s / tt); };
+        await Promise.all(bounds.slice(0, -1).map((s, i) => {
+            const e = bounds[i + 1];
+            return mkvWalk(file, s, wanted, handler, myId, f => { prog[i] = Math.max(0, Math.min(1, (f * e - s) / (e - s))); rep(); }, { end: e, adaptive: true, pf: 1 });
+        }));
+    }
     async function mkvReadFrameCount(file, track) {
         if (!track.uid || !mkvTagsLocs.length) return 0;
         let result = 0;
@@ -3193,7 +3243,7 @@ function kfTogglePw(btn){
                     else if (c2 === 0xF1) cl = r.u(d2, s2);
                     else if (c2 === 0xF0) rel = r.u(d2, s2);
                 });
-                if (tr !== trackNumber || cl < 0) return;
+                if ((trackNumber !== null && tr !== trackNumber) || cl < 0) return;
                 const key = cl + ':' + rel;
                 if (seen.has(key)) return;
                 seen.add(key);
@@ -3275,7 +3325,7 @@ function kfTogglePw(btn){
             if (items.some(x => !x)) return null;
             return { info, whole: false, items };
         };
-        const B = 8;
+        const B = 16;
         // خۆڕێکخستن: دەستەی یەکەم بە خوێندنەوەی تەواوی کلەستەر، دووەم بلۆک بە بلۆک؛ ئەوەی خێراترە بۆ ئامێرەکە دەمێنێتەوە
         // (و هەر ١٢ دەستە جارێک ئەوی تر دووبارە تاقی دەکرێتەوە)
         const cost = { whole: -1, sparse: -1 };
@@ -3631,7 +3681,7 @@ function kfTogglePw(btn){
                     (t.type === 17 || t.codecId.startsWith('S_')) &&
                     !window.__mkvCache[mkvScanId + ':' + t.trackNumber]);
                 if (others.length === 0) {
-                    await mkvWalk(currentMkvFile, mkvSegmentDataStart, new Set([targetTrackNumber]), handler, myId, frac => {
+                    await mkvWalkPar(currentMkvFile, mkvSegmentDataStart, new Set([targetTrackNumber]), handler, myId, frac => {
                         const percent = Math.round(5 + frac * 92);
                         setMkvProgress(Math.min(97, percent), `دەرهێنان... (${blocks.length} ${isPgs ? 'وێنە' : 'دێڕ'})`);
                     });
@@ -3651,7 +3701,7 @@ function kfTogglePw(btn){
                             for (const it of arr) { it.d = d; per.get(it.tn).blocks.push(it); }
                         }
                     };
-                    await mkvWalk(currentMkvFile, mkvSegmentDataStart, new Set(per.keys()), multi, myId, frac => {
+                    await mkvWalkPar(currentMkvFile, mkvSegmentDataStart, new Set(per.keys()), multi, myId, frac => {
                         const percent = Math.round(5 + frac * 92);
                         setMkvProgress(Math.min(97, percent), `دەرهێنان... (${per.get(targetTrackNumber).blocks.length} دێڕ)`);
                     });
@@ -6031,6 +6081,7 @@ window.onload = () => {
 
         // بزوێنەری گەڕانەوە
         window.addEventListener('popstate', (e) => {
+            if (typeof window.kfEdPop === 'function' && window.kfEdPop(e)) return;
             // ١. مۆداڵەکان: بە یەک گەڕانەوە دادەخرێن
             const activeModal = getActiveModal();
             if (activeModal) {
@@ -17503,24 +17554,43 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
         dl: ic('<path d="M21 15v3.5A2.5 2.5 0 0 1 18.5 21h-13A2.5 2.5 0 0 1 3 18.5V15M7 10l5 5 5-5M12 15V3"/>'), ul: ic('<path d="M21 15v3.5A2.5 2.5 0 0 1 18.5 21h-13A2.5 2.5 0 0 1 3 18.5V15M7 8l5-5 5 5M12 3v12"/>'),
         check: ic('<path d="m5 12.5 4.5 4.5L19 7.5"/>', 2.4), edit: ic('<path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/>'), move: ic('<path d="M5 12h14M13 6l6 6-6 6"/>'),
         copy: ic('<rect x="9" y="9" width="11" height="11" rx="2.2"/><path d="M5.5 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v.5"/>'), menu: ic('<path d="M4 6h16M4 12h16M4 18h16"/>', 2.2),
-        zip: ic('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M11 11h2M11 14h2M11 17h2"/>'), sel: ic('<rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8.5 12.5 2.5 2.5 4.5-5"/>')
+        zip: ic('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M11 11h2M11 14h2M11 17h2"/>'), sel: ic('<rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8.5 12.5 2.5 2.5 4.5-5"/>'),
+        panel: ic('<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9.5 4v16M5.8 8h1.2M5.8 11h1.2M5.8 14h1.2"/>'),
+        phone: ic('<rect x="6" y="2.5" width="12" height="19" rx="2.8"/><path d="M10.5 18.5h3"/>'),
+        refresh: ic('<path d="M20 11a8 8 0 0 0-14.4-4.2L4 9M4 4v5h5M4 13a8 8 0 0 0 14.4 4.2L20 15M20 20v-5h-5"/>'),
+        code: ic('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M10 12.5 8.2 14.5 10 16.5M14 12.5l1.8 2-1.8 2"/>'),
+        img: ic('<rect x="3.5" y="4" width="17" height="16" rx="2.5"/><circle cx="9" cy="9.5" r="1.6"/><path d="m20.5 16-4.2-4.2a1.6 1.6 0 0 0-2.3 0L6 20"/>'),
+        vid: ic('<rect x="3" y="5.5" width="14" height="13" rx="2.5"/><path d="m17 10.5 4-2.3v7.6l-4-2.3"/>'),
+        aud: ic('<path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>'),
+        sub: ic('<rect x="3" y="5" width="18" height="14" rx="2.8"/><path d="M7 11.5h3.2M13.2 11.5H17M7 15h5M15 15h2"/>'),
+        arch: ic('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M11 11h2M11 14h2M11 17h2"/>'),
+        cfg: ic('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><circle cx="12" cy="14" r="2.2"/><path d="M12 10.8v1M12 16.2v1M9.2 12.4l.9.5M13.9 15.1l.9.5M9.2 15.6l.9-.5M13.9 12.9l.9-.5"/>'),
+        lock: ic('<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>'),
+        lang: ic('<path d="m8 7-4.5 5L8 17M16 7l4.5 5L16 17M13.5 5 10.5 19"/>'),
+        minus: ic('<path d="M5 12h14"/>', 2.3),
+        mnt: ic('<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 13.5h18M7 16.5h.01M10.5 16.5h3"/>')
     };
+    var FT = { html: ['code', '#f97316'], htm: ['code', '#f97316'], css: ['code', '#38bdf8'], scss: ['code', '#f472b6'], js: ['code', '#facc15'], mjs: ['code', '#facc15'], ts: ['code', '#60a5fa'], tsx: ['code', '#60a5fa'], jsx: ['code', '#38bdf8'], json: ['cfg', '#a3e635'], xml: ['code', '#fb923c'], svg: ['img', '#fb923c'], py: ['code', '#60a5fa'], php: ['code', '#a78bfa'], java: ['code', '#f87171'], c: ['code', '#93c5fd'], cpp: ['code', '#93c5fd'], h: ['code', '#93c5fd'], cs: ['code', '#a78bfa'], go: ['code', '#22d3ee'], rs: ['code', '#fdba74'], sh: ['code', '#4ade80'], bash: ['code', '#4ade80'], kt: ['code', '#c084fc'], swift: ['code', '#fb923c'], md: ['file', '#e2e8f0'], txt: ['file', '#94a3b8'], log: ['file', '#94a3b8'], srt: ['sub', '#34d399'], ass: ['sub', '#34d399'], ssa: ['sub', '#34d399'], vtt: ['sub', '#34d399'], sub: ['sub', '#34d399'], ini: ['cfg', '#a3a3a3'], conf: ['cfg', '#a3a3a3'], cfg: ['cfg', '#a3a3a3'], toml: ['cfg', '#a3a3a3'], yaml: ['cfg', '#f87171'], yml: ['cfg', '#f87171'], env: ['cfg', '#a3a3a3'], zip: ['arch', '#fbbf24'], rar: ['arch', '#fbbf24'], '7z': ['arch', '#fbbf24'], gz: ['arch', '#fbbf24'], tar: ['arch', '#fbbf24'], png: ['img', '#c084fc'], jpg: ['img', '#c084fc'], jpeg: ['img', '#c084fc'], gif: ['img', '#c084fc'], webp: ['img', '#c084fc'], ico: ['img', '#c084fc'], bmp: ['img', '#c084fc'], mp4: ['vid', '#f472b6'], mkv: ['vid', '#f472b6'], avi: ['vid', '#f472b6'], mov: ['vid', '#f472b6'], webm: ['vid', '#f472b6'], mp3: ['aud', '#2dd4bf'], wav: ['aud', '#2dd4bf'], m4a: ['aud', '#2dd4bf'], ogg: ['aud', '#2dd4bf'], flac: ['aud', '#2dd4bf'], aac: ['aud', '#2dd4bf'] };
+    function fileIcon(nm) { var m = /\.([^.]+)$/.exec(nm || ''), e = m ? m[1].toLowerCase() : '', f = FT[e]; var svg = I[f ? f[0] : 'file']; return f ? svg.replace('<svg ', '<svg style="color:' + f[1] + '" ') : svg; }
 
     // ---------- هەڵگرتن (IndexedDB) ----------
     var DB = null, mem = false, N = {}, ROOT = 'root';
     function dbOpen() {
         return new Promise(function (res) {
             try {
-                var r = indexedDB.open('kf-editor-fs', 1);
-                r.onupgradeneeded = function (e) { e.target.result.createObjectStore('n', { keyPath: 'id' }); };
+                var r = indexedDB.open('kf-editor-fs', 2);
+                r.onupgradeneeded = function (e) { var d = e.target.result; if (!d.objectStoreNames.contains('n')) d.createObjectStore('n', { keyPath: 'id' }); if (!d.objectStoreNames.contains('h')) d.createObjectStore('h', { keyPath: 'id' }); };
                 r.onsuccess = function (e) { DB = e.target.result; res(); };
                 r.onerror = r.onblocked = function () { mem = true; res(); };
             } catch (e) { mem = true; res(); }
         });
     }
     function dbAll() { return new Promise(function (res) { if (!DB) return res([]); try { var q = DB.transaction('n').objectStore('n').getAll(); q.onsuccess = function () { res(q.result || []); }; q.onerror = function () { res([]); }; } catch (e) { res([]); } }); }
-    function dbPut(n) { if (!DB) return; try { DB.transaction('n', 'readwrite').objectStore('n').put(strip(n)); } catch (e) { toast('پاشەکەوتکردن سەرنەکەوت (شوێنی ئامێر پڕە؟)', 'error'); } }
+    function dbPut(n) { if (!DB || n.dev) return; try { DB.transaction('n', 'readwrite').objectStore('n').put(strip(n)); } catch (e) { toast('پاشەکەوتکردن سەرنەکەوت (شوێنی ئامێر پڕە؟)', 'error'); } }
     function dbDel(id) { if (!DB) return; try { DB.transaction('n', 'readwrite').objectStore('n').delete(id); } catch (e) { } }
+    function hAll() { return new Promise(function (res) { if (!DB || !DB.objectStoreNames.contains('h')) return res([]); try { var q = DB.transaction('h').objectStore('h').getAll(); q.onsuccess = function () { res(q.result || []); }; q.onerror = function () { res([]); }; } catch (e) { res([]); } }); }
+    function hPut(r) { return new Promise(function (res) { if (!DB || !DB.objectStoreNames.contains('h')) return res(false); try { var t = DB.transaction('h', 'readwrite'); t.objectStore('h').put(r); t.oncomplete = function () { res(true); }; t.onerror = t.onabort = function () { res(false); }; } catch (e) { res(false); } }); }
+    function hDel(id) { if (!DB || !DB.objectStoreNames.contains('h')) return; try { DB.transaction('h', 'readwrite').objectStore('h').delete(id); } catch (e) { } }
     function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 
     // ---------- گۆڕینی کۆد ----------
@@ -17604,11 +17674,11 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
     function mkPath(p, parts) { parts.forEach(function (nm) { var f = kids(p).filter(function (k) { return k.t === 'd' && k.name === nm; })[0]; p = (f || mkNode(p, 'd', nm)).id; }); return p; }
     function isDesc(id, anc) { var n = N[id]; while (n) { if (n.id === anc) return true; n = N[n.p]; } return false; }
     function delNode(id) { var n = N[id]; if (!n) return; if (n.t === 'd') kids(id).forEach(function (k) { delNode(k.id); }); delete N[id]; dbDel(id); closeTab(id, true); }
-    function bytesOf(n) { return n.t === 'f' ? (n.c ? new Blob([n.c]).size : 0) : kids(n.id).reduce(function (s, k) { return s + bytesOf(k); }, 0); }
+    function bytesOf(n) { return n.t === 'f' ? (n.dev ? (n.sz || 0) : (n.c ? new Blob([n.c]).size : 0)) : kids(n.id).reduce(function (s, k) { return s + bytesOf(k); }, 0); }
     function fmtB(b) { return b < 1024 ? b + ' B' : b < 1048576 ? (b / 1024).toFixed(1) + ' KB' : (b / 1048576).toFixed(1) + ' MB'; }
 
     // ---------- دۆخی ئیدیتەر ----------
-    var M, TA, GUT, GIN, ST, TABS, EXP, EXPL, FIND, cwd = ROOT, tabs = [], act = null, ready = false, cfg = LS.get('cfg', { fs: 15, wrap: false, ln: true, dir: 'auto' });
+    var M, TA, SC, HP, VC = null, OV = [], ign = 0, hasEntry = false, syT = 0, expOv = null, GUT, GIN, ST, TABS, EXP, EXPL, FIND, cwd = ROOT, tabs = [], act = null, ready = false, cfg = LS.get('cfg', { fs: 15, wrap: false, ln: true, dir: 'auto', hl: true, autodev: false }); if (cfg.hl === undefined) cfg.hl = true;
     var H = {}, saveT = 0, selMode = false, sel = {}, gtxt = '', lineCount = 1, lineH = 26, lastSaved = true;
     var fq = { q: '', rep: '', cs: false, w: false, re: false };
 
@@ -17629,9 +17699,19 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
             '.kfed-tab{flex:none;display:flex;align-items:center;gap:6px;max-width:200px;padding:5px 6px 5px 10px;border-radius:9px;border:1px solid var(--border-color);background:var(--ed-card);font-size:12px;cursor:pointer;direction:ltr}.kfed-tab.on{border-color:var(--primary);color:var(--primary);background:var(--primary-glow,rgba(255,255,255,.08))}.kfed-tab span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.kfed-tab i{font-style:normal;color:#f59e0b}.kfed-tab b{width:18px;height:18px;display:grid;place-items:center;border-radius:50%;opacity:.7}.kfed-tab b svg{width:12px;height:12px}',
             '.kfed-find{display:none;flex:none;padding:6px 8px;gap:6px;flex-direction:column;background:var(--ed-card);border-bottom:1px solid var(--border-color)}.kfed-find.open{display:flex}.kfed-fr{display:flex;gap:6px;align-items:center}.kfed-fr input[type=text]{flex:1;min-width:0;padding:8px 10px;border-radius:9px;border:1px solid var(--border-color);background:var(--ed-bg);color:var(--text-main);font-size:13.5px;direction:auto;font-family:inherit}',
             '.kfed-chip{flex:none;padding:6px 9px;border-radius:8px;border:1px solid var(--border-color);background:transparent;font-size:11.5px;cursor:pointer;direction:ltr;font-weight:700}.kfed-chip.on{background:var(--primary);color:#fff;border-color:var(--primary)}.kfed-cnt{font-size:11px;color:var(--text-muted);min-width:46px;text-align:center;direction:ltr}',
-            '.kfed-main{position:relative;flex:1;min-height:0;display:flex;direction:ltr}',
-            '.kfed-gut{flex:none;overflow:hidden;position:relative;background:rgba(0,0,0,.18);border-inline-end:1px solid var(--border-color);color:var(--text-muted);text-align:right;user-select:none;-webkit-user-select:none}.kfed-gut pre{margin:0;padding:8px 6px 0 6px;font-family:ui-monospace,Menlo,Consolas,monospace;white-space:pre;position:absolute;left:0;right:0;top:0}',
-            '.kfed-ta{flex:1;min-width:0;border:0;outline:0;resize:none;background:transparent;color:var(--text-main);padding:8px 10px 60px;margin:0;tab-size:4;-moz-tab-size:4;font-family:"IBM Plex Sans Arabic",ui-monospace,Menlo,Consolas,monospace;overflow:auto;white-space:pre;overflow-wrap:normal;-webkit-text-size-adjust:100%}.kfed-ta.wrap{white-space:pre-wrap;overflow-wrap:break-word}',
+            '.kfed{--text-main:#e6edf7;--text-muted:#8b9bb4;--ff:ui-monospace,"SFMono-Regular",Menlo,Consolas,"IBM Plex Sans Arabic",monospace;--fs:15px;--lh:26px}',
+            '.kfed-main{position:relative;flex:1;min-height:0;direction:ltr}',
+            '.kfed-sc{position:absolute;inset:0;overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}',
+            '.kfed-in{display:flex;min-height:100%;position:relative}',
+            '.kfed-gut{flex:none;overflow:hidden;position:relative;background:#0d1420;border-inline-end:1px solid var(--border-color);color:#5f6f87;text-align:right;user-select:none;-webkit-user-select:none}.kfed-gut pre{margin:0;padding:0 6px;font-family:var(--ff);white-space:pre;position:absolute;left:0;right:0;top:0}',
+            '.kfed-ew{position:relative;flex:1;min-width:0}',
+            '.kfed-hl{position:absolute;left:0;right:0;top:0;bottom:0;overflow:hidden;pointer-events:none}',
+            '.kfed-hp{position:absolute;margin:0;padding:0;white-space:pre;color:var(--text-main);font-family:var(--ff);font-size:var(--fs);line-height:var(--lh);tab-size:4;-moz-tab-size:4}.kfed-hp.wrap{white-space:pre-wrap;overflow-wrap:break-word}',
+            '.kfed-hp i{font-style:normal}.kfed-hp .c{color:#6d7f99;font-style:italic}.kfed-hp .k{color:#c792ea}.kfed-hp .s{color:#a5e075}.kfed-hp .n{color:#f78c6c}.kfed-hp .f{color:#82aaff}.kfed-hp .t{color:#f07178}.kfed-hp .a{color:#ffcb6b}.kfed-hp .p{color:#7fdbca}.kfed-hp .y{color:#e5c07b}.kfed-hp .o{color:#89ddff}',
+            '.kfed-ta{display:block;position:relative;width:100%;border:0;outline:0;resize:none;background:transparent;color:var(--text-main);padding:8px 10px 0;margin:0;tab-size:4;-moz-tab-size:4;font-family:var(--ff);font-size:var(--fs);line-height:var(--lh);overflow-x:auto;overflow-y:hidden;white-space:pre;overflow-wrap:normal;-webkit-text-size-adjust:100%;scrollbar-width:none}.kfed-ta::-webkit-scrollbar{display:none}.kfed-ta.wrap{white-space:pre-wrap;overflow-wrap:break-word;overflow-x:hidden}.kfed-ta.hl{color:transparent;-webkit-text-fill-color:transparent;caret-color:#e6edf7}.kfed-ta.hl::selection{background:rgba(90,150,255,.38)}',
+            '.kf-scrub-t{position:absolute;right:4px;width:16px;display:flex;justify-content:center;z-index:50;touch-action:none;cursor:pointer}.kf-scrub-h{width:6px;height:38px;border-radius:999px;background:var(--primary);box-shadow:0 0 10px var(--primary-glow)}',
+            '.kfed-sh.live{background:transparent;pointer-events:none}.kfed-sh.live>div{pointer-events:auto;box-shadow:0 -4px 30px rgba(0,0,0,.7)}.kfed-sz{display:flex;align-items:center;gap:10px;padding:8px 16px}.kfed-sz button{flex:none;width:46px;height:46px;border-radius:12px;border:1px solid var(--border-color);background:var(--ed-bg);color:var(--text-main);display:grid;place-items:center;cursor:pointer}.kfed-sz button svg{width:20px;height:20px}.kfed-sz output{flex:1;text-align:center;font-size:22px;font-weight:800;direction:ltr}.kfed-sz input[type=range]{width:100%;margin:0 0 6px}',
+            '.kfed-row.m>svg{color:#22c55e}.kfed-row .badge{flex:none;font-size:10px;padding:2px 6px;border-radius:6px;background:rgba(34,197,94,.15);color:#4ade80;direction:rtl}.kfed-row .badge.o{background:rgba(245,158,11,.15);color:#fbbf24}',
             '.kfed-empty{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:20px;text-align:center;color:var(--text-muted);direction:rtl;background:var(--ed-bg)}.kfed-empty.show{display:flex}.kfed-empty svg{width:46px;height:46px;opacity:.6}.kfed-empty p{margin:0 0 4px;font-size:13px;line-height:1.8;max-width:320px}',
             '.kfed-bt{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 16px;border-radius:11px;border:1px solid var(--border-color);background:var(--ed-card);font-size:13px;font-weight:700;cursor:pointer;color:var(--text-main)}.kfed-bt svg{width:17px;height:17px}.kfed-bt.pri{background:var(--primary);border-color:var(--primary);color:#fff}',
             '.kfed-keys{display:none;flex:none;gap:5px;padding:5px 8px;overflow-x:auto;scrollbar-width:none;border-top:1px solid var(--border-color);background:var(--ed-card);direction:ltr}.kfed-keys::-webkit-scrollbar{display:none}.kfed.kb .kfed-keys{display:flex}.kfed-keys button{flex:none;min-width:38px;height:34px;padding:0 9px;border-radius:8px;border:1px solid var(--border-color);background:var(--ed-bg);font-size:15px;font-family:ui-monospace,Menlo,monospace;cursor:pointer}',
@@ -17654,13 +17734,13 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
         css();
         M = document.createElement('div'); M.id = 'kf-ed-modal'; M.className = 'custom-modal-overlay';
         M.innerHTML = '<div class="kfed" id="kfedRoot">'
-            + '<div class="kfed-top"><button class="kfed-ib" id="kfedFiles" aria-label="فایلەکان">' + I.menu + '</button><button class="kfed-name" id="kfedName"><span id="kfedNm">—</span><small id="kfedPth"></small></button>'
+            + '<div class="kfed-top"><button class="kfed-ib" id="kfedFiles" aria-label="فایلەکان">' + I.panel + '</button><button class="kfed-name" id="kfedName"><span id="kfedNm">—</span><small id="kfedPth"></small></button>'
             + '<button class="kfed-ib" id="kfedNew" aria-label="فایلی نوێ">' + I.plus + '</button><button class="kfed-ib" id="kfedOpen" aria-label="کردنەوە لە ئامێر">' + I.ul + '</button><button class="kfed-ib" id="kfedDl" aria-label="داگرتن">' + I.dl + '</button><button class="kfed-ib" id="kfedMore" aria-label="زیاتر">' + I.more + '</button></div>'
             + '<div class="kfed-tabs" id="kfedTabs"></div>'
             + '<div class="kfed-find" id="kfedFind"><div class="kfed-fr"><input type="text" id="kfedQ" placeholder="گەڕان ..." autocomplete="off" autocapitalize="off" spellcheck="false"><span class="kfed-cnt" id="kfedCnt"></span><button class="kfed-ib" id="kfedFp" aria-label="پێشوو">' + I.up + '</button><button class="kfed-ib" id="kfedFn" aria-label="دواتر">' + I.down + '</button><button class="kfed-ib" id="kfedFx" aria-label="داخستن">' + I.x + '</button></div>'
             + '<div class="kfed-fr"><input type="text" id="kfedR" placeholder="گۆڕین بە ..." autocomplete="off" autocapitalize="off" spellcheck="false"><button class="kfed-chip" id="kfedRo">گۆڕین</button><button class="kfed-chip" id="kfedRa">هەموو</button></div>'
             + '<div class="kfed-fr" style="gap:5px"><button class="kfed-chip" id="kfedCs">Aa</button><button class="kfed-chip" id="kfedWw">وشە</button><button class="kfed-chip" id="kfedRe">.*</button></div></div>'
-            + '<div class="kfed-main" id="kfedMain"><div class="kfed-gut" id="kfedGut"><pre id="kfedGin"></pre></div><textarea class="kfed-ta" id="kfedTa" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off"></textarea>'
+            + '<div class="kfed-main" id="kfedMain"><div class="kfed-sc" id="kfedSc"><div class="kfed-in" id="kfedIn"><div class="kfed-gut" id="kfedGut"><pre id="kfedGin"></pre></div><div class="kfed-ew"><div class="kfed-hl"><pre class="kfed-hp" id="kfedHp"></pre></div><textarea class="kfed-ta" id="kfedTa" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off"></textarea></div></div></div>'
             + '<div class="kfed-empty" id="kfedEmpty">' + I.file + '<p>هیچ فایلێک نەکراوەتەوە. فایلێکی نوێ دروست بکە، یان فایل و فۆڵدەر لە ئامێرەکەتەوە بهێنە ناو ئەپەکە؛ دوای ئەوە لەناو ئەپەکەدا دەمێنن و هەر کاتێک دەتوانیت دەستکاریان بکەیتەوە.</p>'
             + '<button class="kfed-bt pri" id="kfedE1">' + I.plus + 'فایلی نوێ</button><button class="kfed-bt" id="kfedE2">' + I.ul + 'هێنانی فایل</button><button class="kfed-bt" id="kfedE3">' + I.folder + 'فایلەکانی ئەپ</button></div></div>'
             + '<div class="kfed-keys" id="kfedKeys"></div>'
@@ -17669,32 +17749,43 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
             + '<div class="kfed-scrim" id="kfedScrim"></div>'
             + '<div class="kfed-exp" id="kfedExp"><div class="kfed-eh"><h4>فایلەکانی ئەپ</h4><button class="kfed-ib" id="kfedXs" aria-label="هەڵبژاردن">' + I.sel + '</button><button class="kfed-ib" id="kfedXq" aria-label="گەڕان لە هەموو فایلەکان">' + I.find + '</button><button class="kfed-ib" id="kfedXm" aria-label="زیاتر">' + I.more + '</button><button class="kfed-ib" id="kfedXx" aria-label="داخستن">' + I.x + '</button></div>'
             + '<div class="kfed-crumb" id="kfedCr"></div><div class="kfed-esr" id="kfedEs"><input type="text" id="kfedEsi" placeholder="گەڕان لە ناوەڕۆکی هەموو فایلەکان ..." autocomplete="off" spellcheck="false"></div><div class="kfed-list" id="kfedLs"></div>'
-            + '<div class="kfed-eh" style="border-top:1px solid var(--border-color);border-bottom:0"><button class="kfed-ib" id="kfedXn" aria-label="فایلی نوێ">' + I.file + '</button><button class="kfed-ib" id="kfedXf" aria-label="فۆڵدەری نوێ">' + I.folder + '</button><button class="kfed-ib" id="kfedXu" aria-label="هێنانی فایل">' + I.ul + '</button><span style="flex:1;font-size:10.5px;color:var(--text-muted);text-align:center" id="kfedXi"></span></div></div>'
+            + '<div class="kfed-eh" style="border-top:1px solid var(--border-color);border-bottom:0"><button class="kfed-ib" id="kfedXn" aria-label="فایلی نوێ">' + I.file + '</button><button class="kfed-ib" id="kfedXf" aria-label="فۆڵدەری نوێ">' + I.folder + '</button><button class="kfed-ib" id="kfedXd" aria-label="فۆڵدەری ئامێر">' + I.phone + '</button><button class="kfed-ib" id="kfedXu" aria-label="هێنانی فایل">' + I.ul + '</button><span style="flex:1;font-size:10.5px;color:var(--text-muted);text-align:center" id="kfedXi"></span></div></div>'
             + '<input type="file" id="kfedFi" multiple style="display:none"><input type="file" id="kfedFd" webkitdirectory multiple style="display:none"></div>';
         document.body.appendChild(M);
-        TA = $('kfedTa'); GUT = $('kfedGut'); GIN = $('kfedGin'); ST = $('kfedSt'); TABS = $('kfedTabs'); EXP = $('kfedExp'); EXPL = $('kfedLs'); FIND = $('kfedFind');
+        if (window.kfAddScrub) window.kfAddScrub($('kfedSc'), $('kfedMain'), false);
+        TA = $('kfedTa'); SC = $('kfedSc'); HP = $('kfedHp'); GUT = $('kfedGut'); GIN = $('kfedGin'); ST = $('kfedSt'); TABS = $('kfedTabs'); EXP = $('kfedExp'); EXPL = $('kfedLs'); FIND = $('kfedFind');
         wire();
     }
 
-    // ---------- شیتی هەڵبژاردن / دیالۆگ ----------
+    // ---------- شیتی هەڵبژاردن / دیالۆگ (بە گەڕانەوەی وێبگەڕ دادەخرێن، نەک تەواوی بەشەکە) ----------
+    function schedSync() { if (!syT) syT = setTimeout(syncHist, 90); }
+    function syncHist() {
+        syT = 0;
+        if (OV.length && !hasEntry) { try { history.pushState({ kf_ed: 1 }, ''); hasEntry = true; } catch (e) { } }
+        else if (!OV.length && hasEntry) { hasEntry = false; ign++; try { history.back(); } catch (e) { ign--; } }
+    }
+    function ovAdd(rm) { var o = { rm: rm }; OV.push(o); schedSync(); return o; }
+    function ovClose(o) { var i = OV.indexOf(o); if (i < 0) return; OV.splice(i, 1); try { o.rm(); } catch (e) { } schedSync(); }
+    function ovCloseAll() { while (OV.length) ovClose(OV[OV.length - 1]); }
     function sheet(title, items, opt) {
-        var o = document.createElement('div'); o.className = 'kfed-sh';
-        var h = '<div><h5>' + esc(title) + '</h5><div class="bd"></div></div>'; o.innerHTML = h; var bd = o.querySelector('.bd');
-        function close() { o.remove(); }
-        items.forEach(function (it) {
+        opt = opt || {}; var o = document.createElement('div'); o.className = 'kfed-sh' + (opt.live ? ' live' : '');
+        o.innerHTML = '<div><h5></h5>' + (opt.note ? '<p class="mg"></p>' : '') + '<div class="bd"></div></div>'; o.querySelector('h5').textContent = title; if (opt.note) o.querySelector('.mg').textContent = opt.note; var bd = o.querySelector('.bd');
+        var ov = ovAdd(function () { o.remove(); }); function close() { ovClose(ov); }
+        (items || []).forEach(function (it) {
             if (it === '-') { bd.appendChild(document.createElement('hr')); return; }
             var b = document.createElement('button'); b.type = 'button'; b.className = 'it' + (it.on ? ' on' : '') + (it.dg ? ' dg' : '');
             b.innerHTML = (it.i ? it.i : '') + '<span>' + esc(it.t) + '</span>' + (it.s ? '<em>' + esc(it.s) + '</em>' : '');
             b.onclick = function () { close(); if (it.f) setTimeout(it.f, 0); }; bd.appendChild(b);
         });
-        o.addEventListener('pointerdown', function (e) { if (e.target === o) close(); });
-        document.body.appendChild(o); return { close: close };
+        o.addEventListener('pointerdown', function (e) { if (e.target === o && !opt.live) close(); });
+        document.body.appendChild(o); return { close: close, el: o, bd: bd };
     }
     function ask(title, o, cb) {
         o = o || {}; var d = document.createElement('div'); d.className = 'kfed-sh'; d.style.alignItems = 'center';
-        d.innerHTML = '<div style="border-radius:18px"><h5>' + esc(title) + '</h5>' + (o.msg ? '<p class="mg">' + o.msg + '</p>' : '') + (o.input != null ? '<input class="in" type="text" autocomplete="off" autocapitalize="off" spellcheck="false">' : '') + '<div class="ac"><button class="x">پاشگەزبوونەوە</button><button class="' + (o.danger ? 'dg' : 'pri') + ' k">' + esc(o.ok || 'باشە') + '</button></div></div>';
+        d.innerHTML = '<div style="border-radius:18px"><h5></h5>' + (o.msg ? '<p class="mg">' + o.msg + '</p>' : '') + (o.input != null ? '<input class="in" type="text" autocomplete="off" autocapitalize="off" spellcheck="false">' : '') + '<div class="ac"><button class="x">پاشگەزبوونەوە</button><button class="' + (o.danger ? 'dg' : 'pri') + ' k">' + esc(o.ok || 'باشە') + '</button></div></div>'; d.querySelector('h5').textContent = title;
         var inp = d.querySelector('input'); if (inp) { inp.value = o.input; }
-        function done(v) { d.remove(); if (v !== null) cb(v); }
+        var ov = ovAdd(function () { d.remove(); });
+        function done(v) { ovClose(ov); if (v !== null) cb(v); }
         d.querySelector('.x').onclick = function () { done(null); }; d.querySelector('.k').onclick = function () { done(inp ? inp.value : true); };
         d.addEventListener('pointerdown', function (e) { if (e.target === d) done(null); });
         if (inp) inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); done(inp.value); } });
@@ -17705,56 +17796,258 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
         items.unshift({ t: 'فۆڵدەری سەرەکی', i: I.folder, f: function () { cb(ROOT); } }); sheet(title, items);
     }
 
-    // ---------- دۆخی تایبەتی ڕەنگ/نیشاندان ----------
+    // ---------- نیشاندان (یەک سکرۆڵی ڕەسەن بۆ ژمارە و دەق و ڕەنگ) ----------
+    function V() { if (VC === null) VC = TA.value; return VC; }
+    function starts() { if (!HL.starts) hlStarts(V()); return HL.starts; }
+    function lineOfPos(pos) { var a = starts(), lo = 0, hi = a.length - 1; while (lo < hi) { var mid = (lo + hi + 1) >> 1; if (a[mid] <= pos) lo = mid; else hi = mid - 1; } return lo; }
+    var gutR = null, sraf = 0;
     function applyView() {
-        var fs = cfg.fs; TA.style.fontSize = fs + 'px'; lineH = Math.round(fs * 1.7); TA.style.lineHeight = lineH + 'px'; GIN.style.fontSize = Math.max(10, fs - 3) + 'px'; GIN.style.lineHeight = lineH + 'px';
-        TA.classList.toggle('wrap', !!cfg.wrap); var showG = cfg.ln && !cfg.wrap; GUT.style.display = showG ? '' : 'none';
-        TA.dir = cfg.dir === 'auto' ? 'auto' : cfg.dir; renderGut(); LS.set('cfg', cfg);
+        var fs = cfg.fs; lineH = Math.round(fs * 1.7); var r = $('kfedRoot'); r.style.setProperty('--fs', fs + 'px'); r.style.setProperty('--lh', lineH + 'px');
+        GIN.style.fontSize = Math.max(10, fs - 3) + 'px'; GIN.style.lineHeight = lineH + 'px';
+        TA.classList.toggle('wrap', !!cfg.wrap); HP.classList.toggle('wrap', !!cfg.wrap);
+        var d = cfg.dir; [TA, HP].forEach(function (e) { e.style.direction = d === 'rtl' ? 'rtl' : 'ltr'; e.style.unicodeBidi = d === 'auto' ? 'plaintext' : 'normal'; });
+        GUT.style.display = cfg.ln && !cfg.wrap ? '' : 'none'; fit(); gutR = null; HL.r = null; renderGut(); renderHl(); LS.set('cfg', cfg);
+    }
+    function fit() {
+        if (!M || !cur()) return; var min = SC.clientHeight || 300, h;
+        if (!cfg.wrap) h = lineCount * lineH + 8 + Math.round(min * .6);
+        else { TA.style.height = '0px'; h = TA.scrollHeight + Math.round(min * .6); }
+        TA.style.height = Math.max(h, min) + 'px';
+    }
+    function rng(R, total) {
+        var vh = SC.clientHeight || 400, st = SC.scrollTop, vf = Math.max(0, Math.floor((st - 8) / lineH)), vl = Math.min(total - 1, Math.ceil((st + vh - 8) / lineH));
+        if (R && R.t === total && vf >= R.f && vl <= R.l) return null;
+        var b = Math.ceil(vh / lineH) * 2; return [Math.max(0, vf - b), Math.min(total - 1, vl + b)];
     }
     function renderGut() {
-        if (GUT.style.display === 'none') return;
-        var digits = String(Math.max(lineCount, 99)).length; GUT.style.width = (digits * Math.max(7, cfg.fs * .6) + 16) + 'px';
-        var vh = TA.clientHeight || 400, first = Math.max(0, Math.floor(TA.scrollTop / lineH) - 2), cnt = Math.ceil(vh / lineH) + 5, last = Math.min(lineCount, first + cnt), a = [];
-        for (var i = first + 1; i <= last; i++) a.push(i);
-        GIN.textContent = a.join('\n'); GIN.style.top = (first * lineH - TA.scrollTop) + 'px';
+        if (!cur() || GUT.style.display === 'none') return;
+        var digits = String(Math.max(lineCount, 99)).length, w = Math.round(digits * Math.max(7, cfg.fs * .6) + 16); if (GUT._w !== w) { GUT._w = w; GUT.style.width = w + 'px'; }
+        var r = rng(gutR, lineCount); if (!r) return; var a = []; for (var i = r[0] + 1; i <= r[1] + 1; i++) a.push(i);
+        GIN.textContent = a.join('\n'); GIN.style.top = (8 + r[0] * lineH) + 'px'; gutR = { f: r[0], l: r[1], t: lineCount };
     }
     function countLines(s) { var n = 1, i = -1; while ((i = s.indexOf('\n', i + 1)) !== -1) n++; return n; }
     function lineOf(s, pos) { var n = 0, i = -1; while ((i = s.indexOf('\n', i + 1)) !== -1 && i < pos) n++; return n; }
-    var stRaf = 0;
-    function status() { if (!stRaf) stRaf = requestAnimationFrame(function () { stRaf = 0; drawStatus(); }); }
+    var stT = 0;
+    function status() { if (!stT) stT = setTimeout(function () { stT = 0; drawStatus(); }, 90); }
     function drawStatus() {
         var n = cur(); if (!n) { ST.innerHTML = ''; return; }
-        var v = TA.value, p = TA.selectionStart, ln = lineOf(v, p) + 1, ls = v.lastIndexOf('\n', p - 1), col = p - ls, sl = TA.selectionEnd - p;
+        var p = TA.selectionStart, ln = lineOfPos(p) + 1, ls = starts()[ln - 1], col = p - ls + 1, sl = TA.selectionEnd - p;
         var encl = (ENCS.filter(function (e) { return e[0] === n.enc; })[0] || [0, n.enc])[1], eoln = n.eol === '\r\n' ? 'CRLF' : n.eol === '\r' ? 'CR' : 'LF';
-        ST.innerHTML = '<span>Ln <b>' + ln + '</b>/' + lineCount + '</span><span>Col <b>' + col + '</b></span>' + (sl ? '<span>دیاریکراو <b>' + sl + '</b></span>' : '') + '<span>' + encl + '</span><span>' + eoln + '</span><span class="sv ' + (lastSaved ? '' : 'd') + '">' + (lastSaved ? 'پاشەکەوتکراوە ✓' : 'پاشەکەوت دەکرێت ...') + '</span>';
+        var dirty = n.dev ? !!n._dd : !lastSaved, lab = n.dev ? (n._dd ? 'نەپاشەکەوتکراوە لە ئامێر ●' : 'پاشەکەوتکراوە لە ئامێر ✓') : (lastSaved ? 'پاشەکەوتکراوە ✓' : 'پاشەکەوت دەکرێت ...');
+        ST.innerHTML = '<span>Ln <b>' + ln + '</b>/' + lineCount + '</span><span>Col <b>' + col + '</b></span>' + (sl ? '<span>دیاریکراو <b>' + sl + '</b></span>' : '') + '<span>' + encl + '</span><span>' + eoln + '</span><span class="sv ' + (dirty ? 'd' : '') + '">' + lab + '</span>';
     }
+
+    // ---------- ڕەنگکردنی کۆد (وەک ئیدیتەری کۆد: HTML، CSS، JS، JSON، Python ...) ----------
+    var HL = { cp: [], starts: null, raf: 0, r: null };
+    function toSet(s) { var o = {}; s.split(' ').forEach(function (w) { o[w] = 1; }); return o; }
+    var KS = {
+        js: toSet('break case catch class const continue debugger default delete do else export extends finally for from function if import in instanceof let new of return static super switch this throw try typeof var void while with yield async await null true false undefined NaN Infinity interface type enum implements public private protected readonly namespace declare abstract package get set as'),
+        py: toSet('and as assert async await break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield None True False self print'),
+        clike: toSet('abstract auto bool boolean break byte case catch char class const continue default delete do double else enum extends final finally float for foreach func function goto if implements import include inline int interface long namespace new nil null package private protected public return short signed sizeof static string struct switch this throw throws true false try typedef union unsigned using var void volatile while let mut fn pub impl use mod match loop trait where self echo require'),
+        sh: toSet('if then else elif fi for while do done case esac function in return exit local export echo cd ls grep sed awk cat rm mkdir cp mv')
+    };
+    var LANGS = [['auto', 'خۆکار (بەپێی ناوی فایل)'], ['none', 'بێ ڕەنگ'], ['html', 'HTML'], ['xml', 'XML / SVG'], ['css', 'CSS'], ['js', 'JavaScript / JSON / TypeScript'], ['py', 'Python'], ['clike', 'C / Java / PHP / Go ...'], ['sh', 'Shell'], ['sub', 'ژێرنووس (SRT / ASS / VTT)'], ['md', 'Markdown'], ['conf', 'INI / YAML / TOML']];
+    var EXTL = { html: 'html', htm: 'html', xhtml: 'html', vue: 'html', xml: 'xml', svg: 'xml', xsl: 'xml', plist: 'xml', css: 'css', scss: 'css', less: 'css', js: 'js', mjs: 'js', cjs: 'js', jsx: 'js', ts: 'js', tsx: 'js', json: 'js', jsonc: 'js', json5: 'js', py: 'py', c: 'clike', h: 'clike', cpp: 'clike', hpp: 'clike', cc: 'clike', cs: 'clike', java: 'clike', go: 'clike', rs: 'clike', php: 'clike', kt: 'clike', swift: 'clike', dart: 'clike', sh: 'sh', bash: 'sh', zsh: 'sh', srt: 'sub', ass: 'sub', ssa: 'sub', vtt: 'sub', sub: 'sub', md: 'md', markdown: 'md', ini: 'conf', cfg: 'conf', conf: 'conf', toml: 'conf', yaml: 'conf', yml: 'conf', env: 'conf' };
+    function extOf(name) { var m = /\.([^.]+)$/.exec(name || ''); return m ? m[1].toLowerCase() : ''; }
+    function hlLang() { var n = cur(); if (!n || !cfg.hl) return ''; var l = n.lang || 'auto'; if (l === 'none') return ''; if (l === 'auto') l = EXTL[extOf(n.name)] || ''; return l; }
+    function esc1(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+    function scanCode(L, i, e, S, emit, K, lang) {
+        var hash = lang === 'py' || lang === 'sh', j, c, m, w;
+        while (i < e) {
+            if (S.s === 'c') { j = L.indexOf('*/', i); if (j < 0 || j + 2 > e) { emit('c', L.slice(i, e)); return; } emit('c', L.slice(i, j + 2)); i = j + 2; S.s = ''; continue; }
+            if (S.s === 't') { j = i; while (j < e) { if (L[j] === '\\') { j += 2; continue; } if (L[j] === '`') { j++; S.s = ''; break; } j++; } j = Math.min(j, e); emit('s', L.slice(i, j)); i = j; continue; }
+            if (S.s === 'q') { j = L.indexOf(S.q, i); if (j < 0 || j + 3 > e) { emit('s', L.slice(i, e)); return; } emit('s', L.slice(i, j + 3)); i = j + 3; S.s = ''; continue; }
+            c = L[i];
+            if (c === ' ' || c === '\t') { j = i + 1; while (j < e && (L[j] === ' ' || L[j] === '\t')) j++; emit('', L.slice(i, j)); i = j; continue; }
+            if (hash && c === '#') { emit('c', L.slice(i, e)); return; }
+            if (!hash && c === '/' && L[i + 1] === '/') { emit('c', L.slice(i, e)); return; }
+            if (!hash && c === '/' && L[i + 1] === '*') { S.s = 'c'; emit('c', '/*'); i += 2; continue; }
+            if (c === '"' || c === "'") {
+                if (lang === 'py' && L.substr(i, 3) === c + c + c) { S.s = 'q'; S.q = c + c + c; emit('s', S.q); i += 3; continue; }
+                j = i + 1; while (j < e && L[j] !== c) { if (L[j] === '\\') j++; j++; } j = Math.min(j + 1, e);
+                emit(c === '"' && lang === 'js' && /^\s*:/.test(L.slice(j, j + 12)) ? 'p' : 's', L.slice(i, j)); i = j; continue;
+            }
+            if (c === '`' && lang !== 'py') { S.s = 't'; emit('s', '`'); i++; continue; }
+            if ((c >= '0' && c <= '9') || (c === '.' && L[i + 1] >= '0' && L[i + 1] <= '9')) { m = /^(0[xX][0-9a-fA-F_]+|\d[\d_]*\.?\d*(?:[eE][+-]?\d+)?|\.\d+)/.exec(L.slice(i, i + 40)); w = m ? m[0] : c; emit('n', w); i += w.length; continue; }
+            if (/[A-Za-z_$\u0080-￿]/.test(c)) {
+                j = i + 1; while (j < e && /[\w$\u0080-￿]/.test(L[j])) j++; w = L.slice(i, j);
+                emit(K[w] ? 'k' : (L[j] === '(' ? 'f' : (w.length > 1 && /^[A-Z]/.test(w) ? 'y' : '')), w); i = j; continue;
+            }
+            emit(/[{}()[\];,.]/.test(c) ? '' : 'o', c); i++;
+        }
+    }
+    function scanCss(L, i, e, S, emit) {
+        var c, j, m, rest;
+        while (i < e) {
+            if (S.s === 'c') { j = L.indexOf('*/', i); if (j < 0 || j + 2 > e) { emit('c', L.slice(i, e)); return; } emit('c', L.slice(i, j + 2)); i = j + 2; S.s = ''; continue; }
+            c = L[i];
+            if (c === ' ' || c === '\t') { j = i + 1; while (j < e && (L[j] === ' ' || L[j] === '\t')) j++; emit('', L.slice(i, j)); i = j; continue; }
+            if (c === '/' && L[i + 1] === '*') { S.s = 'c'; emit('c', '/*'); i += 2; continue; }
+            if (c === '"' || c === "'") { j = i + 1; while (j < e && L[j] !== c) { if (L[j] === '\\') j++; j++; } j = Math.min(j + 1, e); emit('s', L.slice(i, j)); i = j; continue; }
+            if (c === '{') { S.d++; S.v = 0; emit('o', c); i++; continue; }
+            if (c === '}') { S.d = Math.max(0, S.d - 1); S.v = 0; emit('o', c); i++; continue; }
+            if (c === ';') { S.v = 0; emit('', c); i++; continue; }
+            rest = L.slice(i, i + 80);
+            if (S.d > 0) {
+                if (!S.v) { m = /^[-\w]+(?=\s*:)/.exec(rest); if (m) { emit('p', m[0]); i += m[0].length; continue; } }
+                if (c === ':' && !S.v) { S.v = 1; emit('o', c); i++; continue; }
+                if (c === '!' && (m = /^!\s*important/i.exec(rest))) { emit('k', m[0]); i += m[0].length; continue; }
+                if ((m = /^#[0-9a-fA-F]{3,8}\b/.exec(rest))) { emit('n', m[0]); i += m[0].length; continue; }
+                if ((m = /^-?(?:\d*\.)?\d+(?:%|[a-zA-Z]+)?/.exec(rest))) { emit('n', m[0]); i += m[0].length; continue; }
+                if ((m = /^[-\w]+(?=\()/.exec(rest))) { emit('f', m[0]); i += m[0].length; continue; }
+                if ((m = /^[-\w]+/.exec(rest))) { emit('', m[0]); i += m[0].length; continue; }
+                emit('', c); i++; continue;
+            }
+            if (c === '@' && (m = /^@[-\w]+/.exec(rest))) { emit('k', m[0]); i += m[0].length; continue; }
+            if ((c === '.' || c === '#') && (m = /^[.#][-\w]+/.exec(rest))) { emit('y', m[0]); i += m[0].length; continue; }
+            if (c === ':' && (m = /^::?[-\w]+(?:\([^)]*\))?/.exec(rest))) { emit('a', m[0]); i += m[0].length; continue; }
+            if (c === '[' && (m = /^\[[^\]]*\]/.exec(rest))) { emit('a', m[0]); i += m[0].length; continue; }
+            if ((m = /^[-\w]+/.exec(rest))) { emit('t', m[0]); i += m[0].length; continue; }
+            emit('o', c); i++;
+        }
+    }
+    function hlTag(L, i, e, S, emit, xml) {
+        var c, j, m;
+        while (i < e) {
+            if (S.q) { j = L.indexOf(S.q, i); if (j < 0) { emit('s', L.slice(i, e)); return e; } emit('s', L.slice(i, j + 1)); i = j + 1; S.q = ''; continue; }
+            c = L[i];
+            if (c === '>') { emit('t', '>'); i++; S.s = ''; if (!xml && !S.cl) { if (S.tag === 'script') S.m = 'js'; else if (S.tag === 'style') S.m = 'css'; } return i; }
+            if (c === '/' && L[i + 1] === '>') { emit('t', '/>'); i += 2; S.s = ''; return i; }
+            if (c === ' ' || c === '\t') { j = i + 1; while (j < e && (L[j] === ' ' || L[j] === '\t')) j++; emit('', L.slice(i, j)); i = j; continue; }
+            if (c === '"' || c === "'") { j = L.indexOf(c, i + 1); if (j < 0) { S.q = c; emit('s', L.slice(i, e)); return e; } emit('s', L.slice(i, j + 1)); i = j + 1; continue; }
+            if (c === '=') { emit('o', c); i++; continue; }
+            m = /^[^\s=>\/"']+/.exec(L.slice(i, i + 80)); if (m) { emit('a', m[0]); i += m[0].length; continue; }
+            emit('', c); i++;
+        }
+        return i;
+    }
+    function hlHtml(L, S, emit, xml) {
+        var i = 0, e = L.length, m, j, k, end;
+        while (i < e) {
+            if (!xml && (S.m === 'js' || S.m === 'css')) {
+                k = L.slice(i).search(S.m === 'js' ? /<\/script/i : /<\/style/i); end = k < 0 ? e : i + k;
+                if (end > i) { if (S.m === 'js') scanCode(L, i, end, S.js, emit, KS.js, 'js'); else scanCss(L, i, end, S.c2, emit); }
+                if (k < 0) return; i = end; S.m = 'html'; S.js.s = ''; S.c2.s = ''; S.c2.v = 0; S.c2.d = 0;
+            }
+            if (S.s === 'h') { j = L.indexOf('-->', i); if (j < 0) { emit('c', L.slice(i)); return; } emit('c', L.slice(i, j + 3)); i = j + 3; S.s = ''; continue; }
+            if (S.s === 'g') { i = hlTag(L, i, e, S, emit, xml); continue; }
+            if (L.substr(i, 4) === '<!--') { S.s = 'h'; emit('c', '<!--'); i += 4; continue; }
+            if (L[i] === '<') {
+                m = /^<(\/?)([A-Za-z][\w:.-]*)/.exec(L.slice(i, i + 80)); if (m) { emit('t', m[0]); S.tag = m[2].toLowerCase(); S.cl = !!m[1]; S.s = 'g'; i += m[0].length; continue; }
+                m = /^<[!?][^\s>]*/.exec(L.slice(i, i + 80)); if (m) { emit('c', m[0]); i += m[0].length; S.tag = ''; S.cl = true; S.s = 'g'; continue; }
+            }
+            if (L[i] === '&' && (m = /^&#?\w+;/.exec(L.slice(i, i + 14)))) { emit('n', m[0]); i += m[0].length; continue; }
+            j = i + 1; while (j < e && L[j] !== '<' && L[j] !== '&') j++; emit('', L.slice(i, j)); i = j;
+        }
+    }
+    function hlAssText(s, emit) { var re = /\{[^}]*\}|\\[Nnh]|<\/?[a-zA-Z][^>]*>/g, i = 0, m; while ((m = re.exec(s))) { if (m.index > i) emit('', s.slice(i, m.index)); emit(m[0][0] === '{' ? 'f' : 'y', m[0]); i = m.index + m[0].length; } if (i < s.length) emit('', s.slice(i)); }
+    function hlSub(L, emit) {
+        var m;
+        if (/^\s*\d+\s*$/.test(L)) { emit('n', L); return; }
+        if ((m = /^(\s*[\d:.,]+)(\s*-->\s*)([\d:.,]+)(.*)$/.exec(L))) { emit('t', m[1]); emit('o', m[2]); emit('t', m[3]); emit('c', m[4]); return; }
+        if (/^\s*\[.*\]\s*$/.test(L)) { emit('k', L); return; }
+        if (/^\s*(WEBVTT|NOTE|;)/.test(L)) { emit('c', L); return; }
+        if ((m = /^(\s*(?:Dialogue|Comment|Style|Format|Title|ScriptType|PlayRes[XY]|WrapStyle|Collisions|Timer|ScaledBorderAndShadow|YCbCr Matrix|Original Script|Script Updated By|Audio File|Video File)\s*:)(.*)$/i.exec(L))) {
+            emit('k', m[1]);
+            if (/^\s*(dialogue|comment)/i.test(m[1])) { var ps = m[2].split(','); if (ps.length > 9) { emit('n', ps.slice(0, 9).join(',') + ','); hlAssText(ps.slice(9).join(','), emit); return; } }
+            emit('n', m[2]); return;
+        }
+        hlAssText(L, emit);
+    }
+    function hlMd(L, S, emit) {
+        var m;
+        if (/^\s*```/.test(L)) { S.f = !S.f; emit('s', L); return; }
+        if (S.f) { emit('s', L); return; }
+        if ((m = /^(#{1,6}\s)(.*)$/.exec(L))) { emit('k', m[1]); emit('f', m[2]); return; }
+        var rest = L; if ((m = /^(\s*(?:[-*+]|\d+\.)\s)(.*)$/.exec(L))) { emit('o', m[1]); rest = m[2]; }
+        rest.split(/(`[^`]+`|\*\*[^*]+\*\*|\[[^\]]*\]\([^)]*\))/).forEach(function (p) { if (!p) return; emit(p[0] === '`' ? 's' : p[0] === '*' ? 'y' : p[0] === '[' ? 'a' : '', p); });
+    }
+    function hlConf(L, emit) {
+        var m;
+        if (/^\s*[;#]/.test(L)) { emit('c', L); return; }
+        if (/^\s*\[.*\]/.test(L)) { emit('k', L); return; }
+        if ((m = /^(\s*-?\s*)([\w.\-"' ]+?)(\s*[:=]\s*)(.*)$/.exec(L))) {
+            emit('', m[1]); emit('p', m[2]); emit('o', m[3]); var v = m[4];
+            emit(/^["'].*["']\s*$/.test(v) ? 's' : /^-?[\d.]+\s*$/.test(v) ? 'n' : /^(true|false|yes|no|null|on|off)\s*$/i.test(v) ? 'k' : '', v); return;
+        }
+        emit('', L);
+    }
+    function initState(lang) { return { m: (lang === 'html' || lang === 'xml') ? 'html' : lang, s: '', q: '', tag: '', cl: 0, f: 0, js: { s: '', q: '' }, c2: { s: '', d: 0, v: 0 } }; }
+    function hlLine(L, S, emit, lang) {
+        if (L.length > 4000) { emit('', L); return; }
+        if (lang === 'html' || lang === 'xml') hlHtml(L, S, emit, lang === 'xml');
+        else if (lang === 'css') scanCss(L, 0, L.length, S.c2, emit);
+        else if (lang === 'sub') hlSub(L, emit);
+        else if (lang === 'md') hlMd(L, S, emit);
+        else if (lang === 'conf') hlConf(L, emit);
+        else scanCode(L, 0, L.length, S.js, emit, KS[lang] || KS.js, lang);
+    }
+    function hlReset() { HL.cp = []; HL.starts = null; HL.r = null; }
+    function hlStarts(v) { var a = [0], i = -1; while ((i = v.indexOf('\n', i + 1)) !== -1) a.push(i + 1); HL.starts = a; }
+    function hlInv(p) {
+        if (HL.starts) { var lo = 0, hi = HL.starts.length - 1; while (lo < hi) { var mid = (lo + hi + 1) >> 1; if (HL.starts[mid] <= p) lo = mid; else hi = mid - 1; } HL.cp.length = Math.min(HL.cp.length, Math.floor(lo / 64) + 1); } else HL.cp.length = 0;
+        HL.starts = null; HL.r = null;
+    }
+    function lineText(v, ln) { var s = HL.starts[ln], e = ln + 1 < HL.starts.length ? HL.starts[ln + 1] - 1 : v.length; return v.slice(s, e); }
+    function cloneS(S) { return JSON.parse(JSON.stringify(S)); }
+    function stateAt(line, v, lang) {
+        var k = Math.floor(line / 64), noop = function () { };
+        while (HL.cp.length <= k) { var idx = HL.cp.length, S = idx ? cloneS(HL.cp[idx - 1]) : initState(lang); if (idx) for (var ln = (idx - 1) * 64; ln < idx * 64; ln++) hlLine(lineText(v, ln), S, noop, lang); HL.cp.push(S); }
+        var T = cloneS(HL.cp[k]); for (var l2 = k * 64; l2 < line; l2++) hlLine(lineText(v, l2), T, noop, lang); return T;
+    }
+    function hpX() {
+        if (!HP) return; var rtl = cfg.dir === 'rtl';
+        if (rtl) { HP.style.left = 'auto'; HP.style.right = (10 + (cfg.wrap ? 0 : TA.scrollLeft)) + 'px'; } else { HP.style.right = 'auto'; HP.style.left = (10 - (cfg.wrap ? 0 : TA.scrollLeft)) + 'px'; }
+        HP.style.width = (cfg.wrap ? TA.clientWidth - 20 : Math.max(TA.scrollWidth - 20, TA.clientWidth - 20)) + 'px';
+    }
+    function renderHl(force) {
+        if (!HP) return; HL.raf = 0;
+        var lang = hlLang(), v = V(), on = !!lang && !!cur() && v.length < 6e6 && (!cfg.wrap || v.length < 150000);
+        TA.classList.toggle('hl', on); HP.style.display = on ? '' : 'none'; if (!on) { HL.r = null; return; }
+        if (!HL.starts) hlStarts(v);
+        var total = HL.starts.length, first = 0, last = total - 1;
+        if (!cfg.wrap) { var r = rng(force ? null : HL.r, total); if (!r) { hpX(); return; } first = r[0]; last = r[1]; }
+        var S = stateAt(first, v, lang), out = [], parts;
+        var emit = function (c, t) { parts.push(c ? '<i class="' + c + '">' + esc1(t) + '</i>' : esc1(t)); };
+        for (var ln = first; ln <= last; ln++) { parts = []; hlLine(lineText(v, ln), S, emit, lang); out.push(parts.join('')); }
+        HP.innerHTML = out.join('\n'); HL.r = { f: first, l: last, t: total };
+        HP.style.top = (8 + (cfg.wrap ? 0 : first * lineH)) + 'px'; hpX();
+    }
+    function hlSched() { if (!HL.raf) HL.raf = requestAnimationFrame(function () { renderHl(); }); }
+
     function drawTop() {
         var n = cur(); $('kfedNm').textContent = n ? n.name : 'دەستکاریکەری فایل'; $('kfedPth').textContent = n ? '/' + pathOf(n.id) : '';
         ['kfedDl', 'kfedMore', 'kfedB2', 'kfedB3', 'kfedB4', 'kfedB5', 'kfedB6', 'kfedB7', 'kfedB8'].forEach(function (id) { $(id).disabled = !n && id !== 'kfedMore'; });
-        $('kfedEmpty').classList.toggle('show', !n); TA.style.visibility = n ? '' : 'hidden'; if (!n) GUT.style.visibility = 'hidden'; else GUT.style.visibility = '';
+        $('kfedEmpty').classList.toggle('show', !n); $('kfedIn').style.visibility = n ? '' : 'hidden';
         var h = n ? hist(n.id) : null; $('kfedB3').disabled = !n || !h.u.length; $('kfedB4').disabled = !n || !h.r.length;
         TABS.innerHTML = ''; TABS.style.display = tabs.length ? '' : 'none';
-        tabs.forEach(function (id) { var x = N[id]; if (!x) return; var b = document.createElement('div'); b.className = 'kfed-tab' + (id === act ? ' on' : ''); b.innerHTML = '<span>' + esc(x.name) + '</span>' + (x._d ? '<i>●</i>' : '') + '<b>' + I.x + '</b>'; b.onclick = function (e) { if (e.target.closest('b')) { closeTab(id); } else switchTab(id); }; TABS.appendChild(b); if (id === act) setTimeout(function () { try { b.scrollIntoView({ inline: 'nearest', block: 'nearest' }); } catch (e) { } }, 0); });
+        tabs.forEach(function (id) { var x = N[id]; if (!x) return; var b = document.createElement('div'); b.className = 'kfed-tab' + (id === act ? ' on' : ''); b.innerHTML = '<span>' + esc(x.name) + '</span>' + ((x._d || x._dd) ? '<i>●</i>' : '') + '<b>' + I.x + '</b>'; b.onclick = function (e) { if (e.target.closest('b')) { closeTab(id); } else switchTab(id); }; TABS.appendChild(b); if (id === act) setTimeout(function () { try { b.scrollIntoView({ inline: 'nearest', block: 'nearest' }); } catch (e) { } }, 0); });
     }
 
     // ---------- تاب ----------
-    function saveUi() { var n = cur(); if (n && TA) { n._ui = { s: TA.selectionStart, e: TA.selectionEnd, t: TA.scrollTop, l: TA.scrollLeft }; } }
+    function saveUi() { var n = cur(); if (n && TA) { n._ui = { s: TA.selectionStart, e: TA.selectionEnd, t: SC.scrollTop, l: TA.scrollLeft }; } }
     function persistTabs() { LS.set('tabs', tabs); LS.set('act', act); LS.set('cwd', cwd); }
     function load(id) {
-        var n = N[id]; if (!n) return; TA.value = n.c; lineCount = countLines(n.c); lastSaved = true; applyView();
-        var u = n._ui || { s: 0, e: 0, t: 0, l: 0 }; try { TA.setSelectionRange(u.s, u.e); } catch (e) { } TA.scrollTop = u.t; TA.scrollLeft = u.l; renderGut(); drawTop(); status(); updFind();
+        var n = N[id]; if (!n || typeof n.c !== 'string') return; TA.value = n.c; VC = n.c; hlReset(); lineCount = countLines(n.c); lastSaved = !n._d; applyView();
+        var u = n._ui || { s: 0, e: 0, t: 0, l: 0 }; try { TA.setSelectionRange(u.s, u.e); } catch (e) { } SC.scrollTop = u.t; TA.scrollLeft = u.l; gutR = null; HL.r = null; renderGut(); renderHl(); drawTop(); status(); updFind();
     }
     function switchTab(id) { flush(); saveUi(); act = id; if (tabs.indexOf(id) < 0) tabs.push(id); load(id); persistTabs(); }
-    function openFile(id, pos) { if (!N[id] || N[id].t !== 'f') return; switchTab(id); closeExp(); if (pos != null) { setTimeout(function () { sel2(pos.a, pos.b); }, 30); } }
+    async function openFile(id, pos) {
+        var n = N[id]; if (!n || n.t !== 'f') return;
+        if (n.dev && typeof n.c !== 'string') { try { await loadDev(n); } catch (e) { toast(e.message === 'bin' ? 'ئەم فایلە دەق نییە، ناکرێتەوە' : e.message === 'big' ? 'فایلەکە زۆر گەورەیە (زیاتر لە ٣٠ مێگابایت)' : 'ڕێپێدان نەدرا یان فایلەکە نەخوێندرایەوە', 'warning'); return; } }
+        switchTab(id); closeExp(); if (pos != null) { setTimeout(function () { sel2(pos.a, pos.b); }, 30); }
+    }
     function closeTab(id, silent) {
-        var i = tabs.indexOf(id); if (i < 0) return; if (id === act) flush(); tabs.splice(i, 1);
-        if (id === act) { act = tabs[Math.min(i, tabs.length - 1)] || null; if (act) load(act); else { TA.value = ''; lineCount = 1; renderGut(); drawTop(); status(); } }
+        var i = tabs.indexOf(id); if (i < 0) return;
+        if (!silent && N[id] && N[id]._dd) { var dn = N[id]; sheet('«' + dn.name + '» هێشتا لە ئامێر پاشەکەوت نەکراوە', [{ t: 'پاشەکەوت و داخستن', i: I.save, f: async function () { if (id === act) flush(); if (await writeDev(dn)) closeTab(id, true); } }, { t: 'داخستن بێ پاشەکەوت', i: I.x, dg: true, f: function () { dn._dd = false; dn.c = undefined; dn.raw = null; closeTab(id, true); } }, { t: 'پاشگەزبوونەوە', i: I.check, f: function () { } }]); return; } if (id === act) flush(); tabs.splice(i, 1);
+        if (id === act) { act = tabs[Math.min(i, tabs.length - 1)] || null; if (act) load(act); else { TA.value = ''; VC = ''; hlReset(); lineCount = 1; renderGut(); renderHl(); drawTop(); status(); } }
         drawTop(); persistTabs();
     }
 
     // ---------- گۆڕانکاری: diff + مێژوو + پاشەکەوت ----------
+    function cnt(s) { var k = 0, i = -1; while ((i = s.indexOf('\n', i + 1)) !== -1) k++; return k; }
     function onInput(noHist) {
-        var n = cur(); if (!n) return; var old = n.c, nv = TA.value; if (old === nv) return;
+        var n = cur(); if (!n) return; var old = n.c; VC = null; var nv = V(); if (old === nv) return;
         var p = 0, mx = Math.min(old.length, nv.length); while (p < mx && old.charCodeAt(p) === nv.charCodeAt(p)) p++;
         var s = 0; while (s < mx - p && old.charCodeAt(old.length - 1 - s) === nv.charCodeAt(nv.length - 1 - s)) s++;
         var del = old.slice(p, old.length - s), ins = nv.slice(p, nv.length - s);
@@ -17765,35 +18058,41 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
             else { h.u.push({ p: p, del: del, ins: ins }); if (h.u.length > 400) h.u.shift(); }
             h.t = now; h.r = [];
         }
-        n.c = nv; n._d = true; n.m = Date.now(); lineCount = countLines(nv); lastSaved = false; renderGut(); status(); drawTopLite();
-        clearTimeout(saveT); saveT = setTimeout(flush, 700); if (fq.q && FIND.classList.contains('open')) { clearTimeout(onInput._f); onInput._f = setTimeout(updFind, 250); }
+        var dl = cnt(del), il = cnt(ins);
+        n.c = nv; n._d = true; if (n.dev) n._dd = true; n.m = Date.now(); lineCount += il - dl; lastSaved = false; hlInv(p);
+        if (il !== dl) { gutR = null; fit(); } else if (cfg.wrap) fit();
+        renderGut(); hlSched(); status(); drawTopLite(); reveal(TA.selectionStart, true);
+        clearTimeout(saveT); saveT = setTimeout(flush, 1500); if (fq.q && FIND.classList.contains('open')) { clearTimeout(onInput._f); onInput._f = setTimeout(updFind, 250); }
     }
     function drawTopLite() { var h = cur() ? hist(act) : null; $('kfedB3').disabled = !h || !h.u.length; $('kfedB4').disabled = !h || !h.r.length; if (tabs.length) { var t = TABS.querySelector('.kfed-tab.on'); if (t && !t.querySelector('i')) { var i = document.createElement('i'); i.textContent = '●'; t.insertBefore(i, t.querySelector('b')); } } }
     function flush() {
-        clearTimeout(saveT); var n = cur(); if (n && n._d) { n._d = false; if (n.raw && (n._rawc !== n.c)) { n.raw = null; } dbPut(strip(n)); lastSaved = true; status(); var t = TABS && TABS.querySelector('.kfed-tab.on i'); if (t) t.remove(); }
+        clearTimeout(saveT); var n = cur(); if (!n || !n._d) return; n._d = false; if (n.raw && (n._rawc !== n.c)) { n.raw = null; }
+        if (n.dev) { if (cfg.autodev && n._dd) writeDev(n); else status(); return; }
+        dbPut(n); lastSaved = true; status(); var t = TABS && TABS.querySelector('.kfed-tab.on i'); if (t) t.remove();
     }
-    function strip(n) { var o = {}; for (var k in n) if (k[0] !== '_') o[k] = n[k]; return o; }
+    function strip(n) { var o = {}; for (var k in n) if (k[0] !== '_' && k !== 'h' && k !== 'dev') o[k] = n[k]; return o; }
     function undo() {
         var n = cur(); if (!n) return; var h = hist(n.id), p = h.u.pop(); if (!p) return; TA.setRangeText(p.del, p.p, p.p + p.ins.length, 'end'); h.r.push(p);
-        var st = TA.selectionStart; TA.setSelectionRange(p.p, p.p + p.del.length); onInput(true); reveal(p.p); drawTopLite(); void st;
+        TA.setSelectionRange(p.p, p.p + p.del.length); onInput(true); reveal(p.p); drawTopLite();
     }
     function redo() {
         var n = cur(); if (!n) return; var h = hist(n.id), p = h.r.pop(); if (!p) return; TA.setRangeText(p.ins, p.p, p.p + p.del.length, 'end'); h.u.push(p);
         TA.setSelectionRange(p.p + p.ins.length, p.p + p.ins.length); onInput(true); reveal(p.p); drawTopLite();
     }
     function replaceAllText(text) { var n = cur(); if (!n) return; TA.value = text; onInput(); }
-    function insertText(t) { TA.focus(); var a = TA.selectionStart, b = TA.selectionEnd; TA.setRangeText(t, a, b, 'end'); onInput(); }
+    function insertText(t) { var a = TA.selectionStart, b = TA.selectionEnd; TA.setRangeText(t, a, b, 'end'); onInput(); }
 
     // ---------- شوێن و سکرۆڵ ----------
-    function reveal(pos) {
-        var v = TA.value, vh = TA.clientHeight;
-        if (!cfg.wrap) { var ln = lineOf(v, pos), top = ln * lineH + 8; if (top < TA.scrollTop || top > TA.scrollTop + vh - lineH * 2) TA.scrollTop = Math.max(0, top - vh / 2);
-            var ls = v.lastIndexOf('\n', pos - 1) + 1; var cv = reveal._c || (reveal._c = document.createElement('canvas').getContext('2d')); cv.font = cfg.fs + 'px "IBM Plex Sans Arabic", monospace'; var w = cv.measureText(v.slice(ls, pos)).width;
-            if (TA.dir !== 'rtl' && getComputedStyle(TA).direction !== 'rtl') { if (w < TA.scrollLeft + 20 || w > TA.scrollLeft + TA.clientWidth - 40) TA.scrollLeft = Math.max(0, w - TA.clientWidth / 2); } }
+    function reveal(pos, minimal) {
+        if (!cur()) return; var v = V(), vh = SC.clientHeight, y, st = SC.scrollTop, lt = '';
+        if (!cfg.wrap) { var li = lineOfPos(pos); y = li * lineH + 8; var a = starts(); lt = v.slice(a[li], pos); }
         else { var m = reveal._m; if (!m) { m = reveal._m = document.createElement('div'); m.style.cssText = 'position:absolute;visibility:hidden;left:-9999px;top:0;white-space:pre-wrap;overflow-wrap:break-word;'; document.body.appendChild(m); }
-            var cs = getComputedStyle(TA); m.style.width = TA.clientWidth + 'px'; m.style.font = cs.font; m.style.lineHeight = cs.lineHeight; m.style.padding = cs.padding; m.style.direction = cs.direction; m.style.boxSizing = 'border-box'; m.textContent = v.slice(0, pos); var s = document.createElement('span'); s.textContent = '​'; m.appendChild(s);
-            var y = s.offsetTop; if (y < TA.scrollTop || y > TA.scrollTop + vh - lineH * 2) TA.scrollTop = Math.max(0, y - vh / 2); m.textContent = ''; }
-        renderGut();
+            var cs = getComputedStyle(TA); m.style.width = TA.clientWidth + 'px'; m.style.font = cs.font; m.style.lineHeight = cs.lineHeight; m.style.padding = cs.padding; m.style.direction = cs.direction; m.style.boxSizing = 'border-box'; m.textContent = v.slice(0, pos); var sp = document.createElement('span'); sp.textContent = '\u200b'; m.appendChild(sp); y = sp.offsetTop; m.textContent = ''; }
+        if (minimal) { if (y < st + lineH * .5) SC.scrollTop = Math.max(0, y - lineH); else if (y + lineH * 2 > st + vh) SC.scrollTop = y + lineH * 2 - vh; }
+        else if (y < st || y > st + vh - lineH * 2) SC.scrollTop = Math.max(0, y - vh / 2);
+        if (!cfg.wrap && cfg.dir !== 'rtl' && !/[\u0590-\u08FF]/.test(lt)) { var cv = reveal._c || (reveal._c = document.createElement('canvas').getContext('2d')); cv.font = cfg.fs + 'px ui-monospace,Menlo,Consolas,monospace'; var w = cv.measureText(lt.replace(/\t/g, '    ')).width;
+            if (w < TA.scrollLeft + 20 || w > TA.scrollLeft + TA.clientWidth - 40) TA.scrollLeft = Math.max(0, w - TA.clientWidth / 2); }
+        renderGut(); hlSched();
     }
     function sel2(a, b) { var touch = matchMedia('(pointer:coarse)').matches; if (touch) TA.inputMode = 'none'; TA.focus({ preventScroll: true }); TA.setSelectionRange(a, b); reveal(a); status(); }
 
@@ -17805,19 +18104,19 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
     }
     function updFind() {
         var c = $('kfedCnt'); if (!FIND.classList.contains('open') || !fq.q || !cur()) { c.textContent = ''; return; }
-        var re = mkRe(); if (!re) { c.textContent = '⚠'; return; } var v = TA.value, k = 0, at = 0, p = TA.selectionStart, m; re.lastIndex = 0;
+        var re = mkRe(); if (!re) { c.textContent = '⚠'; return; } var v = V(), k = 0, at = 0, p = TA.selectionStart, m; re.lastIndex = 0;
         while ((m = re.exec(v)) && k < 99999) { if (m[0] === '') { re.lastIndex++; continue; } k++; if (m.index <= p) at = k; }
         c.textContent = k ? (at || 0) + '/' + k : '٠';
     }
     function findStep(dir) {
-        var n = cur(); if (!n || !fq.q) { return false; } var re = mkRe(); if (!re) { toast('Regex هەڵەیە', 'warning'); return false; } var v = TA.value, m, hit = null, a = TA.selectionStart, b = TA.selectionEnd;
+        var n = cur(); if (!n || !fq.q) { return false; } var re = mkRe(); if (!re) { toast('Regex هەڵەیە', 'warning'); return false; } var v = V(), m, hit = null, a = TA.selectionStart, b = TA.selectionEnd;
         if (dir > 0) { re.lastIndex = b; while ((m = re.exec(v))) { if (m[0] === '') { re.lastIndex++; continue; } hit = m; break; } if (!hit) { re.lastIndex = 0; while ((m = re.exec(v))) { if (m[0] === '') { re.lastIndex++; continue; } hit = m; break; } if (hit) toast('گەڕایەوە بۆ سەرەتا', 'info'); } }
         else { re.lastIndex = 0; var last = null; while ((m = re.exec(v)) && m.index < a) { if (m[0] === '') { re.lastIndex++; continue; } last = m; } hit = last; if (!hit) { re.lastIndex = 0; while ((m = re.exec(v))) { if (m[0] === '') { re.lastIndex++; continue; } last = m; } hit = last; if (hit) toast('گەیشتە کۆتایی', 'info'); } }
         if (!hit) { toast('هیچ ئەنجامێک نەدۆزرایەوە', 'warning'); return false; } sel2(hit.index, hit.index + hit[0].length); updFind(); return true;
     }
     function repOne() {
         var n = cur(); if (!n || !fq.q) return; var re = mkRe(false); if (!re) return; var s = TA.value.slice(TA.selectionStart, TA.selectionEnd);
-        var re2 = new RegExp('^(?:' + re.source + ')$', re.flags); if (s && re2.test(s)) { var r = fq.re ? s.replace(re, fq.rep) : fq.rep; TA.focus({ preventScroll: true }); TA.setRangeText(r, TA.selectionStart, TA.selectionEnd, 'end'); onInput(); }
+        var re2 = new RegExp('^(?:' + re.source + ')$', re.flags); if (s && re2.test(s)) { var r = fq.re ? s.replace(re, fq.rep) : fq.rep; TA.setRangeText(r, TA.selectionStart, TA.selectionEnd, 'end'); onInput(); }
         findStep(1);
     }
     function repAll() {
@@ -17827,13 +18126,13 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
         re.lastIndex = 0; var rp = fq.rep, out = fq.re ? v.replace(re, rp) : v.replace(re, function () { return rp; });
         replaceAllText(out); toast(k + ' جار گۆڕدرا', 'success'); updFind();
     }
-    function openFind(show) { FIND.classList.toggle('open', show !== false); if (show !== false) { var s = TA.value.slice(TA.selectionStart, TA.selectionEnd); if (s && s.indexOf('\n') < 0 && s.length < 80) { $('kfedQ').value = fq.q = s; } setTimeout(function () { $('kfedQ').focus(); $('kfedQ').select(); }, 30); updFind(); } }
+    function openFind(show) { FIND.classList.toggle('open', show !== false); if (show !== false) { var s = V().slice(TA.selectionStart, TA.selectionEnd); if (s && s.indexOf('\n') < 0 && s.length < 80) { $('kfedQ').value = fq.q = s; } setTimeout(function () { $('kfedQ').focus(); $('kfedQ').select(); }, 30); updFind(); } }
 
     // ---------- ئامرازەکانی دەق ----------
     function tool(name, fn) {
-        var n = cur(); if (!n) return; var a = TA.selectionStart, b = TA.selectionEnd, whole = a === b, v = TA.value, part = whole ? v : v.slice(a, b), out = fn(part);
+        var n = cur(); if (!n) return; var a = TA.selectionStart, b = TA.selectionEnd, whole = a === b, v = V(), part = whole ? v : v.slice(a, b), out = fn(part);
         if (out === part) { toast('هیچ گۆڕانکارییەک نەبوو', 'info'); return; }
-        if (whole) { replaceAllText(out); } else { TA.focus({ preventScroll: true }); TA.setRangeText(out, a, b, 'select'); onInput(); }
+        if (whole) { replaceAllText(out); } else { TA.setRangeText(out, a, b, 'select'); onInput(); }
         toast(name + (whole ? ' (هەموو فایل)' : ' (دەقی دیاریکراو)'), 'success');
     }
     var TOOLS = [
@@ -17857,18 +18156,51 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
     ];
 
     // ---------- زانیاری و داگرتن ----------
+    function pT(s) { var m = /(\d+):(\d+):(\d+)[.,](\d+)/.exec(s || ''); return m ? (+m[1]) * 3600 + (+m[2]) * 60 + (+m[3]) + (+('0.' + m[4])) : null; }
+    function fT(t) { var h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), s = t % 60; return h + ':' + String(m).padStart(2, '0') + ':' + s.toFixed(2).padStart(5, '0'); }
+    function subStats(text) {
+        var L = text.split('\n'), o = { kind: '', dlg: 0, com: 0, draw: 0, empty: 0, words: 0, chars: 0, longest: 0, first: null, last: null, st: {} };
+        function add(raw) {
+            if (/\\p[1-9]/.test(raw)) { o.draw++; return false; }
+            var t = raw.replace(/\{[^}]*\}/g, '').replace(/<[^>]+>/g, '').replace(/\\[Nn]/g, '\n').replace(/\\h/g, ' ');
+            var ls = t.split('\n').map(function (x) { return x.replace(/\s+/g, ' ').trim(); }).filter(Boolean); if (!ls.length) { o.empty++; return false; }
+            ls.forEach(function (x) { o.words += (x.match(/\S+/g) || []).length; var c = x.replace(/ /g, '').length; o.chars += c; if (c > o.longest) o.longest = c; }); return true;
+        }
+        function tm(a, b) { if (a != null && (o.first === null || a < o.first)) o.first = a; if (b != null && (o.last === null || b > o.last)) o.last = b; }
+        if (/^\s*Dialogue:/im.test(text)) {
+            o.kind = 'ASS / SSA'; var ti = 9, si = 1, ei = 2, sty = 3, inEv = false;
+            L.forEach(function (ln) {
+                var s = ln.trim(); if (/^\[/.test(s)) { inEv = /^\[Events\]/i.test(s); return; }
+                if (inEv && /^Format:/i.test(s)) { var f = s.slice(7).split(',').map(function (x) { return x.trim().toLowerCase(); }); if (f.indexOf('text') >= 0) { ti = f.indexOf('text'); si = f.indexOf('start'); ei = f.indexOf('end'); sty = f.indexOf('style'); } return; }
+                var m = /^(Dialogue|Comment):\s?/i.exec(ln); if (!m) return; var p = ln.slice(m[0].length).split(','); if (p.length <= ti) return;
+                if (/^comment/i.test(m[1])) { o.com++; return; }
+                if (add(p.slice(ti).join(','))) { o.dlg++; tm(pT(p[si]), pT(p[ei])); var k = (p[sty] || '').trim(); o.st[k] = (o.st[k] || 0) + 1; }
+            });
+        } else if (/-->/.test(text)) {
+            o.kind = /^\s*WEBVTT/.test(text) ? 'VTT' : 'SRT';
+            for (var i = 0; i < L.length; i++) { var m2 = /(\d+:\d+:\d+[.,]\d+|\d+:\d+[.,]\d+)\s*-->\s*(\d+:\d+:\d+[.,]\d+|\d+:\d+[.,]\d+)/.exec(L[i]); if (!m2) continue; var b = []; i++; while (i < L.length && L[i].trim() !== '') { b.push(L[i]); i++; }
+                var a1 = m2[1].split(':').length < 3 ? '0:' + m2[1] : m2[1], a2 = m2[2].split(':').length < 3 ? '0:' + m2[2] : m2[2]; if (add(b.join('\n'))) { o.dlg++; tm(pT(a1), pT(a2)); } }
+        } else return null;
+        return o;
+    }
     function stats() {
-        var n = cur(); if (!n) return; var v = TA.value, w = (v.trim().match(/\S+/g) || []).length, by = encodeText(v, n.enc, n.eol).length;
-        sheet('ئاماری فایل', [{ t: 'ناو', s: n.name }, { t: 'دێڕ', s: String(lineCount) }, { t: 'وشە', s: String(w) }, { t: 'پیت', s: String(v.length) }, { t: 'قەبارە', s: fmtB(by) }, { t: 'کۆدکردن', s: n.enc }, { t: 'کۆتایی دێڕ', s: n.eol === '\r\n' ? 'CRLF' : n.eol === '\r' ? 'CR' : 'LF' }]);
+        var n = cur(); if (!n) return; var o = subStats(V());
+        if (!o) { sheet('ئامار', [{ t: 'ئەمە فایلی ژێرنووس نییە', s: '' }, { t: 'دێڕ', s: String(lineCount) }, { t: 'وشە', s: String((V().trim().match(/\S+/g) || []).length) }]); return; }
+        var it = [{ t: 'جۆر', s: o.kind }, { t: 'دێڕی دیالۆگ', s: String(o.dlg) }];
+        if (o.com) it.push({ t: 'دێڕی کۆمێنت', s: String(o.com) }); if (o.draw) it.push({ t: 'دێڕی ڕسم / کاریگەری', s: String(o.draw) }); if (o.empty) it.push({ t: 'دێڕی بەتاڵ', s: String(o.empty) });
+        it.push({ t: 'وشە', s: String(o.words) }, { t: 'پیت (بێ بۆشایی)', s: String(o.chars) }, { t: 'تێکڕای پیت بۆ هەر دێڕێک', s: o.dlg ? (o.chars / o.dlg).toFixed(1) : '0' }, { t: 'درێژترین دێڕ', s: o.longest + ' پیت' });
+        if (o.first !== null) it.push({ t: 'سەرەتای یەکەم دێڕ', s: fT(o.first) }, { t: 'کۆتایی دوایین دێڕ', s: fT(o.last) });
+        var ks = Object.keys(o.st).sort(function (a, b) { return o.st[b] - o.st[a]; }); if (ks.length) it.push({ t: 'ستایلەکان', s: ks.slice(0, 3).map(function (k) { return k + ' ×' + o.st[k]; }).join('  ') });
+        sheet('ئاماری ژێرنووس', it);
     }
     function saveBlob(blob, name) { var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1500); }
-    function dlFile(n) { if (n.id === act) { flush(); } saveBlob(new Blob([encodeText(n.c, n.enc, n.eol)], { type: 'text/plain;charset=' + (n.enc.indexOf('utf-8') === 0 ? 'utf-8' : n.enc) }), n.name); toast('فایل دابەزی', 'success'); }
-    function collect(id, base, out) { var n = N[id]; if (n.t === 'f') { out.push({ name: base + n.name, data: encodeText(n.c, n.enc, n.eol) }); } else kids(id).forEach(function (k) { collect(k.id, base + (id === ROOT ? '' : n.name + '/'), out); }); }
+    async function dlFile(n) { if (n.id === act) { flush(); } if (typeof n.c !== 'string') { try { await loadDev(n); } catch (e) { toast('نەخوێندرایەوە', 'warning'); return; } } saveBlob(new Blob([encodeText(n.c, n.enc, n.eol)], { type: 'text/plain;charset=' + (n.enc.indexOf('utf-8') === 0 ? 'utf-8' : n.enc) }), n.name); toast('فایل دابەزی', 'success'); }
+    function collect(id, base, out) { var n = N[id]; if (n.dev) return; if (n.t === 'f') { out.push({ name: base + n.name, data: encodeText(n.c, n.enc, n.eol) }); } else kids(id).forEach(function (k) { collect(k.id, base + (id === ROOT ? '' : n.name + '/'), out); }); }
     function dlZip(ids, name) { flush(); var out = []; ids.forEach(function (id) { var n = N[id]; if (n.t === 'f') collect(id, '', out); else { kids(id).forEach(function (k) { collect(k.id, id === ROOT ? '' : n.name + '/', out); }); if (!kids(id).length) { } } }); if (!out.length) { toast('هیچ فایلێک نییە', 'warning'); return; } saveBlob(makeZip(out), name); toast(out.length + ' فایل لە zip دا دابەزن', 'success'); }
 
     // ---------- هێنان ----------
     async function importFiles(list, target) {
-        var ok = 0, bad = [], first = null; target = target || cwd;
+        var ok = 0, bad = [], first = null; target = target || cwd; if (N[target] && N[target].dev) return importDev(list, target);
         for (var i = 0; i < list.length; i++) {
             var f = list[i]; try {
                 if (f.size > 60 * 1048576) { bad.push(f.name); continue; }
@@ -17886,72 +18218,197 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
     // ---------- گەڕان لە هەموو فایلەکان ----------
     function globalSearch(q) {
         var out = [], l = $('kfedLs'); if (!q) { drawExp(); return; } var ql = q.toLowerCase(), n = 0, MAX = 300; l.innerHTML = '';
-        outer: for (var id in N) { var f = N[id]; if (f.t !== 'f') continue; var t = f.c, tl = t.toLowerCase(), i = -1; while ((i = tl.indexOf(ql, i + 1)) !== -1) { var ls = t.lastIndexOf('\n', i - 1) + 1, le = t.indexOf('\n', i); if (le < 0) le = t.length; out.push({ f: f, i: i, ls: ls, le: le, ln: lineOf(t, i) + 1 }); if (++n >= MAX) break outer; i = le; } }
+        outer: for (var id in N) { var f = N[id]; if (f.t !== 'f' || typeof f.c !== 'string') continue; var t = f.c, tl = t.toLowerCase(), i = -1; while ((i = tl.indexOf(ql, i + 1)) !== -1) { var ls = t.lastIndexOf('\n', i - 1) + 1, le = t.indexOf('\n', i); if (le < 0) le = t.length; out.push({ f: f, i: i, ls: ls, le: le, ln: lineOf(t, i) + 1 }); if (++n >= MAX) break outer; i = le; } }
         if (!out.length) { l.innerHTML = '<div class="kfed-note">هیچ ئەنجامێک نەدۆزرایەوە</div>'; return; }
         out.forEach(function (h) { var t = h.f.c, a = Math.max(h.ls, h.i - 40), b = Math.min(h.le, h.i + q.length + 80), d = document.createElement('div'); d.className = 'kfed-hit'; d.innerHTML = '<b>/' + esc(pathOf(h.f.id)) + ' : ' + h.ln + '</b><span>' + esc(t.slice(a, h.i)) + '<mark>' + esc(t.slice(h.i, h.i + q.length)) + '</mark>' + esc(t.slice(h.i + q.length, b)) + '</span>'; d.onclick = function () { fq.q = q; $('kfedQ').value = q; openFile(h.f.id, { a: h.i, b: h.i + q.length }); }; l.appendChild(d); });
         if (n >= MAX) { var m = document.createElement('div'); m.className = 'kfed-note'; m.textContent = 'تەنها ٣٠٠ ئەنجامی یەکەم پیشان دەدرێت'; l.appendChild(m); }
     }
 
     // ---------- فایلەکانی ئەپ (explorer) ----------
-    function openExp() { EXP.classList.add('open'); $('kfedScrim').classList.add('open'); drawExp(); }
-    function closeExp() { EXP.classList.remove('open'); $('kfedScrim').classList.remove('open'); selMode = false; sel = {}; $('kfedEs').classList.remove('open'); }
+    // ---------- فۆڵدەری ئامێر (File System Access API) ----------
+    var FSA = typeof window.showDirectoryPicker === 'function';
+    function rootOf(n) { while (n && !n.mnt) n = N[n.p]; return n; }
+    async function perm(n, write) { var r = rootOf(n); if (!r || !r.h) return true; var o = { mode: 'readwrite' }; try { if ((await r.h.queryPermission(o)) === 'granted') return true; return (await r.h.requestPermission(o)) === 'granted'; } catch (e) { return false; } }
+    async function enumDev(d) {
+        if (!(await perm(d, true))) { toast('ڕێپێدان بۆ ئەم فۆڵدەرە نەدرا', 'warning'); return false; }
+        var old = {}; kids(d.id).forEach(function (k) { old[k.name + '|' + k.t] = k; }); var seen = {};
+        try { for await (var e of d.h.entries()) { var nm = e[0], h = e[1], t = h.kind === 'directory' ? 'd' : 'f', key = nm + '|' + t, o = old[key]; if (o) { o.h = h; seen[key] = 1; } else { var nn = { id: 'v' + uid(), p: d.id, t: t, name: nm, dev: true, h: h, m: 0 }; N[nn.id] = nn; seen[key] = 1; } } }
+        catch (er) { toast('نەتوانرا فۆڵدەرەکە بخوێنرێتەوە: ' + (er && er.message || er), 'error'); return false; }
+        Object.keys(old).forEach(function (k) { if (!seen[k]) delNode(old[k].id); });
+        d.loaded = true; fillMeta(d); return true;
+    }
+    async function fillMeta(d) {
+        var fs = kids(d.id).filter(function (k) { return k.t === 'f' && k.sz == null; }).slice(0, 600);
+        for (var i = 0; i < fs.length; i += 40) { await Promise.all(fs.slice(i, i + 40).map(async function (n) { try { var f = await n.h.getFile(); n.sz = f.size; n.m = f.lastModified; } catch (e) { n.sz = 0; } })); if (cwd === d.id && EXP.classList.contains('open') && !selMode) drawExp(); }
+    }
+    async function ensureKids(n) { if (n && n.dev && n.t === 'd' && !n.loaded) await enumDev(n); }
+    async function loadDev(n) {
+        if (!(await perm(n, true))) throw new Error('perm'); var f = await n.h.getFile(); if (f.size > 30 * 1048576) throw new Error('big');
+        var buf = await f.arrayBuffer(), d = decodeBytes(buf); if (!d) throw new Error('bin');
+        n.c = d.text; n.enc = d.enc; n.eol = d.eol; n.m = f.lastModified; n.sz = f.size; n._dd = false; if (buf.byteLength < 4 * 1048576) { n.raw = buf; n._rawc = d.text; }
+    }
+    async function writeDev(n) {
+        try { if (!(await perm(n, true))) { toast('ڕێپێدانی نووسین نەدرا', 'warning'); return false; } var data = encodeText(n.c, n.enc, n.eol), w = await n.h.createWritable(); await w.write(data); await w.close(); n._dd = false; n._d = false; n.sz = data.length; n.m = Date.now(); if (n.id === act) { status(); } drawTop(); toast('لە ئامێر پاشەکەوت کرا', 'success'); return true; }
+        catch (e) { toast('نەتوانرا بنووسرێت: ' + (e && e.message || e), 'error'); return false; }
+    }
+    function saveCur() { var n = cur(); if (!n) return; if (n.dev) { flush(); writeDev(n); } else { n._d = true; flush(); toast('پاشەکەوت کرا', 'success'); } }
+    async function devRemove(n) { var P = N[n.p]; if (!(await perm(P, true))) throw new Error('perm'); await P.h.removeEntry(n.name, { recursive: true }); }
+    async function bytesFor(n) { if (typeof n.c === 'string') return encodeText(n.c, n.enc, n.eol); var f = await n.h.getFile(); return new Uint8Array(await f.arrayBuffer()); }
+    async function mkFileIn(p, name, bytes) {
+        var P = N[p]; await ensureKids(P); name = uniq(p, name);
+        if (P.dev) { if (!(await perm(P, true))) throw new Error('perm'); var fh = await P.h.getFileHandle(name, { create: true }), w = await fh.createWritable(); await w.write(bytes); await w.close(); var nn = { id: 'v' + uid(), p: p, t: 'f', name: name, dev: true, h: fh, m: Date.now(), sz: bytes.length }; N[nn.id] = nn; return nn; }
+        var d = decodeBytes(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)); if (!d) throw new Error('bin'); return mkNode(p, 'f', name, { c: d.text, enc: d.enc, eol: d.eol });
+    }
+    async function mkDirIn(p, name) {
+        var P = N[p]; await ensureKids(P); name = uniq(p, name);
+        if (P.dev) { if (!(await perm(P, true))) throw new Error('perm'); var dh = await P.h.getDirectoryHandle(name, { create: true }), nn = { id: 'v' + uid(), p: p, t: 'd', name: name, dev: true, h: dh, loaded: true, m: Date.now() }; N[nn.id] = nn; return nn; }
+        return mkNode(p, 'd', name);
+    }
+    async function copyNode(id, to) {
+        var n = N[id]; if (n.t === 'f') return mkFileIn(to, n.name, await bytesFor(n));
+        var d = await mkDirIn(to, n.name); await ensureKids(n); var ks = kids(id).slice(); for (var i = 0; i < ks.length; i++) { try { await copyNode(ks[i].id, d.id); } catch (e) { if (e.message === 'perm') throw e; } } return d;
+    }
+    async function importDev(list, target) {
+        var ok = 0, bad = 0, first = null, cache = {};
+        for (var i = 0; i < list.length; i++) {
+            var f = list[i]; try {
+                var parts = (f.webkitRelativePath || '').split('/').slice(0, -1), p = target;
+                for (var s = 0; s < parts.length; s++) { var key = p + '/' + parts[s]; if (!cache[key]) { await ensureKids(N[p]); var ex = kids(p).filter(function (k) { return k.t === 'd' && k.name === parts[s]; })[0]; cache[key] = (ex || await mkDirIn(p, parts[s])).id; } p = cache[key]; }
+                var n = await mkFileIn(p, f.name, new Uint8Array(await f.arrayBuffer())); ok++; first = first || n;
+            } catch (e) { bad++; }
+        }
+        if (ok) toast(ok + ' فایل نووسرا بۆ فۆڵدەری ئامێر', 'success'); if (bad) toast(bad + ' فایل نەنووسرا', 'warning'); drawExp();
+    }
+    async function mountDevice(start) {
+        if (!FSA) { toast('ئەم وێبگەڕە ڕێگە بە دەستگەیشتنی راستەوخۆ نادات؛ فۆڵدەرەکە دەکرێتە کۆپی لەناو ئەپ', 'info'); var i = $('kfedFd'); i.value = ''; i.click(); return; }
+        var h; try { var opt = { mode: 'readwrite' }; if (start) opt.startIn = start; h = await window.showDirectoryPicker(opt); } catch (e) { if (e && e.name !== 'AbortError') toast('نەتوانرا فۆڵدەرەکە بکرێتەوە: ' + (e.message || e) + ' — فۆڵدەری ناوەکی (وەک Download خۆی) لە ئەندرۆید ڕێگەپێنەدراوە، بچۆ ناو یەکێک لە ژێرفۆڵدەرەکان', 'warning'); return; }
+        var ex = null; for (var k in N) if (N[k].mnt) { try { if (await N[k].h.isSameEntry(h)) { ex = N[k]; break; } } catch (e) { } }
+        var n = ex; if (!ex) { var id = uid(); await hPut({ id: id, name: h.name, handle: h }); n = { id: 'm_' + id, p: ROOT, t: 'd', name: h.name, dev: true, mnt: true, h: h, m: 0 }; N[n.id] = n; } else { n.h = h; n.loaded = false; }
+        if (await enumDev(n)) { cwd = n.id; openExp(); drawExp(); toast('فۆڵدەری «' + n.name + '» بەسترایەوە', 'success'); }
+    }
+    function unmount(n) { hDel(n.id.slice(2)); if (cwd === n.id) cwd = ROOT; delNode(n.id); drawExp(); toast('لە لیستی ئەپ لابرا (فایلەکانی ئامێر نەسڕانەوە)', 'success'); }
+    function devMenu() {
+        var st = [['documents', 'Documents (بەڵگەنامەکان)'], ['downloads', 'Downloads (داگرتنەکان)'], ['pictures', 'Pictures'], ['videos', 'Videos'], ['music', 'Music']];
+        var items = st.map(function (s) { return { t: s[1], i: I.phone, f: function () { mountDevice(s[0]); } }; }); items.push({ t: 'هەر شوێنێکی تر', i: I.folder, f: function () { mountDevice(); } });
+        sheet('کردنەوەی فۆڵدەر لە ئامێر', FSA ? items : [{ t: 'هێنانی فۆڵدەر (کۆپی دەکرێتە ناو ئەپ)', i: I.folder, f: function () { mountDevice(); } }], { note: FSA ? 'فۆڵدەرەکە بەستراو دەمێنێتەوە و راستەوخۆ دەستکاری دەکرێت و دەنووسرێتەوە. ئەندرۆید ڕێگە نادات خودی فۆڵدەری سەرەکی (Download، یان ناوەکی) هەڵبژێریت؛ ژێرفۆڵدەرێک هەڵبژێرە.' : 'ئەم وێبگەڕە (یان iOS / Firefox) بەستنی راستەوخۆی فۆڵدەر پشتگیری ناکات؛ لە جیاتی ئەوە فۆڵدەرەکە دەکرێتە کۆپی.' });
+    }
+
+    // ---------- فایلەکانی ئەپ و ئامێر (explorer) ----------
+    function openExp() {
+        EXP.classList.add('open'); $('kfedScrim').classList.add('open');
+        if (!expOv) expOv = ovAdd(function () { expOv = null; EXP.classList.remove('open'); $('kfedScrim').classList.remove('open'); selMode = false; sel = {}; $('kfedEs').classList.remove('open'); });
+        drawExp();
+    }
+    function closeExp() { if (expOv) ovClose(expOv); }
+    async function enterDir(it) { if (it.dev && !it.loaded) { if (!(await enumDev(it))) return; } cwd = it.id; drawExp(); }
     function drawExp() {
         if (!N[cwd]) cwd = ROOT; var cr = $('kfedCr'); cr.innerHTML = ''; var chain = [], n = N[cwd]; while (n && n.id !== ROOT) { chain.unshift(n); n = N[n.p]; }
         var root = document.createElement('a'); root.textContent = '/'; root.onclick = function () { cwd = ROOT; drawExp(); }; cr.appendChild(root);
         chain.forEach(function (c) { var a = document.createElement('a'); a.textContent = c.name + ' /'; a.onclick = function () { cwd = c.id; drawExp(); }; cr.appendChild(a); }); cr.scrollLeft = cr.scrollWidth;
-        var l = EXPL; l.innerHTML = ''; var items = sortNodes(kids(cwd));
+        var l = EXPL; l.innerHTML = ''; var items = sortNodes(kids(cwd)), CAP = 1000;
         if (cwd !== ROOT) { var up = document.createElement('div'); up.className = 'kfed-row d'; up.innerHTML = I.up + '<div class="t"><b>..</b><small>فۆڵدەری سەرەوە</small></div>'; up.onclick = function () { cwd = N[cwd].p; drawExp(); }; l.appendChild(up); }
-        if (!items.length) { var e = document.createElement('div'); e.className = 'kfed-note'; e.innerHTML = 'ئەم فۆڵدەرە بەتاڵە.<br>بە دوگمەکانی خوارەوە فایل یان فۆڵدەر دروست بکە یان لە ئامێرەکەتەوە بیهێنە.'; l.appendChild(e); }
-        items.forEach(function (it) {
-            var r = document.createElement('div'); r.className = 'kfed-row' + (it.t === 'd' ? ' d' : '') + (it.id === act ? ' on' : ''); var sub = it.t === 'd' ? kids(it.id).length + ' دانە' : fmtB(bytesOf(it)) + ' · ' + new Date(it.m).toLocaleDateString();
-            r.innerHTML = (selMode ? '<span class="ck' + (sel[it.id] ? ' on' : '') + '">' + (sel[it.id] ? I.check : '') + '</span>' : '') + (it.t === 'd' ? I.folder : I.file) + '<div class="t"><b>' + esc(it.name) + '</b><small>' + esc(sub) + '</small></div>' + (selMode ? '' : '<button class="kfed-ib" aria-label="زیاتر">' + I.more + '</button>');
-            r.onclick = function (e) { if (selMode) { sel[it.id] = !sel[it.id]; if (!sel[it.id]) delete sel[it.id]; drawExp(); return; } if (e.target.closest('.kfed-ib')) { itemMenu(it); return; } if (it.t === 'd') { cwd = it.id; drawExp(); } else openFile(it.id); };
-            var tm; r.addEventListener('touchstart', function () { tm = setTimeout(function () { if (!selMode) { selMode = true; sel = {}; sel[it.id] = 1; drawExp(); } }, 550); }, { passive: true }); ['touchend', 'touchmove', 'touchcancel'].forEach(function (ev) { r.addEventListener(ev, function () { clearTimeout(tm); }, { passive: true }); });
+        if (!items.length) { var e = document.createElement('div'); e.className = 'kfed-note'; e.innerHTML = cwd === ROOT ? 'هیچ فایلێک نییە.<br>بە دوگمەکانی خوارەوە فایل دروست بکە، یان بە دوگمەی ئامێر (📱) فۆڵدەرێکی ئامێرەکەت بکەرەوە.' : 'ئەم فۆڵدەرە بەتاڵە.'; l.appendChild(e); }
+        items.slice(0, CAP).forEach(function (it) {
+            var r = document.createElement('div'), isD = it.t === 'd'; r.className = 'kfed-row' + (isD ? ' d' : '') + (it.mnt ? ' m' : '') + (it.id === act ? ' on' : '');
+            var sub = it.mnt ? 'فۆڵدەری ئامێر · دەستکاری راستەوخۆ' : isD ? (it.dev && !it.loaded ? 'فۆڵدەر' : kids(it.id).length + ' دانە') : it.dev ? (it.sz != null ? fmtB(it.sz) : '') + (it.m ? ' · ' + new Date(it.m).toLocaleDateString() : '') : fmtB(bytesOf(it)) + ' · ' + new Date(it.m).toLocaleDateString();
+            r.innerHTML = (selMode ? '<span class="ck' + (sel[it.id] ? ' on' : '') + '">' + (sel[it.id] ? I.check : '') + '</span>' : '') + (it.mnt ? I.mnt : isD ? I.folder : fileIcon(it.name)) + '<div class="t"><b></b><small></small></div>' + (it.mnt ? '<span class="badge">ئامێر</span>' : (it._dd ? '<span class="badge o">●</span>' : '')) + (selMode ? '' : '<button class="kfed-ib" aria-label="زیاتر">' + I.more + '</button>');
+            r.querySelector('b').textContent = it.name; r.querySelector('small').textContent = sub;
+            r.onclick = function (e) { if (selMode) { if (it.mnt) return; sel[it.id] = !sel[it.id]; if (!sel[it.id]) delete sel[it.id]; drawExp(); return; } if (e.target.closest('.kfed-ib')) { itemMenu(it); return; } if (isD) enterDir(it); else openFile(it.id); };
+            var tm; r.addEventListener('touchstart', function () { tm = setTimeout(function () { if (!selMode && !it.mnt) { selMode = true; sel = {}; sel[it.id] = 1; drawExp(); } }, 550); }, { passive: true }); ['touchend', 'touchmove', 'touchcancel'].forEach(function (ev) { r.addEventListener(ev, function () { clearTimeout(tm); }, { passive: true }); });
             l.appendChild(r);
         });
-        var total = 0; for (var k in N) if (N[k].t === 'f') total += N[k].c.length; $('kfedXi').textContent = selMode ? Object.keys(sel).length + ' هەڵبژێردراو' : (mem ? 'کاتی (پاشەکەوت ناکرێت)' : fmtB(total) + ' لە ئەپدا');
+        if (items.length > CAP) { var mo = document.createElement('div'); mo.className = 'kfed-note'; mo.textContent = 'تەنها ' + CAP + ' دانەی یەکەم پیشان دەدرێت (' + items.length + ' کۆی گشتی). بۆ دۆزینەوە گەڕان بەکاربهێنە.'; l.appendChild(mo); }
+        var total = 0; for (var k in N) if (N[k].t === 'f' && !N[k].dev && typeof N[k].c === 'string') total += N[k].c.length; $('kfedXi').textContent = selMode ? Object.keys(sel).length + ' هەڵبژێردراو' : (N[cwd] && N[cwd].dev ? 'ئامێر' : mem ? 'کاتی (پاشەکەوت ناکرێت)' : fmtB(total) + ' لە ئەپدا');
         $('kfedXs').classList.toggle('on', selMode);
     }
     function itemMenu(it) {
-        var items = [];
-        if (it.t === 'f') items.push({ t: 'کردنەوە', i: I.file, f: function () { openFile(it.id); } }); else items.push({ t: 'کردنەوەی فۆڵدەر', i: I.folder, f: function () { cwd = it.id; drawExp(); } });
-        items.push({ t: 'ناونانەوە', i: I.edit, f: function () { renameNode(it); } }, { t: 'گواستنەوە بۆ ...', i: I.move, f: function () { pickFolder('گواستنەوە بۆ', [it.id], function (to) { moveNodes([it.id], to); }); } });
-        if (it.t === 'f') items.push({ t: 'دووبارەکردنەوە (کۆپی)', i: I.copy, f: function () { var c = mkNode(it.p, 'f', uniq(it.p, it.name), { c: it.c, enc: it.enc, eol: it.eol }); drawExp(); toast('کۆپی کرا: ' + c.name, 'success'); } }, { t: 'داگرتن بۆ ئامێر', i: I.dl, f: function () { dlFile(it); } });
-        else items.push({ t: 'داگرتنی فۆڵدەر (zip)', i: I.zip, f: function () { dlZip([it.id], it.name + '.zip'); } });
+        var items = [], isD = it.t === 'd';
+        if (!isD) items.push({ t: 'کردنەوە', i: I.file, f: function () { openFile(it.id); } }); else items.push({ t: 'کردنەوەی فۆڵدەر', i: I.folder, f: function () { enterDir(it); } });
+        if (it.dev && isD) items.push({ t: 'نوێکردنەوەی لیست', i: I.refresh, f: async function () { if (await enumDev(it)) drawExp(); } });
+        if (it.mnt) { items.push('-', { t: 'لابردن لە ئەپ (فایلەکان نەدەسڕێنەوە)', i: I.x, dg: true, f: function () { unmount(it); } }); sheet(it.name, items); return; }
+        items.push({ t: 'ناونانەوە', i: I.edit, f: function () { renameNode(it); } }, { t: 'گواستنەوە بۆ ...', i: I.move, f: function () { pickFolder('گواستنەوە بۆ', [it.id], function (to) { moveNodes([it.id], to); }); } }, { t: 'کۆپی بۆ ...', i: I.copy, f: function () { pickFolder('کۆپی بۆ', [], function (to) { moveNodes([it.id], to, true); }); } });
+        if (!isD) { if (!it.dev) items.push({ t: 'دووبارەکردنەوە لێرە', i: I.copy, f: function () { var c = mkNode(it.p, 'f', uniq(it.p, it.name), { c: it.c, enc: it.enc, eol: it.eol }); drawExp(); toast('کۆپی کرا: ' + c.name, 'success'); } }); items.push({ t: 'داگرتن بۆ ئامێر', i: I.dl, f: function () { dlFile(it); } }); }
+        else if (!it.dev) items.push({ t: 'داگرتنی فۆڵدەر (zip)', i: I.zip, f: function () { dlZip([it.id], it.name + '.zip'); } });
         items.push('-', { t: 'سڕینەوە', i: I.trash, dg: true, f: function () { confirmDel([it.id]); } }); sheet(it.name, items);
     }
-    function renameNode(it) { ask('ناونانەوە', { input: it.name, selName: it.t === 'f' }, function (v) { v = String(v).trim().replace(/[\/\\]/g, '_'); if (!v || v === it.name) return; if (kids(it.p).some(function (k) { return k.id !== it.id && k.name.toLowerCase() === v.toLowerCase(); })) { toast('ئەم ناوە پێشتر هەیە', 'warning'); return; } it.name = v; dbPut(strip(it)); drawExp(); drawTop(); }); }
-    function moveNodes(ids, to) { var c = 0; ids.forEach(function (id) { var n = N[id]; if (!n || n.p === to || isDesc(to, id)) return; n.name = uniq(to, n.name); n.p = to; dbPut(strip(n)); c++; }); selMode = false; sel = {}; drawExp(); drawTop(); if (c) toast(c + ' دانە گوازرایەوە', 'success'); }
-    function confirmDel(ids) { var nm = ids.length === 1 ? '«' + esc(N[ids[0]].name) + '»' : ids.length + ' دانە'; ask('سڕینەوە', { msg: 'دڵنیایت لە سڕینەوەی ' + nm + '؟ ئەمە ناگەڕێتەوە.', ok: 'سڕینەوە', danger: true }, function () { ids.forEach(delNode); selMode = false; sel = {}; drawExp(); drawTop(); toast('سڕایەوە', 'success'); }); }
-    function newFile() { ask('فایلی نوێ', { input: 'untitled.txt', selName: true }, function (v) { v = String(v).trim().replace(/[\/\\]/g, '_'); if (!v) return; var base = N[cwd] ? cwd : ROOT, n = mkNode(base, 'f', uniq(base, v)); openFile(n.id); setTimeout(function () { TA.focus(); }, 60); }); }
-    function newFolder() { ask('فۆڵدەری نوێ', { input: '' }, function (v) { v = String(v).trim().replace(/[\/\\]/g, '_'); if (!v) return; mkNode(cwd, 'd', uniq(cwd, v)); drawExp(); }); }
+    function cleanName(v) { return String(v).trim().replace(/[\/\\]/g, '_'); }
+    function renameNode(it) {
+        ask('ناونانەوە', { input: it.name, selName: it.t === 'f' }, async function (v) {
+            v = cleanName(v); if (!v || v === it.name) return; await ensureKids(N[it.p]);
+            if (kids(it.p).some(function (k) { return k.id !== it.id && k.name.toLowerCase() === v.toLowerCase(); })) { toast('ئەم ناوە پێشتر هەیە', 'warning'); return; }
+            if (it.dev) {
+                try {
+                    if (!(await perm(it, true))) throw new Error('perm'); var done = false;
+                    if (typeof it.h.move === 'function') { try { await it.h.move(v); done = true; } catch (e) { } }
+                    if (!done) { if (it.t === 'd') { toast('ناونانەوەی فۆڵدەری ئامێر لەم وێبگەڕەدا پشتگیری ناکرێت', 'warning'); return; } var P = N[it.p], bytes = await bytesFor(it), fh = await P.h.getFileHandle(v, { create: true }), w = await fh.createWritable(); await w.write(bytes); await w.close(); await P.h.removeEntry(it.name); it.h = fh; }
+                } catch (e) { toast('ناونانەوە سەرنەکەوت', 'error'); return; }
+                it.name = v;
+            } else { it.name = v; dbPut(it); }
+            drawExp(); drawTop();
+        });
+    }
+    async function moveNodes(ids, to, copy) {
+        var anyDev = (N[to] && N[to].dev) || ids.some(function (i) { return N[i] && N[i].dev; });
+        if (!anyDev && !copy) { var c = 0; ids.forEach(function (id) { var n = N[id]; if (!n || n.p === to || isDesc(to, id)) return; n.name = uniq(to, n.name); n.p = to; dbPut(n); c++; }); selMode = false; sel = {}; drawExp(); drawTop(); if (c) toast(c + ' دانە گوازرایەوە', 'success'); return; }
+        var ok = 0, fail = 0; toast('خەریکی ' + (copy ? 'کۆپیکردن' : 'گواستنەوە') + ' ...', 'info');
+        for (var i = 0; i < ids.length; i++) { var n2 = N[ids[i]]; if (!n2 || n2.mnt || isDesc(to, n2.id) || (!copy && n2.p === to)) continue; try { await copyNode(n2.id, to); if (!copy) { if (n2.dev) await devRemove(n2); delNode(n2.id); } ok++; } catch (e) { fail++; } }
+        selMode = false; sel = {}; drawExp(); drawTop(); if (ok) toast(ok + ' دانە ' + (copy ? 'کۆپی کرا' : 'گوازرایەوە'), 'success'); if (fail) toast(fail + ' دانە سەرنەکەوت (فایلی دووانەیی ناچێتە ناو ئەپ، یان ڕێپێدان نەدرا)', 'warning');
+    }
+    function confirmDel(ids) {
+        var nm = ids.length === 1 ? '«' + esc(N[ids[0]].name) + '»' : ids.length + ' دانە', dev = ids.some(function (i) { return N[i] && N[i].dev; });
+        ask('سڕینەوە', { msg: 'دڵنیایت لە سڕینەوەی ' + nm + '؟ ' + (dev ? 'ئەمە لە ئامێرەکەتدا دەسڕێتەوە و ناگەڕێتەوە.' : 'ئەمە ناگەڕێتەوە.'), ok: 'سڕینەوە', danger: true }, async function () {
+            var fail = 0; for (var i = 0; i < ids.length; i++) { var n = N[ids[i]]; if (!n) continue; if (n.mnt) { unmount(n); continue; } if (n.dev) { try { await devRemove(n); } catch (e) { fail++; continue; } } delNode(n.id); }
+            selMode = false; sel = {}; drawExp(); drawTop(); toast(fail ? 'هەندێک نەسڕانەوە' : 'سڕایەوە', fail ? 'warning' : 'success');
+        });
+    }
+    function newFile() { ask('فایلی نوێ', { input: 'untitled.txt', selName: true }, async function (v) { v = cleanName(v); if (!v) return; var base = N[cwd] ? cwd : ROOT; try { var n = await mkFileIn(base, v, new Uint8Array(0)); await openFile(n.id); } catch (e) { toast('نەتوانرا فایل دروست بکرێت', 'error'); } }); }
+    function newFolder() { ask('فۆڵدەری نوێ', { input: '' }, async function (v) { v = cleanName(v); if (!v) return; try { await mkDirIn(cwd, v); drawExp(); } catch (e) { toast('نەتوانرا فۆڵدەر دروست بکرێت', 'error'); } }); }
     function expMenu() {
-        sheet('فایلەکانی ئەپ', [{ t: 'هێنانی فایل لە ئامێر', i: I.ul, f: function () { pickDevice(); } }, { t: 'هێنانی فۆڵدەر لە ئامێر', i: I.folder, f: function () { var i = $('kfedFd'); i.value = ''; i.click(); } }, '-', { t: 'داگرتنی هەموو فایلەکان (zip)', i: I.zip, f: function () { dlZip([ROOT], 'kurdforest-files.zip'); } }, { t: 'ڕیزکردن: ناو', i: I.menu, f: function () { drawExp(); } }, '-', { t: 'سڕینەوەی هەموو فایلەکان', i: I.trash, dg: true, f: function () { confirmDel(kids(ROOT).map(function (k) { return k.id; })); } }]);
+        var d = N[cwd] && N[cwd].dev, it = [];
+        if (d) it.push({ t: 'نوێکردنەوەی لیست', i: I.refresh, f: async function () { if (await enumDev(N[cwd])) drawExp(); } }, '-');
+        it.push({ t: 'کردنەوەی فۆڵدەر لە ئامێر (دەستگەیشتن)', i: I.phone, f: devMenu }, { t: 'هێنانی فایل لە ئامێر' + (d ? ' بۆ ئێرە' : ''), i: I.ul, f: function () { pickDevice(); } }, { t: 'هێنانی فۆڵدەر (کۆپی)', i: I.folder, f: function () { var i = $('kfedFd'); i.value = ''; i.click(); } }, '-', { t: 'داگرتنی هەموو فایلەکانی ئەپ (zip)', i: I.zip, f: function () { dlZip([ROOT], 'kurdforest-files.zip'); } }, '-', { t: 'سڕینەوەی هەموو فایلەکانی ئەپ', i: I.trash, dg: true, f: function () { confirmDel(kids(ROOT).filter(function (k) { return !k.mnt; }).map(function (k) { return k.id; })); } });
+        sheet('فایلەکان', it);
     }
     function selMenu() {
         var ids = Object.keys(sel); if (!ids.length) { toast('هیچ شتێک هەڵنەبژێردراوە', 'info'); return; }
-        sheet(ids.length + ' هەڵبژێردراو', [{ t: 'گواستنەوە بۆ ...', i: I.move, f: function () { pickFolder('گواستنەوە بۆ', ids, function (to) { moveNodes(ids, to); }); } }, { t: 'داگرتن (zip)', i: I.zip, f: function () { dlZip(ids, 'kurdforest-files.zip'); } }, { t: 'سڕینەوە', i: I.trash, dg: true, f: function () { confirmDel(ids); } }, '-', { t: 'هەڵبژاردنی هەموو', i: I.sel, f: function () { kids(cwd).forEach(function (k) { sel[k.id] = 1; }); drawExp(); } }, { t: 'هەڵبژاردن نەمێنێت', i: I.x, f: function () { selMode = false; sel = {}; drawExp(); } }]);
+        sheet(ids.length + ' هەڵبژێردراو', [{ t: 'گواستنەوە بۆ ...', i: I.move, f: function () { pickFolder('گواستنەوە بۆ', ids, function (to) { moveNodes(ids, to); }); } }, { t: 'کۆپی بۆ ...', i: I.copy, f: function () { pickFolder('کۆپی بۆ', [], function (to) { moveNodes(ids, to, true); }); } }, { t: 'داگرتن (zip)', i: I.zip, f: function () { dlZip(ids, 'kurdforest-files.zip'); } }, { t: 'سڕینەوە', i: I.trash, dg: true, f: function () { confirmDel(ids); } }, '-', { t: 'هەڵبژاردنی هەموو', i: I.sel, f: function () { kids(cwd).forEach(function (k) { if (!k.mnt) sel[k.id] = 1; }); drawExp(); } }, { t: 'هەڵبژاردن نەمێنێت', i: I.x, f: function () { selMode = false; sel = {}; drawExp(); } }]);
     }
 
     // ---------- مێنیوی سەرەکی ----------
+    function langName(n) { var l = n.lang || 'auto'; var r = LANGS.filter(function (x) { return x[0] === l; })[0]; var s = r ? r[1] : l; if (l === 'auto') { var a = EXTL[extOf(n.name)]; s = a ? (LANGS.filter(function (x) { return x[0] === a; })[0] || [0, a])[1] : 'بێ ڕەنگ'; } return s; }
+    function langMenu() {
+        var n = cur(); if (!n) return;
+        var it = [{ t: 'ڕەنگکردنی کۆد', i: I.lang, s: cfg.hl ? 'کراوە' : 'کوژاوە', on: cfg.hl, f: function () { cfg.hl = !cfg.hl; hlReset(); applyView(); } }, '-'];
+        LANGS.forEach(function (l) { it.push({ t: l[1], on: (n.lang || 'auto') === l[0], f: function () { n.lang = l[0]; dbPut(n); hlReset(); renderHl(true); } }); }); sheet('زمانی ڕەنگکردن', it);
+    }
     function mainMenu() {
         var n = cur(); var encName = n ? (ENCS.filter(function (e) { return e[0] === n.enc; })[0] || [0, n.enc])[1] : '';
         var items = [];
-        if (n) items.push({ t: 'ناونانەوەی فایل', i: I.edit, f: function () { renameNode(n); } }, { t: 'ئامرازەکانی دەق (دیاریکراو یان هەموو)', i: I.edit, f: toolsMenu }, { t: 'کۆدکردن', i: I.file, s: encName, f: encMenu }, { t: 'کۆتایی دێڕ', i: I.file, s: n.eol === '\r\n' ? 'CRLF' : n.eol === '\r' ? 'CR' : 'LF', f: eolMenu }, { t: 'ئاماری فایل', i: I.file, f: stats }, '-');
+        if (n) items.push({ t: 'ناونانەوەی فایل', i: I.edit, f: function () { renameNode(n); } }, { t: 'زمانی ڕەنگکردن', i: I.lang, s: cfg.hl ? langName(n) : 'کوژاوە', f: langMenu }, { t: 'ئامرازەکانی دەق (دیاریکراو یان هەموو)', i: I.edit, f: toolsMenu }, { t: 'کۆدکردن', i: I.file, s: encName, f: encMenu }, { t: 'کۆتایی دێڕ', i: I.file, s: n.eol === '\r\n' ? 'CRLF' : n.eol === '\r' ? 'CR' : 'LF', f: eolMenu }, { t: 'ئاماری ژێرنووس (دێڕەکان)', i: I.sub, f: stats }, '-');
         items.push({ t: 'ئاڕاستەی دەق', i: I.edit, s: cfg.dir === 'auto' ? 'خۆکار' : cfg.dir.toUpperCase(), f: dirMenu }, { t: 'پێچانەوەی دێڕەکان', i: I.edit, s: cfg.wrap ? 'کراوە' : 'کوژاوە', on: cfg.wrap, f: function () { cfg.wrap = !cfg.wrap; applyView(); } }, { t: 'ژمارەی دێڕەکان', i: I.line, s: cfg.ln ? 'کراوە' : 'کوژاوە', on: cfg.ln, f: function () { cfg.ln = !cfg.ln; applyView(); } },
-            { t: 'قەبارەی نووسین', i: I.edit, s: cfg.fs + 'px', f: sizeMenu }, '-', { t: 'هەموو فایلەکان داگرە (zip)', i: I.zip, f: function () { dlZip([ROOT], 'kurdforest-files.zip'); } }, { t: 'گەڕان لە هەموو فایلەکان', i: I.find, f: function () { openExp(); $('kfedEs').classList.add('open'); setTimeout(function () { $('kfedEsi').focus(); }, 60); } });
+            { t: 'قەبارەی نووسین', i: I.edit, s: cfg.fs + 'px', f: sizeMenu });
+        if (FSA) items.push({ t: 'پاشەکەوتی خۆکار لە فایلەکانی ئامێر', i: I.save, s: cfg.autodev ? 'کراوە' : 'کوژاوە', on: cfg.autodev, f: function () { cfg.autodev = !cfg.autodev; LS.set('cfg', cfg); toast(cfg.autodev ? 'فایلەکانی ئامێر خۆکار دەنووسرێنەوە' : 'تەنها بە دوگمەی پاشەکەوت دەنووسرێن', 'info'); } });
+        items.push('-', { t: 'فۆڵدەری ئامێر بکەرەوە', i: I.phone, f: devMenu }, { t: 'هەموو فایلەکانی ئەپ داگرە (zip)', i: I.zip, f: function () { dlZip([ROOT], 'kurdforest-files.zip'); } }, { t: 'گەڕان لە هەموو فایلەکان', i: I.find, f: function () { openExp(); $('kfedEs').classList.add('open'); setTimeout(function () { $('kfedEsi').focus(); }, 60); } });
         sheet('زیاتر', items);
     }
     function toolsMenu() { sheet('ئامرازەکانی دەق', TOOLS.map(function (t) { return { t: t[0], i: I.edit, f: function () { tool(t[0], t[1]); } }; })); }
     function encMenu() { var n = cur(); sheet('کۆدکردن', ENCS.map(function (e) { return { t: e[1], on: n.enc === e[0], f: function () { setEnc(e[0]); } }; })); }
     function setEnc(e) {
         var n = cur(); if (!n) return;
-        if (n.raw && n._rawc === n.c) { var d = decodeBytes(n.raw, e); if (d) { n.c = d.text; n._rawc = d.text; n.enc = e; n.eol = d.eol; TA.value = d.text; lineCount = countLines(d.text); n._d = true; flush(); renderGut(); status(); toast('فایل بە ' + e + ' خوێندرایەوە', 'success'); return; } }
+        if (n.raw && n._rawc === n.c) { var d = decodeBytes(n.raw, e); if (d) { n.c = d.text; n._rawc = d.text; n.enc = e; n.eol = d.eol; TA.value = d.text; VC = d.text; hlReset(); lineCount = countLines(d.text); n._d = true; if (n.dev) n._dd = true; flush(); fit(); gutR = null; renderGut(); renderHl(true); status(); toast('فایل بە ' + e + ' خوێندرایەوە', 'success'); return; } }
         n.enc = e; n._d = true; flush(); status(); toast('کۆدکردن بۆ ' + e + ' گۆڕدرا (لە کاتی داگرتن بەکاردێت)', 'info');
     }
     function eolMenu() { var n = cur(); sheet('کۆتایی دێڕ', [['\n', 'LF (Linux / Android)'], ['\r\n', 'CRLF (Windows)'], ['\r', 'CR (کۆن)']].map(function (e) { return { t: e[1], on: n.eol === e[0], f: function () { n.eol = e[0]; n._d = true; flush(); status(); } }; })); }
     function dirMenu() { sheet('ئاڕاستەی دەق', [['auto', 'خۆکار'], ['rtl', 'ڕاست بۆ چەپ (RTL)'], ['ltr', 'چەپ بۆ ڕاست (LTR)']].map(function (e) { return { t: e[1], on: cfg.dir === e[0], f: function () { cfg.dir = e[0]; applyView(); } }; })); }
-    function sizeMenu() { sheet('قەبارەی نووسین', [{ t: 'گەورەتر (+)', f: function () { cfg.fs = Math.min(40, cfg.fs + 1); applyView(); setTimeout(sizeMenu, 20); } }, { t: 'بچووکتر (−)', f: function () { cfg.fs = Math.max(9, cfg.fs - 1); applyView(); setTimeout(sizeMenu, 20); } }, { t: 'ئاسایی (15)', f: function () { cfg.fs = 15; applyView(); } }].map(function (x, i) { if (i === 0) x.s = cfg.fs + 'px'; return x; })); }
+    function sizeMenu() {
+        var s = sheet('قەبارەی نووسین', [], { live: true });
+        s.bd.innerHTML = '<div class="kfed-sz"><button type="button" id="kszm" aria-label="بچووکتر">' + I.minus + '</button><output id="kszv"></output><button type="button" id="kszp" aria-label="گەورەتر">' + I.plus + '</button></div><div class="kfed-sz"><input type="range" min="9" max="40" step="1" id="kszr"></div><div class="ac"><button type="button" id="kszd">ئاسایی (15)</button><button type="button" class="pri" id="kszo">تەواو</button></div>';
+        var out = s.bd.querySelector('#kszv'), rg = s.bd.querySelector('#kszr');
+        function set(v) { v = Math.max(9, Math.min(40, +v)); var top = Math.floor(SC.scrollTop / lineH); cfg.fs = v; out.textContent = v + 'px'; rg.value = v; applyView(); SC.scrollTop = top * lineH; gutR = null; HL.r = null; renderGut(); renderHl(); }
+        out.textContent = cfg.fs + 'px'; rg.value = cfg.fs;
+        s.bd.querySelector('#kszm').onclick = function () { set(cfg.fs - 1); }; s.bd.querySelector('#kszp').onclick = function () { set(cfg.fs + 1); }; s.bd.querySelector('#kszd').onclick = function () { set(15); }; s.bd.querySelector('#kszo').onclick = s.close;
+        rg.oninput = function () { set(rg.value); };
+    }
     function gotoLine() {
         var n = cur(); if (!n) return; ask('بڕۆ بۆ دێڕ (١ تا ' + lineCount + ')', { input: '' }, function (v) { var k = parseInt(String(v).replace(/[٠-٩]/g, function (d) { return d.charCodeAt(0) - 0x0660; }), 10); if (!(k >= 1)) return; k = Math.min(k, lineCount); var s = TA.value, p = 0, i; for (i = 1; i < k; i++) { p = s.indexOf('\n', p) + 1; } var e = s.indexOf('\n', p); if (e < 0) e = s.length; sel2(p, e); });
     }
@@ -17962,12 +18419,22 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
     function wire() {
         var K = $('kfedKeys'); KEYS.forEach(function (k) {
             var b = document.createElement('button'); b.type = 'button'; b.textContent = k === 'Tab' ? '⇥' : k; if (k === '⇥') { b.remove(); return; }
-            b.onpointerdown = function (e) { e.preventDefault(); };
+            b.onpointerdown = b.onmousedown = function (e) { e.preventDefault(); };
             b.onclick = function () { if (k === 'Tab') { insertText('\t'); } else if (k === '←' || k === '→') { var p = TA.selectionStart + (k === '←' ? -1 : 1); p = Math.max(0, Math.min(TA.value.length, p)); TA.setSelectionRange(p, p); status(); } else if (k === '↑' || k === '↓') { var v = TA.value, p2 = TA.selectionStart, ls = v.lastIndexOf('\n', p2 - 1) + 1, col = p2 - ls; if (k === '↑') { if (!ls) return; var ps = v.lastIndexOf('\n', ls - 2) + 1; p2 = Math.min(ps + col, ls - 1); } else { var le = v.indexOf('\n', p2); if (le < 0) return; var ne = v.indexOf('\n', le + 1); if (ne < 0) ne = v.length; p2 = Math.min(le + 1 + col, ne); } TA.setSelectionRange(p2, p2); reveal(p2); status(); } else insertText(k); };
             K.appendChild(b);
         });
         TA.addEventListener('input', function () { onInput(); });
-        TA.addEventListener('scroll', function () { renderGut(); });
+        SC.addEventListener('scroll', function () { if (!sraf) sraf = requestAnimationFrame(function () { sraf = 0; renderGut(); renderHl(); }); }, { passive: true });
+        TA.addEventListener('scroll', function () { if (TA.scrollTop) TA.scrollTop = 0; hpX(); }, { passive: true });
+        if (window.ResizeObserver) new ResizeObserver(function () { if (M.style.display !== 'flex') return; fit(); gutR = null; HL.r = null; renderGut(); renderHl(); }).observe(SC);
+        ['pointerdown', 'mousedown'].forEach(function (ev) { document.querySelector('#kfedRoot .kfed-bot').addEventListener(ev, function (e) { if (e.target.closest('button')) e.preventDefault(); }); });
+        new MutationObserver(function () { if (M.style.display === 'none') ovCloseAll(); }).observe(M, { attributes: true, attributeFilter: ['style'] });
+        window.kfEdPop = function () {
+            if (ign > 0) { ign--; return true; }
+            if (OV.length && M.style.display !== 'none') { hasEntry = false; ovClose(OV[OV.length - 1]); return true; }
+            return false;
+        };
+        window.addEventListener('beforeunload', function (e) { for (var k in N) if (N[k]._dd) { e.preventDefault(); e.returnValue = ''; return ''; } });
         ['keyup', 'click', 'select', 'touchend'].forEach(function (ev) { TA.addEventListener(ev, status); });
         document.addEventListener('selectionchange', function () { if (document.activeElement === TA) status(); });
         TA.addEventListener('beforeinput', function (e) {
@@ -17979,18 +18446,18 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
                 if (a !== b && v.slice(a, b).indexOf('\n') >= 0) { var ls = v.lastIndexOf('\n', a - 1) + 1, blk = v.slice(ls, b), out = e.shiftKey ? blk.replace(/^(\t| {1,4})/gm, '') : blk.replace(/^/gm, '\t'); TA.setRangeText(out, ls, b, 'select'); onInput(); }
                 else if (e.shiftKey) { var l2 = v.lastIndexOf('\n', a - 1) + 1, m = /^(\t| {1,4})/.exec(v.slice(l2)); if (m) { TA.setRangeText('', l2, l2 + m[0].length, 'end'); onInput(); } } else insertText('\t'); }
         });
-        TA.addEventListener('touchend', function () { if (TA.inputMode === 'none') { TA.inputMode = 'text'; var a = TA.selectionStart, b = TA.selectionEnd; TA.blur(); TA.focus({ preventScroll: true }); TA.setSelectionRange(a, b); } }, { passive: true });
+        TA.addEventListener('click', function () { if (TA.inputMode === 'none') { TA.inputMode = 'text'; var a = TA.selectionStart, b = TA.selectionEnd; TA.blur(); TA.focus({ preventScroll: true }); TA.setSelectionRange(a, b); } });
         var root = $('kfedRoot'), hide;
         TA.addEventListener('focus', function () { clearTimeout(hide); if (matchMedia('(pointer:coarse)').matches) root.classList.add('kb'); }); TA.addEventListener('blur', function () { hide = setTimeout(function () { root.classList.remove('kb'); }, 250); });
         $('kfedFiles').onclick = $('kfedB1').onclick = function () { openExp(); }; $('kfedXx').onclick = $('kfedScrim').onclick = closeExp;
         $('kfedNew').onclick = $('kfedE1').onclick = $('kfedXn').onclick = newFile; $('kfedXf').onclick = newFolder; $('kfedE3').onclick = openExp;
-        $('kfedOpen').onclick = $('kfedE2').onclick = $('kfedXu').onclick = pickDevice; $('kfedXm').onclick = expMenu; $('kfedXs').onclick = function () { if (selMode) { selMenu(); } else { selMode = true; sel = {}; drawExp(); } };
+        $('kfedOpen').onclick = $('kfedE2').onclick = $('kfedXu').onclick = pickDevice; $('kfedXm').onclick = expMenu; $('kfedXd').onclick = devMenu; $('kfedXs').onclick = function () { if (selMode) { selMenu(); } else { selMode = true; sel = {}; drawExp(); } };
         $('kfedXq').onclick = function () { var s = $('kfedEs'); s.classList.toggle('open'); if (s.classList.contains('open')) $('kfedEsi').focus(); else drawExp(); };
         var gt; $('kfedEsi').oninput = function () { clearTimeout(gt); var q = this.value; gt = setTimeout(function () { globalSearch(q); }, 250); };
         $('kfedFi').onchange = function () { importFiles(this.files); }; $('kfedFd').onchange = function () { importFiles(this.files, cwd); };
         $('kfedDl').onclick = function () { var n = cur(); if (n) dlFile(n); }; $('kfedMore').onclick = mainMenu; $('kfedName').onclick = function () { var n = cur(); if (n) renameNode(n); };
-        $('kfedB2').onclick = paste; $('kfedB3').onclick = function () { undo(); TA.focus({ preventScroll: true }); }; $('kfedB4').onclick = function () { redo(); TA.focus({ preventScroll: true }); }; $('kfedB5').onclick = function () { if (FIND.classList.contains('open')) FIND.classList.remove('open'); else openFind(true); };
-        $('kfedB6').onclick = gotoLine; $('kfedB7').onclick = function () { var n = cur(); if (!n) return; n._d = true; flush(); toast('پاشەکەوت کرا', 'success'); }; $('kfedB8').onclick = function () { if (act) closeTab(act); };
+        $('kfedB2').onclick = paste; $('kfedB3').onclick = function () { undo(); }; $('kfedB4').onclick = function () { redo(); }; $('kfedB5').onclick = function () { if (FIND.classList.contains('open')) FIND.classList.remove('open'); else openFind(true); };
+        $('kfedB6').onclick = gotoLine; $('kfedB7').onclick = saveCur; $('kfedB8').onclick = function () { if (act) closeTab(act); };
         $('kfedFx').onclick = function () { FIND.classList.remove('open'); }; $('kfedFn').onclick = function () { findStep(1); }; $('kfedFp').onclick = function () { findStep(-1); };
         var q = $('kfedQ'); q.oninput = function () { fq.q = q.value; updFind(); }; q.onkeydown = function (e) { if (e.key === 'Enter') { e.preventDefault(); findStep(e.shiftKey ? -1 : 1); } }; $('kfedR').oninput = function () { fq.rep = this.value; };
         $('kfedRo').onclick = repOne; $('kfedRa').onclick = repAll;
@@ -18001,7 +18468,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
             var c = e.ctrlKey || e.metaKey, k = e.key.toLowerCase(); if (!c) return;
             if (k === 's') { e.preventDefault(); $('kfedB7').click(); } else if (k === 'f' || k === 'h') { e.preventDefault(); openFind(true); } else if (k === 'g') { e.preventDefault(); gotoLine(); } else if (k === 'o') { e.preventDefault(); pickDevice(); } else if (k === 'z' && !e.shiftKey && document.activeElement === TA) { e.preventDefault(); undo(); } else if ((k === 'y' || (k === 'z' && e.shiftKey)) && document.activeElement === TA) { e.preventDefault(); redo(); }
         });
-        window.addEventListener('resize', function () { if (M.style.display === 'flex') renderGut(); });
+        window.addEventListener('resize', function () { if (M.style.display === 'flex') { fit(); gutR = null; HL.r = null; renderGut(); renderHl(); } });
         window.addEventListener('pagehide', flush); document.addEventListener('visibilitychange', function () { if (document.hidden) flush(); });
     }
 
@@ -18009,11 +18476,11 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
     window.kfOpenEditor = async function () {
         if (!M) build(); M.style.display = 'flex';
         if (!ready) {
-            await dbOpen(); N = {}; N[ROOT] = { id: ROOT, p: null, t: 'd', name: '', m: 0 }; (await dbAll()).forEach(function (n) { if (n.id !== ROOT) { if (n.raw) n._rawc = n.c; N[n.id] = n; } });
+            await dbOpen(); N = {}; N[ROOT] = { id: ROOT, p: null, t: 'd', name: '', m: 0 }; (await dbAll()).forEach(function (n) { if (n.id !== ROOT) { if (n.raw) n._rawc = n.c; N[n.id] = n; } }); (await hAll()).forEach(function (r) { N['m_' + r.id] = { id: 'm_' + r.id, p: ROOT, t: 'd', name: r.name, dev: true, mnt: true, h: r.handle, m: 0 }; });
             ready = true; cwd = LS.get('cwd', ROOT); if (!N[cwd]) cwd = ROOT; tabs = (LS.get('tabs', []) || []).filter(function (id) { return N[id] && N[id].t === 'f'; }); act = LS.get('act', null); if (!N[act] || tabs.indexOf(act) < 0) act = tabs[0] || null;
             applyView(); if (act) load(act); else { drawTop(); status(); }
         } else { applyView(); drawTop(); }
-        setTimeout(renderGut, 50);
+        setTimeout(function () { fit(); gutR = null; HL.r = null; renderGut(); renderHl(true); }, 50);
     };
 })();
 
@@ -21540,8 +22007,9 @@ var KFV = (function () {
             + '.kfes-f{display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--text-muted)}.kfes-f label{display:flex;justify-content:space-between;align-items:center;gap:6px}.kfes-nr{display:flex;gap:8px;align-items:center;direction:ltr}.kfes-nr input[type=range]{flex:1;min-width:0;accent-color:var(--primary);height:6px}.kfes-nr input[type=number]{width:74px;flex:none;text-align:center;padding:6px 4px}'
             + '.kfes-cr{display:flex;gap:8px;align-items:center;direction:ltr}.kfes-cr input[type=range]{flex:1;min-width:0;accent-color:var(--primary);height:6px}.kfes-cp{width:46px;height:34px;padding:0;border:1px solid var(--border-color);border-radius:8px;background:none;flex:none}.kfes-op{width:38px;text-align:right;font-size:11px;flex:none}'
             + '.kfes-b{flex:1;min-width:0;padding:9px 0;font-size:12.5px;font-weight:700;font-family:inherit;border-radius:10px;border:1px solid var(--border-color);background:var(--bg-color);color:var(--text-main);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}.kfes-b.on{background:var(--primary);color:#fff;border-color:var(--primary)}'
-            + '.kfes-sw{width:46px;height:34px;padding:0;border:1px solid var(--border-color);border-radius:8px;position:relative;overflow:hidden;flex:none;cursor:pointer;background:repeating-conic-gradient(#888 0 25%,#ccc 0 50%) 50%/10px 10px}.kfes-sw i{position:absolute;inset:0}.kfes-hx{font-size:10.5px;direction:ltr;min-width:58px;color:var(--text-muted)}'
-            + '.kfes-pal{display:flex;flex-wrap:wrap;gap:7px;margin:4px 0 6px;direction:ltr}.kfes-pal .palette-btn{width:28px;height:28px;border-radius:8px;transform:none!important}.kfes-f .kf-tuner{margin:2px 0 0}'
+            + '.kfes-sw{width:46px;height:34px;padding:0;border:2px solid rgba(255,255,255,.6);border-radius:8px;position:relative;overflow:hidden;flex:none;cursor:pointer;background:repeating-conic-gradient(#888 0 25%,#ccc 0 50%) 50%/10px 10px;background-clip:padding-box}.kfes-sw i{position:absolute;inset:0}.kfes-sw:active{border-color:#fff}.kfes-hx{font-size:10.5px;direction:ltr;min-width:58px;color:var(--text-muted)}'
+            + '.kf-scrub-t{position:absolute;right:4px;width:16px;display:flex;justify-content:center;z-index:50;touch-action:none;cursor:pointer}.kf-scrub-h{width:6px;height:38px;border-radius:999px;background:var(--primary);box-shadow:0 0 10px var(--primary-glow);transition:width .15s}.kf-scrub-t:active .kf-scrub-h{width:10px}'
+            + '.kfes-pal{display:flex;flex-wrap:wrap;gap:7px;margin:4px 0 6px;direction:ltr}.kfes-pal .palette-btn{width:28px;height:28px;border-radius:8px;transform:none!important;border:2px solid rgba(255,255,255,.45)!important;background-clip:padding-box}.kfes-pal .palette-btn.active{border-color:#fff!important}.kfes-pal .palette-btn.none-swatch{background-clip:border-box}.kfes-f .kf-tuner{margin:2px 0 0}'
             + '#kfesFont::-webkit-calendar-picker-indicator{display:none!important;opacity:0;pointer-events:none}#kfesFont{appearance:none;-webkit-appearance:none}'
             + '.kfes-al{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;direction:ltr;max-width:190px}.kfes-al .kfes-b{padding:11px 0;font-size:12px}'
             + '#kfesBox{touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}#kfesTxt{pointer-events:none;position:absolute;text-align:center;line-height:1.25;white-space:pre-wrap}.kfes-exact #kfesTxt{visibility:hidden}';
@@ -21563,6 +22031,20 @@ var KFV = (function () {
             + '<div style="display:flex;gap:8px;"><button type="button" class="btn btn-outline" id="kfesReset" style="flex:1;padding:10px;font-size:12.5px;">گەڕاندنەوەی ئەم ستایلە</button><button type="button" class="btn btn-outline" id="kfesUndo" style="flex:1;padding:10px;font-size:12.5px;">پووچەڵکردنەوەی دوایین پاشەکەوت</button></div>'
             + '<button type="button" class="btn" id="kfesSave" style="padding:12px;font-size:13.5px;">پاشەکەوتکردنی گۆڕانکارییەکانی ستایل</button></div></div>';
         document.body.appendChild(M);
+        if (!window.kfAddScrub) window.kfAddScrub = function (body, host, fit) {
+            var tr = document.createElement('div'), th = document.createElement('div'); tr.className = 'kf-scrub-t'; th.className = 'kf-scrub-h'; tr.appendChild(th);
+            try { if (getComputedStyle(host).position === 'static') host.style.position = 'relative'; } catch (e) { } host.appendChild(tr); var drag = false;
+            function upd() {
+                if (fit) { tr.style.top = (body.offsetTop + 10) + 'px'; tr.style.height = Math.max(0, body.clientHeight - 20) + 'px'; } else { tr.style.top = '10px'; tr.style.bottom = '10px'; }
+                var r = body.scrollHeight - body.clientHeight; if (r <= 60 || body.offsetParent === null) { tr.style.display = 'none'; return; } tr.style.display = 'flex';
+                th.style.transform = 'translateY(' + (body.scrollTop / r * (tr.clientHeight - th.clientHeight)) + 'px)';
+            }
+            function go(e) { e.preventDefault(); var rc = tr.getBoundingClientRect(), p = Math.max(0, Math.min(1, (e.clientY - rc.top - th.clientHeight / 2) / Math.max(1, rc.height - th.clientHeight))); body.scrollTop = p * (body.scrollHeight - body.clientHeight); upd(); }
+            tr.addEventListener('pointerdown', function (e) { drag = true; try { tr.setPointerCapture(e.pointerId); } catch (x) { } go(e); });
+            tr.addEventListener('pointermove', function (e) { if (drag) go(e); }); ['pointerup', 'pointercancel'].forEach(function (n) { tr.addEventListener(n, function () { drag = false; }); });
+            body.addEventListener('scroll', upd, { passive: true }); if (window.ResizeObserver) new ResizeObserver(upd).observe(body); setInterval(function () { if (body.offsetParent) upd(); }, 1200); upd(); return upd;
+        };
+        window.kfAddScrub($('kfesBody'), $('kfesBody').parentNode, true);
         SELD = dd($('kfesSel'), function (v) { setStyle(v); });
         V = $('kfesV'); BX = $('kfesBox'); SL = $('kfesSl'); NI = $('kfesN'); TXT = $('kfesTxt'); INFO = $('kfesInfo'); DOT = $('kfesDot');
 

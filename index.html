@@ -6081,6 +6081,7 @@ window.onload = () => {
 
         // بزوێنەری گەڕانەوە
         window.addEventListener('popstate', (e) => {
+            if (typeof window.kfPdfPop === 'function' && window.kfPdfPop(e)) return;
             if (typeof window.kfEdPop === 'function' && window.kfEdPop(e)) return;
             // ١. مۆداڵەکان: بە یەک گەڕانەوە دادەخرێن
             const activeModal = getActiveModal();
@@ -18485,6 +18486,908 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
 })();
 
 </script>
+<script id="kf-pdfed-js">
+(function () {
+    'use strict';
+    var $ = function (id) { return document.getElementById(id); };
+    function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+    function toast(m, t) { try { window.showToast(m, t || 'info'); } catch (e) { } }
+    var LIB = 'https://cdn.jsdelivr.net/npm/', URL_PL = LIB + 'pdf-lib@1.17.1/dist/pdf-lib.min.js', URL_PJ = LIB + 'pdfjs-dist@6.2.108/build/pdf.min.mjs', URL_PW = LIB + 'pdfjs-dist@6.2.108/build/pdf.worker.min.mjs';
+    var PL = null, PJ = null;
+    async function libs() {
+        if (PL && PJ) return true;
+        try {
+            if (!PL) { if (!window.PDFLib) await new Promise(function (res, rej) { var s = document.createElement('script'); s.src = URL_PL; s.onload = res; s.onerror = function () { rej(new Error('pdf-lib')); }; document.head.appendChild(s); }); PL = window.PDFLib; }
+            if (!PJ) { var m = await import(URL_PJ); var w = await fetch(URL_PW); var tx = await w.text(); m.GlobalWorkerOptions.workerSrc = URL.createObjectURL(new Blob([tx], { type: 'text/javascript' })); PJ = m; }
+            return true;
+        } catch (e) { console.error(e); toast('نەتوانرا کتێبخانەی PDF باربکرێت — بۆ یەکەم جار ئینتەرنێت پێویستە', 'error'); return false; }
+    }
+    // ---------- ئایکۆنەکان ----------
+    function ic(p, sw) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (sw || 1.9) + '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + p + '"/></svg>'; }
+    var I = {
+        sel: ic('M5 3l14 7-6 2-2 6z'), text: ic('M5 6V4h14v2M12 4v16M9 20h6'), mark: ic('M9 11l6-6 4 4-6 6zM9 11l-4 4v3h3l4-4M4 21h16'), pen: ic('M4 20l1-4L17 4a2 2 0 0 1 3 3L8 19zM14 7l3 3'),
+        shapes: ic('M3 12h8v8H3zM13 8a4 4 0 1 0 8 0 4 4 0 1 0-8 0'), img: ic('M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4M9 9.5h.01'), sign: ic('M3 16c3-6 5-9 6-7s-2 7 0 7 3-5 5-5 1 4 3 4M3 21h18'),
+        cover: ic('M7 21h12M5 15l8-9 6 6-6 7H9z'), editt: ic('M4 7V5h16v2M12 5v6M8 21l1-4 8-8 3 3-8 8z'), pages: ic('M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z'),
+        undo: ic('M9 14L4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3'), redo: ic('M15 14l5-5-5-5M20 9H9a5 5 0 0 0 0 10h3'), plus: ic('M12 5v14M5 12h14', 2.3), minus: ic('M5 12h14', 2.3),
+        more: ic('M12 5h.01M12 12h.01M12 19h.01', 3.2), save: ic('M12 4v11M7 11l5 5 5-5M5 20h14'), open: ic('M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'),
+        trash: ic('M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3'), copy: ic('M8 8h11v12H8zM5 16V4h11'), rot: ic('M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7'), check: ic('M5 12l5 5 9-10', 2.4), x: ic('M6 6l12 12M18 6L6 18'),
+        search: ic('M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM21 21l-5-5'), up: ic('M12 19V5M6 11l6-6 6 6'), down: ic('M12 5v14M6 13l6 6 6-6'), stamp: ic('M8 10a4 4 0 1 1 8 0c0 2-2 3-2 5h-4c0-2-2-3-2-5zM6 18h12v3H6z'),
+        form: ic('M5 4h14v16H5zM8 9h8M8 13h8M8 17h4'), doc: ic('M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5'), left: ic('M15 5l-7 7 7 7'), right: ic('M9 5l7 7-7 7'),
+        front: ic('M8 8h11v11H8z M5 5h8v3'), back: ic('M5 5h11v11H5z M16 16v3h3'), water: ic('M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z'), num: ic('M7 4v16M17 4v16M4 9h16M4 15h16'),
+        zin: ic('M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM21 21l-5-5M8.5 11h5M11 8.5v5'), zout: ic('M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM21 21l-5-5M8.5 11h5'), blank: ic('M6 3h9l4 4v14H6zM15 3v4h4M12 11v6M9 14h6'),
+        arrow: ic('M5 19L19 5M10 5h9v9'), line: ic('M5 19L19 5'), rect: ic('M4 6h16v12H4z'), ell: ic('M12 5c5 0 9 3 9 7s-4 7-9 7-9-3-9-7 4-7 9-7z'), ul: ic('M7 4v7a5 5 0 0 0 10 0V4M5 21h14'), st: ic('M5 12h14M16 7a4 4 0 0 0-8 1c0 4 8 2 8 6a4 4 0 0 1-8 1'), hl: ic('M9 11l6-6 4 4-6 6zM9 11l-4 4v3h3l4-4')
+    };
+    var FONTS_STD = [['Helvetica', 'Helvetica / Arial'], ['Times', 'Times (سێریف)'], ['Courier', 'Courier (مۆنۆ)']];
+    function fontCss(f) { return f === 'Helvetica' ? 'Helvetica,Arial,sans-serif' : f === 'Times' ? '"Times New Roman",Times,serif' : f === 'Courier' ? '"Courier New",Courier,monospace' : '"' + String(f).replace(/"/g, '') + '",Helvetica,Arial,sans-serif'; }
+    function siteFonts() { var r = []; try { FontStore.list().forEach(function (f) { if (f && f.ok && f.cssFamily) r.push(f.cssFamily); }); } catch (e) { } return Array.from(new Set(r)); }
+
+    // ---------- شیت و دیالۆگ و دوگمەی گەڕانەوە ----------
+    var OV = [], ign = 0, hasEntry = false, syT = 0, M = null;
+    function schedSync() { if (!syT) syT = setTimeout(syncHist, 90); }
+    function syncHist() {
+        syT = 0;
+        if (OV.length && !hasEntry) { try { history.pushState({ kf_pdf: 1 }, ''); hasEntry = true; } catch (e) { } }
+        else if (!OV.length && hasEntry) { hasEntry = false; ign++; try { history.back(); } catch (e) { ign--; } }
+    }
+    function ovAdd(rm) { var o = { rm: rm }; OV.push(o); schedSync(); return o; }
+    function ovClose(o) { var i = OV.indexOf(o); if (i < 0) return; OV.splice(i, 1); try { o.rm(); } catch (e) { } schedSync(); }
+    function ovCloseAll() { while (OV.length) ovClose(OV[OV.length - 1]); }
+    window.kfPdfPop = function () {
+        if (ign > 0) { ign--; return true; }
+        if (OV.length && M && M.style.display !== 'none') { hasEntry = false; ovClose(OV[OV.length - 1]); return true; }
+        return false;
+    };
+    function sheet(title, items, opt) {
+        opt = opt || {}; var o = document.createElement('div'); o.className = 'kfpd-sh' + (opt.live ? ' live' : '');
+        o.innerHTML = '<div><h5></h5>' + (opt.note ? '<p class="mg"></p>' : '') + '<div class="bd"></div></div>'; o.querySelector('h5').textContent = title; if (opt.note) o.querySelector('.mg').textContent = opt.note; var bd = o.querySelector('.bd');
+        var ov = ovAdd(function () { o.remove(); }); function close() { ovClose(ov); }
+        (items || []).forEach(function (it) {
+            if (it === '-') { bd.appendChild(document.createElement('hr')); return; }
+            var b = document.createElement('button'); b.type = 'button'; b.className = 'it' + (it.on ? ' on' : '') + (it.dg ? ' dg' : '');
+            b.innerHTML = (it.i ? it.i : '') + '<span>' + esc(it.t) + '</span>' + (it.s ? '<em>' + esc(it.s) + '</em>' : '');
+            b.onclick = function () { close(); if (it.f) setTimeout(it.f, 0); }; bd.appendChild(b);
+        });
+        o.addEventListener('pointerdown', function (e) { if (e.target === o && !opt.live) close(); });
+        document.body.appendChild(o); return { close: close, el: o, bd: bd };
+    }
+    function ask(title, o, cb, cancelCb) {
+        o = o || {}; var d = document.createElement('div'); d.className = 'kfpd-sh'; d.style.alignItems = 'center';
+        var field = o.area != null ? '<textarea class="in" rows="5" autocomplete="off" spellcheck="false" style="resize:vertical"></textarea>' : (o.input != null ? '<input class="in" type="text" autocomplete="off" autocapitalize="off" spellcheck="false">' : '');
+        d.innerHTML = '<div style="border-radius:18px"><h5></h5>' + (o.msg ? '<p class="mg">' + o.msg + '</p>' : '') + field + '<div class="ac"><button class="x">پاشگەزبوونەوە</button><button class="' + (o.danger ? 'dg' : 'pri') + ' k">' + esc(o.ok || 'باشە') + '</button></div></div>'; d.querySelector('h5').textContent = title;
+        var inp = d.querySelector('.in'); if (inp) inp.value = o.area != null ? o.area : o.input;
+        var fin = false, ov = ovAdd(function () { d.remove(); if (!fin) { fin = true; if (cancelCb) cancelCb(); } });
+        function done(v) { if (v !== null) fin = true; ovClose(ov); if (v !== null) cb(v); }
+        d.querySelector('.x').onclick = function () { done(null); }; d.querySelector('.k').onclick = function () { done(inp ? inp.value : true); };
+        d.addEventListener('pointerdown', function (e) { if (e.target === d) done(null); });
+        if (inp && o.area == null) inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); done(inp.value); } });
+        document.body.appendChild(d); if (inp) { inp.focus(); try { inp.select(); } catch (e) { } }
+    }
+    // فۆرمی گشتی (دەق، ژمارە، ڕەنگ، هەڵبژاردن)
+    function form(title, fields, cb, okLabel, note) {
+        var vals = {}, d = document.createElement('div'); d.className = 'kfpd-sh'; d.style.alignItems = 'center';
+        var h = '<div style="border-radius:18px"><h5></h5>' + (note ? '<p class="mg">' + esc(note) + '</p>' : '') + '<div class="bd fm">';
+        fields.forEach(function (f, i) {
+            vals[f.k] = f.v; h += '<div class="fr"><label>' + esc(f.l) + '</label>';
+            if (f.t === 'chips') { h += '<div class="chs" data-i="' + i + '">' + f.opts.map(function (o) { return '<button type="button" data-v="' + esc(o[0]) + '" class="' + (String(o[0]) === String(f.v) ? 'on' : '') + '">' + esc(o[1]) + '</button>'; }).join('') + '</div>'; }
+            else if (f.t === 'color') h += '<button type="button" class="csw" data-i="' + i + '" style="background:' + f.v + '"></button>';
+            else if (f.t === 'area') h += '<textarea class="in" data-i="' + i + '" rows="3" spellcheck="false"></textarea>';
+            else h += '<input class="in" data-i="' + i + '" type="' + (f.t === 'num' ? 'number' : 'text') + '" inputmode="' + (f.t === 'num' ? 'decimal' : 'text') + '" autocomplete="off" spellcheck="false">';
+            h += '</div>';
+        });
+        h += '</div><div class="ac"><button class="x">پاشگەزبوونەوە</button><button class="pri k">' + esc(okLabel || 'باشە') + '</button></div></div>';
+        d.innerHTML = h; d.querySelector('h5').textContent = title;
+        d.querySelectorAll('input.in,textarea.in').forEach(function (el) { el.value = fields[+el.dataset.i].v; el.oninput = function () { var f = fields[+el.dataset.i]; vals[f.k] = f.t === 'num' ? parseFloat(el.value) : el.value; }; });
+        d.querySelectorAll('.chs').forEach(function (c) { c.onclick = function (e) { var b = e.target.closest('button'); if (!b) return; var f = fields[+c.dataset.i]; vals[f.k] = b.dataset.v; c.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x === b); }); }; });
+        d.querySelectorAll('.csw').forEach(function (c) { c.onclick = function () { var f = fields[+c.dataset.i]; if (window.kfPickColor) window.kfPickColor(vals[f.k], function (hx) { vals[f.k] = hx; c.style.background = hx; }); }; });
+        var ov = ovAdd(function () { d.remove(); });
+        d.querySelector('.x').onclick = function () { ovClose(ov); }; d.querySelector('.k').onclick = function () { ovClose(ov); cb(vals); };
+        d.addEventListener('pointerdown', function (e) { if (e.target === d) ovClose(ov); });
+        document.body.appendChild(d); return d;
+    }
+    // ---------- CSS ----------
+    function css() {
+        var s = document.createElement('style'); s.textContent = [
+            '#kf-pdf-modal{padding:0!important}#kf-pdf-modal *{box-sizing:border-box}',
+            'html:root body.startup-bg #kf-pdf-modal{z-index:1950!important;padding:calc(var(--kf-bar-h) + env(safe-area-inset-top,0px)) 0 0 0!important;align-items:stretch!important;justify-content:flex-start!important;background:var(--ed-bg)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;animation:none!important;overflow:hidden!important}',
+            '.kfpd,.kfpd-sh{--ed-bg:#0a0e16;--ed-card:#121a29;--text-main:#e6edf7;--text-muted:#8b9bb4}',
+            '.kfpd{position:relative;display:flex;flex-direction:column;width:100%;height:calc(var(--kf-dvh,1dvh)*100 - var(--kf-bar-h) - env(safe-area-inset-top,0px));min-height:300px;background:var(--ed-bg);color:var(--text-main);overflow:hidden;direction:rtl;text-align:start}',
+            '.kfpd button{font-family:inherit;color:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipulation}',
+            '.kfpd-top{display:flex;align-items:center;gap:3px;padding:6px 8px;background:var(--ed-card);border-bottom:1px solid var(--border-color);flex:none}',
+            '.kfpd-ib{flex:none;width:38px;height:38px;display:grid;place-items:center;border:0;background:transparent;border-radius:10px;cursor:pointer;padding:0;color:var(--text-main)}.kfpd-ib svg{width:20px;height:20px}.kfpd-ib:active{background:var(--primary-glow,rgba(255,255,255,.1))}.kfpd-ib[disabled]{opacity:.35;pointer-events:none}.kfpd-ib.pri{background:var(--primary);color:#fff}',
+            '.kfpd-name{flex:1;min-width:0;font-size:14.5px;font-weight:700;padding:6px;border:0;background:transparent;text-align:start;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:auto}.kfpd-name small{font-weight:400;color:var(--text-muted);font-size:11px;display:block}',
+            '.kfpd-main{position:relative;flex:1;min-height:0}.kfpd-sc{touch-action:pan-x pan-y;position:absolute;inset:0;overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;background:#05080e;padding:10px 0 80px}',
+            '.kfpd-pages{display:flex;flex-direction:column;align-items:center;gap:12px;width:max-content;min-width:100%;transform-origin:0 0}',
+            '.kfpd-pg{position:relative;flex:none;background:#fff;box-shadow:0 2px 14px rgba(0,0,0,.55);direction:ltr}.kfpd-pg canvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block}',
+            '.kfpd-pg svg{position:absolute;left:0;top:0;width:100%;height:100%;overflow:hidden;touch-action:pan-x pan-y;user-select:none;-webkit-user-select:none}.kfpd-pages.draw .kfpd-pg svg{touch-action:none}.kfpd-pg svg .ob,.kfpd-pg svg [data-h]{touch-action:none}',
+            '.kfpd-pg .no{position:absolute;top:6px;inset-inline-start:6px;font-style:normal;font-size:10.5px;background:rgba(0,0,0,.5);color:#fff;border-radius:6px;padding:1px 6px;pointer-events:none;direction:ltr}',
+            '.kfpd-ind{position:absolute;left:50%;top:10px;transform:translateX(-50%);background:rgba(18,26,41,.92);border:1px solid var(--border-color);border-radius:999px;padding:4px 12px;font-size:12px;direction:ltr;pointer-events:none;z-index:6;opacity:.95}',
+            '.kfpd-zm{position:absolute;left:8px;bottom:10px;z-index:6;display:flex;align-items:center;background:rgba(18,26,41,.94);border:1px solid var(--border-color);border-radius:999px;overflow:hidden;direction:ltr}.kfpd-zm button{width:34px;height:34px;border:0;background:transparent;display:grid;place-items:center;padding:0}.kfpd-zm svg{width:17px;height:17px}.kfpd-zm span{font-size:11.5px;min-width:42px;text-align:center}',
+            '.kfpd-empty{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;text-align:center;color:var(--text-muted);font-size:13.5px;line-height:1.9}.kfpd-empty svg{width:54px;height:54px;color:var(--primary)}.kfpd-empty .rw{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}',
+            '.kfpd-bt{display:inline-flex;align-items:center;gap:7px;padding:10px 15px;border-radius:11px;border:1px solid var(--border-color);background:var(--ed-card);font-size:13.5px;font-weight:700;cursor:pointer}.kfpd-bt svg{width:18px;height:18px}.kfpd-bt.pri{background:var(--primary);border-color:var(--primary);color:#fff}',
+            '.kfpd-pb{display:none;flex:none;align-items:center;gap:6px;padding:6px 8px;background:var(--ed-card);border-top:1px solid var(--border-color);overflow-x:auto;scrollbar-width:none;direction:rtl}.kfpd-pb.on{display:flex}.kfpd-pb::-webkit-scrollbar{display:none}',
+            '.kfpd-pb>*{flex:none}.kfpd-pb .sw,.kfpd-csw,.kfpd-sh .csw{width:34px;height:34px;border-radius:10px;border:2px solid rgba(255,255,255,.55);padding:0;cursor:pointer;position:relative}.kfpd-pb .sw.no::after{content:"";position:absolute;left:3px;right:3px;top:50%;border-top:2px solid #ef4444;transform:rotate(-40deg)}.kfpd-pb .sw.act{outline:2px solid var(--primary);outline-offset:1px}',
+            '.kfpd-pb .dot{width:22px;height:22px;border-radius:50%;border:1.5px solid rgba(255,255,255,.4);padding:0;cursor:pointer}',
+            '.kfpd-pb .chip{display:flex;align-items:center;gap:5px;height:34px;padding:0 10px;border-radius:9px;border:1px solid var(--border-color);background:var(--ed-bg);font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}.kfpd-pb .chip svg{width:17px;height:17px}.kfpd-pb .chip.on{background:var(--primary);border-color:var(--primary);color:#fff}.kfpd-pb .chip.dg{color:#f87171}',
+            '.kfpd-pb .stp{display:flex;align-items:center;border:1px solid var(--border-color);border-radius:9px;background:var(--ed-bg);height:34px;direction:ltr}.kfpd-pb .stp button{width:30px;height:100%;border:0;background:transparent;display:grid;place-items:center;padding:0}.kfpd-pb .stp svg{width:15px;height:15px}.kfpd-pb .stp b{min-width:30px;text-align:center;font-size:12.5px;cursor:pointer}',
+            '.kfpd-pb input[type=range]{width:84px;accent-color:var(--primary)}.kfpd-pb .sep{width:1px;height:24px;background:var(--border-color)}.kfpd-pb label{font-size:11px;color:var(--text-muted)}',
+            '.kfpd-tb{display:flex;flex:none;gap:2px;padding:4px 6px calc(4px + env(safe-area-inset-bottom,0px));background:var(--ed-card);border-top:1px solid var(--border-color);overflow-x:auto;scrollbar-width:none;direction:rtl}.kfpd-tb::-webkit-scrollbar{display:none}',
+            '.kfpd-tb button{flex:none;min-width:58px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 6px 4px;border:0;border-radius:10px;background:transparent;font-size:10.5px;cursor:pointer;color:var(--text-muted)}.kfpd-tb button svg{width:21px;height:21px}.kfpd-tb button.on{background:var(--primary-glow,rgba(255,255,255,.1));color:var(--primary)}',
+            '.kfpd-pp{position:absolute;inset:0;z-index:20;background:var(--ed-bg);display:none;flex-direction:column}.kfpd-pp.on{display:flex}.kfpd-pp .hd{display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--ed-card);border-bottom:1px solid var(--border-color)}.kfpd-pp .hd h4{flex:1;margin:0;font-size:14px}',
+            '.kfpd-pp .gr{flex:1;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px;padding:12px;align-content:start;direction:ltr}',
+            '.kfpd-th{position:relative;border:2px solid var(--border-color);border-radius:8px;background:var(--ed-card);padding:4px;cursor:pointer;text-align:center}.kfpd-th.on{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary-glow,rgba(255,255,255,.2))}.kfpd-th .cv{display:grid;place-items:center;min-height:90px}.kfpd-th canvas{max-width:100%;background:#fff;display:block}.kfpd-th b{display:block;font-size:11px;margin-top:3px;color:var(--text-muted)}.kfpd-th i{position:absolute;top:6px;left:6px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.45);border:1.5px solid #fff;color:#fff;display:grid;place-items:center}.kfpd-th.on i{background:var(--primary)}.kfpd-th i svg{width:13px;height:13px;display:none}.kfpd-th.on i svg{display:block}',
+            '.kfpd-pp .ft{display:none;gap:2px;padding:4px 6px calc(4px + env(safe-area-inset-bottom,0px));background:var(--ed-card);border-top:1px solid var(--border-color);overflow-x:auto;direction:rtl}.kfpd-pp .ft.on{display:flex}.kfpd-pp .ft button{flex:none;min-width:58px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px;border:0;border-radius:10px;background:transparent;font-size:10.5px;cursor:pointer;color:var(--text-main)}.kfpd-pp .ft svg{width:20px;height:20px}.kfpd-pp .ft .dg{color:#f87171}',
+            '.kfpd-sh{position:fixed;inset:0;z-index:100050;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.55);direction:rtl}.kfpd-sh>div{width:min(100%,520px);max-height:86vh;display:flex;flex-direction:column;background:var(--ed-card);border:1px solid var(--border-color);border-radius:18px 18px 0 0;padding:6px 0 calc(8px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 40px rgba(0,0,0,.5);color:var(--text-main)}@media(min-width:700px){.kfpd-sh{align-items:center}.kfpd-sh>div{border-radius:18px}}',
+            '.kfpd-sh h5{margin:0;padding:10px 16px 6px;font-size:13px;color:var(--primary);font-weight:800}.kfpd-sh .bd{overflow-y:auto;padding:2px 0}.kfpd-sh .it{display:flex;align-items:center;gap:12px;width:100%;padding:12px 16px;border:0;background:transparent;font-size:14px;text-align:start;cursor:pointer;color:var(--text-main);font-family:inherit}.kfpd-sh .it:active{background:var(--primary-glow,rgba(255,255,255,.08))}.kfpd-sh .it svg{flex:none;width:19px;height:19px;color:var(--text-muted)}.kfpd-sh .it span{flex:1;min-width:0}.kfpd-sh .it em{font-style:normal;font-size:11.5px;color:var(--text-muted);direction:ltr}.kfpd-sh .it.on,.kfpd-sh .it.on em,.kfpd-sh .it.on svg{color:var(--primary)}.kfpd-sh .it.dg,.kfpd-sh .it.dg svg{color:#f87171}.kfpd-sh hr{border:0;border-top:1px solid var(--border-color);margin:4px 0}',
+            '.kfpd-sh input.in,.kfpd-sh textarea.in{display:block;width:calc(100% - 32px);margin:6px 16px 10px;padding:11px 12px;border-radius:10px;border:1px solid var(--border-color);background:var(--ed-bg);color:var(--text-main);font-size:15px;font-family:inherit;direction:auto}.kfpd-sh .fm input.in,.kfpd-sh .fm textarea.in{margin:0;width:100%}.kfpd-sh p.mg{margin:2px 16px 10px;font-size:13px;line-height:1.8;color:var(--text-muted)}.kfpd-sh .ac{display:flex;gap:8px;padding:6px 16px}.kfpd-sh .ac button{flex:1;padding:11px;border-radius:11px;border:1px solid var(--border-color);background:transparent;font-size:13.5px;font-weight:700;cursor:pointer;color:var(--text-main);font-family:inherit}.kfpd-sh .ac button.pri{background:var(--primary);border-color:var(--primary);color:#fff}.kfpd-sh .ac button.dg{background:#dc2626;border-color:#dc2626;color:#fff}',
+            '.kfpd-sh .fm{padding:4px 16px 8px}.kfpd-sh .fr{margin-bottom:12px}.kfpd-sh .fr label{display:block;font-size:12px;color:var(--text-muted);margin-bottom:5px}.kfpd-sh .chs{display:flex;flex-wrap:wrap;gap:6px}.kfpd-sh .chs button{padding:7px 12px;border-radius:9px;border:1px solid var(--border-color);background:var(--ed-bg);font-size:12.5px;font-weight:700;cursor:pointer;color:var(--text-main);font-family:inherit}.kfpd-sh .chs button.on{background:var(--primary);border-color:var(--primary);color:#fff}',
+            '.kfpd-sh .sg{display:block;margin:6px 16px;border:1px dashed var(--border-color);border-radius:12px;background:#fff;touch-action:none;width:calc(100% - 32px);height:170px}.kfpd-sg-l{display:flex;gap:8px;flex-wrap:wrap;padding:6px 16px}.kfpd-sg-l .s{position:relative;border:1px solid var(--border-color);border-radius:10px;background:#fff;padding:6px;cursor:pointer}.kfpd-sg-l .s img{height:46px;display:block}.kfpd-sg-l .s b{position:absolute;top:-7px;left:-7px;width:20px;height:20px;border-radius:50%;background:#dc2626;color:#fff;display:grid;place-items:center;font-size:12px;line-height:1}',
+            '.kfpd-hit{padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;font-size:12.5px;direction:ltr;text-align:start}.kfpd-hit b{display:block;color:var(--primary);font-size:11.5px;margin-bottom:2px}.kfpd-hit span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.9}',
+            '.kfpd-fld{padding:8px 16px;border-bottom:1px solid rgba(255,255,255,.06)}.kfpd-fld label{display:block;font-size:11.5px;color:var(--text-muted);margin-bottom:4px;direction:ltr;text-align:start}.kfpd-fld select{width:100%;padding:9px;border-radius:9px;border:1px solid var(--border-color);background:var(--ed-bg);color:var(--text-main);font-size:14px}.kfpd-fld input[type=checkbox]{width:20px;height:20px;accent-color:var(--primary)}',
+            '.kfpd-busy{position:absolute;inset:0;z-index:30;background:rgba(5,8,14,.7);display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;font-size:13.5px}.kfpd-busy.on{display:flex}.kfpd-busy i{width:34px;height:34px;border-radius:50%;border:3px solid rgba(255,255,255,.2);border-top-color:var(--primary);animation:kfpdsp .8s linear infinite}@keyframes kfpdsp{to{transform:rotate(360deg)}}',
+            '.kfpd-pages svg .ob{cursor:move}.kfpd-pages svg .hit{fill:rgba(250,204,21,.45);stroke:#f59e0b;stroke-width:.6}.kf-scrub-t{position:absolute;right:4px;width:16px;display:flex;justify-content:center;z-index:50;touch-action:none;cursor:pointer}.kf-scrub-h{width:6px;height:38px;border-radius:999px;background:var(--primary);box-shadow:0 0 10px var(--primary-glow)}'
+        ].join('\n'); document.head.appendChild(s);
+    }
+    // ---------- دۆخ ----------
+    var DOCS = [], PGS = [], IMGS = {}, WR = {}, TXT = {}, undoS = [], redoS = [], dirty = false, name = 'document.pdf', META = {};
+    var S = 1, Z = 1, tool = 'sel', sub = { shape: 'rect', mark: 'hl', cover: 'cover' }, sel = null, hitsR = [], uid = 1, PT = 'c';
+    var PAGES, SC, MAIN, IND, ZM, PB, TB, EMPTY, BUSY, TOPN, B_UNDO, B_REDO, PP;
+    var DEF = { c: '#111111', f: 'Helvetica', z: 18, b: 0, i: 0, u: 0, a: null, sc: '#e11d48', sw: 3, fc: '', mc: '#fde047', vc: '#ffffff', o: 1 };
+    var PRE = ['#111111', '#ffffff', '#e11d48', '#f97316', '#eab308', '#16a34a', '#0ea5e9', '#2563eb', '#7c3aed', '#db2777'];
+    var MC = document.createElement('canvas').getContext('2d');
+    function busy(on, msg) { if (!BUSY) return; BUSY.classList.toggle('on', !!on); BUSY.querySelector('b').textContent = msg || 'تکایە چاوەڕێ بکە ...'; }
+    function dimsOf(pg) { return (pg.rot % 180) ? { w: pg.bh, h: pg.bw } : { w: pg.bw, h: pg.bh }; }
+    function pgById(id) { for (var i = 0; i < PGS.length; i++) if (PGS[i].id === id) return PGS[i]; return null; }
+    function curObj() { if (!sel) return null; var pg = pgById(sel.p); return pg && pg.objs[sel.i] ? pg.objs[sel.i] : null; }
+    function clone(o) { return JSON.parse(JSON.stringify(o)); }
+    function isRtl(s) { return /[֐-ࣿיִ-﷿ﹰ-﻿]/.test((s.match(/[A-Za-z֐-ࣿיִ-﷿ﹰ-﻿]/) || [''])[0]); }
+    function dl(blob, fn) { var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = fn; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 4000); }
+    function baseName() { return name.replace(/\.pdf$/i, ''); }
+    function hexRgb(h) { h = /^#[0-9a-f]{6}$/i.test(h || '') ? h : '#000000'; return PL.rgb(parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 16) / 255, parseInt(h.slice(5, 7), 16) / 255); }
+
+    // ---------- گەڕانەوە / پێشەوەچوون ----------
+    function snapStr() { return JSON.stringify(PGS); }
+    function snap() { undoS.push(snapStr()); if (undoS.length > 80) undoS.shift(); redoS = []; dirty = true; updTop(); }
+    function restore(s) {
+        PGS = JSON.parse(s); sel = null; layout(); drawPB(); updTop();
+    }
+    function undo() { if (!undoS.length) return; redoS.push(snapStr()); restore(undoS.pop()); }
+    function redo() { if (!redoS.length) return; undoS.push(snapStr()); restore(redoS.pop()); }
+    function updTop() {
+        if (!B_UNDO) return; B_UNDO.disabled = !undoS.length; B_REDO.disabled = !redoS.length;
+        TOPN.textContent = name; TOPN.nextElementSibling.textContent = PGS.length ? PGS.length + ' لاپەڕە' + (dirty ? ' • گۆڕاوە' : '') : '';
+        EMPTY.style.display = PGS.length ? 'none' : 'flex'; IND.style.display = PGS.length ? '' : 'none';
+    }
+
+    // ---------- دەق: لاپەڕەکردن بە یەکسانی بۆ پیشاندان و هەناردە ----------
+    function fontStr(o, z) { return (o.i ? 'italic ' : '') + (o.b ? '700 ' : '400 ') + (z || o.z) + 'px ' + fontCss(o.f); }
+    function layoutText(o) {
+        var z = o.z, pd = o.pd || 0, maxW = Math.max(4, o.w - 2 * pd); MC.font = fontStr(o);
+        var lines = [];
+        String(o.s).split('\n').forEach(function (para) {
+            if (para === '') { lines.push(''); return; }
+            var words = para.split(' '), cur = '';
+            words.forEach(function (wd) {
+                var t = cur === '' ? wd : cur + ' ' + wd;
+                if (MC.measureText(t).width <= maxW || cur === '' && MC.measureText(wd).width <= maxW) { cur = t; return; }
+                if (cur !== '') { lines.push(cur); cur = ''; }
+                if (MC.measureText(wd).width <= maxW) { cur = wd; return; }
+                var chunk = ''; Array.from(wd).forEach(function (ch) { if (chunk && MC.measureText(chunk + ch).width > maxW) { lines.push(chunk); chunk = ch; } else chunk += ch; }); cur = chunk;
+            });
+            lines.push(cur);
+        });
+        var lh = z * 1.25; o.h = Math.max(lh, lines.length * lh) + 2 * pd;
+        var rtl = isRtl(o.s), al = o.a || (rtl ? 'r' : 'l');
+        return { lines: lines, lh: lh, rtl: rtl, al: al, pd: pd, base: z * 0.96 };
+    }
+
+    // ---------- ڕووکار ----------
+    function build() {
+        css();
+        M = document.createElement('div'); M.id = 'kf-pdf-modal'; M.className = 'custom-modal-overlay';
+        M.innerHTML = '<div class="kfpd" id="kfpdRoot">'
+            + '<div class="kfpd-top"><button class="kfpd-ib" id="kfpdPg" aria-label="لاپەڕەکان">' + I.pages + '</button><button class="kfpd-name" id="kfpdNm"><span>—</span><small></small></button>'
+            + '<button class="kfpd-ib" id="kfpdUn" aria-label="گەڕانەوە">' + I.undo + '</button><button class="kfpd-ib" id="kfpdRe" aria-label="پێشەوە">' + I.redo + '</button><button class="kfpd-ib" id="kfpdMo" aria-label="زیاتر">' + I.more + '</button><button class="kfpd-ib pri" id="kfpdSv" aria-label="پاشەکەوتکردن">' + I.save + '</button></div>'
+            + '<div class="kfpd-main" id="kfpdMain"><div class="kfpd-sc" id="kfpdSc"><div class="kfpd-pages" id="kfpdPages"></div></div><div class="kfpd-ind" id="kfpdInd"></div>'
+            + '<div class="kfpd-zm" id="kfpdZm"><button id="kfpdZo" aria-label="بچووککردنەوە">' + I.minus + '</button><span id="kfpdZv">100%</span><button id="kfpdZi" aria-label="گەورەکردن">' + I.plus + '</button></div>'
+            + '<div class="kfpd-empty" id="kfpdEmpty">' + I.doc + '<div>هیچ PDFـێک نەکراوەتەوە.<br>PDFـێک بکەرەوە بۆ دەستکاریکردن، یان فایلێکی نوێ دروست بکە.</div><div class="rw"><button class="kfpd-bt pri" id="kfpdE1">' + I.open + 'کردنەوەی PDF</button><button class="kfpd-bt" id="kfpdE2">' + I.blank + 'PDFی نوێ</button><button class="kfpd-bt" id="kfpdE3">' + I.img + 'وێنە بۆ PDF</button></div></div>'
+            + '<div class="kfpd-pp" id="kfpdPp"></div><div class="kfpd-busy" id="kfpdBusy"><i></i><b></b></div></div>'
+            + '<div class="kfpd-pb" id="kfpdPb"></div>'
+            + '<div class="kfpd-tb" id="kfpdTb"></div>'
+            + '<input type="file" id="kfpdFi" accept="application/pdf,.pdf" style="display:none"><input type="file" id="kfpdFm" accept="application/pdf,.pdf" style="display:none"><input type="file" id="kfpdFg" accept="image/*" multiple style="display:none"><input type="file" id="kfpdFp" accept="image/*" style="display:none"></div>';
+        document.body.appendChild(M);
+        PAGES = $('kfpdPages'); SC = $('kfpdSc'); MAIN = $('kfpdMain'); IND = $('kfpdInd'); ZM = $('kfpdZm'); PB = $('kfpdPb'); TB = $('kfpdTb'); EMPTY = $('kfpdEmpty'); BUSY = $('kfpdBusy'); TOPN = $('kfpdNm').firstChild; B_UNDO = $('kfpdUn'); B_REDO = $('kfpdRe'); PP = $('kfpdPp');
+        if (window.kfAddScrub) window.kfAddScrub(SC, MAIN, false);
+        wire(); drawTB(); updTop();
+    }
+    var TOOLS = [['sel', 'ئاماژە', I.sel], ['text', 'دەق', I.text], ['editt', 'دەقی ئێستا', I.editt], ['mark', 'هایلایت', I.mark], ['pen', 'قەڵەم', I.pen], ['shape', 'شێوە', I.shapes], ['img', 'وێنە', I.img], ['sign', 'واژۆ', I.sign], ['cover', 'داپۆشین', I.cover], ['stamp', 'مۆر', I.stamp]];
+    function drawTB() {
+        TB.innerHTML = TOOLS.map(function (t) { return '<button data-t="' + t[0] + '" class="' + (tool === t[0] ? 'on' : '') + '">' + t[2] + '<span>' + t[1] + '</span></button>'; }).join('');
+        TB.querySelectorAll('button').forEach(function (b) { b.onclick = function () { pickTool(b.dataset.t); }; });
+        PAGES.classList.toggle('draw', ['pen', 'mark', 'shape', 'cover'].indexOf(tool) >= 0);
+    }
+    function setTool(t) { tool = t; if (t !== 'sel') { sel = null; redrawAll(); } drawTB(); drawPB(); }
+    function pickTool(t) {
+        if (!PGS.length && t !== 'sel') { toast('یەکەم PDFـێک بکەرەوە', 'info'); return; }
+        if (t === 'mark') return sheet('جۆری نیشانەکردن', [{ t: 'هایلایت (ڕەنگ لەسەر دەق)', i: I.hl, on: tool === 'mark' && sub.mark === 'hl', f: function () { sub.mark = 'hl'; setTool('mark'); } }, { t: 'هێڵ لەژێر دەق', i: I.ul, on: tool === 'mark' && sub.mark === 'ul', f: function () { sub.mark = 'ul'; setTool('mark'); } }, { t: 'هێڵ بەناو دەقدا', i: I.st, on: tool === 'mark' && sub.mark === 'st', f: function () { sub.mark = 'st'; setTool('mark'); } }], { note: 'بە ڕاکێشان لەسەر دەقەکە، دەقی ژێری بە شێوەی خۆکار دەدۆزرێتەوە.' });
+        if (t === 'shape') return sheet('شێوە', [{ t: 'لاکێشە', i: I.rect, f: function () { sub.shape = 'rect'; setTool('shape'); } }, { t: 'بازنە / هێلکەیی', i: I.ell, f: function () { sub.shape = 'ell'; setTool('shape'); } }, { t: 'هێڵ', i: I.line, f: function () { sub.shape = 'line'; setTool('shape'); } }, { t: 'تیر', i: I.arrow, f: function () { sub.shape = 'arrow'; setTool('shape'); } }]);
+        if (t === 'cover') return sheet('داپۆشین', [{ t: 'سڕینەوەی ناوەڕۆک (ڕەنگی پشتەوە)', s: 'whiteout', i: I.cover, f: function () { sub.cover = 'cover'; setTool('cover'); } }, { t: 'ڕەشکردنەوەی نهێنی (Redact)', s: 'redact', i: I.cover, f: function () { sub.cover = 'redact'; setTool('cover'); } }], { note: 'ڕەشکردنەوە لاپەڕەکە دەکات بە وێنە، بۆیە دەقی ژێری بە تەواوی نامێنێت.' });
+        if (t === 'img') { $('kfpdFp').click(); return; }
+        if (t === 'sign') return signSheet();
+        if (t === 'stamp') return stampSheet();
+        setTool(t);
+    }
+    function toolKind() { return { text: 'text', editt: 'text', pen: 'path', cover: 'cover' }[tool] || (tool === 'shape' ? sub.shape : tool === 'mark' ? sub.mark : null); }
+
+    // ---------- شریتی تایبەتمەندی ----------
+    function fk(kind, k) { return k === 'c' ? ((kind === 'hl' || kind === 'ul' || kind === 'st') ? 'mc' : kind === 'cover' ? 'vc' : 'c') : k; }
+    function getP(kind, k) { var o = curObj(); return o ? (o[k] != null ? o[k] : (k === 'o' ? 1 : DEF[fk(kind, k)])) : DEF[fk(kind, k)]; }
+    function setP(k, v, noSnap) {
+        var o = curObj(), kind = o ? o.t : toolKind();
+        if (o) { if (!noSnap) snap(); o[k] = v; if (o.t === 'text') layoutText(o); drawPg(pgById(sel.p)); }
+        DEF[fk(kind, k)] = v; drawPB();
+    }
+    function drawPB() {
+        var o = curObj(), kind = o ? (o.t === 'cover' ? 'cover' : o.t) : toolKind();
+        if (!kind) { PB.className = 'kfpd-pb'; PB.innerHTML = ''; return; }
+        var h = '', tx = kind === 'text', hasStroke = /^(rect|ell|line|arrow|path)$/.test(kind), hasFill = kind === 'rect' || kind === 'ell', mk = /^(hl|ul|st)$/.test(kind);
+        function sw(key, v, act) { return '<button class="sw' + (v ? '' : ' no') + (act ? ' act' : '') + '" data-sw="' + key + '" style="background:' + (v || '#fff') + '" aria-label="ڕەنگ"></button>'; }
+        var colKey = tx || mk || kind === 'cover' ? 'c' : (PT === 'fc' && hasFill ? 'fc' : 'sc');
+        if (hasStroke) h += '<label>هێڵ</label>' + sw('sc', getP(kind, 'sc'), colKey === 'sc'); else h += sw('c', getP(kind, 'c'), true);
+        if (hasFill) h += '<label>پڕ</label>' + sw('fc', getP(kind, 'fc'), colKey === 'fc');
+        h += PRE.map(function (c) { return '<button class="dot" data-dot="' + c + '" style="background:' + c + '"></button>'; }).join('');
+        if (hasFill) h += '<button class="dot sw no" data-dot="" style="width:22px;height:22px;background:#fff" aria-label="بێ ڕەنگ"></button>';
+        h += '<span class="sep"></span>';
+        if (tx) {
+            h += '<button class="chip" data-a="font">' + esc(String(getP(kind, 'f')).replace(/^["']|["']$/g, '')) + '</button>';
+            h += '<div class="stp"><button data-a="z-">' + I.minus + '</button><b data-a="zn">' + Math.round(getP(kind, 'z')) + '</b><button data-a="z+">' + I.plus + '</button></div>';
+            h += '<button class="chip' + (getP(kind, 'b') ? ' on' : '') + '" data-a="b"><b>B</b></button><button class="chip' + (getP(kind, 'i') ? ' on' : '') + '" data-a="i"><i>I</i></button><button class="chip' + (getP(kind, 'u') ? ' on' : '') + '" data-a="u"><u>U</u></button>';
+            var al = getP(kind, 'a'); h += '<button class="chip" data-a="al">' + (al === 'c' ? 'ناوەڕاست' : al === 'r' ? 'ڕاست' : al === 'l' ? 'چەپ' : 'خۆکار') + '</button>';
+        }
+        if (hasStroke) h += '<div class="stp"><button data-a="w-">' + I.minus + '</button><b data-a="wn">' + getP(kind, 'sw') + '</b><button data-a="w+">' + I.plus + '</button></div>';
+        h += '<input type="range" min="10" max="100" value="' + Math.round(getP(kind, 'o') * 100) + '" data-a="op" aria-label="ڕوونی">';
+        if (o) {
+            h += '<span class="sep"></span>';
+            if (tx) h += '<button class="chip" data-a="edit">' + I.editt + 'دەق</button>';
+            h += '<button class="chip" data-a="dup">' + I.copy + '</button><button class="chip" data-a="front">' + I.front + '</button><button class="chip" data-a="back">' + I.back + '</button><button class="chip dg" data-a="del">' + I.trash + '</button>';
+        }
+        PB.innerHTML = h; PB.className = 'kfpd-pb on';
+        PB.querySelectorAll('[data-sw]').forEach(function (b) { b.onclick = function () { var k = b.dataset.sw; if (k !== 'c') PT = k; var cur = getP(kind, k); if (window.kfPickColor) window.kfPickColor(cur || '#ffffff', function (hx) { setP(k, hx); }); }; });
+        PB.querySelectorAll('[data-dot]').forEach(function (b) { b.onclick = function () { var k = (tx || mk || kind === 'cover') ? 'c' : colKey; setP(k, b.dataset.dot); }; });
+        PB.querySelectorAll('[data-a]').forEach(function (b) {
+            var a = b.dataset.a; if (a === 'op') { var sn = false; b.oninput = function () { if (!sn) { var oo = curObj(); if (oo) snap(); sn = true; } setP('o', b.value / 100, true); }; b.onchange = function () { sn = false; }; return; }
+            b.onclick = function () { propAct(a, kind); };
+        });
+    }
+    function propAct(a, kind) {
+        var o = curObj();
+        if (a === 'z-' || a === 'z+') setP('z', Math.max(4, Math.min(200, getP(kind, 'z') + (a === 'z+' ? 1 : -1) * (getP(kind, 'z') >= 40 ? 4 : 1))));
+        else if (a === 'zn') ask('قەبارەی دەق', { input: String(getP(kind, 'z')) }, function (v) { v = parseFloat(v); if (v > 0) setP('z', Math.min(300, v)); });
+        else if (a === 'w-' || a === 'w+') setP('sw', Math.max(1, Math.min(40, getP(kind, 'sw') + (a === 'w+' ? 1 : -1))));
+        else if (a === 'wn') ask('ئەستووری هێڵ', { input: String(getP(kind, 'sw')) }, function (v) { v = parseFloat(v); if (v > 0) setP('sw', Math.min(60, v)); });
+        else if (a === 'b' || a === 'i' || a === 'u') setP(a, getP(kind, a) ? 0 : 1);
+        else if (a === 'al') { var cy = { null: 'l', l: 'c', c: 'r', r: null }; setP('a', cy[String(getP(kind, 'a'))]); }
+        else if (a === 'font') fontSheet(function (f) { setP('f', f); });
+        else if (a === 'edit' && o) editText(o, false);
+        else if (a === 'dup' && o) { snap(); var pg = pgById(sel.p), n = clone(o); shiftObj(n, 14, 14); pg.objs.push(n); sel = { p: pg.id, i: pg.objs.length - 1 }; drawPg(pg); drawPB(); }
+        else if (a === 'del' && o) delSel();
+        else if ((a === 'front' || a === 'back') && o) { snap(); var pg2 = pgById(sel.p), ob = pg2.objs.splice(sel.i, 1)[0]; if (a === 'front') pg2.objs.push(ob); else pg2.objs.unshift(ob); sel.i = a === 'front' ? pg2.objs.length - 1 : 0; drawPg(pg2); }
+    }
+    function delSel() { var o = curObj(); if (!o) return; snap(); var pg = pgById(sel.p); pg.objs.splice(sel.i, 1); sel = null; drawPg(pg); drawPB(); }
+    function shiftObj(o, dx, dy) {
+        if (o.pts) o.pts = o.pts.map(function (p) { return [p[0] + dx, p[1] + dy]; });
+        else if (o.x1 != null) { o.x1 += dx; o.y1 += dy; o.x2 += dx; o.y2 += dy; } else { o.x += dx; o.y += dy; }
+    }
+    function fontSheet(cb) {
+        var cur = DEF.f, o = curObj(); if (o) cur = o.f;
+        var items = FONTS_STD.map(function (f) { return { t: f[1], on: cur === f[0], f: function () { cb(f[0]); } }; });
+        var sf = siteFonts(); if (sf.length) { items.push('-'); sf.forEach(function (f) { items.push({ t: f, on: cur === f, s: 'فۆنتی ماڵپەڕ', f: function () { cb(f); } }); }); }
+        sheet('فۆنت', items, { note: 'فۆنتەکانی ماڵپەڕ (Kurdish/Arabic) دەکرێن بە وێنەی ورد لەناو PDF؛ Helvetica/Times/Courier دەقی ڕاستەقینە دەبن.' });
+    }
+    function editText(o, nNew) {
+        ask(nNew ? 'دەقی نوێ' : 'دەستکاریکردنی دەق', { area: o.s, ok: 'پەسەندکردن' }, function (v) {
+            if (!String(v).trim()) { cancelNew(nNew); return; }
+            if (!nNew) snap(); o.s = v; layoutText(o); drawPg(pgById(sel.p)); drawPB();
+        }, function () { cancelNew(nNew); });
+    }
+    function cancelNew(n) {
+        if (!n) return; var pg = pgById(sel.p); for (var k = 0; k < n; k++) pg.objs.pop(); undoS.pop(); sel = null; drawPg(pg); drawPB();
+    }
+    // ---------- کێشانی ئۆبجێکتەکان ----------
+    function f2(n) { return Math.round(n * 100) / 100; }
+    function rotT(o) { return o.r ? ' transform="rotate(' + f2(o.r) + ' ' + f2(o.x + o.w / 2) + ' ' + f2(o.y + o.h / 2) + ')"' : ''; }
+    function objSvg(o, i) {
+        var a = ' class="ob" data-i="' + i + '"', op = o.o != null && o.o < 1 ? ' opacity="' + o.o + '"' : '';
+        switch (o.t) {
+            case 'text':
+                var L = layoutText(o), h = '<g' + a + rotT(o) + '>';
+                if (o.bg) h += '<rect x="' + o.x + '" y="' + o.y + '" width="' + o.w + '" height="' + o.h + '" fill="' + o.bg + '"' + op + '/>';
+                else h += '<rect x="' + o.x + '" y="' + o.y + '" width="' + o.w + '" height="' + o.h + '" fill="transparent"/>';
+                if (o.bd) h += '<rect x="' + o.x + '" y="' + o.y + '" width="' + o.w + '" height="' + o.h + '" fill="none" stroke="' + o.bd + '" stroke-width="' + (o.bw || 3) + '"' + op + ' rx="' + (o.rx || 0) + '"/>';
+                h += '<foreignObject x="' + o.x + '" y="' + o.y + '" width="' + o.w + '" height="' + o.h + '" style="overflow:visible;pointer-events:none"><div xmlns="http://www.w3.org/1999/xhtml" style="font:' + esc(fontStr(o)) + ';line-height:' + L.lh + 'px;color:' + o.c + ';padding:' + L.pd + 'px;box-sizing:border-box;width:100%;' + (o.o < 1 ? 'opacity:' + o.o + ';' : '') + (o.u ? 'text-decoration:underline;' : '') + '">'
+                    + L.lines.map(function (ln) { return '<div style="height:' + L.lh + 'px;white-space:pre;text-align:' + (L.al === 'r' ? 'right' : L.al === 'c' ? 'center' : 'left') + ';direction:' + (L.rtl ? 'rtl' : 'ltr') + '">' + (esc(ln) || '&nbsp;') + '</div>'; }).join('') + '</div></foreignObject></g>';
+                return h;
+            case 'rect': return '<g' + a + rotT(o) + op + '><rect x="' + o.x + '" y="' + o.y + '" width="' + o.w + '" height="' + o.h + '" fill="' + (o.fc || 'transparent') + '" stroke="' + (o.sc || 'none') + '" stroke-width="' + o.sw + '"/></g>';
+            case 'ell': return '<g' + a + rotT(o) + op + '><ellipse cx="' + (o.x + o.w / 2) + '" cy="' + (o.y + o.h / 2) + '" rx="' + o.w / 2 + '" ry="' + o.h / 2 + '" fill="' + (o.fc || 'transparent') + '" stroke="' + (o.sc || 'none') + '" stroke-width="' + o.sw + '"/></g>';
+            case 'line': case 'arrow':
+                var hd = '', ar = arrowHead(o); if (o.t === 'arrow') hd = '<polyline points="' + ar.map(function (p) { return f2(p[0]) + ',' + f2(p[1]); }).join(' ') + '" fill="none" stroke="' + o.sc + '" stroke-width="' + o.sw + '" stroke-linecap="round" stroke-linejoin="round"/>';
+                return '<g' + a + op + '><line x1="' + o.x1 + '" y1="' + o.y1 + '" x2="' + o.x2 + '" y2="' + o.y2 + '" stroke="transparent" stroke-width="' + Math.max(o.sw, 22 / S) + '" stroke-linecap="round"/><line x1="' + o.x1 + '" y1="' + o.y1 + '" x2="' + o.x2 + '" y2="' + o.y2 + '" stroke="' + o.sc + '" stroke-width="' + o.sw + '" stroke-linecap="round"/>' + hd + '</g>';
+            case 'path':
+                var pp = o.pts.map(function (p) { return f2(p[0]) + ',' + f2(p[1]); }).join(' ');
+                return '<g' + a + op + '><polyline points="' + pp + '" fill="none" stroke="transparent" stroke-width="' + Math.max(o.sw, 22 / S) + '" stroke-linecap="round" stroke-linejoin="round"/><polyline points="' + pp + '" fill="none" stroke="' + o.sc + '" stroke-width="' + o.sw + '" stroke-linecap="round" stroke-linejoin="round"/></g>';
+            case 'img': var im = IMGS[o.k]; return '<g' + a + rotT(o) + op + '><image href="' + (im ? im.u : '') + '" x="' + o.x + '" y="' + o.y + '" width="' + o.w + '" height="' + o.h + '" preserveAspectRatio="none"/></g>';
+            case 'hl': return '<g' + a + rotT(o) + op + '><rect x="' + o.x + '" y="' + o.y + '" width="' + o.w + '" height="' + o.h + '" fill="' + o.c + '" style="mix-blend-mode:multiply"/></g>';
+            case 'ul': case 'st':
+                var th = Math.max(1.2, o.h / 12), yy = o.t === 'ul' ? o.y + o.h - th * 1.2 : o.y + o.h / 2 - th / 2;
+                return '<g' + a + rotT(o) + op + '><rect x="' + o.x + '" y="' + o.y + '" width="' + o.w + '" height="' + o.h + '" fill="transparent"/><rect x="' + o.x + '" y="' + yy + '" width="' + o.w + '" height="' + th + '" fill="' + o.c + '"/></g>';
+            case 'cover': return '<g' + a + rotT(o) + '><rect x="' + o.x + '" y="' + o.y + '" width="' + o.w + '" height="' + o.h + '" fill="' + o.c + '"' + (o.rd ? ' stroke="#ef4444" stroke-width="' + 1 / S + '" stroke-dasharray="' + 3 / S + '"' : '') + '/></g>';
+        }
+        return '';
+    }
+    function arrowHead(o) {
+        var dx = o.x2 - o.x1, dy = o.y2 - o.y1, L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L, hl = Math.min(L * 0.5, Math.max(10, o.sw * 4.5)), ang = 0.5;
+        function rot(a) { return [o.x2 - hl * (ux * Math.cos(a) - uy * Math.sin(a)), o.y2 - hl * (ux * Math.sin(a) + uy * Math.cos(a))]; }
+        return [rot(ang), [o.x2, o.y2], rot(-ang)];
+    }
+    function bbox(o) {
+        if (o.pts) { var xs = o.pts.map(function (p) { return p[0]; }), ys = o.pts.map(function (p) { return p[1]; }), pd = (o.sw || 2) / 2; return { x: Math.min.apply(0, xs) - pd, y: Math.min.apply(0, ys) - pd, w: Math.max.apply(0, xs) - Math.min.apply(0, xs) + 2 * pd, h: Math.max.apply(0, ys) - Math.min.apply(0, ys) + 2 * pd, r: 0 }; }
+        if (o.x1 != null) return { x: Math.min(o.x1, o.x2), y: Math.min(o.y1, o.y2), w: Math.abs(o.x2 - o.x1), h: Math.abs(o.y2 - o.y1), r: 0 };
+        return { x: o.x, y: o.y, w: o.w, h: o.h, r: o.r || 0 };
+    }
+    function selSvg(o) {
+        var b = bbox(o), u = 1 / S, hr = 12 * u, h = '<g class="sel"' + (b.r ? ' transform="rotate(' + b.r + ' ' + (b.x + b.w / 2) + ' ' + (b.y + b.h / 2) + ')"' : '') + '>';
+        h += '<rect x="' + b.x + '" y="' + b.y + '" width="' + b.w + '" height="' + b.h + '" fill="none" stroke="#3b82f6" stroke-width="' + 1.6 * u + '" stroke-dasharray="' + 6 * u + '" pointer-events="none"/>';
+        if (o.x1 != null) { h += '<circle data-h="p1" cx="' + o.x1 + '" cy="' + o.y1 + '" r="' + hr + '" fill="#3b82f6" stroke="#fff" stroke-width="' + 2 * u + '"/><circle data-h="p2" cx="' + o.x2 + '" cy="' + o.y2 + '" r="' + hr + '" fill="#3b82f6" stroke="#fff" stroke-width="' + 2 * u + '"/>'; }
+        else if (!o.pts) {
+            h += '<line x1="' + (b.x + b.w / 2) + '" y1="' + b.y + '" x2="' + (b.x + b.w / 2) + '" y2="' + (b.y - 26 * u) + '" stroke="#3b82f6" stroke-width="' + 1.6 * u + '" pointer-events="none"/>';
+            if (o.t !== 'hl' && o.t !== 'ul' && o.t !== 'st' && o.t !== 'cover') h += '<circle data-h="rot" cx="' + (b.x + b.w / 2) + '" cy="' + (b.y - 26 * u) + '" r="' + hr + '" fill="#fff" stroke="#3b82f6" stroke-width="' + 2.2 * u + '"/>';
+            h += '<circle data-h="se" cx="' + (b.x + b.w) + '" cy="' + (b.y + b.h) + '" r="' + hr + '" fill="#3b82f6" stroke="#fff" stroke-width="' + 2 * u + '"/>';
+        }
+        return h + '</g>';
+    }
+    function drawPg(pg) {
+        if (!pg) return; var w = WR[pg.id]; if (!w) return; var d = dimsOf(pg), svg = w.querySelector('svg');
+        svg.setAttribute('viewBox', '0 0 ' + d.w + ' ' + d.h);
+        var h = pg.objs.map(function (o, i) { return objSvg(o, i); }).join('');
+        hitsR.forEach(function (r) { if (r.p === pg.id) h += '<rect class="hit" x="' + r.x + '" y="' + r.y + '" width="' + r.w + '" height="' + r.h + '" pointer-events="none"/>'; });
+        if (PREV && PREV.p === pg.id) h += '<g opacity=".95" pointer-events="none">' + objSvg(PREV.o, -1) + '</g>';
+        if (sel && sel.p === pg.id && pg.objs[sel.i]) h += selSvg(pg.objs[sel.i]);
+        svg.innerHTML = h;
+    }
+    var PREV = null;
+    function redrawAll() { PGS.forEach(drawPg); }
+
+    // ---------- لاپەڕەکان: چاندن و کێشان ----------
+    function fitScale() { var mw = 1; PGS.forEach(function (pg) { mw = Math.max(mw, dimsOf(pg).w); }); return Math.max(40, SC.clientWidth - 20) / mw; }
+    function layout() {
+        S = fitScale() * Z; var keep = {};
+        PGS.forEach(function (pg, idx) {
+            var w = WR[pg.id]; if (!w) { w = document.createElement('div'); w.className = 'kfpd-pg'; w.dataset.id = pg.id; w.innerHTML = '<canvas width="1" height="1"></canvas><svg xmlns="http://www.w3.org/2000/svg"></svg><i class="no"></i>'; WR[pg.id] = w; }
+            keep[pg.id] = 1; var d = dimsOf(pg); w.style.width = d.w * S + 'px'; w.style.height = d.h * S + 'px'; w.querySelector('.no').textContent = idx + 1;
+            if (PAGES.children[idx] !== w) PAGES.insertBefore(w, PAGES.children[idx] || null);
+        });
+        Object.keys(WR).forEach(function (id) { if (!keep[id]) { WR[id].remove(); delete WR[id]; } });
+        PGS.forEach(drawPg); $('kfpdZv').textContent = Math.round(Z * 100) + '%'; updTop(); kick();
+    }
+    var RQ = Promise.resolve();
+    function pgKey(pg) { return pg.d + ':' + pg.n + ':' + pg.rot + ':' + f2(S) + ':' + devicePixelRatio; }
+    function kick() {
+        var r = SC.getBoundingClientRect(), mid = r.top + r.height / 2, best = 0, bd = 1e9;
+        PGS.forEach(function (pg, idx) {
+            var w = WR[pg.id]; if (!w) return; var b = w.getBoundingClientRect(), vis = b.bottom > r.top - 900 && b.top < r.bottom + 900;
+            if (vis) { var k = pgKey(pg); if (w._rk !== k && w._want !== k) { w._want = k; RQ = RQ.then(function () { return renderPg(pg, w, k); }).catch(function () { }); } }
+            else if (w._rk) { w._rk = null; w._want = null; var cv = w.querySelector('canvas'); cv.width = cv.height = 1; }
+            var c = Math.abs((b.top + b.bottom) / 2 - mid); if (c < bd) { bd = c; best = idx; }
+        });
+        IND.textContent = PGS.length ? (best + 1) + ' / ' + PGS.length : '';
+    }
+    async function renderPg(pg, w, key) {
+        if (w._want !== key || !w.isConnected) return;
+        var cv = w.querySelector('canvas'), d = dimsOf(pg), dpr = Math.min(window.devicePixelRatio || 1, 2), sc = S * dpr, px = d.w * sc * d.h * sc; if (px > 16e6) sc *= Math.sqrt(16e6 / px);
+        if (pg.d < 0) { cv.width = Math.ceil(d.w * sc); cv.height = Math.ceil(d.h * sc); var g = cv.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, cv.width, cv.height); w._rk = key; return; }
+        try {
+            var page = await DOCS[pg.d].pj.getPage(pg.n + 1), vp = page.getViewport({ scale: sc, rotation: (page.rotate + pg.rot) % 360 }), off = document.createElement('canvas'); off.width = Math.ceil(vp.width); off.height = Math.ceil(vp.height);
+            await page.render({ canvas: off, canvasContext: off.getContext('2d'), viewport: vp }).promise;
+            if (w._want !== key) return; cv.width = off.width; cv.height = off.height; cv.getContext('2d').drawImage(off, 0, 0); w._rk = key;
+        } catch (e) { console.warn('pdf render', e); w._want = null; }
+    }
+    async function renderCanvas(pg, sc) {
+        var d = dimsOf(pg), cv = document.createElement('canvas'); cv.width = Math.ceil(d.w * sc); cv.height = Math.ceil(d.h * sc); var g = cv.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, cv.width, cv.height);
+        if (pg.d >= 0) { var page = await DOCS[pg.d].pj.getPage(pg.n + 1), vp = page.getViewport({ scale: sc, rotation: (page.rotate + pg.rot) % 360 }); await page.render({ canvas: cv, canvasContext: g, viewport: vp }).promise; }
+        return cv;
+    }
+    function setZoom(z) {
+        if (!PGS.length) return; z = Math.max(0.35, Math.min(5, z)); var fr = (SC.scrollTop + SC.clientHeight / 2) / Math.max(1, SC.scrollHeight);
+        Z = z; layout(); SC.scrollTop = fr * SC.scrollHeight - SC.clientHeight / 2;
+    }
+    function goPage(i) { var pg = PGS[i]; if (!pg || !WR[pg.id]) return; SC.scrollTop = WR[pg.id].offsetTop - 8; kick(); }
+    function curPageIdx() { var r = SC.getBoundingClientRect(), mid = r.top + r.height / 2, best = 0, bd = 1e9; PGS.forEach(function (pg, idx) { var w = WR[pg.id]; if (!w) return; var b = w.getBoundingClientRect(), c = (b.top <= mid && b.bottom >= mid) ? 0 : Math.min(Math.abs(b.top - mid), Math.abs(b.bottom - mid)); if (c < bd) { bd = c; best = idx; } }); return best; }
+
+    // ---------- دەقی ناو PDF (بۆ دەستکاری، هایلایت، گەڕان) ----------
+    async function getLines(pg) {
+        if (pg.d < 0) return []; var key = pg.d + ':' + pg.n + ':' + pg.rot; if (TXT[key]) return TXT[key];
+        var page = await DOCS[pg.d].pj.getPage(pg.n + 1), vp = page.getViewport({ scale: 1, rotation: (page.rotate + pg.rot) % 360 }), tc = await page.getTextContent(), out = [], cur = null;
+        tc.items.forEach(function (it) {
+            if (!it.str) return; var t = PJ.Util.transform(vp.transform, it.transform), size = Math.hypot(t[0], t[1]); if (!size) return;
+            var rx = t[0] / size * it.width, ry = t[1] / size * it.width, ux = t[2], uy = t[3], px = t[4], py = t[5], xs = [px + ux * -0.22, px + ux * 0.92, px + rx + ux * -0.22, px + rx + ux * 0.92], ys = [py + uy * -0.22, py + uy * 0.92, py + ry + uy * -0.22, py + ry + uy * 0.92];
+            var x0 = Math.min.apply(0, xs), x1 = Math.max.apply(0, xs), y0 = Math.min.apply(0, ys), y1 = Math.max.apply(0, ys), hz = Math.abs(t[1]) < 0.01 * size && t[0] > 0, fam = (tc.styles[it.fontName] || {}).fontFamily || '';
+            if (cur && hz && cur.hz && Math.abs(py - cur.by) < size * 0.35 && x0 - cur.x1 < size * 1.3 && x0 - cur.x1 > -size * 0.6) {
+                var gap = x0 - cur.x1; if (gap > size * 0.12 && !/\s$/.test(cur.s) && !/^\s/.test(it.str)) cur.s += ' '; cur.s += it.str; cur.x1 = Math.max(cur.x1, x1); cur.y0 = Math.min(cur.y0, y0); cur.y1 = Math.max(cur.y1, y1); cur.w = cur.x1 - cur.x; cur.y = cur.y0; cur.h = cur.y1 - cur.y0;
+            } else { cur = { s: it.str, x: x0, y: y0, w: x1 - x0, h: y1 - y0, x1: x1, y0: y0, y1: y1, size: size, by: py, bx: px, hz: hz, fam: fam }; out.push(cur); }
+        });
+        out = out.filter(function (l) { return l.s.trim(); }); TXT[key] = out; return out;
+    }
+    function sampleCols(pg, L) {
+        var w = WR[pg.id], cv = w && w.querySelector('canvas'); if (!cv || cv.width < 8 || !w._rk) return { bg: '#ffffff', fg: '#000000' };
+        var d = dimsOf(pg), k = cv.width / d.w, x = Math.max(0, Math.floor(L.x * k)), y = Math.max(0, Math.floor(L.y * k)), ww = Math.max(1, Math.min(cv.width - x, Math.ceil(L.w * k))), hh = Math.max(1, Math.min(cv.height - y, Math.ceil(L.h * k)));
+        var im; try { im = cv.getContext('2d').getImageData(x, y, ww, hh).data; } catch (e) { return { bg: '#ffffff', fg: '#000000' }; }
+        var bins = {}, n = im.length / 4, st = Math.max(1, Math.floor(n / 4000)), bk = '';
+        for (var i = 0; i < n; i += st) { var key = (im[i * 4] >> 4) + ',' + (im[i * 4 + 1] >> 4) + ',' + (im[i * 4 + 2] >> 4); var b = bins[key] || (bins[key] = { c: 0, r: 0, g: 0, b: 0 }); b.c++; b.r += im[i * 4]; b.g += im[i * 4 + 1]; b.b += im[i * 4 + 2]; }
+        var top = null; for (var kk in bins) if (!top || bins[kk].c > top.c) top = bins[kk];
+        var br = top.r / top.c, bg = top.g / top.c, bb = top.b / top.c, far = [], fd = 0;
+        for (var j = 0; j < n; j += st) { var dd = Math.abs(im[j * 4] - br) + Math.abs(im[j * 4 + 1] - bg) + Math.abs(im[j * 4 + 2] - bb); if (dd > fd) { fd = dd; far = [im[j * 4], im[j * 4 + 1], im[j * 4 + 2]]; } }
+        function hx(a) { return '#' + a.map(function (v) { return ('0' + Math.round(v).toString(16)).slice(-2); }).join(''); }
+        return { bg: hx([br, bg, bb]), fg: fd > 90 ? hx(far) : '#000000' };
+    }
+    function famOf(f) { return /mono|courier/i.test(f) ? 'Courier' : (/serif/i.test(f) && !/sans/i.test(f)) ? 'Times' : 'Helvetica'; }
+
+    // ---------- کارلێکردنی پەنجە / ماوس ----------
+    var DR = null;
+    function pt(e, pg) { var r = WR[pg.id].getBoundingClientRect(), d = dimsOf(pg); return { x: (e.clientX - r.left) / r.width * d.w, y: (e.clientY - r.top) / r.height * d.h }; }
+    function selectObj(pgid, i) {
+        var old = sel ? sel.p : null; sel = pgid == null ? null : { p: pgid, i: i }; if (old != null) drawPg(pgById(old)); if (pgid != null) drawPg(pgById(pgid)); drawPB();
+    }
+    function onDown(e) {
+        if (e.button > 0 || (e.pointerType === 'touch' && DR)) return; var wr = e.target.closest('.kfpd-pg'); if (!wr) return; var pg = pgById(+wr.dataset.id); if (!pg) return;
+        var hEl = e.target.closest('[data-h]'), obEl = e.target.closest('.ob'), p = pt(e, pg);
+        if (hEl && sel && sel.p === pg.id) { var o = curObj(); DR = { t: 'h', h: hEl.dataset.h, pg: pg, o0: clone(o), p0: p, moved: false }; cap(e); return; }
+        if (tool === 'sel') {
+            if (obEl) { var i = +obEl.dataset.i, was = sel && sel.p === pg.id && sel.i === i; selectObj(pg.id, i); DR = { t: 'm', pg: pg, i: i, o0: clone(pg.objs[i]), p0: p, moved: false, edit: was && pg.objs[i].t === 'text' }; cap(e); }
+            else if (sel) selectObj(null);
+            return;
+        }
+        if (tool === 'text' || tool === 'editt') { DR = { t: 'tap', pg: pg, p0: p, cx: e.clientX, cy: e.clientY, tm: Date.now() }; cap(e); return; }
+        DR = { t: 'd', pg: pg, p0: p, pts: [[p.x, p.y]], p1: p, moved: false }; cap(e);
+        if (e.cancelable) e.preventDefault();
+    }
+    function cap(e) { try { PAGES.setPointerCapture(e.pointerId); } catch (x) { } }
+    function onMove(e) {
+        if (!DR) return; var pg = DR.pg, p = pt(e, pg);
+        if (DR.t === 'tap') return;
+        if (DR.t === 'm') {
+            var dx = p.x - DR.p0.x, dy = p.y - DR.p0.y; if (!DR.moved) { if (Math.hypot(dx, dy) * S < 5) return; snap(); DR.moved = true; }
+            var o = pg.objs[DR.i]; Object.keys(o).forEach(function (k) { delete o[k]; }); Object.assign(o, clone(DR.o0)); shiftObj(o, dx, dy); drawPg(pg);
+        } else if (DR.t === 'h') {
+            if (!DR.moved) { if (Math.hypot(p.x - DR.p0.x, p.y - DR.p0.y) * S < 3) return; snap(); DR.moved = true; }
+            var ob = pg.objs[sel.i]; handleMove(ob, DR, p); drawPg(pg);
+        } else if (DR.t === 'd') {
+            DR.p1 = p; if (!DR.moved && Math.hypot(p.x - DR.p0.x, p.y - DR.p0.y) * S < 4 && tool !== 'pen') return; DR.moved = true;
+            if (tool === 'pen') { var lp = DR.pts[DR.pts.length - 1]; if (Math.hypot(p.x - lp[0], p.y - lp[1]) > 1.2 / Math.max(.5, S)) DR.pts.push([p.x, p.y]); }
+            PREV = { p: pg.id, o: previewObj(DR) }; drawPg(pg);
+        }
+    }
+    function rotp(x, y, a) { var c = Math.cos(a), s = Math.sin(a); return [x * c - y * s, x * s + y * c]; }
+    function handleMove(o, D, p) {
+        var o0 = D.o0;
+        if (D.h === 'p1') { o.x1 = p.x; o.y1 = p.y; } else if (D.h === 'p2') { o.x2 = p.x; o.y2 = p.y; }
+        else if (D.h === 'rot') { var cx = o0.x + o0.w / 2, cy = o0.y + o0.h / 2, a = Math.atan2(p.y - cy, p.x - cx) * 180 / Math.PI + 90; a = ((a % 360) + 360) % 360; var n = Math.round(a / 15) * 15; if (Math.abs(a - n) < 4) a = n % 360; o.r = Math.round(a * 10) / 10; }
+        else if (D.h === 'se') {
+            var r = (o0.r || 0) * Math.PI / 180, cx0 = o0.x + o0.w / 2, cy0 = o0.y + o0.h / 2, tl = rotp(-o0.w / 2, -o0.h / 2, r), A = [cx0 + tl[0], cy0 + tl[1]], v = rotp(p.x - A[0], p.y - A[1], -r), nw = Math.max(8, v[0]), nh = Math.max(8, v[1]);
+            if (o.t === 'img') nh = nw * o0.h / o0.w;
+            if (o.t === 'text') { o.w = Math.max(20, nw); layoutText(o); nh = o.h; }
+            var c2 = rotp(nw / 2, nh / 2, r), ncx = A[0] + c2[0], ncy = A[1] + c2[1]; o.w = nw; o.h = o.t === 'text' ? nh : nh; o.x = ncx - nw / 2; o.y = ncy - nh / 2;
+            if (o.t === 'text') { layoutText(o); }
+        }
+    }
+    function previewObj(D) {
+        var a = D.p0, b = D.p1, x = Math.min(a.x, b.x), y = Math.min(a.y, b.y), w = Math.abs(a.x - b.x), h = Math.abs(a.y - b.y);
+        if (tool === 'pen') return { t: 'path', pts: D.pts, sc: DEF.sc, sw: DEF.sw, o: DEF.o };
+        if (tool === 'shape') {
+            if (sub.shape === 'line' || sub.shape === 'arrow') return { t: sub.shape, x1: a.x, y1: a.y, x2: b.x, y2: b.y, sc: DEF.sc, sw: DEF.sw, o: DEF.o };
+            return { t: sub.shape, x: x, y: y, w: w, h: h, r: 0, sc: DEF.sc, sw: DEF.sw, fc: DEF.fc, o: DEF.o };
+        }
+        if (tool === 'mark') return { t: sub.mark, x: x, y: y, w: w, h: Math.max(h, sub.mark === 'hl' ? 4 : 6), c: DEF.mc, o: DEF.o };
+        return sub.cover === 'redact' ? { t: 'cover', x: x, y: y, w: w, h: h, c: '#000000', rd: 1 } : { t: 'cover', x: x, y: y, w: w, h: h, c: DEF.vc };
+    }
+    async function onUp(e) {
+        var D = DR; DR = null; if (!D) return; var pg = D.pg;
+        if (D.t === 'm') { if (!D.moved && D.edit) { var o = pg.objs[D.i]; if (o) editText(o, 0); } return; }
+        if (D.t === 'h') { drawPg(pg); return; }
+        if (D.t === 'tap') {
+            if (e.type === 'pointercancel' || Math.hypot(e.clientX - D.cx, e.clientY - D.cy) > 9 || Date.now() - D.tm > 700) return;
+            if (tool === 'text') createText(pg, D.p0); else tapEdit(pg, D.p0); return;
+        }
+        if (D.t === 'd') {
+            PREV = null; if (e.type === 'pointercancel') { drawPg(pg); return; }
+            var d = dimsOf(pg), o2 = previewObj(D), big = D.moved && (o2.pts ? D.pts.length > 1 : (o2.x1 != null ? Math.hypot(o2.x2 - o2.x1, o2.y2 - o2.y1) > 4 : (o2.w > 4 && o2.h > 3)));
+            if (tool === 'pen') { if (!big) { drawPg(pg); return; } snap(); pg.objs.push(o2); drawPg(pg); return; }
+            if (tool === 'mark') { if (!big && o2.h < 5) { drawPg(pg); return; } var items = await marksFrom(pg, D); snap(); if (items.length) items.forEach(function (it) { pg.objs.push(it); }); else pg.objs.push(o2); drawPg(pg); return; }
+            if (tool === 'cover') { if (!big) { drawPg(pg); return; } snap(); pg.objs.push(o2); drawPg(pg); return; }
+            if (!big) { var cx = D.p0.x, cy = D.p0.y; if (o2.x1 != null) { o2.x1 = cx - 60; o2.y1 = cy; o2.x2 = cx + 60; o2.y2 = cy; } else { o2.w = 110; o2.h = 70; o2.x = Math.max(0, Math.min(d.w - 110, cx - 55)); o2.y = Math.max(0, cy - 35); } }
+            snap(); pg.objs.push(o2); sel = { p: pg.id, i: pg.objs.length - 1 }; tool = 'sel'; drawTB(); drawPg(pg); drawPB();
+        }
+    }
+    async function marksFrom(pg, D) {
+        var lines = await getLines(pg).catch(function () { return []; }), a = D.p0, b = D.p1, top = a.y <= b.y ? a : b, bot = a.y <= b.y ? b : a, y0 = Math.min(a.y, b.y), y1 = Math.max(a.y, b.y), x0 = Math.min(a.x, b.x), x1 = Math.max(a.x, b.x), out = [];
+        var hit = lines.filter(function (L) { var cy = L.y + L.h / 2; return L.hz && cy >= y0 - 2 && cy <= y1 + 2; }); if (!hit.length) return [];
+        var rows = []; hit.sort(function (p, q) { return p.by - q.by; }); hit.forEach(function (L) { var r = rows[rows.length - 1]; if (r && Math.abs(r.by - L.by) < L.size * 0.4) r.items.push(L); else rows.push({ by: L.by, items: [L] }); });
+        rows.forEach(function (r, ri) {
+            r.items.forEach(function (L) {
+                var from = L.x, to = L.x + L.w;
+                if (rows.length === 1) { from = Math.max(from, x0); to = Math.min(to, x1); } else if (ri === 0) from = Math.max(from, top.x); else if (ri === rows.length - 1) to = Math.min(to, bot.x);
+                if (to - from > 1) out.push({ t: sub.mark, x: from, y: L.y + L.h * 0.08, w: to - from, h: L.h * 0.86, c: DEF.mc, o: DEF.o });
+            });
+        });
+        return out;
+    }
+    function createText(pg, p) {
+        var d = dimsOf(pg), w = Math.max(90, Math.min(260, d.w - p.x - 6)), o = { t: 'text', x: Math.max(0, Math.min(d.w - 90, p.x)), y: Math.max(0, p.y - DEF.z * 0.6), w: w, h: 0, r: 0, s: '', f: DEF.f, z: DEF.z, c: DEF.c, b: DEF.b, i: DEF.i, u: DEF.u, a: DEF.a, o: DEF.o };
+        snap(); pg.objs.push(o); sel = { p: pg.id, i: pg.objs.length - 1 }; layoutText(o); drawPg(pg); drawPB(); editText(o, 1);
+    }
+    async function tapEdit(pg, p) {
+        var lines = await getLines(pg), L = null; lines.forEach(function (l) { if (l.hz && p.x >= l.x - 3 && p.x <= l.x + l.w + 3 && p.y >= l.y - 3 && p.y <= l.y + l.h + 3 && (!L || l.w * l.h < L.w * L.h)) L = l; });
+        if (!L) { toast(pg.d < 0 ? 'ئەم لاپەڕەیە دەقی ڕاستەقینەی نییە' : 'لێرە دەقێک نەدۆزرایەوە (لەوانەیە وێنە بێت)', 'info'); return; }
+        var cl = sampleCols(pg, L), d = dimsOf(pg);
+        snap(); var cov = { t: 'cover', x: L.x - 1, y: L.y - 0.5, w: L.w + 2, h: L.h + 1, c: cl.bg }, tw = Math.min(d.w - L.x - 2, L.w + L.size * 3);
+        var o = { t: 'text', x: L.x, y: L.by - L.size * 0.96, w: Math.max(20, tw), h: 0, r: 0, s: L.s, f: famOf(L.fam), z: Math.round(L.size * 10) / 10, c: cl.fg, b: 0, i: 0, u: 0, a: null, o: 1 };
+        pg.objs.push(cov, o); sel = { p: pg.id, i: pg.objs.length - 1 }; layoutText(o); drawPg(pg); drawPB(); editText(o, 2);
+    }
+    // ---------- وێنە ----------
+    async function loadImg(blob) {
+        var bmp = await createImageBitmap(blob), k = Math.min(1, 2600 / Math.max(bmp.width, bmp.height)), cv = document.createElement('canvas'); cv.width = Math.round(bmp.width * k); cv.height = Math.round(bmp.height * k);
+        var g = cv.getContext('2d'), png = /png|webp|gif|svg/.test(blob.type || ''); if (!png) { g.fillStyle = '#fff'; g.fillRect(0, 0, cv.width, cv.height); } g.drawImage(bmp, 0, 0, cv.width, cv.height);
+        var out = await new Promise(function (r) { cv.toBlob(r, png ? 'image/png' : 'image/jpeg', 0.92); }), key = 'i' + (uid++);
+        IMGS[key] = { b: new Uint8Array(await out.arrayBuffer()), m: png ? 'png' : 'jpg', u: URL.createObjectURL(out), w: cv.width, h: cv.height }; return key;
+    }
+    function putCentre(o) {
+        if (!PGS.length) return; var pg = PGS[curPageIdx()], d = dimsOf(pg); o.x = (d.w - o.w) / 2; o.y = Math.max(10, (d.h - o.h) / 2);
+        snap(); pg.objs.push(o); sel = { p: pg.id, i: pg.objs.length - 1 }; tool = 'sel'; drawTB(); drawPg(pg); drawPB();
+    }
+    async function addImage(key, wPt) {
+        var im = IMGS[key], d = dimsOf(PGS[curPageIdx()]), w = wPt || Math.min(d.w * 0.5, im.w * 0.75); putCentre({ t: 'img', x: 0, y: 0, w: w, h: w * im.h / im.w, r: 0, k: key, o: 1 });
+    }
+    function sigs() { try { return JSON.parse(localStorage.getItem('kf-pdf-sigs') || '[]'); } catch (e) { return []; } }
+    function saveSigs(a) { try { localStorage.setItem('kf-pdf-sigs', JSON.stringify(a.slice(0, 8))); } catch (e) { } }
+    function signSheet() {
+        var sh = sheet('واژۆ', [{ t: 'واژۆی نوێ بکێشە', i: I.pen, f: padSheet }], { note: 'واژۆ لەسەر ئامێرەکەت دەمێنێتەوە و بە ئاسانی لە هەر PDFـێکدا بەکاردێت.' }), l = sigs(), wrap = document.createElement('div'); wrap.className = 'kfpd-sg-l';
+        l.forEach(function (u, i) {
+            var d = document.createElement('div'); d.className = 's'; d.innerHTML = '<img src="' + u + '" alt=""><b>×</b>';
+            d.onclick = function (e) { if (e.target.tagName === 'B') { var a = sigs(); a.splice(i, 1); saveSigs(a); d.remove(); return; } sh.close(); fetch(u).then(function (r) { return r.blob(); }).then(loadImg).then(function (k) { addImage(k, 150); }); };
+            wrap.appendChild(d);
+        }); if (l.length) sh.bd.appendChild(wrap);
+    }
+    function padSheet() {
+        var d = document.createElement('div'); d.className = 'kfpd-sh'; d.style.alignItems = 'center'; var col = '#111111';
+        d.innerHTML = '<div style="border-radius:18px"><h5>واژۆ بکێشە</h5><canvas class="sg" width="640" height="340"></canvas><div class="fm"><div class="chs">' + ['#111111', '#1d4ed8', '#dc2626'].map(function (c, i) { return '<button type="button" data-c="' + c + '" class="' + (i ? '' : 'on') + '" style="color:' + c + ';background:' + c + ';width:34px;height:30px;border:2px solid #fff"></button>'; }).join('') + '</div></div><div class="ac"><button class="x">پاشگەزبوونەوە</button><button class="cl">سڕینەوە</button><button class="pri k">بەکارهێنان</button></div></div>';
+        var cv = d.querySelector('canvas'), g = cv.getContext('2d'), dr = false, ink = false, lp = null; g.lineCap = 'round'; g.lineJoin = 'round'; g.lineWidth = 5;
+        function pp(e) { var r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * cv.width, (e.clientY - r.top) / r.height * cv.height]; }
+        cv.onpointerdown = function (e) { dr = true; lp = pp(e); g.strokeStyle = col; g.beginPath(); g.moveTo(lp[0], lp[1]); g.lineTo(lp[0] + .01, lp[1]); g.stroke(); ink = true; try { cv.setPointerCapture(e.pointerId); } catch (x) { } };
+        cv.onpointermove = function (e) { if (!dr) return; var p = pp(e); g.beginPath(); g.moveTo(lp[0], lp[1]); g.lineTo(p[0], p[1]); g.stroke(); lp = p; };
+        cv.onpointerup = cv.onpointercancel = function () { dr = false; };
+        d.querySelectorAll('[data-c]').forEach(function (b) { b.onclick = function () { col = b.dataset.c; d.querySelectorAll('[data-c]').forEach(function (x) { x.classList.toggle('on', x === b); }); }; });
+        var ov = ovAdd(function () { d.remove(); });
+        d.querySelector('.x').onclick = function () { ovClose(ov); }; d.querySelector('.cl').onclick = function () { g.clearRect(0, 0, cv.width, cv.height); ink = false; };
+        d.querySelector('.k').onclick = function () {
+            if (!ink) { toast('یەکەم واژۆکەت بکێشە', 'info'); return; }
+            var im = g.getImageData(0, 0, cv.width, cv.height).data, x0 = 1e9, y0 = 1e9, x1 = 0, y1 = 0; for (var y = 0; y < cv.height; y++) for (var x = 0; x < cv.width; x++) if (im[(y * cv.width + x) * 4 + 3] > 10) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+            var c2 = document.createElement('canvas'), pad = 6; c2.width = x1 - x0 + 2 * pad; c2.height = y1 - y0 + 2 * pad; c2.getContext('2d').drawImage(cv, x0 - pad, y0 - pad, c2.width, c2.height, 0, 0, c2.width, c2.height);
+            var u = c2.toDataURL('image/png'), a = sigs(); a.unshift(u); saveSigs(a); ovClose(ov); c2.toBlob(function (b) { loadImg(b).then(function (k) { addImage(k, 150); }); });
+        };
+        d.addEventListener('pointerdown', function (e) { if (e.target === d) ovClose(ov); }); document.body.appendChild(d);
+    }
+    function stampSheet() {
+        var P = [['APPROVED', '#16a34a'], ['REJECTED', '#dc2626'], ['DRAFT', '#6b7280'], ['CONFIDENTIAL', '#dc2626'], ['PAID', '#16a34a'], ['COPY', '#2563eb'], ['پەسەندکرا', '#16a34a'], ['ڕەتکرایەوە', '#dc2626'], ['ڕەشنووس', '#6b7280'], ['نهێنی', '#dc2626'], ['ئەنجامدرا', '#2563eb']];
+        var it = P.map(function (p) { return { t: p[0], i: '<svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="2" fill="none" stroke="' + p[1] + '" stroke-width="2.4"/></svg>', f: function () { mkStamp(p[0], p[1]); } }; });
+        it.push('-', { t: 'مۆری تایبەت (دەقی خۆت)', i: I.text, f: function () { ask('دەقی مۆر', { input: '' }, function (v) { if (String(v).trim()) mkStamp(v.trim(), DEF.c); }); } }, { t: 'بەرواری ئەمڕۆ', i: I.stamp, f: function () { var n = new Date(); mkStamp(n.getFullYear() + '-' + ('0' + (n.getMonth() + 1)).slice(-2) + '-' + ('0' + n.getDate()).slice(-2), '#2563eb'); } });
+        sheet('مۆر', it);
+    }
+    function mkStamp(s, c) {
+        var o = { t: 'text', x: 0, y: 0, w: 10, h: 0, r: 345, s: s, f: 'Helvetica', z: 32, b: 1, i: 0, u: 0, a: 'c', c: c, o: 1, bd: c, bw: 3, rx: 6, pd: 8 }; MC.font = fontStr(o); o.w = Math.ceil(MC.measureText(s).width) + 2 * o.pd + 8; layoutText(o); putCentre(o);
+    }
+
+    // ---------- بارکردنی PDF ----------
+    async function parseDoc(bytes) {
+        try { return await PJ.getDocument({ data: bytes.slice(0) }).promise; }
+        catch (e) { toast(e && e.name === 'PasswordException' ? 'PDFی پارێزراو بە تێپەڕەوشە پشتگیری ناکرێت' : 'ئەم فایلە PDFـێکی دروست نییە', 'error'); return null; }
+    }
+    async function pagesOf(di) {
+        var pj = DOCS[di].pj, out = []; for (var n = 0; n < pj.numPages; n++) { var page = await pj.getPage(n + 1), vp = page.getViewport({ scale: 1, rotation: page.rotate }); out.push({ id: uid++, d: di, n: n, bw: vp.width, bh: vp.height, rot: 0, objs: [] }); } return out;
+    }
+    async function openPdf(file, append) {
+        if (!file) return; busy(true, 'خەریکی کردنەوەم ...');
+        try {
+            if (!(await libs())) return; var bytes = new Uint8Array(await file.arrayBuffer()), pj = await parseDoc(bytes); if (!pj) return;
+            if (!append) { DOCS = []; PGS = []; undoS = []; redoS = []; sel = null; TXT = {}; hitsR = []; PAGES.innerHTML = ''; WR = {}; name = file.name; dirty = false; Z = 1; META = {}; }
+            DOCS.push({ name: file.name, bytes: bytes, pj: pj }); var di = DOCS.length - 1, pages = await pagesOf(di);
+            if (!append) { try { var mi = (await pj.getMetadata()).info || {}; META = { title: mi.Title || '', author: mi.Author || '', subject: mi.Subject || '', keywords: mi.Keywords || '' }; } catch (e) { } }
+            else snap();
+            var first = PGS.length; PGS = PGS.concat(pages); layout(); if (append) goPage(first); else SC.scrollTop = 0; drawPB();
+        } finally { busy(false); }
+    }
+    async function newBlank(w, h, n) {
+        if (!(await libs())) return; if (dirty && PGS.length && !confirmed) { /* نوێ دەبێتەوە */ }
+        DOCS = []; PGS = []; undoS = []; redoS = []; sel = null; TXT = {}; hitsR = []; PAGES.innerHTML = ''; WR = {}; name = 'new.pdf'; dirty = false; Z = 1; META = {};
+        for (var i = 0; i < n; i++) PGS.push({ id: uid++, d: -1, n: 0, bw: w, bh: h, rot: 0, objs: [] }); layout(); SC.scrollTop = 0; drawPB();
+    }
+    var confirmed = true;
+    var SIZES = { A4: [595.28, 841.89], A3: [841.89, 1190.55], A5: [419.53, 595.28], Letter: [612, 792], Legal: [612, 1008] };
+    function newBlankForm() {
+        form('PDFی نوێ', [{ k: 's', l: 'قەبارە', t: 'chips', v: 'A4', opts: Object.keys(SIZES).map(function (k) { return [k, k]; }) }, { k: 'o', l: 'ئاراستە', t: 'chips', v: 'p', opts: [['p', 'ستوونی'], ['l', 'ئاسۆیی']] }, { k: 'n', l: 'ژمارەی لاپەڕە', t: 'num', v: 1 }], function (v) {
+            var s = SIZES[v.s], w = s[0], h = s[1]; if (v.o === 'l') { var t = w; w = h; h = t; } newBlank(w, h, Math.max(1, Math.min(200, Math.round(v.n) || 1)));
+        }, 'دروستکردن');
+    }
+    function imagesToPdf(files) {
+        if (!files || !files.length) return; var fl = Array.from(files);
+        form('وێنە بۆ PDF', [{ k: 'f', l: 'قەبارەی لاپەڕە', t: 'chips', v: 'a4', opts: [['a4', 'A4 (وێنە لەناوەڕاست)'], ['img', 'بە قەبارەی وێنەکە']] }], async function (v) {
+            busy(true, 'خەریکی وێنەکانم ...'); try {
+                if (!(await libs())) return; var pages = [];
+                for (var i = 0; i < fl.length; i++) {
+                    var k = await loadImg(fl[i]), im = IMGS[k], w, h, o;
+                    if (v.f === 'img') { w = im.w * 0.75; h = im.h * 0.75; o = { t: 'img', x: 0, y: 0, w: w, h: h, r: 0, k: k, o: 1 }; }
+                    else { w = SIZES.A4[0]; h = SIZES.A4[1]; if (im.w > im.h) { var t = w; w = h; h = t; } var sc = Math.min((w - 40) / im.w, (h - 40) / im.h), iw = im.w * sc, ih = im.h * sc; o = { t: 'img', x: (w - iw) / 2, y: (h - ih) / 2, w: iw, h: ih, r: 0, k: k, o: 1 }; }
+                    pages.push({ id: uid++, d: -1, n: 0, bw: w, bh: h, rot: 0, objs: [o] });
+                }
+                if (!PGS.length) { DOCS = []; undoS = []; redoS = []; name = 'images.pdf'; META = {}; Z = 1; } else snap();
+                var first = PGS.length; PGS = PGS.concat(pages); dirty = true; layout(); goPage(first); drawPB();
+            } finally { busy(false); }
+        }, 'دروستکردن');
+    }
+
+    // ---------- لاپەڕەکان (پانێڵ) ----------
+    var pSel = {};
+    function openPanel() {
+        if (!PGS.length) return toast('هیچ لاپەڕەیەک نییە', 'info'); PP.classList.add('on'); pSel = {}; var ov = ovAdd(function () { PP.classList.remove('on'); PP.innerHTML = ''; kick(); }); PP._ov = ov; drawPanel();
+    }
+    function closePanel() { if (PP._ov) ovClose(PP._ov); }
+    function drawPanel() {
+        var ids = Object.keys(pSel).filter(function (k) { return pSel[k]; }), n = ids.length;
+        PP.innerHTML = '<div class="hd"><button class="kfpd-ib" data-p="x">' + I.x + '</button><h4>' + (n ? n + ' هەڵبژێردراو' : 'لاپەڕەکان (' + PGS.length + ')') + '</h4><button class="kfpd-ib" data-p="all" aria-label="هەموو">' + I.check + '</button></div><div class="gr"></div><div class="ft ' + (n ? 'on' : '') + '">'
+            + [['rot', 'خولاندنەوە', I.rot], ['up', 'پێشتر', I.left], ['dn', 'دواتر', I.right], ['dup', 'کۆپی', I.copy], ['blk', 'بەتاڵ لەدوای', I.blank], ['ext', 'دەرهێنان', I.save], ['png', 'PNG', I.img], ['del', 'سڕینەوە', I.trash]].map(function (b) { return '<button data-p="' + b[0] + '" class="' + (b[0] === 'del' ? 'dg' : '') + '">' + b[2] + '<span>' + b[1] + '</span></button>'; }).join('') + '</div>';
+        var gr = PP.querySelector('.gr'), todo = [];
+        PGS.forEach(function (pg, idx) {
+            var t = document.createElement('div'); t.className = 'kfpd-th' + (pSel[pg.id] ? ' on' : ''); t.innerHTML = '<i>' + I.check + '</i><div class="cv"><canvas width="1" height="1"></canvas></div><b>' + (idx + 1) + '</b>';
+            t.onclick = function (e) { if (e.target.closest('i') || n) { pSel[pg.id] = !pSel[pg.id]; drawPanel(); } else { closePanel(); setTimeout(function () { goPage(idx); }, 30); } };
+            gr.appendChild(t); todo.push([pg, t.querySelector('canvas')]);
+        });
+        (function next() { var x = todo.shift(); if (!x || !PP.classList.contains('on')) return; thumb(x[0], x[1]).then(function () { setTimeout(next, 0); }, next); })();
+        PP.querySelectorAll('[data-p]').forEach(function (b) { b.onclick = function () { panelAct(b.dataset.p); }; });
+    }
+    async function thumb(pg, cv) { var d = dimsOf(pg), sc = 110 / d.w * Math.min(2, window.devicePixelRatio || 1), src = await renderCanvas(pg, sc); cv.width = src.width; cv.height = src.height; cv.getContext('2d').drawImage(src, 0, 0); cv.style.width = '100%'; cv.style.height = 'auto'; }
+    function selIdx() { var r = []; PGS.forEach(function (pg, i) { if (pSel[pg.id]) r.push(i); }); return r; }
+    function rotatePage(pg, deg) {
+        var d0 = dimsOf(pg); pg.rot = (pg.rot + deg) % 360;
+        function mp(x, y) { return deg === 90 ? [d0.h - y, x] : deg === 270 ? [y, d0.w - x] : [d0.w - x, d0.h - y]; }
+        pg.objs.forEach(function (o) {
+            if (o.pts) o.pts = o.pts.map(function (p) { return mp(p[0], p[1]); });
+            else if (o.x1 != null) { var a = mp(o.x1, o.y1), b = mp(o.x2, o.y2); o.x1 = a[0]; o.y1 = a[1]; o.x2 = b[0]; o.y2 = b[1]; }
+            else { var c = mp(o.x + o.w / 2, o.y + o.h / 2); o.x = c[0] - o.w / 2; o.y = c[1] - o.h / 2; o.r = ((o.r || 0) + deg) % 360; }
+        });
+    }
+    async function panelAct(a) {
+        if (a === 'x') return closePanel();
+        if (a === 'all') { var all = PGS.every(function (p) { return pSel[p.id]; }); PGS.forEach(function (p) { pSel[p.id] = !all; }); return drawPanel(); }
+        var ix = selIdx(); if (!ix.length) return;
+        if (a === 'ext') { busy(true, 'خەریکی دەرهێنانم ...'); try { dl(new Blob([await exportBytes(ix)], { type: 'application/pdf' }), baseName() + '-pages.pdf'); } catch (e) { toast('هەڵە: ' + e.message, 'error'); } finally { busy(false); } return; }
+        if (a === 'png') { await pagesPng(ix); return; }
+        snap(); sel = null;
+        if (a === 'rot') ix.forEach(function (i) { rotatePage(PGS[i], 90); });
+        else if (a === 'del') { PGS = PGS.filter(function (p) { return !pSel[p.id]; }); pSel = {}; }
+        else if (a === 'dup') { var out = []; PGS.forEach(function (p) { out.push(p); if (pSel[p.id]) { var c = clone(p); c.id = uid++; out.push(c); } }); PGS = out; }
+        else if (a === 'blk') { var o2 = []; PGS.forEach(function (p) { o2.push(p); if (pSel[p.id]) { var d = dimsOf(p); o2.push({ id: uid++, d: -1, n: 0, bw: d.w, bh: d.h, rot: 0, objs: [] }); } }); PGS = o2; }
+        else if (a === 'up') { for (var i = 1; i < PGS.length; i++) if (pSel[PGS[i].id] && !pSel[PGS[i - 1].id]) { var t = PGS[i]; PGS[i] = PGS[i - 1]; PGS[i - 1] = t; } }
+        else if (a === 'dn') { for (var j = PGS.length - 2; j >= 0; j--) if (pSel[PGS[j].id] && !pSel[PGS[j + 1].id]) { var t2 = PGS[j]; PGS[j] = PGS[j + 1]; PGS[j + 1] = t2; } }
+        layout(); drawPB(); drawPanel(); if (!PGS.length) closePanel();
+    }
+    async function pagesPng(ix) {
+        busy(true, 'خەریکی وێنەکردنم ...'); try {
+            var bytes = await exportBytes(ix), pj = await PJ.getDocument({ data: bytes }).promise;
+            for (var i = 0; i < pj.numPages; i++) { var page = await pj.getPage(i + 1), vp = page.getViewport({ scale: 2 }), cv = document.createElement('canvas'); cv.width = vp.width; cv.height = vp.height; await page.render({ canvas: cv, canvasContext: cv.getContext('2d'), viewport: vp }).promise; var b = await new Promise(function (r) { cv.toBlob(r, 'image/png'); }); dl(b, baseName() + '-' + (ix[i] + 1) + '.png'); await new Promise(function (r) { setTimeout(r, 300); }); }
+        } catch (e) { toast('هەڵە: ' + e.message, 'error'); } finally { busy(false); }
+    }
+
+    // ---------- گەڕان، فۆرم، ئاو نیشان، ژمارە، زانیاری ----------
+    function searchSheet() {
+        if (!PGS.length) return toast('یەکەم PDFـێک بکەرەوە', 'info');
+        var d = document.createElement('div'); d.className = 'kfpd-sh'; d.innerHTML = '<div><h5>گەڕان لەناو PDF</h5><input class="in" type="text" placeholder="وشەیەک بنووسە ..." autocomplete="off" spellcheck="false"><div class="bd" style="min-height:60px"></div></div>';
+        var inp = d.querySelector('input'), bd = d.querySelector('.bd'), ov = ovAdd(function () { d.remove(); }), tm = 0;
+        async function run() {
+            var q = inp.value.trim().toLowerCase(); hitsR = []; bd.innerHTML = ''; if (!q) { redrawAll(); return; } var res = 0;
+            for (var pi = 0; pi < PGS.length && res < 200; pi++) {
+                var pg = PGS[pi], lines = await getLines(pg).catch(function () { return []; });
+                lines.forEach(function (L) { var s = L.s.toLowerCase(), at = 0, k; while ((k = s.indexOf(q, at)) >= 0 && res < 200) { res++; at = k + q.length; hitsR.push({ p: pg.id, x: L.x + L.w * k / s.length, y: L.y, w: Math.max(3, L.w * q.length / s.length), h: L.h }); var row = document.createElement('div'); row.className = 'kfpd-hit'; row.innerHTML = '<b>لاپەڕە ' + (pi + 1) + '</b><span></span>'; row.lastChild.textContent = L.s.slice(Math.max(0, k - 24), k + 50); (function (i) { row.onclick = function () { ovClose(ov); goPage(i); }; })(pi); bd.appendChild(row); } });
+            }
+            if (!res) bd.innerHTML = '<p class="mg">هیچ ئەنجامێک نەدۆزرایەوە.</p>'; redrawAll();
+        }
+        inp.oninput = function () { clearTimeout(tm); tm = setTimeout(run, 300); }; d.addEventListener('pointerdown', function (e) { if (e.target === d) ovClose(ov); });
+        document.body.appendChild(d); inp.focus();
+    }
+    async function formsSheet() {
+        if (!(await libs()) || !PGS.length) return; busy(true, 'خەریکی خوێندنەوەی فۆرمم ...');
+        var fields = [], used = {}; PGS.forEach(function (p) { if (p.d >= 0) used[p.d] = 1; });
+        try {
+            for (var di in used) {
+                var doc = await PL.PDFDocument.load(DOCS[di].bytes, { ignoreEncryption: true, updateMetadata: false }), fs = doc.getForm().getFields();
+                fs.forEach(function (f) {
+                    var c = f instanceof PL.PDFTextField ? 'PDFTextField' : f instanceof PL.PDFCheckBox ? 'PDFCheckBox' : f instanceof PL.PDFDropdown ? 'PDFDropdown' : f instanceof PL.PDFRadioGroup ? 'PDFRadioGroup' : f instanceof PL.PDFOptionList ? 'PDFOptionList' : '', r = { di: +di, name: f.getName(), c: c };
+                    if (c === 'PDFTextField') r.v = f.getText() || ''; else if (c === 'PDFCheckBox') r.v = f.isChecked(); else if (c) { r.opts = f.getOptions(); r.v = (f.getSelected ? [].concat(f.getSelected())[0] : '') || ''; } else return;
+                    r.v0 = r.v; fields.push(r);
+                });
+            }
+        } catch (e) { busy(false); toast('نەتوانرا فۆرمەکە بخوێنرێتەوە', 'error'); return; } busy(false);
+        if (!fields.length) return toast('هیچ خانەیەکی فۆرم لەم PDFـە نەدۆزرایەوە', 'info');
+        var d = document.createElement('div'); d.className = 'kfpd-sh'; d.innerHTML = '<div><h5>پڕکردنەوەی فۆرم (' + fields.length + ' خانە)</h5><p class="mg">دوای پەسەندکردن، خانەکان دەبنە بەشێک لە لاپەڕەکە.</p><div class="bd"></div><div class="ac"><button class="x">پاشگەزبوونەوە</button><button class="pri k">پەسەندکردن</button></div></div>';
+        var bd = d.querySelector('.bd');
+        fields.forEach(function (f) {
+            var row = document.createElement('div'); row.className = 'kfpd-fld'; var lb = document.createElement('label'); lb.textContent = f.name; row.appendChild(lb);
+            var el; if (f.c === 'PDFCheckBox') { el = document.createElement('input'); el.type = 'checkbox'; el.checked = f.v; el.onchange = function () { f.v = el.checked; }; }
+            else if (f.opts) { el = document.createElement('select'); el.innerHTML = '<option value=""></option>' + f.opts.map(function (o) { return '<option>' + esc(o) + '</option>'; }).join(''); el.value = f.v; el.onchange = function () { f.v = el.value; }; }
+            else { el = document.createElement('input'); el.className = 'in'; el.style.margin = '0'; el.style.width = '100%'; el.value = f.v; el.oninput = function () { f.v = el.value; }; }
+            row.appendChild(el); bd.appendChild(row);
+        });
+        var ov = ovAdd(function () { d.remove(); }); d.querySelector('.x').onclick = function () { ovClose(ov); };
+        d.querySelector('.k').onclick = async function () {
+            ovClose(ov); var ch = fields.filter(function (f) { return f.v !== f.v0; }); if (!ch.length) return; busy(true, 'خەریکی پڕکردنەوەم ...'); var bad = 0;
+            try {
+                var by = {}; ch.forEach(function (f) { (by[f.di] = by[f.di] || []).push(f); }); snap();
+                for (var di2 in by) {
+                    var doc = await PL.PDFDocument.load(DOCS[di2].bytes, { ignoreEncryption: true, updateMetadata: false }), form2 = doc.getForm();
+                    by[di2].forEach(function (f) { try { var fl = form2.getField(f.name); if (f.c === 'PDFTextField') fl.setText(f.v); else if (f.c === 'PDFCheckBox') { if (f.v) fl.check(); else fl.uncheck(); } else if (f.v) fl.select(f.v); } catch (e) { bad++; } });
+                    try { form2.flatten(); } catch (e) { bad++; }
+                    var nb = new Uint8Array(await doc.save()), pj = await parseDoc(nb); if (!pj) continue; DOCS.push({ name: DOCS[di2].name, bytes: nb, pj: pj }); var ni = DOCS.length - 1; PGS.forEach(function (p) { if (p.d === +di2) p.d = ni; }); TXT = {};
+                }
+                Object.keys(WR).forEach(function (k) { WR[k]._rk = null; WR[k]._want = null; }); layout(); if (bad) toast('هەندێک خانە نەپڕکرانەوە (پیتی نائینگلیزی لە فۆرمدا پشتگیری ناکرێت)', 'info');
+            } catch (e) { toast('هەڵە: ' + e.message, 'error'); } finally { busy(false); }
+        };
+        d.addEventListener('pointerdown', function (e) { if (e.target === d) ovClose(ov); }); document.body.appendChild(d);
+    }
+    function watermarkForm() {
+        if (!PGS.length) return toast('یەکەم PDFـێک بکەرەوە', 'info');
+        form('ئاو نیشان (Watermark)', [{ k: 's', l: 'دەق', t: 'text', v: 'DRAFT' }, { k: 'z', l: 'قەبارە', t: 'num', v: 80 }, { k: 'c', l: 'ڕەنگ', t: 'color', v: '#9ca3af' }, { k: 'p', l: 'ڕوونی (١٠ - ١٠٠)', t: 'num', v: 35 }, { k: 'a', l: 'لار', t: 'chips', v: '315', opts: [['315', 'ڕووەو سەرەوە'], ['0', 'ئاسۆیی'], ['45', 'ڕووەو خوارەوە']] }, { k: 'w', l: 'لەسەر', t: 'chips', v: 'all', opts: [['all', 'هەموو لاپەڕەکان'], ['cur', 'ئەم لاپەڕەیە']] }], function (v) {
+            if (!String(v.s).trim()) return; snap(); var cur = curPageIdx();
+            PGS.forEach(function (pg, i) {
+                if (v.w === 'cur' && i !== cur) return; pg.objs = pg.objs.filter(function (o) { return !o.wm; }); var d = dimsOf(pg), o = { t: 'text', x: 0, y: 0, w: 10, h: 0, r: +v.a, s: v.s, f: 'Helvetica', z: v.z || 80, b: 1, i: 0, u: 0, a: 'c', c: v.c, o: Math.max(.1, Math.min(1, (v.p || 35) / 100)), pd: 4, wm: 1 };
+                MC.font = fontStr(o); o.w = Math.min(d.w * 1.4, Math.ceil(MC.measureText(v.s).width) + 12); layoutText(o); o.x = (d.w - o.w) / 2; o.y = (d.h - o.h) / 2; pg.objs.unshift(o);
+            }); sel = null; redrawAll(); drawPB();
+        }, 'زیادکردن');
+    }
+    function numbersForm() {
+        if (!PGS.length) return toast('یەکەم PDFـێک بکەرەوە', 'info');
+        form('ژمارەی لاپەڕە', [{ k: 'f', l: 'شێوە', t: 'chips', v: '{n}', opts: [['{n}', '٣'], ['{n} / {N}', '٣ / ١٠'], ['Page {n}', 'Page 3'], ['لاپەڕە {n}', 'لاپەڕە ٣']] }, { k: 'p', l: 'شوێن', t: 'chips', v: 'bc', opts: [['bc', 'خوارەوە ناوەڕاست'], ['br', 'خوارەوە ڕاست'], ['bl', 'خوارەوە چەپ'], ['tc', 'سەرەوە ناوەڕاست'], ['tr', 'سەرەوە ڕاست'], ['tl', 'سەرەوە چەپ']] }, { k: 'z', l: 'قەبارە', t: 'num', v: 12 }, { k: 'c', l: 'ڕەنگ', t: 'color', v: '#444444' }, { k: 's', l: 'دەستپێک لە ژمارە', t: 'num', v: 1 }], function (v) {
+            snap(); var st = Math.round(v.s) || 1;
+            PGS.forEach(function (pg, i) {
+                pg.objs = pg.objs.filter(function (o) { return !o.pn; }); var d = dimsOf(pg), txt = v.f.replace('{n}', st + i).replace('{N}', st + PGS.length - 1), z = v.z || 12, o = { t: 'text', x: 0, y: 0, w: 120, h: 0, r: 0, s: txt, f: 'Helvetica', z: z, b: 0, i: 0, u: 0, a: v.p[1] === 'c' ? 'c' : v.p[1] === 'r' ? 'r' : 'l', c: v.c, o: 1, pn: 1 }, m = 28;
+                layoutText(o); o.x = v.p[1] === 'c' ? (d.w - o.w) / 2 : v.p[1] === 'r' ? d.w - o.w - m : m; o.y = v.p[0] === 'b' ? d.h - o.h - m + 6 : m - 6; pg.objs.push(o);
+            }); sel = null; redrawAll(); drawPB();
+        }, 'زیادکردن');
+    }
+    function metaForm() {
+        if (!PGS.length) return toast('یەکەم PDFـێک بکەرەوە', 'info');
+        form('زانیاری فایل', [{ k: 'title', l: 'ناونیشان', t: 'text', v: META.title || '' }, { k: 'author', l: 'نووسەر', t: 'text', v: META.author || '' }, { k: 'subject', l: 'بابەت', t: 'text', v: META.subject || '' }, { k: 'keywords', l: 'وشە سەرەکییەکان', t: 'text', v: META.keywords || '' }], function (v) { META = v; dirty = true; updTop(); }, 'هەڵگرتن');
+    }
+    function rangeForm() {
+        if (!PGS.length) return toast('یەکەم PDFـێک بکەرەوە', 'info');
+        form('دەرهێنانی لاپەڕەکان', [{ k: 'r', l: 'ژمارەی لاپەڕەکان (وەک 1-3,5)', t: 'text', v: '1-' + PGS.length }], async function (v) {
+            var ix = [], ok = true; String(v.r).split(',').forEach(function (p) { p = p.trim(); if (!p) return; var m = /^(\d+)(?:\s*-\s*(\d+))?$/.exec(p); if (!m) { ok = false; return; } var a = +m[1], b = m[2] ? +m[2] : a; for (var i = Math.min(a, b); i <= Math.max(a, b); i++) if (i >= 1 && i <= PGS.length) ix.push(i - 1); });
+            if (!ok || !ix.length) return toast('ژمارەکان دروست نین', 'error'); busy(true, 'خەریکی دەرهێنانم ...'); try { dl(new Blob([await exportBytes(ix)], { type: 'application/pdf' }), baseName() + '-pages.pdf'); } catch (e) { toast('هەڵە: ' + e.message, 'error'); } finally { busy(false); }
+        }, 'دەرهێنان');
+    }
+
+    // ---------- هەناردە ----------
+    var STD = { Helvetica: ['Helvetica', 'HelveticaBold', 'HelveticaOblique', 'HelveticaBoldOblique'], Times: ['TimesRoman', 'TimesRomanBold', 'TimesRomanItalic', 'TimesRomanBoldItalic'], Courier: ['Courier', 'CourierBold', 'CourierOblique', 'CourierBoldOblique'] };
+    function mapPt(c, dx, dy) { switch (c.R) { case 90: return { x: c.x0 + dy, y: c.y0 + dx }; case 180: return { x: c.x0 + c.w0 - dx, y: c.y0 + dy }; case 270: return { x: c.x0 + c.w0 - dy, y: c.y0 + c.h0 - dx }; default: return { x: c.x0 + dx, y: c.y0 + c.h0 - dy }; } }
+    async function rasterText(o, L) {
+        var k = Math.min(4, 4096 / Math.max(o.w, o.h)), cv = document.createElement('canvas'); cv.width = Math.ceil(o.w * k); cv.height = Math.ceil(o.h * k); var g = cv.getContext('2d'); g.scale(k, k);
+        try { await document.fonts.load(fontStr(o)); } catch (e) { }
+        g.font = fontStr(o); g.fillStyle = o.c; g.textBaseline = 'alphabetic'; g.direction = L.rtl ? 'rtl' : 'ltr'; g.textAlign = 'left';
+        L.lines.forEach(function (ln, i) { var tw = g.measureText(ln).width, x = L.al === 'c' ? (o.w - tw) / 2 : L.al === 'r' ? o.w - L.pd - tw : L.pd, y = L.pd + i * L.lh + L.base; g.fillText(ln, x, y); if (o.u && ln) g.fillRect(x, y + o.z * 0.12, tw, Math.max(0.8, o.z / 14)); });
+        var b = await new Promise(function (r) { cv.toBlob(r, 'image/png'); }); return new Uint8Array(await b.arrayBuffer());
+    }
+    async function exportBytes(idxs) {
+        if (!(await libs())) throw new Error('کتێبخانە بار نەبوو');
+        var out = await PL.PDFDocument.create(), srcs = {}, fonts = {}, imgs = {}, deg = PL.degrees;
+        async function fnt(f, b, i) { var key = f + b + i; if (!fonts[key]) fonts[key] = await out.embedFont(PL.StandardFonts[STD[f][(b ? 1 : 0) + (i ? 2 : 0)]]); return fonts[key]; }
+        async function img(k) { if (!imgs[k]) { var im = IMGS[k]; imgs[k] = im.m === 'png' ? await out.embedPng(im.b) : await out.embedJpg(im.b); } return imgs[k]; }
+        for (var ii = 0; ii < idxs.length; ii++) {
+            var pg = PGS[idxs[ii]], page, ctx, d = dimsOf(pg), red = pg.objs.some(function (o) { return o.rd; });
+            if (red) {
+                var sc = Math.min(3, Math.sqrt(24e6 / (d.w * d.h))), cv = await renderCanvas(pg, sc), g = cv.getContext('2d');
+                pg.objs.forEach(function (o) { if (!o.rd) return; g.save(); g.translate((o.x + o.w / 2) * sc, (o.y + o.h / 2) * sc); g.rotate((o.r || 0) * Math.PI / 180); g.fillStyle = o.c || '#000'; g.fillRect(-o.w / 2 * sc, -o.h / 2 * sc, o.w * sc, o.h * sc); g.restore(); });
+                var blob = await new Promise(function (r) { cv.toBlob(r, 'image/jpeg', 0.92); }), im0 = await out.embedJpg(new Uint8Array(await blob.arrayBuffer()));
+                page = out.addPage([d.w, d.h]); page.drawImage(im0, { x: 0, y: 0, width: d.w, height: d.h }); ctx = { R: 0, x0: 0, y0: 0, w0: d.w, h0: d.h };
+            } else if (pg.d < 0) { page = out.addPage([pg.bw, pg.bh]); var R = pg.rot % 360; if (R) page.setRotation(deg(R)); ctx = { R: R, x0: 0, y0: 0, w0: pg.bw, h0: pg.bh }; }
+            else {
+                var src = srcs[pg.d] || (srcs[pg.d] = await PL.PDFDocument.load(DOCS[pg.d].bytes)); var cp = (await out.copyPages(src, [pg.n]))[0], R0 = cp.getRotation().angle, cb = cp.getCropBox(), R2 = (((R0 + pg.rot) % 360) + 360) % 360; cp.setRotation(deg(R2)); page = out.addPage(cp); ctx = { R: R2, x0: cb.x, y0: cb.y, w0: cb.width, h0: cb.height };
+            }
+            function U(o, u, v) { var c = mapPt(ctx, o.x + o.w / 2, o.y + o.h / 2), th = (ctx.R - (o.r || 0)) * Math.PI / 180, vx = u, vy = -v; return { x: c.x + vx * Math.cos(th) - vy * Math.sin(th), y: c.y + vx * Math.sin(th) + vy * Math.cos(th) }; }
+            function ang(o) { return ctx.R - (o.r || 0); }
+            for (var oi = 0; oi < pg.objs.length; oi++) {
+                var o = pg.objs[oi], op = o.o != null ? o.o : 1; if (o.rd) continue;
+                if (o.t === 'text') {
+                    var L = layoutText(o), bl;
+                    if (o.bg) { bl = U(o, -o.w / 2, o.h / 2); page.drawRectangle({ x: bl.x, y: bl.y, width: o.w, height: o.h, rotate: deg(ang(o)), color: hexRgb(o.bg), opacity: op }); }
+                    if (o.bd) { bl = U(o, -o.w / 2, o.h / 2); page.drawRectangle({ x: bl.x, y: bl.y, width: o.w, height: o.h, rotate: deg(ang(o)), borderColor: hexRgb(o.bd), borderWidth: o.bw || 3, opacity: 0, borderOpacity: op }); }
+                    var font = null, std = !!STD[o.f]; if (std && !L.rtl) { font = await fnt(o.f, o.b, o.i); try { L.lines.forEach(function (ln) { font.widthOfTextAtSize(ln, o.z); }); } catch (e) { font = null; } } else font = null;
+                    if (font) {
+                        L.lines.forEach(function (ln, i) {
+                            if (!ln) return; var tw = font.widthOfTextAtSize(ln, o.z), x = L.al === 'c' ? (o.w - tw) / 2 : L.al === 'r' ? o.w - L.pd - tw : L.pd, v = L.pd + i * L.lh + L.base, P = U(o, -o.w / 2 + x, -o.h / 2 + v);
+                            page.drawText(ln, { x: P.x, y: P.y, size: o.z, font: font, color: hexRgb(o.c), rotate: deg(ang(o)), opacity: op });
+                            if (o.u) { var a = U(o, -o.w / 2 + x, -o.h / 2 + v + o.z * 0.12), b = U(o, -o.w / 2 + x + tw, -o.h / 2 + v + o.z * 0.12); page.drawLine({ start: a, end: b, thickness: Math.max(0.6, o.z / 14), color: hexRgb(o.c), opacity: op }); }
+                        });
+                    } else if (L.lines.some(function (x) { return x; })) {
+                        var png = await rasterText(o, L), pi = await out.embedPng(png); bl = U(o, -o.w / 2, o.h / 2); page.drawImage(pi, { x: bl.x, y: bl.y, width: o.w, height: o.h, rotate: deg(ang(o)), opacity: op });
+                    }
+                } else if (o.t === 'rect' || o.t === 'cover' || o.t === 'hl' || o.t === 'ul' || o.t === 'st') {
+                    var b2 = U(o, -o.w / 2, o.h / 2), common = { x: b2.x, y: b2.y, width: o.w, height: o.h, rotate: deg(ang(o)) };
+                    if (o.t === 'rect') { var opt = Object.assign({ opacity: op, borderOpacity: op }, common); if (o.fc) opt.color = hexRgb(o.fc); if (o.sc && o.sw) { opt.borderColor = hexRgb(o.sc); opt.borderWidth = o.sw; } page.drawRectangle(opt); }
+                    else if (o.t === 'cover') page.drawRectangle(Object.assign({ color: hexRgb(o.c) }, common));
+                    else if (o.t === 'hl') page.drawRectangle(Object.assign({ color: hexRgb(o.c), opacity: op, blendMode: PL.BlendMode.Multiply }, common));
+                    else { var th = Math.max(1.2, o.h / 12), vv = o.t === 'ul' ? o.h / 2 - th * 1.7 : 0, a1 = U(o, -o.w / 2, vv), a2 = U(o, o.w / 2, vv); page.drawLine({ start: a1, end: a2, thickness: th, color: hexRgb(o.c), opacity: op }); }
+                } else if (o.t === 'ell') {
+                    var cc = mapPt(ctx, o.x + o.w / 2, o.y + o.h / 2), eo = { x: cc.x, y: cc.y, xScale: o.w / 2, yScale: o.h / 2, rotate: deg(ang(o)), opacity: op, borderOpacity: op }; if (o.fc) eo.color = hexRgb(o.fc); if (o.sc && o.sw) { eo.borderColor = hexRgb(o.sc); eo.borderWidth = o.sw; } page.drawEllipse(eo);
+                } else if (o.t === 'img') {
+                    var im = await img(o.k), b3 = U(o, -o.w / 2, o.h / 2); page.drawImage(im, { x: b3.x, y: b3.y, width: o.w, height: o.h, rotate: deg(ang(o)), opacity: op });
+                } else if (o.t === 'line' || o.t === 'arrow') {
+                    var lo = { thickness: o.sw, color: hexRgb(o.sc), opacity: op, lineCap: PL.LineCapStyle.Round };
+                    page.drawLine(Object.assign({ start: mapPt(ctx, o.x1, o.y1), end: mapPt(ctx, o.x2, o.y2) }, lo));
+                    if (o.t === 'arrow') { var h = arrowHead(o); page.drawLine(Object.assign({ start: mapPt(ctx, h[0][0], h[0][1]), end: mapPt(ctx, h[1][0], h[1][1]) }, lo)); page.drawLine(Object.assign({ start: mapPt(ctx, h[1][0], h[1][1]), end: mapPt(ctx, h[2][0], h[2][1]) }, lo)); }
+                } else if (o.t === 'path') {
+                    var lo2 = { thickness: o.sw, color: hexRgb(o.sc), opacity: op, lineCap: PL.LineCapStyle.Round }; for (var q = 1; q < o.pts.length; q++) page.drawLine(Object.assign({ start: mapPt(ctx, o.pts[q - 1][0], o.pts[q - 1][1]), end: mapPt(ctx, o.pts[q][0], o.pts[q][1]) }, lo2));
+                    if (o.pts.length === 1) page.drawCircle({ x: mapPt(ctx, o.pts[0][0], o.pts[0][1]).x, y: mapPt(ctx, o.pts[0][0], o.pts[0][1]).y, size: o.sw / 2, color: hexRgb(o.sc), opacity: op });
+                }
+            }
+        }
+        out.setTitle(META.title || baseName()); if (META.author) out.setAuthor(META.author); if (META.subject) out.setSubject(META.subject); if (META.keywords) out.setKeywords(String(META.keywords).split(/[,،]/).map(function (s) { return s.trim(); }).filter(Boolean)); out.setProducer('KURD FOREST'); out.setCreator('KURD FOREST');
+        return new Uint8Array(await out.save());
+    }
+    async function doSave() {
+        if (!PGS.length) return toast('هیچ لاپەڕەیەک نییە', 'info'); busy(true, 'خەریکی دروستکردنی PDFم ...');
+        try { var b = await exportBytes(PGS.map(function (_, i) { return i; })); dl(new Blob([b], { type: 'application/pdf' }), baseName() + '.pdf'); dirty = false; updTop(); toast('PDF پاشەکەوت کرا (' + (b.length / 1024 < 1024 ? Math.round(b.length / 1024) + ' KB' : (b.length / 1048576).toFixed(1) + ' MB') + ')', 'success'); }
+        catch (e) { console.error(e); toast(/ncrypt/.test(String(e.message)) ? 'ئەم PDFـە پارێزراوە و ناکرێت هەناردە بکرێت' : 'هەڵە لە هەناردەکردن: ' + e.message, 'error'); }
+        finally { busy(false); }
+    }
+    function mainMenu() {
+        var it = [{ t: 'کردنەوەی PDF', i: I.open, f: function () { $('kfpdFi').click(); } }, { t: 'زیادکردنی PDFی تر (تێکەڵکردن)', i: I.plus, f: function () { $('kfpdFm').click(); } }, { t: 'PDFی نوێ', i: I.blank, f: newBlankForm }, { t: 'وێنە بۆ PDF', i: I.img, f: function () { $('kfpdFg').click(); } }, '-',
+            { t: 'لاپەڕەکان (ڕیزکردن، خولاندن، سڕینەوە)', i: I.pages, f: openPanel }, { t: 'گەڕان لەناو دەق', i: I.search, f: searchSheet }, { t: 'پڕکردنەوەی فۆرم', i: I.form, f: formsSheet }, { t: 'ئاو نیشان (Watermark)', i: I.water, f: watermarkForm }, { t: 'ژمارەی لاپەڕە', i: I.num, f: numbersForm }, { t: 'زانیاری فایل', i: I.doc, f: metaForm }, '-',
+            { t: 'دەرهێنانی چەند لاپەڕەیەک', i: I.save, f: rangeForm }, { t: 'ئەم لاپەڕەیە وەک وێنە (PNG)', i: I.img, f: function () { if (PGS.length) pagesPng([curPageIdx()]); } }];
+        if (hitsR.length) it.push({ t: 'پاککردنەوەی ئاماژەکانی گەڕان', i: I.x, f: function () { hitsR = []; redrawAll(); } });
+        if (PGS.length) it.push('-', { t: 'داخستنی ئەم PDFـە', i: I.trash, dg: 1, f: function () { ask('داخستن', { msg: dirty ? 'گۆڕانکارییە پاشەکەوتنەکراوەکان لەدەست دەچن.' : 'PDFـەکە دادەخرێت.', ok: 'داخستن', danger: 1 }, function () { DOCS = []; PGS = []; undoS = []; redoS = []; sel = null; TXT = {}; hitsR = []; WR = {}; PAGES.innerHTML = ''; dirty = false; name = 'document.pdf'; layout(); drawPB(); }); } });
+        sheet('PDF', it);
+    }
+
+    // ---------- بەستنەوە ----------
+    var wired = false;
+    function wire() {
+        $('kfpdPg').onclick = openPanel; $('kfpdUn').onclick = undo; $('kfpdRe').onclick = redo; $('kfpdMo').onclick = mainMenu; $('kfpdSv').onclick = doSave;
+        $('kfpdNm').onclick = function () { ask('ناوی فایل', { input: baseName() }, function (v) { v = String(v).replace(/[\\\/:*?"<>|]/g, '').trim(); if (v) { name = v.replace(/\.pdf$/i, '') + '.pdf'; updTop(); } }); };
+        $('kfpdE1').onclick = function () { $('kfpdFi').click(); }; $('kfpdE2').onclick = newBlankForm; $('kfpdE3').onclick = function () { $('kfpdFg').click(); };
+        $('kfpdFi').onchange = function () { var f = this.files[0]; this.value = ''; openPdf(f, false); }; $('kfpdFm').onchange = function () { var f = this.files[0]; this.value = ''; if (!PGS.length) openPdf(f, false); else openPdf(f, true); };
+        $('kfpdFg').onchange = function () { var f = this.files; imagesToPdf(f); setTimeout(function () { $('kfpdFg').value = ''; }, 0); };
+        $('kfpdFp').onchange = async function () { var f = this.files[0]; this.value = ''; if (!f) return; if (!PGS.length) return toast('یەکەم PDFـێک بکەرەوە', 'info'); try { addImage(await loadImg(f)); } catch (e) { toast('وێنەکە نەکرایەوە', 'error'); } };
+        $('kfpdZi').onclick = function () { setZoom(Z * 1.25); }; $('kfpdZo').onclick = function () { setZoom(Z / 1.25); };
+        var raf = 0; SC.addEventListener('scroll', function () { if (!raf) raf = requestAnimationFrame(function () { raf = 0; kick(); }); }, { passive: true });
+        PAGES.addEventListener('pointerdown', onDown); PAGES.addEventListener('pointermove', onMove); PAGES.addEventListener('pointerup', onUp); PAGES.addEventListener('pointercancel', onUp);
+        SC.addEventListener('wheel', function (e) { if (e.ctrlKey) { e.preventDefault(); setZoom(Z * (e.deltaY < 0 ? 1.1 : 1 / 1.1)); } }, { passive: false });
+        var pin = null; function dist(t) { return Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY); }
+        SC.addEventListener('touchstart', function (e) { if (e.touches.length === 2) { pin = { d: dist(e.touches), z: Z, f: 1 }; if (DR) { DR = null; PREV = null; redrawAll(); } } }, { passive: true });
+        SC.addEventListener('touchmove', function (e) { if (pin && e.touches.length === 2) { e.preventDefault(); pin.f = dist(e.touches) / pin.d; PAGES.style.transform = 'scale(' + pin.f + ')'; } }, { passive: false });
+        SC.addEventListener('touchend', function (e) { if (pin && e.touches.length < 2) { PAGES.style.transform = ''; var f = pin.f, z = pin.z; pin = null; if (Math.abs(f - 1) > 0.03) setZoom(z * f); } }, { passive: true });
+        if (window.ResizeObserver) { var lw = 0, rt = 0; new ResizeObserver(function () { if (M.style.display !== 'flex') return; var w = SC.clientWidth; if (w && w !== lw) { lw = w; clearTimeout(rt); rt = setTimeout(function () { if (PGS.length) layout(); }, 120); } }).observe(SC); }
+        new MutationObserver(function () { if (M.style.display === 'none') ovCloseAll(); }).observe(M, { attributes: true, attributeFilter: ['style'] });
+        M.addEventListener('keydown', function (e) {
+            if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return; var c = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
+            if (c && k === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); } else if (c && k === 'y') { e.preventDefault(); redo(); } else if (c && k === 's') { e.preventDefault(); doSave(); }
+            else if ((e.key === 'Delete' || e.key === 'Backspace') && curObj()) { e.preventDefault(); delSel(); } else if (e.key === 'Escape') { if (sel) selectObj(null); else if (tool !== 'sel') setTool('sel'); }
+        });
+        M.tabIndex = -1; M.addEventListener('pointerdown', function (e) { if (!/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) try { M.focus({ preventScroll: true }); } catch (x) { } });
+        M.addEventListener('dragover', function (e) { if (e.dataTransfer && e.dataTransfer.types.indexOf('Files') >= 0) e.preventDefault(); });
+        M.addEventListener('drop', function (e) { var f = e.dataTransfer && e.dataTransfer.files; if (!f || !f.length) return; e.preventDefault(); if (/pdf/i.test(f[0].type) || /\.pdf$/i.test(f[0].name)) openPdf(f[0], !!PGS.length && e.shiftKey); else imagesToPdf(f); });
+        window.addEventListener('beforeunload', function (e) { if (dirty && PGS.length) { e.preventDefault(); e.returnValue = ''; return ''; } });
+    }
+    window.kfOpenPdf = function () {
+        if (!M) build(); M.style.display = 'flex'; setTimeout(function () { if (PGS.length) layout(); updTop(); }, 40);
+    };
+})();
+</script>
+
 <script id="kf-shell-js">
 (function () {
     'use strict';
@@ -18494,6 +19397,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
         { k: 'revrtl',    fn: 'openRevRtlModal',      id: 'rev-rtl-modal',        label: 'پێچەوانەکردنەوەی RTL' },
         { k: 'fix',       fn: 'openFixModal',         id: 'fix-modal',            label: 'چاککردنی فایل' },
         { k: 'fileed',    fn: 'kfOpenEditor',         id: 'kf-ed-modal',          label: 'دەستکاریکەری فایل' },
+        { k: 'pdf',       fn: 'kfOpenPdf',            id: 'kf-pdf-modal',         label: 'دەستکاریکەری PDF' },
         { k: 'merge',     fn: 'openMergeModal',       id: 'merge-modal',          label: 'تێکەڵکردنی دوو فایل' },
         { k: 'sdh',       fn: 'openSdhModal',         id: 'sdh-modal',            label: 'پاککردنەوەی دەنگەکان (SDH)' },
         { k: 'shortcuts', fn: 'openShortcutsModal',   id: 'shortcuts-modal',      label: 'کورتکراوەکانی کیبۆرد' },
@@ -18513,7 +19417,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
     if (!tabs || !list || !drawer) return;
 
     // ئایکۆن و ناوی بەشەکان (بەستراوەتەوە بە کۆدەکەوە، پێویست بە مێنیوی کۆن نییە)
-    var DATA = {"converter": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M20 7H4M16 3l4 4-4 4M4 17h16M8 21l-4-4 4-4\"/></svg>", "label": "گۆڕینی فایل"}, "rtl": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11\"/></svg>", "label": "چاککردنی RTL"}, "fix": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.2-.5-.5-2.2z\"/></svg>", "label": "چاککردنی فایل"}, "revrtl": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M7 20V4M7 20l-3-3M7 20l3-3M17 4v16M17 4l-3 3M17 4l3 3\"/></svg>", "label": "پێچەوانەکردنەوەی RTL"}, "merge": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"8\" y=\"8\" width=\"13\" height=\"13\" rx=\"2.5\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M4 16a2 2 0 0 1-2-2V4.5A2.5 2.5 0 0 1 4.5 2H14a2 2 0 0 1 2 2\"/></svg>", "label": "تێکەڵکردنی دوو فایل"}, "sdh": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"9\" y=\"2\" width=\"6\" height=\"13\" rx=\"3\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M19 10v1a7 7 0 0 1-14 0v-1M12 18v4M8.5 22h7\"/></svg>", "label": "پاککردنەوەی دەنگەکان (SDH)"}, "shortcuts": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M2 14h4M10 8h4M18 16h4\"/></svg>", "label": "کورتکراوەکانی کیبۆرد"}, "img": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"3\"/><circle stroke-width=\"1.85\" cx=\"9\" cy=\"9\" r=\"2\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21\"/></svg>", "label": "گۆڕینی وێنە بۆ لینک"}, "mkv": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"m16 13 5.2 3.5a.5.5 0 0 0 .8-.4V7.9a.5.5 0 0 0-.8-.4L16 11\"/><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"2\" y=\"6\" width=\"14\" height=\"12\" rx=\"2.5\"/></svg>", "label": "دەرهێنەری فایل لە MKV"}, "servers": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7\"/></svg>", "label": "کۆدی سێرڤەرەکان"}, "fileed": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4M14 3l5 5v2M14 3v5h5M13.5 20.5l.5-2.5 6-6a1.4 1.4 0 0 1 2 2l-6 6z\"/></svg>", "label": "دەستکاریکەری فایل"}, "history": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><circle stroke-width=\"1.85\" cx=\"12\" cy=\"12\" r=\"9.25\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M12 7v5l3 2\"/></svg>", "label": "مێژووی کارەکان"}, "install": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M21 15v3.5A2.5 2.5 0 0 1 18.5 21h-13A2.5 2.5 0 0 1 3 18.5V15M7 10l5 5 5-5M12 15V3\"/></svg>", "label": "دابەزاندنی ئەپ"}};
+    var DATA = {"converter": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M20 7H4M16 3l4 4-4 4M4 17h16M8 21l-4-4 4-4\"/></svg>", "label": "گۆڕینی فایل"}, "rtl": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11\"/></svg>", "label": "چاککردنی RTL"}, "fix": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.2-.5-.5-2.2z\"/></svg>", "label": "چاککردنی فایل"}, "revrtl": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M7 20V4M7 20l-3-3M7 20l3-3M17 4v16M17 4l-3 3M17 4l3 3\"/></svg>", "label": "پێچەوانەکردنەوەی RTL"}, "pdf": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M8.5 17v-4h1.6a1.2 1.2 0 0 1 0 2.4H8.5M13 17v-4h1a2 2 0 0 1 0 4z\"/></svg>", "label": "دەستکاریکەری PDF"}, "merge": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"8\" y=\"8\" width=\"13\" height=\"13\" rx=\"2.5\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M4 16a2 2 0 0 1-2-2V4.5A2.5 2.5 0 0 1 4.5 2H14a2 2 0 0 1 2 2\"/></svg>", "label": "تێکەڵکردنی دوو فایل"}, "sdh": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"9\" y=\"2\" width=\"6\" height=\"13\" rx=\"3\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M19 10v1a7 7 0 0 1-14 0v-1M12 18v4M8.5 22h7\"/></svg>", "label": "پاککردنەوەی دەنگەکان (SDH)"}, "shortcuts": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M2 14h4M10 8h4M18 16h4\"/></svg>", "label": "کورتکراوەکانی کیبۆرد"}, "img": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"3\"/><circle stroke-width=\"1.85\" cx=\"9\" cy=\"9\" r=\"2\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21\"/></svg>", "label": "گۆڕینی وێنە بۆ لینک"}, "mkv": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"m16 13 5.2 3.5a.5.5 0 0 0 .8-.4V7.9a.5.5 0 0 0-.8-.4L16 11\"/><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"2\" y=\"6\" width=\"14\" height=\"12\" rx=\"2.5\"/></svg>", "label": "دەرهێنەری فایل لە MKV"}, "servers": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7\"/></svg>", "label": "کۆدی سێرڤەرەکان"}, "fileed": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4M14 3l5 5v2M14 3v5h5M13.5 20.5l.5-2.5 6-6a1.4 1.4 0 0 1 2 2l-6 6z\"/></svg>", "label": "دەستکاریکەری فایل"}, "history": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><circle stroke-width=\"1.85\" cx=\"12\" cy=\"12\" r=\"9.25\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M12 7v5l3 2\"/></svg>", "label": "مێژووی کارەکان"}, "install": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M21 15v3.5A2.5 2.5 0 0 1 18.5 21h-13A2.5 2.5 0 0 1 3 18.5V15M7 10l5 5 5-5M12 15V3\"/></svg>", "label": "دابەزاندنی ئەپ"}};
     SECS.forEach(function (s) {
         var d = DATA[s.k];
         s.icon = d ? d.icon : '';
@@ -18560,7 +19464,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
     var center = document.querySelector('.kf-bar-center');
     if (wm && center) center.insertBefore(wm, center.firstChild);
 
-    var KEEP = { converter: 1, rtl: 1, revrtl: 1, fix: 1, fileed: 1, merge: 1, sdh: 1, img: 1, mkv: 1 }, visited = {};
+    var KEEP = { converter: 1, rtl: 1, revrtl: 1, fix: 1, fileed: 1, pdf: 1, merge: 1, sdh: 1, img: 1, mkv: 1 }, visited = {};
     var nav = window.kfNav = {
         secs: SECS,
         isHome: function () { return document.body.classList.contains('startup-bg'); },
@@ -19641,6 +20545,10 @@ var G=[
  feats:['فایل و فۆڵدەر و zip لە ئامێرەکەتەوە دەهێنیت ناو ئەپ','چەند فایلێک بە تاب، پاشەکەوتی خۆکار','گەڕان و گۆڕین (Regex، پیتی گەورە/بچووک، وشەی تەواو) و گەڕان لە هەموو فایلەکان','گەڕانەوە و پێشەوەچوون، بڕۆ بۆ دێڕ، ژمارەی دێڕ','کۆدکردن (UTF-8، Windows-1256 ...) و کۆتایی دێڕ','ئامرازەکانی دەق: ڕیزکردن، لابردنی دووبارە، چاککردنی پیتی کوردی ...','داگرتنی فایل یان هەموو فایلەکان وەک zip'],
  steps:[{h:'بەکارهێنان',rows:[[E('ico','☰',1),E('el','t1.txt',2),E('ico','+',3),E('ico','⇪',3)],[E('el','فایلی نوێ',4),E('el','هێنانی فایل',4)],[E('btn','گەڕان',5)]],
   notes:['دوگمەی فایلەکان: فۆڵدەر و فایلەکانی ناو ئەپ پیشان دەدات (دەست لەسەر فایلێک بهێڵەوە بۆ هەڵبژاردنی چەند دانەیەک).','ناوی فایل: دەستی لێ بدە بۆ ناونانەوە.','فایلی نوێ یان هێنان لە ئامێر.','هێنانی فایل، فۆڵدەر یان zip.','گەڕان و گۆڕین؛ مێنیوی ⋮ ئامرازەکانی تر و کۆدکردنی تێدایە.']}]},
+{k:'pdf',name:'دەستکاریکەری PDF',intro:'PDF بکەرەوە و دەستکاری بکە، یان PDFی نوێ دروست بکە: دەق، وێنە، واژۆ، هایلایت، شێوە، فۆرم، لاپەڕەکان و زۆر شتی تر. ڕەنگ و فۆنتەکانی ماڵپەڕ بەکاردێن.',
+ feats:['دەقی نوێ بە هەر فۆنت و ڕەنگ و قەبارەیەک (فۆنتەکانی ماڵپەڕیش، کوردی/عەرەبی)','دەستکاریکردنی دەقی ئێستای PDF: دەست لەسەر دەقەکە دابنێ و بیگۆڕە','هایلایت، هێڵ لەژێر/بەناو دەق، قەڵەم، شێوە و تیر','وێنە، واژۆ (دەیکێشیت و دەمێنێتەوە) و مۆر','داپۆشین و ڕەشکردنەوەی نهێنی (Redact)','پڕکردنەوەی فۆرم، ئاو نیشان، ژمارەی لاپەڕە، زانیاری فایل','لاپەڕەکان: ڕیزکردن، خولاندن، کۆپی، سڕینەوە، دەرهێنان، تێکەڵکردنی چەند PDF، وێنە بۆ PDF','گەڕان لەناو دەق، گەڕانەوە و پێشەوەچوون'],
+ steps:[{h:'بەکارهێنان',rows:[[E('ico','▦',1),E('el','file.pdf',2),E('ico','⋮',3),E('ico','⇩',4)],[E('btn','دەق',5),E('btn','هایلایت',5),E('btn','واژۆ',5)]],
+  notes:['دوگمەی لاپەڕەکان: هەموو لاپەڕەکان ببینە و ڕیزیان بکە.','ناو: دەستی لێ بدە بۆ ناونانەوە.','مێنیو: کردنەوە، تێکەڵکردن، فۆرم، گەڕان، ئاو نیشان ...','پاشەکەوتکردن: PDFـە نوێیەکە دادەبەزێت.','ئامرازەکان لە خوارەوە؛ دوای هەڵبژاردنی ئامراز، ڕەنگ و فۆنت لە شریتی سەرەوەی ئامرازەکان دەگۆڕدرێن.','لە ئامرازەکانی قەڵەم/شێوە/هایلایت لاپەڕەکە ناجوڵێت؛ بۆ سکڕۆڵ بگەڕێوە بۆ «ئاماژە».']}]},
 {k:'merge',name:'تێکەڵکردنی دوو فایل',intro:'دوو فایلی ژێرنووس تێکەڵ دەکات و ستایلەکانیان بەڕێوە دەبات؛ هەروەها لۆگۆی KURD FOREST زیاد دەکات.',
  feats:['فایلی سەرەکی + فایلی دووەم','بینین و سڕینەوەی ستایلەکان','دەستکاریکردنی ڕستەکانی فایلی دووەم','دیاریکردنی فۆنت بۆ ستایل/دێڕ','زیادکردنی لۆگۆ بە ٣ ستایلی جوڵە'],
  steps:[{h:'هەنگاوەکان',rows:[[E('box','١. فایلی سەرەکی (بنچینە)',1)],[E('btn','سڕینەوەی ستایلە بەتاڵەکان',2)],[E('box','٢. فایلی دووەم',3)],[E('btn','دەستکاریکردنی ڕستەکانی فایلی دووەم',4)],[E('el','فۆنتەکان: زیادکردن',5)],[E('el','☑ زیادکردنی لۆگۆی KURD FOREST',6),E('el','چەند جار؟ 2',7)],[E('btn','تێکەڵکردن و داگرتن',8)]],

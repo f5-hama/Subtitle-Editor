@@ -3198,7 +3198,7 @@ function kfTogglePw(btn){
         if (mkvCuesLoc < 0 || file.size < 96 * 1024 * 1024) return [];
         const ent = await mkvReadCueEntries(file, null); if (!ent || ent.length < 8) return [];
         const pos = Array.from(new Set(ent.map(e => e.cl))).sort((a, b) => a - b);
-        const K = 4, out = [];
+        const K = file.size >= 400 * 1024 * 1024 ? 6 : 4, out = [];
         for (let k = 1; k < K; k++) {
             const target = startPos + (file.size - startPos) * k / K;
             let lo = 0, hi = pos.length - 1; while (lo < hi) { const m = (lo + hi) >> 1; if (pos[m] >= target) hi = m; else lo = m + 1; }
@@ -3434,12 +3434,14 @@ function kfTogglePw(btn){
             return arr;
         };
 
-        let nextP = prepBatch(0);
+        // دوو دەستەی دواتر لەگەڵ پرۆسێسکردنی ئەمە پێکەوە دەخوێندرێنەوە (خوێندنەوەی زیاتر پێکەوە = خێراتر لەسەر تەلەفۆن)
+        const pend = [prepBatch(0)];
+        if (B < groups.length) pend.push(prepBatch(B));
         try {
             for (let i = 0; i < groups.length; i += B) {
                 if (myId !== mkvScanId) throw new Error('cancelled');
-                const cur = await nextP;
-                nextP = i + B < groups.length ? prepBatch(i + B) : null;     // خوێندنەوەی دەستەی دواتر لەگەڵ پرۆسێسکردنی ئەمە پێکەوە
+                const cur = await pend.shift();
+                if (i + 2 * B < groups.length) pend.push(prepBatch(i + 2 * B));
                 for (const it of cur) {
                     if (!it) return false;
                     if (it.whole) {
@@ -3459,7 +3461,7 @@ function kfTogglePw(btn){
                 if (onProgress) onProgress(Math.min(1, (i + B) / groups.length));
             }
         } finally {
-            if (nextP) nextP.catch(() => {});
+            pend.forEach(pp => pp.catch(() => {}));
         }
         if (getCount() !== expected) { resetFn(); return false; }
         return true;

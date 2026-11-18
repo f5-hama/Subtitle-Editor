@@ -3404,7 +3404,7 @@ function kfTogglePw(btn){
         // ئەگەر بەپێی پێوانەی ئامێرەکە بلۆک بە بلۆک چەندین جار خاوترە (بلۆکی زۆر لە کلەستەرێکدا)، تاقیکردنەوەی نابێت
         const avgEnt = entries.length / groups.length;
         const span = groups.length > 1 ? (groups[groups.length - 1].cl - groups[0].cl) / (groups.length - 1) : 4e6;
-        const noSparse = forceWhole || (avgEnt * mkvIoA) / Math.max(0.01, span / mkvIoBW) > 4;
+        const noSparse = forceWhole || (avgEnt * mkvIoA) / Math.max(0.01, span / mkvIoBW) > 1;     // خوێندنەوەی کلەستەر بە گروپ هەرزانترە لە یەک خوێندنەوە بۆ هەر دێڕێک
         const pickMode = (bi) => {
             if (noSparse || bi === 0) return 'whole';
             if (bi === 1) return 'sparse';

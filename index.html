@@ -2559,6 +2559,7 @@ function kfTogglePw(btn){
     }
 
     function clearMkvFile() {
+        mkvClearDiag();
         currentMkvFile = null;
         mkvParsedTracks = [];
         mkvDetectedTitle = '';
@@ -2629,7 +2630,8 @@ function kfTogglePw(btn){
     }
 
     const mkvIoStat = { b: 0, n: 0, t0: 0, wh: 0, sp: 0, rn: 0, cue: 0 };
-    function mkvStatReset() { mkvIoStat.b = 0; mkvIoStat.n = 0; mkvIoStat.wh = 0; mkvIoStat.sp = 0; mkvIoStat.rn = 0; mkvIoStat.cue = 0; mkvIoStat.t0 = performance.now(); }
+    function mkvClearDiag() { try { const el = document.getElementById('mkvDiagLine'); if (el) el.remove(); } catch (_) { } }
+    function mkvStatReset() { mkvClearDiag(); mkvIoStat.b = 0; mkvIoStat.n = 0; mkvIoStat.wh = 0; mkvIoStat.sp = 0; mkvIoStat.rn = 0; mkvIoStat.cue = 0; mkvIoStat.t0 = performance.now(); }
     // ژمارە و یەکەی لاتینی لەناو دەقی کوردی (RTL) بە ئایسۆلەیتی LTR دەپارێزرێن، بۆ ئەوەی ڕیزبەندییان تێک نەچێت
     const mkvL = (t) => '\u2066' + t + '\u2069';
     const mkvRtl = (t) => '\u2067' + t + '\u2069';
@@ -2905,6 +2907,7 @@ function kfTogglePw(btn){
     }
 
     async function scanMkvTracks(file, myId) {
+        mkvClearDiag();
         const r = new MkvFastReader(file, 2 * 1024 * 1024);
         const size = file.size;
         let pos = 0, first = true, resync = 0;

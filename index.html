@@ -4275,9 +4275,9 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
                 <div class="upload-icon">
                     <svg style="width:24px;height:24px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-width="1.85" d="M4 16.5V18a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1.5M12 4v11m0-11L8 8m4-4l4 4"/></svg>
                 </div>
-                <label>فایلی .sup یان .mkv هەڵبژێرە:</label>
+                <label>فایلی PGS (.sup / .pgs) یان .mkv هەڵبژێرە:</label>
                 <div class="file-name-display" id="pgsFileName">کرتە بکە بۆ کردنەوەی فایل</div>
-                <input type="file" id="pgsFileInput" accept=".sup,.mkv,.webm,.mks,application/octet-stream,video/x-matroska">
+                <input type="file" id="pgsFileInput" accept=".sup,.pgs,.mkv,.webm,.mks,application/octet-stream,video/x-matroska">
             </div>
             <div id="pgsTracks" style="display:none; margin-bottom:10px; flex-direction:column; gap:6px;"></div>
 
@@ -18065,7 +18065,8 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
         $('pgsFileName').textContent = f.name; $('pgsFileBox').classList.add('has-file');
         $('pgsTracks').style.display = 'none'; $('pgsOpts').style.display = 'none'; $('pgsRes').style.display = 'none'; $('pgsProg').style.display = 'none'; S.cues = []; S.res = [];
         try {
-            if (/\.sup$/i.test(f.name)) { useSup(await f.arrayBuffer(), baseName(f.name)); }
+            var hd = new Uint8Array(await f.slice(0, 4).arrayBuffer()), isSup = hd[0] === 0x50 && hd[1] === 0x47, isMkv = hd[0] === 0x1A && hd[1] === 0x45 && hd[2] === 0xDF && hd[3] === 0xA3;
+            if (isSup || (!isMkv && /\.(sup|pgs)$/i.test(f.name))) { useSup(await f.arrayBuffer(), baseName(f.name)); }
             else {
                 S.busy = true; window.__kfProg = function (p, txt) { setProg(p, txt || 'پشکنینی MKV...'); };
                 try { await handleMkvFileSelect({ files: [f] }); } finally { window.__kfProg = null; S.busy = false; }

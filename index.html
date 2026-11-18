@@ -2628,8 +2628,8 @@ function kfTogglePw(btn){
         }
     }
 
-    const mkvIoStat = { b: 0, n: 0, t0: 0 };
-    function mkvStatReset() { mkvIoStat.b = 0; mkvIoStat.n = 0; mkvIoStat.t0 = performance.now(); }
+    const mkvIoStat = { b: 0, n: 0, t0: 0, wh: 0, sp: 0, rn: 0, cue: 0 };
+    function mkvStatReset() { mkvIoStat.b = 0; mkvIoStat.n = 0; mkvIoStat.wh = 0; mkvIoStat.sp = 0; mkvIoStat.rn = 0; mkvIoStat.cue = 0; mkvIoStat.t0 = performance.now(); }
     function mkvStatText() {
         if (!mkvIoStat.t0) return '';
         const sec = Math.max(0.001, (performance.now() - mkvIoStat.t0) / 1000);
@@ -2638,7 +2638,7 @@ function kfTogglePw(btn){
     function mkvStatToast() {
         if (!mkvIoStat.t0) return;
         const sec = (performance.now() - mkvIoStat.t0) / 1000;
-        showToast('خوێندرایەوە ' + Math.round(mkvIoStat.b / 1048576) + ' MB لە ' + sec.toFixed(1) + ' چرکەدا (' + (mkvIoStat.b / 1048576 / Math.max(0.001, sec)).toFixed(0) + ' MB/s، ' + mkvIoStat.n + ' خوێندنەوە)', 'success');
+        showToast('خوێندرایەوە ' + Math.round(mkvIoStat.b / 1048576) + ' MB لە ' + sec.toFixed(1) + ' چرکەدا (' + (mkvIoStat.b / 1048576 / Math.max(0.001, sec)).toFixed(0) + ' MB/s، ' + mkvIoStat.n + ' خوێندنەوە)' + (mkvIoStat.cue ? ' • Cues: ' + mkvIoStat.cue + ' (rel<0: ' + mkvIoStat.rn + ')، تەواو:' + mkvIoStat.wh + ' پارچە:' + mkvIoStat.sp : ' • بێ Cues') + ' • a=' + mkvIoA.toFixed(1) + 'ms bw=' + (mkvIoBW / 1000).toFixed(0) + 'MB/s', 'success');
         mkvIoStat.t0 = 0;
     }
     function setMkvProgress(percent, statusText) {
@@ -3304,6 +3304,7 @@ function kfTogglePw(btn){
         if (!entries) return false;
         if (!opts.cueTrack && entries.length > expected * 2 + 64) return false;       // Cues شتێکی ناسروشتی تێدایە
         await mkvCalibrateIo(file);
+        mkvIoStat.cue = entries.length; mkvIoStat.rn = entries.filter(e => e.rel < 0).length;
         const wanted = new Set([track.trackNumber]);
 
         // Cues بەپێی کلەستەر کۆدەکرێنەوە (پێشتر هەر بلۆکێک خوێندنەوەیەکی جیای هەبوو، بۆ ژێرنووسی ASSی قورس دەبوو بە ٣٠ هەزار خوێندنەوە)
@@ -3320,14 +3321,17 @@ function kfTogglePw(btn){
         const prep = async (g, mode) => {
             const info = await mkvClusterInfo(file, g.cl);
             if (!info) return null;
+            mkvIoStat.sp += 0;
             const len = info.end - info.body;
             const whole = forceWhole || g.list.some(e => e.rel < 0) || (mode === 'whole' && len > 0 && len <= WHOLE_MAX);
             if (whole) {
+                mkvIoStat.wh++;
                 if (len <= 0 || len > (forceWhole ? 48 : 256) * 1024 * 1024) return null;
                 const rd = new MkvFastReader(file, len);
                 if (!await rd.ensure(info.body, len)) return null;
                 return { info, whole: true, rd };
             }
+            mkvIoStat.sp++;
             // پەنجەرەی بچووک: بلۆکی ژێرنووس بچووکە (نزیکەی ١ کیلۆبایت)، بۆیە ١٦ کیلۆبایت بەفیڕۆ دەچوو
             const items = await Promise.all(g.list.map(async (e) => {
                 const rd = new MkvFastReader(file, 4096);

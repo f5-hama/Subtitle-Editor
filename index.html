@@ -2628,13 +2628,26 @@ function kfTogglePw(btn){
         }
     }
 
+    const mkvIoStat = { b: 0, n: 0, t0: 0 };
+    function mkvStatReset() { mkvIoStat.b = 0; mkvIoStat.n = 0; mkvIoStat.t0 = performance.now(); }
+    function mkvStatText() {
+        if (!mkvIoStat.t0) return '';
+        const sec = Math.max(0.001, (performance.now() - mkvIoStat.t0) / 1000);
+        return ' • ' + Math.round(mkvIoStat.b / 1048576) + ' MB • ' + (mkvIoStat.b / 1048576 / sec).toFixed(0) + ' MB/s • ' + sec.toFixed(1) + ' چ';
+    }
+    function mkvStatToast() {
+        if (!mkvIoStat.t0) return;
+        const sec = (performance.now() - mkvIoStat.t0) / 1000;
+        showToast('خوێندرایەوە ' + Math.round(mkvIoStat.b / 1048576) + ' MB لە ' + sec.toFixed(1) + ' چرکەدا (' + (mkvIoStat.b / 1048576 / Math.max(0.001, sec)).toFixed(0) + ' MB/s، ' + mkvIoStat.n + ' خوێندنەوە)', 'success');
+        mkvIoStat.t0 = 0;
+    }
     function setMkvProgress(percent, statusText) {
         const fill = document.getElementById('mkvProgressBarFill');
         const pct = document.getElementById('mkvProgressPercent');
         const st = document.getElementById('mkvStatusText');
         if (fill) fill.style.width = Math.round(percent) + '%';
         if (pct) pct.innerText = Math.round(percent) + '%';
-        if (st && statusText) st.innerText = statusText;
+        if (st && statusText) st.innerText = statusText + (percent < 99 ? mkvStatText() : '');
     }
 
     function mkvEsc(s) {
@@ -2685,7 +2698,7 @@ function kfTogglePw(btn){
             if (!this.pfDepth || this.CHUNK < 1048576) { this.pq.length = 0; return; }
             let s = this.pq.length ? this.pq[this.pq.length - 1].e : this.ce;
             while (this.pq.length < this.pfDepth && s < this.size) {
-                const e = Math.min(this.size, s + this.CHUNK), p = this.file.slice(s, e).arrayBuffer();
+                const e = Math.min(this.size, s + this.CHUNK), p = this.file.slice(s, e).arrayBuffer(); mkvIoStat.b += e - s; mkvIoStat.n++;
                 p.catch(() => {}); this.pq.push({ s, e, p }); s = e;
             }
         }
@@ -2711,7 +2724,7 @@ function kfTogglePw(btn){
             if (!buf) {
                 q.length = 0;
                 const end = Math.min(this.size, pos + Math.max(n, this.CHUNK));
-                buf = await this.file.slice(pos, end).arrayBuffer();
+                buf = await this.file.slice(pos, end).arrayBuffer(); mkvIoStat.b += end - pos; mkvIoStat.n++;
             }
             this.cs = start;
             this.ce = start + buf.byteLength;
@@ -3025,7 +3038,7 @@ function kfTogglePw(btn){
                 for (let i = 0; i < 7; i++) { const p = Math.floor(sz * (0.07 + 0.11 * i)); const t = performance.now(); await file.slice(p, p + 4096).arrayBuffer(); small.push(performance.now() - t); }
                 for (let i = 0; i < 2; i++) { const p = Math.floor(sz * (0.2 + 0.4 * i)); const t = performance.now(); await file.slice(p, p + M4).arrayBuffer(); big.push(performance.now() - t); }
                 small.sort((a, b) => a - b);
-                const a = Math.max(0.05, small[small.length >> 1]);
+                const a = Math.max(0.05, small[Math.min(2, small.length - 1)]);     // کەمترینی سێیەم: بەرگەی چەند خوێندنەوەی خاوی سەرەتا دەگرێت
                 const bw = M4 / Math.max(0.2, Math.min.apply(null, big) - a);     // بایت لە میلی‌چرکەیەکدا
                 thr = Math.max(128 * 1024, Math.min(2 * 1024 * 1024, a * bw));
                 mkvIoA = a; mkvIoBW = bw;
@@ -3618,7 +3631,7 @@ function kfTogglePw(btn){
         const myId = mkvScanId;
         const prog = document.getElementById('mkvProgressContainer');
         if (prog) prog.style.display = 'block';
-        setMkvProgress(5, 'خەریکی دەرهێنانی خێرای تراکەکەیە...');
+        mkvStatReset(); setMkvProgress(5, 'خەریکی دەرهێنانی خێرای تراکەکەیە...');
 
         try {
             const blocks = [];
@@ -3733,7 +3746,7 @@ function kfTogglePw(btn){
             const res = mkvBuildSubtitleFile(track, blocks, baseName);
             const fileName = `${baseName}_[${mkvLangTag(track, t => !mkvIsPgs(t))}].${res.ext}`;
 
-            setMkvProgress(100, 'تەواو بوو!');
+            setMkvProgress(100, 'تەواو بوو!'); mkvStatToast();
             if (prog) prog.style.display = 'none';
             window.__mkvCache[cacheKey] = { res: res, fileName: fileName };
             mkvFinishExtract(res, fileName, openInEditor, isPgs, track);
@@ -3895,18 +3908,20 @@ function kfTogglePw(btn){
         const myId = mkvScanId;
         const prog = document.getElementById('mkvProgressContainer');
         if (prog) prog.style.display = 'block';
-        setMkvProgress(3, `خەریکی دەرهێنانی دەنگە (.${outExt})...`);
+        mkvStatReset(); setMkvProgress(3, `خەریکی دەرهێنانی دەنگە (.${outExt})...`);
 
         try {
             const aacCfg = isAac ? parseAacConfig(track) : null;
-            const audioChunks = [];
+            const audioChunks = [], audioKeys = [];
             let blockCount = 0;
 
             const handler = {
                 capture(ev) {
                     const frames = mkvUnlace(ev.reader, ev.dataPos, ev.hdr, ev.dataLen, ev.flags);
                     if (!frames) return null;
+                    let fi = 0;
                     for (const f of frames) {
+                        audioKeys.push(ev.dataPos * 256 + (fi++ & 255));     // شوێنی ڕاستەقینەی لە فایلدا: بۆ ڕیزکردنەوە دوای خوێندنەوەی هاوکات
                         if (isAac) {
                             const adts = makeAdtsHeader(f.length, aacCfg);
                             const packet = new Uint8Array(7 + f.length);
@@ -3929,10 +3944,10 @@ function kfTogglePw(btn){
             try {
                 const expected = await mkvReadFrameCount(currentMkvFile, track);
                 const vtrack = mkvParsedTracks.find(t => t.type === 1 || /^V_/.test(t.codecId || ''));
-                if (expected > 0 && vtrack) {
+                if (expected > 0 && vtrack && window.__cueAudio) {
                     fastOk = await mkvCueExtract(currentMkvFile, track, handler, myId, frac => {
                         setMkvProgress(Math.min(97, Math.round(3 + frac * 93)), `دەرهێنانی زۆر خێرا... (${blockCount} فەریم)`);
-                    }, expected, () => blockCount, () => { audioChunks.length = 0; blockCount = 0; }, { cueTrack: vtrack.trackNumber, ignoreRel: true });
+                    }, expected, () => blockCount, () => { audioChunks.length = 0; audioKeys.length = 0; blockCount = 0; }, { cueTrack: vtrack.trackNumber, ignoreRel: true });
                 }
             } catch (fe) {
                 if (fe && fe.message === 'cancelled') throw fe;
@@ -3940,15 +3955,26 @@ function kfTogglePw(btn){
                 fastOk = false;
             }
             if (!fastOk) {
-                audioChunks.length = 0; blockCount = 0;
+                audioChunks.length = 0; audioKeys.length = 0; blockCount = 0;
                 // ٢) ڕێگای ئاسایی: خوێندنەوەی تەواوی فایل
-                await mkvWalk(currentMkvFile, mkvSegmentDataStart, new Set([targetTrackNumber]), handler, myId, frac => {
+                await mkvWalkPar(currentMkvFile, mkvSegmentDataStart, new Set([targetTrackNumber]), handler, myId, frac => {
                     const percent = Math.round(3 + frac * 93);
                     setMkvProgress(Math.min(97, percent), `دەرهێنان... (${blockCount} فەریم)`);
                 });
             }
 
             if (myId !== mkvScanId) return;
+            // خوێندنەوەی هاوکات (چەند بەشێکی فایل پێکەوە): فەریمەکان بەپێی شوێنیان لە فایلەکەدا ڕێک دەخرێنەوە
+            {
+                let ordered = true;
+                for (let i = 1; i < audioKeys.length; i++) if (audioKeys[i] < audioKeys[i - 1]) { ordered = false; break; }
+                if (!ordered) {
+                    const idx = new Array(audioKeys.length); for (let i = 0; i < idx.length; i++) idx[i] = i;
+                    idx.sort((a, b) => audioKeys[a] - audioKeys[b]);
+                    const sorted = new Array(idx.length); for (let i = 0; i < idx.length; i++) sorted[i] = audioChunks[idx[i]];
+                    audioChunks.length = 0; for (let i = 0; i < sorted.length; i++) audioChunks.push(sorted[i]);
+                }
+            }
             if (blockCount === 0) {
                 if (prog) prog.style.display = 'none';
                 showToast('هیچ داتایەکی دەنگ لەم تراکەدا نەدۆزرایەوە.', 'error');
@@ -3973,7 +3999,7 @@ function kfTogglePw(btn){
             a.click();
             setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 60000);
 
-            setMkvProgress(100, 'تەواو بوو!');
+            setMkvProgress(100, 'تەواو بوو!'); mkvStatToast();
             if (prog) prog.style.display = 'none';
             showToast(`دەنگەکە وەک .${outExt} بە سەرکەوتوویی دابەزێندرا!`, 'success');
         } catch (err) {

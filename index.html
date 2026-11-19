@@ -2660,7 +2660,6 @@ function kfTogglePw(btn){
         if (fill) fill.style.width = Math.round(percent) + '%';
         if (pct) pct.innerText = Math.round(percent) + '%';
         if (st && statusText) st.innerText = mkvRtl(mkvNums(statusText) + (percent < 99 ? mkvStatText() : ''));
-        if (window.__kfProg) { try { window.__kfProg(percent, statusText ? mkvNums(statusText) + (percent < 99 ? mkvStatText() : '') : null); } catch (_) { } }
     }
 
     function mkvEsc(s) {
@@ -3677,7 +3676,7 @@ function kfTogglePw(btn){
             showToast(`فایلەکە بە سەرکەوتوویی دابەزێندرا (${res.count} دانە)`, 'success');
         }
     }
-            async function extractAndOpenSubtitle(targetTrackNumber, openInEditor = false, returnOnly = false) {
+            async function extractAndOpenSubtitle(targetTrackNumber, openInEditor = false) {
         if (!currentMkvFile) return;
         const track = mkvParsedTracks.find(t => t.trackNumber === targetTrackNumber);
         if (!track) return;
@@ -3697,7 +3696,6 @@ function kfTogglePw(btn){
         const cacheKey = mkvScanId + ':' + targetTrackNumber;
         if (window.__mkvCache[cacheKey]) {
             const c = window.__mkvCache[cacheKey];
-            if (returnOnly) return c.res;
             mkvFinishExtract(c.res, c.fileName, openInEditor, isPgs, track);
             return;
         }
@@ -3823,7 +3821,6 @@ function kfTogglePw(btn){
             setMkvProgress(100, 'تەواو بوو!'); mkvStatToast();
             if (prog) prog.style.display = 'none';
             window.__mkvCache[cacheKey] = { res: res, fileName: fileName };
-            if (returnOnly) return res;
             mkvFinishExtract(res, fileName, openInEditor, isPgs, track);
         } catch (err) {
             if (err && err.message === 'cancelled') return;
@@ -4141,10 +4138,7 @@ function kfTogglePw(btn){
                             ${!isPgs ? `
                             <button type="button" class="btn" style="width:auto; padding:4px 8px; font-size:11px;" onclick="extractAndOpenSubtitle(${t.trackNumber}, true)">
                                 کردنەوە لە ئەدیتۆر
-                            </button>` : `
-                            <button type="button" class="btn" style="width:auto; padding:4px 8px; font-size:11px;" onclick="kfPgsFromMkv(${t.trackNumber})">
-                                گۆڕین بۆ دەق
-                            </button>`}
+                            </button>` : ''}
                         </div>
                     </div>
                 `;
@@ -4263,72 +4257,6 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
         </div>
     </div>
 </div>
-
-    <!-- PGS (Blu-ray) → ژێرنووسی دەق بە OCR -->
-    <div id="pgs-modal" class="custom-modal-overlay">
-        <div class="custom-modal-content" style="max-width: 520px; text-align: start;">
-            <h3 class="custom-modal-title" style="text-align: center; margin: 0 0 6px 0; color: var(--primary); font-size: 16px;">گۆڕینی PGS بۆ SRT / ASS / VTT</h3>
-            <p style="font-size: 11px; color: var(--text-muted); text-align: center; margin: 0 0 10px 0; line-height: 1.7;">
-                ژێرنووسی وێنەیی Blu-ray (فایلی .sup یان تراکی PGS لەناو MKV) بە OCR دەکات بە دەق. یەکەم جار ئینتەرنێت پێویستە بۆ دابەزاندنی OCR، پاشان لەناو مۆبایلەکە دەمێنێتەوە.
-            </p>
-            <div class="file-box" id="pgsFileBox" style="margin-bottom: 10px; padding: 12px;">
-                <div class="upload-icon">
-                    <svg style="width:24px;height:24px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-width="1.85" d="M4 16.5V18a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1.5M12 4v11m0-11L8 8m4-4l4 4"/></svg>
-                </div>
-                <label>فایلی PGS (.sup / .pgs) یان .mkv هەڵبژێرە:</label>
-                <div class="file-name-display" id="pgsFileName">کرتە بکە بۆ کردنەوەی فایل</div>
-                <input type="file" id="pgsFileInput" accept=".sup,.pgs,.mkv,.webm,.mks,application/octet-stream,video/x-matroska">
-            </div>
-            <div id="pgsTracks" style="display:none; margin-bottom:10px; flex-direction:column; gap:6px;"></div>
-
-            <div id="pgsOpts" style="display:none; margin-bottom:10px;">
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
-                    <label style="font-size:11.5px; color:var(--text-muted); display:flex; flex-direction:column; gap:4px;">زمانی ژێرنووس
-                        <select id="pgsLang" class="kf-pgs-in"></select>
-                    </label>
-                    <label style="font-size:11.5px; color:var(--text-muted); display:flex; flex-direction:column; gap:4px;">خێرایی (ژمارەی OCR هاوکات)
-                        <select id="pgsWorkers" class="kf-pgs-in"><option value="0">خۆکار</option><option value="1">١ (کەمترین ڕام)</option><option value="2">٢</option><option value="3">٣</option><option value="4">٤ (خێراترین)</option></select>
-                    </label>
-                </div>
-                <div id="pgsLangHint" dir="rtl" style="font-size:11.5px; color:var(--primary); min-height:18px; margin:-2px 0 6px;"></div>
-                <label class="kf-pgs-ck"><input type="checkbox" id="pgsFix" checked> چاککردنی هەڵە باوەکانی ئینگلیزی</label>
-                <label class="kf-pgs-ck"><input type="checkbox" id="pgsTop" checked> پاراستنی شوێنی ژێرنووس (سەرەوە / ناوەڕاست / چەپ / ڕاست)</label>
-                <label class="kf-pgs-ck"><input type="checkbox" id="pgsPos" checked> ASS: شوێن، جوڵە، قەبارە و پانی ورد (بەپێی وێنەکە)</label>
-                <label class="kf-pgs-ck"><input type="checkbox" id="pgsItal" checked> پاراستنی شێوەی ئیتالیک (لار)</label>
-                <label class="kf-pgs-ck"><input type="checkbox" id="pgsDark"> نووسینی ژێرنووسەکە تاریکە (ڕەنگی ڕووناک نییە)</label>
-                <button type="button" class="btn" id="pgsStart" style="margin-top:8px;">دەستپێکردنی OCR</button>
-            </div>
-
-            <div id="pgsProg" style="display:none; margin-bottom:10px;">
-                <div style="height:8px; border-radius:6px; background:rgba(255,255,255,.1); overflow:hidden;"><div id="pgsBar" style="height:100%; width:0; background:var(--primary);"></div></div>
-                <div id="pgsSt1" dir="rtl" style="font-size:12.5px; margin-top:8px; height:22px; line-height:22px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-variant-numeric:tabular-nums; color:var(--text-main);"></div>
-                <div id="pgsSt2" dir="rtl" style="font-size:12px; height:22px; line-height:22px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-variant-numeric:tabular-nums; color:var(--text-muted);"></div>
-                <button type="button" class="btn btn-outline" id="pgsCancel" style="margin-top:6px; padding:6px 10px; font-size:12px;">هەڵوەشاندنەوە</button>
-            </div>
-
-            <div id="pgsRes" style="display:none;">
-                <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap;">
-                    <select id="pgsFilter" class="kf-pgs-in" style="flex:1; min-width:140px;"><option value="all">هەموو دێڕەکان</option><option value="low" selected>پێویست بە پشکنین</option><option value="empty">بەتاڵەکان</option></select>
-                    <label style="font-size:11.5px; color:var(--text-muted); display:flex; align-items:center; gap:6px;">کات (ms) <input type="number" id="pgsOffset" value="0" step="100" class="kf-pgs-in" style="width:84px; direction:ltr;"></label>
-                </div>
-                <div id="pgsSum" dir="rtl" style="font-size:12px; margin-bottom:8px; color:var(--text-muted);"></div>
-                <div id="pgsList" style="display:flex; flex-direction:column; gap:8px; height:46vh; overflow-y:auto; padding:2px;"></div>
-                <div id="pgsPager" style="display:flex; justify-content:center; gap:8px; margin:8px 0;"></div>
-                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-top:6px;">
-                    <button type="button" class="btn" data-pgs-dl="srt">SRT</button>
-                    <button type="button" class="btn" data-pgs-dl="ass">ASS</button>
-                    <button type="button" class="btn" data-pgs-dl="vtt">VTT</button>
-                </div>
-                <div style="display:flex; gap:6px; margin-top:6px;">
-                    <button type="button" class="btn btn-outline" id="pgsAll" style="flex:1;">دابەزاندنی هەرسێکیان</button>
-                    <button type="button" class="btn btn-outline" id="pgsEdit" style="flex:1;">کردنەوە لە ئەدیتۆر</button>
-                </div>
-            </div>
-            <div class="custom-modal-actions" style="margin-top:10px;">
-                <button type="button" class="btn btn-outline" onclick="document.getElementById('pgs-modal').style.display='none'">داخستن</button>
-            </div>
-        </div>
-    </div>
 
     <div id="sdh-modal" class="custom-modal-overlay">
         <div class="custom-modal-content">
@@ -17412,7 +17340,6 @@ html:root body.startup-bg #sdh-modal,
 html:root body.startup-bg #shortcuts-modal,
 html:root body.startup-bg #img-upload-modal,
 html:root body.startup-bg #mkv-extractor-modal,
-html:root body.startup-bg #pgs-modal,
 html:root body.startup-bg #kf-servers-modal,
 html:root body.startup-bg #history-modal {
     animation: none !important; transition: none !important;
@@ -17426,7 +17353,6 @@ html:root body.startup-bg #sdh-modal > .custom-modal-content,
 html:root body.startup-bg #shortcuts-modal > .custom-modal-content,
 html:root body.startup-bg #img-upload-modal > .custom-modal-content,
 html:root body.startup-bg #mkv-extractor-modal > .custom-modal-content,
-html:root body.startup-bg #pgs-modal > .custom-modal-content,
 html:root body.startup-bg #kf-servers-modal > .custom-modal-content,
 html:root body.startup-bg #history-modal > .custom-modal-content { animation: none !important; transition: none !important; }
 
@@ -17440,7 +17366,6 @@ html:root body.startup-bg #sdh-modal,
 html:root body.startup-bg #shortcuts-modal,
 html:root body.startup-bg #img-upload-modal,
 html:root body.startup-bg #mkv-extractor-modal,
-html:root body.startup-bg #pgs-modal,
 html:root body.startup-bg #kf-servers-modal,
 html:root body.startup-bg #history-modal {
     z-index: 1950 !important;
@@ -17458,7 +17383,6 @@ html:root body.startup-bg #sdh-modal > .custom-modal-content,
 html:root body.startup-bg #shortcuts-modal > .custom-modal-content,
 html:root body.startup-bg #img-upload-modal > .custom-modal-content,
 html:root body.startup-bg #mkv-extractor-modal > .custom-modal-content,
-html:root body.startup-bg #pgs-modal > .custom-modal-content,
 html:root body.startup-bg #kf-servers-modal > .custom-modal-content,
 html:root body.startup-bg #history-modal > .custom-modal-content {
     width: 100% !important; max-width: none !important; max-height: none !important;
@@ -17470,9 +17394,7 @@ html:root body.startup-bg #history-modal > .custom-modal-content {
 }
 html:root body.startup-bg #history-modal .history-list { max-height: none !important; }
 html:root body.startup-bg #mkv-extractor-modal #mkvSubtitlePanel,
-html:root body.startup-bg #pgs-modal #mkvSubtitlePanel,
 html:root body.startup-bg #mkv-extractor-modal #mkvAudioPanel { max-height: none !important; }
-html:root body.startup-bg #pgs-modal #mkvAudioPanel { max-height: none !important; }
 
 /* ---------- مۆبایل: مێنیو تەنها لە شاشەی بچووک ---------- */
 html.kf-wide #kf-menu-btn,
@@ -17491,7 +17413,6 @@ html.kf-wide:root body.startup-bg #sdh-modal > .custom-modal-content,
 html.kf-wide:root body.startup-bg #shortcuts-modal > .custom-modal-content,
 html.kf-wide:root body.startup-bg #img-upload-modal > .custom-modal-content,
 html.kf-wide:root body.startup-bg #mkv-extractor-modal > .custom-modal-content,
-html.kf-wide:root body.startup-bg #pgs-modal > .custom-modal-content,
 html.kf-wide:root body.startup-bg #kf-servers-modal > .custom-modal-content,
 html.kf-wide:root body.startup-bg #history-modal > .custom-modal-content {
         flex: 0 0 auto !important; margin: auto !important; min-height: 0 !important;
@@ -17713,560 +17634,6 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
 </style>
 
 
-<script>
-// ================= PGS (Blu-ray) → SRT / ASS / VTT بە OCR =================
-(function () {
-    'use strict';
-    var $ = function (id) { return document.getElementById(id); };
-    var TESS_JS = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
-    var LANGS = [['eng', 'English'], ['ara', 'العربية (Arabic)'], ['fas', 'فارسی (Persian)'], ['tur', 'Türkçe'], ['fra', 'Français'], ['deu', 'Deutsch'], ['spa', 'Español'], ['ita', 'Italiano'], ['por', 'Português'], ['rus', 'Русский'], ['ukr', 'Українська'], ['nld', 'Nederlands'], ['pol', 'Polski'], ['ell', 'Ελληνικά'], ['heb', 'עברית'], ['hin', 'हिन्दी'], ['jpn', '日本語'], ['kor', '한국어'], ['chi_sim', '中文 (简体)'], ['chi_tra', '中文 (繁體)'], ['tha', 'ไทย'], ['vie', 'Tiếng Việt'], ['ind', 'Indonesia']];
-    var ISO = { en: 'eng', eng: 'eng', ar: 'ara', ara: 'ara', fa: 'fas', fas: 'fas', per: 'fas', tr: 'tur', tur: 'tur', fr: 'fra', fra: 'fra', fre: 'fra', de: 'deu', deu: 'deu', ger: 'deu', es: 'spa', spa: 'spa', it: 'ita', ita: 'ita', pt: 'por', por: 'por', ru: 'rus', rus: 'rus', uk: 'ukr', ukr: 'ukr', nl: 'nld', nld: 'nld', dut: 'nld', pl: 'pol', pol: 'pol', el: 'ell', ell: 'ell', gre: 'ell', he: 'heb', heb: 'heb', hi: 'hin', hin: 'hin', ja: 'jpn', jpn: 'jpn', ko: 'kor', kor: 'kor', zh: 'chi_sim', chi: 'chi_sim', zho: 'chi_sim', th: 'tha', tha: 'tha', vi: 'vie', vie: 'vie', id: 'ind', ind: 'ind' };
-
-    // ---------- پارسەری .sup ----------
-    function parseSup(buf) {
-        var u = new Uint8Array(buf), dv = new DataView(buf), n = u.length, p = 0;
-        var cues = [], cur = null, objs = new Map(), pals = new Map(), acc = new Map(), pcs = null, hasOds = false, W = 1920, H = 1080;
-        function opq(pal) { if (!pal) return 0; var c = 0; for (var i = 0; i < 256; i++) if (pal[256 + i] > 8) c++; return c; }
-        function close(t) { if (cur) { cur.end = t; cues.push(cur); cur = null; } }
-        function endDs() {
-            if (!pcs) return; var t = pcs.pts;
-            if (!pcs.objs.length) close(t);
-            else {
-                var pal = pals.get(pcs.palId);
-                if (hasOds || !cur) {
-                    close(t);
-                    var items = [];
-                    pcs.objs.forEach(function (o) { var ob = objs.get(o.id); if (ob) items.push({ x: o.x, y: o.y, w: ob.w, h: ob.h, rle: ob.rle, crop: o.crop }); });
-                    if (items.length) cur = { start: t, end: 0, w: pcs.w, h: pcs.h, items: items, pal: pal };
-                } else {
-                    var arr = []; pcs.objs.forEach(function (o) { var ob = objs.get(o.id); if (ob) arr.push({ x: o.x, y: o.y, w: ob.w, h: ob.h, rle: ob.rle, crop: o.crop }); });
-                    var mv = arr.length === cur.items.length && arr.some(function (a, k) { return a.x !== cur.items[k].x || a.y !== cur.items[k].y; });
-                    if (mv) { var pp = pal || cur.pal; close(t); cur = { start: t, end: 0, w: pcs.w, h: pcs.h, items: arr, pal: pp }; }
-                    else if (pal && opq(pal) > opq(cur.pal)) cur.pal = pal;
-                }
-            }
-            pcs = null; hasOds = false;
-        }
-        while (p + 13 <= n) {
-            if (u[p] !== 0x50 || u[p + 1] !== 0x47) { var q = p + 1; while (q + 1 < n && !(u[q] === 0x50 && u[q + 1] === 0x47)) q++; if (q + 1 >= n) break; p = q; continue; }
-            var pts = dv.getUint32(p + 2) / 90000, t = u[p + 10], sz = dv.getUint16(p + 11), d = p + 13;
-            p = d + sz; if (p > n) break;
-            if (t === 0x16) {
-                if (sz < 11) continue;
-                var st = u[d + 7]; W = dv.getUint16(d); H = dv.getUint16(d + 2);
-                if (st === 0x80) { objs.clear(); pals.clear(); acc.clear(); }
-                var no = u[d + 10], o = d + 11, list = [];
-                for (var k = 0; k < no && o + 8 <= d + sz; k++) {
-                    var fl = u[o + 3], it = { id: dv.getUint16(o), x: dv.getUint16(o + 4), y: dv.getUint16(o + 6), crop: null }; o += 8;
-                    if ((fl & 0x80) || (fl & 0x40)) { if (o + 8 <= d + sz) { it.crop = { x: dv.getUint16(o), y: dv.getUint16(o + 2), w: dv.getUint16(o + 4), h: dv.getUint16(o + 6) }; } o += 8; }
-                    list.push(it);
-                }
-                pcs = { pts: pts, w: W, h: H, palId: u[d + 9], objs: list }; hasOds = false;
-            } else if (t === 0x14) {
-                var id = u[d], base = pals.get(id), np = base ? base.slice() : new Uint8Array(512);
-                for (var e = d + 2; e + 5 <= d + sz; e += 5) { np[u[e]] = u[e + 1]; np[256 + u[e]] = u[e + 4]; }
-                pals.set(id, np);
-            } else if (t === 0x15) {
-                if (sz < 4) continue;
-                var oid = dv.getUint16(d), seq = u[d + 3], a;
-                if (seq & 0x80) { if (sz < 11) continue; a = { w: dv.getUint16(d + 7), h: dv.getUint16(d + 9), parts: [u.subarray(d + 11, d + sz)] }; acc.set(oid, a); }
-                else { a = acc.get(oid); if (a) a.parts.push(u.subarray(d + 4, d + sz)); }
-                if ((seq & 0x40) && a) {
-                    var rle; if (a.parts.length === 1) rle = a.parts[0]; else { var tl = 0; a.parts.forEach(function (x) { tl += x.length; }); rle = new Uint8Array(tl); var po = 0; a.parts.forEach(function (x) { rle.set(x, po); po += x.length; }); }
-                    objs.set(oid, { w: a.w, h: a.h, rle: rle }); acc.delete(oid);
-                }
-                hasOds = true;
-            } else if (t === 0x80) endDs();
-        }
-        endDs();
-        if (cur) close(cur.start + 3);
-        cues = cues.filter(function (c) { return c.end > c.start; });
-        return { cues: cues, w: W, h: H };
-    }
-
-    function rleDecode(rle, w, h) {
-        var out = new Uint8Array(w * h), i = 0, n = rle.length, x = 0, y = 0;
-        while (i < n && y < h) {
-            var b = rle[i++];
-            if (b) { if (x < w) out[y * w + x] = b; x++; continue; }
-            var c = rle[i++];
-            if (c === 0) { x = 0; y++; continue; }
-            var len, col = 0;
-            if (c & 0x40) len = ((c & 0x3f) << 8) | rle[i++]; else len = c & 0x3f;
-            if (c & 0x80) col = rle[i++];
-            if (col && x < w) out.fill(col, y * w + x, y * w + Math.min(w, x + len));
-            x += len;
-        }
-        return out;
-    }
-
-    // دێڕەکانی نووسین (باند): [سەرەوە، خوارەوە، چەپ، ڕاست]
-    function bandsOf(S, BW, x0, y0, w, h) {
-        var bands = [], st = -1, gap = 0, en = 0, y, x, bl = 1e9, br = -1, l0 = 1e9, r0 = -1;
-        for (y = 0; y < h; y++) {
-            var any = false, rb = (y + y0) * BW + x0;
-            for (x = 0; x < w; x++) if (S[rb + x] < 128) { any = true; if (x < l0) l0 = x; if (x > r0) r0 = x; }
-            if (any) { if (st < 0) { st = y; bl = 1e9; br = -1; } if (l0 < bl) bl = l0; if (r0 > br) br = r0; l0 = 1e9; r0 = -1; gap = 0; en = y; }
-            else if (st >= 0 && ++gap >= 6) { bands.push([st, en, bl, br]); st = -1; }
-        }
-        if (st >= 0) bands.push([st, en, bl, br]);
-        return bands;
-    }
-    // دۆزینەوەی ئیتالیک: لارکردنەوەیەک کە ستوونەکانی پیتەکان تیژتر دەکات
-    function slantOf(S, BW, x0, y0, w, h) {
-        if (h < 14 || w < 30) return false;
-        var bands = bandsOf(S, BW, x0, y0, w, h);
-        var SH = [0, 0.08, 0.14, 0.2, 0.26, 0.32, -0.1, -0.2], sc = new Float64Array(SH.length), off = Math.ceil(h * 0.4) + 4;
-        bands.forEach(function (bd) {
-            var mid = (bd[0] + bd[1]) / 2;
-            for (var k = 0; k < SH.length; k++) {
-                var cols = new Int32Array(w + 2 * off);
-                for (var yy = bd[0]; yy <= bd[1]; yy += 2) {
-                    var shift = Math.round(SH[k] * (yy - mid)), rb2 = (yy + y0) * BW + x0;
-                    for (var xx = 0; xx < w; xx++) if (S[rb2 + xx] < 128) cols[xx + shift + off]++;
-                }
-                var t = 0; for (var c = 0; c < cols.length; c++) t += cols[c] * cols[c];
-                sc[k] += t;
-            }
-        });
-        if (!sc[0]) return false;
-        var pos = Math.max(sc[1], sc[2], sc[3], sc[4], sc[5]) / sc[0], neg = Math.max(sc[6], sc[7]) / sc[0];
-        return pos >= 1.04 && pos > neg + 0.05;
-    }
-
-    // ---------- ئامادەکردنی وێنە بۆ OCR: نووسینی ڕەش لەسەر پشتەکی سپی ----------
-    function renderCue(cue, dark) {
-        if (!cue.pal) return null;
-        var pal = cue.pal, minX = 1e9, minY = 1e9, maxX = -1, maxY = -1, items = [];
-        cue.items.forEach(function (it) {
-            var cx = it.crop ? it.crop.x : 0, cy = it.crop ? it.crop.y : 0, cw = it.crop ? Math.min(it.crop.w, it.w - cx) : it.w, ch = it.crop ? Math.min(it.crop.h, it.h - cy) : it.h;
-            if (cw <= 0 || ch <= 0) return;
-            items.push({ it: it, cx: cx, cy: cy, cw: cw, ch: ch });
-            minX = Math.min(minX, it.x); minY = Math.min(minY, it.y); maxX = Math.max(maxX, it.x + cw); maxY = Math.max(maxY, it.y + ch);
-        });
-        var BW = maxX - minX, BH = maxY - minY;
-        if (!items.length || BW <= 0 || BH <= 0 || BW > 4096 || BH > 2200) return null;
-        var G = new Uint8Array(BW * BH), A = new Uint8Array(BW * BH);
-        items.forEach(function (q) {
-            var idx = rleDecode(q.it.rle, q.it.w, q.it.h);
-            for (var y = 0; y < q.ch; y++) for (var x = 0; x < q.cw; x++) {
-                var v = idx[(q.cy + y) * q.it.w + q.cx + x]; if (!v) continue;
-                var a = pal[256 + v]; if (!a) continue;
-                var g = (pal[v] - 16) * 255 / 219; g = g < 0 ? 0 : g > 255 ? 255 : g;
-                var pos = (q.it.y - minY + y) * BW + (q.it.x - minX + x); G[pos] = g; A[pos] = a;
-            }
-        });
-        // دوو چینی ڕووناک/تاریک (نووسین و ئاوتلاین) بە Otsu
-        var hist = new Float64Array(256), tot = 0, N = BW * BH, i;
-        for (i = 0; i < N; i++) if (A[i] >= 128) { hist[G[i]]++; tot++; }
-        if (tot < 12) return null;
-        var sumAll = 0; for (i = 0; i < 256; i++) sumAll += i * hist[i];
-        var wB = 0, sB = 0, best = -1, T = 128;
-        for (i = 0; i < 256; i++) { wB += hist[i]; if (!wB) continue; var wF = tot - wB; if (!wF) break; sB += i * hist[i]; var mB = sB / wB, mF = (sumAll - sB) / wF, bv = wB * wF * (mB - mF) * (mB - mF); if (bv > best) { best = bv; T = i; } }
-        var c0 = 0, s0 = 0; for (i = 0; i <= T; i++) { c0 += hist[i]; s0 += i * hist[i]; }
-        var c1 = tot - c0, m0 = c0 ? s0 / c0 : 0, m1 = c1 ? (sumAll - s0) / c1 : 255;
-        var two = (m1 - m0) >= 45 && Math.min(c0, c1) / tot >= 0.04, mid = (m0 + m1) / 2, wid = Math.max(1, (m1 - m0) * 0.6);
-        var S = new Uint8Array(N), cnt = 0, x0 = BW, y0 = BH, x1 = -1, y1 = -1;
-        for (i = 0; i < N; i++) {
-            if (!A[i]) continue;
-            var f = 1;
-            if (two) { f = (G[i] - mid) / wid + 0.5; f = f < 0 ? 0 : f > 1 ? 1 : f; if (dark) f = 1 - f; }
-            var s = Math.round(255 * (A[i] / 255) * f);
-            if (s > 24) { cnt++; var xx = i % BW, yy = (i / BW) | 0; if (xx < x0) x0 = xx; if (xx > x1) x1 = xx; if (yy < y0) y0 = yy; if (yy > y1) y1 = yy; }
-            S[i] = 255 - s;
-            if (!s) S[i] = 255;
-        }
-        for (i = 0; i < N; i++) if (!A[i]) S[i] = 255;
-        if (cnt < 12 || x1 < 0) return null;
-        var w = x1 - x0 + 1, h = y1 - y0 + 1, hash = 2166136261, rawC = document.createElement('canvas');
-        rawC.width = w; rawC.height = h;
-        var img = rawC.getContext('2d').createImageData(w, h), d = img.data;
-        for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) { var v = S[(y + y0) * BW + x + x0], o = (y * w + x) * 4; d[o] = d[o + 1] = d[o + 2] = v; d[o + 3] = 255; hash = Math.imul(hash ^ v, 16777619); }
-        rawC.getContext('2d').putImageData(img, 0, 0);
-        hash = w + 'x' + h + ':' + (hash >>> 0);
-        var f2 = h < 28 ? 3 : h < 50 ? 2 : 1, pad = 14, oc = document.createElement('canvas');
-        oc.width = w * f2 + pad * 2; oc.height = h * f2 + pad * 2;
-        var cx = oc.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, oc.width, oc.height);
-        cx.imageSmoothingEnabled = true; cx.imageSmoothingQuality = 'high'; cx.drawImage(rawC, pad, pad, w * f2, h * f2);
-        var CW = cue.w || 1920, CH = cue.h || 1080, ax = (minX + x0 + w / 2) / CW, ay = (minY + y0 + h / 2) / CH;
-        var col = ax < 0.33 ? 0 : ax > 0.67 ? 2 : 1, row = ay < 0.33 ? 0 : ay < 0.5 ? 1 : 2;
-        var an = [[7, 8, 9], [4, 5, 6], [1, 2, 3]][row][col];
-        // یەک دێڕ یان چەند دێڕ (بۆ PSM ی OCR)
-        var rows = 0, gap = 0, maxGap = 0, started = false;
-        for (var yy2 = 0; yy2 < h; yy2++) { var any = false; for (var xx2 = 0; xx2 < w; xx2++) if (S[(yy2 + y0) * BW + xx2 + x0] < 128) { any = true; break; } if (any) { started = true; gap = 0; } else if (started) { gap++; if (gap > maxGap) maxGap = gap; } }
-        var single = h < 0.085 * CH && maxGap < 0.18 * h;
-        var ix0 = minX + x0, iy0 = minY + y0, bnd = bandsOf(S, BW, x0, y0, w, h).map(function (b) { return { h: b[1] - b[0] + 1, w: b[3] - b[2] + 1 }; });
-        var meta = { ix0: ix0, iy0: iy0, ix1: ix0 + w, iy1: iy0 + h, bands: bnd };
-        return { canvas: oc, raw: rawC, hash: hash, an: an, top: row === 0, italic: slantOf(S, BW, x0, y0, w, h), single: single, meta: meta };
-    }
-
-    // ---------- بزوێنی OCR (Tesseract.js) ----------
-    var Engine = {
-        workers: [],
-        load: function () {
-            if (window.Tesseract) return Promise.resolve();
-            return new Promise(function (ok, bad) { var s = document.createElement('script'); s.src = TESS_JS; s.onload = ok; s.onerror = function () { bad(new Error('cdn')); }; document.head.appendChild(s); });
-        },
-        start: async function (lang, n, onStatus) {
-            await this.load();
-            onStatus && onStatus('دابەزاندن و ئامادەکردنی OCR...');
-            var mk = async function () {
-                var w = await window.Tesseract.createWorker(lang, 1, { logger: function () { } });
-                try { await w.setParameters({ tessedit_pageseg_mode: '6', preserve_interword_spaces: '1', user_defined_dpi: '300' }); w.__psm = '6'; } catch (e) { }
-                return w;
-            };
-            this.workers.push(await mk());
-            if (n > 1) { var rest = await Promise.all(Array.from({ length: n - 1 }, mk)); this.workers = this.workers.concat(rest); }
-            return this.workers.length;
-        },
-        recognize: async function (w, canvas, psm) {
-            psm = psm || '6';
-            if (w.__psm !== psm) { try { await w.setParameters({ tessedit_pageseg_mode: psm }); } catch (e) { } w.__psm = psm; }
-            var r = await w.recognize(canvas, {}, { text: true }), cf = r && r.data && r.data.confidence;
-            return { text: (r && r.data && r.data.text) || '', conf: typeof cf === 'number' ? cf : 80 };
-        },
-        stop: async function () { var ws = this.workers; this.workers = []; await Promise.all(ws.map(function (w) { return Promise.resolve(w.terminate && w.terminate()).catch(function () { }); })); }
-    };
-
-    // ---------- دەق ----------
-    function fixEng(t) {
-        return t
-            .replace(/(^|[\s"“(\-—])\|(?=['’]?[a-z])/g, '$1I').replace(/\|/g, 'l')
-            .replace(/(^|[\s"“(\-—¿¡])l(?=['’](?:m|ll|d|ve)\b)/g, '$1I')
-            .replace(/(^|[\s"“(\-—])l(?=[\s,.!?;:"”)]|$)/g, '$1I')
-            .replace(/\bl(t|n|f)\b/g, 'I$1').replace(/\blt(['’]s)\b/g, 'It$1')
-            .replace(/\bI(o(?:ve|ng|ok|ud|st|w|ck|rd|ne)[a-z]*)\b/g, 'l$1').replace(/([a-z])I(?=[a-z])/g, '$1l').replace(/([a-z])0(?=[a-z])/g, '$1o')
-            .replace(/\s+([,.!?;:])/g, '$1');
-    }
-    function cleanText(raw, fix) {
-        var lines = String(raw || '').replace(/\r/g, '').split('\n').map(function (l) { return l.replace(/[ \t]+/g, ' ').trim(); }).filter(function (l) { return l; });
-        var t = lines.join('\n');
-        if (fix) t = fixEng(t);
-        if (!/[\p{L}\p{N}]/u.test(t)) return '';
-        return t;
-    }
-    var pad = function (n, l) { n = String(n); while (n.length < l) n = '0' + n; return n; };
-    function ts(sec, sep, ms3) {
-        sec = Math.max(0, sec); var t = Math.round(sec * 1000), h = Math.floor(t / 3600000), m = Math.floor(t / 60000) % 60, s = Math.floor(t / 1000) % 60, ms = t % 1000;
-        if (ms3) return pad(h, 2) + ':' + pad(m, 2) + ':' + pad(s, 2) + sep + pad(ms, 3);
-        return h + ':' + pad(m, 2) + ':' + pad(s, 2) + sep + pad(Math.floor(ms / 10), 2);
-    }
-    var S = { cues: [], res: [], w: 1920, h: 1080, base: 'subtitle', lang: 'eng', page: 0, cancel: false, busy: false, file: null, mkvTrack: null, lastMkvId: null };
-    var PER = 40;
-
-    // خاڵی لەنگەر (بەپێی شوێنی \an) لەناو ڤیدیۆدا
-    function anchor(c) {
-        var mt = c.meta; if (!mt) return [0, 0];
-        var an = c.an0 || c.an || 2, col = (an - 1) % 3, row = Math.floor((an - 1) / 3);
-        return [Math.round(col === 0 ? mt.ix0 : col === 2 ? mt.ix1 : (mt.ix0 + mt.ix1) / 2), Math.round(row === 2 ? mt.iy0 : row === 0 ? mt.iy1 : (mt.iy0 + mt.iy1) / 2)];
-    }
-    var mctx = null;
-    function median(a) { a = a.slice().sort(function (x, y) { return x - y; }); return a[a.length >> 1]; }
-    // خەمڵاندنی قەبارە و پانی فۆنت لە بەرزی و پانی وێنەکەوە
-    function fontOf(c) {
-        var mt = c.meta, H = c.H || S.h || 1080; if (!mt || !mt.bands.length) return null;
-        var lines = c.t.split('\n'), bands = mt.bands, latin = /[A-Za-z]/.test(c.t), est;
-        if (latin && bands.length === lines.length) est = bands.map(function (b, i) { var l = lines[i], asc = /[A-Z0-9bdfhklt]/.test(l) ? 0.716 : 0.519, desc = /[gjpqy,;]/.test(l) ? 0.21 : 0; return b.h / (asc + desc); });
-        else est = bands.map(function (b) { return b.h / (latin ? 0.926 : 0.9); });
-        var fs = Math.round(Math.max(H / 60, Math.min(H / 6, median(est))));
-        var sx = 100;
-        try {
-            mctx = mctx || document.createElement('canvas').getContext('2d'); mctx.font = fs + 'px Arial, Helvetica, sans-serif';
-            if (bands.length === lines.length) { var rt = bands.map(function (b, i) { var wd = mctx.measureText(lines[i]).width; return wd > 0 ? b.w / wd : 1; }); sx = Math.round(Math.max(50, Math.min(200, median(rt) * 100))); }
-        } catch (e) { }
-        return { fs: fs, sx: Math.abs(sx - 100) > 6 ? sx : 100 };
-    }
-    function finalList() {
-        var off = (parseFloat($('pgsOffset').value) || 0) / 1000, pos = $('pgsTop').checked, ital = $('pgsItal').checked, out = [];
-        S.res.forEach(function (r) { if (!r || r.del || !r.text) return; out.push({ s: Math.max(0, r.start + off), e: Math.max(0, r.end + off), t: r.text, an: pos ? (r.an || 2) : 2, an0: r.an || 2, it: ital && !!r.italic, meta: r.meta, H: r.H, W: r.W, chain: !!r.chain }); });
-        out.sort(function (a, b) { return a.s - b.s; });
-        for (var i = 0; i < out.length; i++) if (out[i].e <= out[i].s) out[i].e = out[i].s + 1;
-        return out;
-    }
-    function build(fmt) {
-        var L = finalList(), o = [];
-        if (fmt !== 'ass') L = L.filter(function (c, i) { if (c.chain && i > 0 && L[i - 1].t === c.t) { var p = L[i - 1]; p.e = Math.max(p.e, c.e); return false; } return true; });
-        var ital = function (t) { return t.split('\n').map(function (l) { return '<i>' + l + '</i>'; }).join('\n'); };
-        if (fmt === 'srt') {
-            L.forEach(function (c, k) { o.push((k + 1) + '\n' + ts(c.s, ',', 1) + ' --> ' + ts(c.e, ',', 1) + '\n' + (c.an !== 2 ? '{\\an' + c.an + '}' : '') + (c.it ? ital(c.t) : c.t) + '\n'); });
-            return o.join('\n');
-        }
-        if (fmt === 'vtt') {
-            o.push('WEBVTT\n');
-            L.forEach(function (c) {
-                var set = '', col = (c.an - 1) % 3, row = Math.floor((c.an - 1) / 3);
-                if (row === 2) set += ' line:10%'; else if (row === 1) set += ' line:50%';
-                if (col === 0) set += ' position:10% align:left'; else if (col === 2) set += ' position:90% align:right';
-                var t = c.t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
-                o.push(ts(c.s, '.', 1) + ' --> ' + ts(c.e, '.', 1) + set + '\n' + (c.it ? ital(t) : t) + '\n');
-            });
-            return o.join('\n');
-        }
-        var H = S.h || 1080, W = S.w || 1920, exact = $('pgsPos').checked;
-        var fonts = L.map(function (c) { return exact ? fontOf(c) : null; });
-        var cnt = {}, fs = Math.round(H / 18), bestN = 0;
-        fonts.forEach(function (f) { if (f) { cnt[f.fs] = (cnt[f.fs] || 0) + 1; if (cnt[f.fs] > bestN) { bestN = cnt[f.fs]; fs = f.fs; } } });
-        var head = '[Script Info]\nTitle: ' + S.base + '\nScriptType: v4.00+\nWrapStyle: 0\nScaledBorderAndShadow: yes\nPlayResX: ' + W + '\nPlayResY: ' + H + '\n\n[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\nStyle: Default,Arial,' + fs + ',&H00FFFFFF,&H000000FF,&H00000000,&H64000000,0,0,0,0,100,100,0,0,1,2.5,1,2,60,60,' + Math.round(H * 0.05) + ',1\n\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n';
-        return head + L.map(function (c, i) {
-            var tag = '', e = c.e, f = fonts[i];
-            if (exact && c.meta) {
-                var a = anchor(c), nx = L[i + 1];
-                tag += '\\an' + c.an0;
-                if (nx && nx.chain && nx.t === c.t && nx.s - c.e <= 0.15 && nx.s > c.s) { var b = anchor(nx); e = nx.s; tag += '\\move(' + a[0] + ',' + a[1] + ',' + b[0] + ',' + b[1] + ')'; }
-                else tag += '\\pos(' + a[0] + ',' + a[1] + ')';
-                if (f && Math.abs(f.fs - fs) / fs > 0.06) tag += '\\fs' + f.fs;
-                if (f && f.sx !== 100) tag += '\\fscx' + f.sx;
-            } else if (c.an !== 2) tag += '\\an' + c.an;
-            if (c.it) tag += '\\i1';
-            return 'Dialogue: 0,' + ts(c.s, '.', 0) + ',' + ts(e, '.', 0) + ',Default,,0,0,0,,' + (tag ? '{' + tag + '}' : '') + c.t.replace(/\n/g, '\\N');
-        }).join('\n') + '\n';
-    }
-    function save(text, name) {
-        var b = new Blob(['﻿', text], { type: 'text/plain;charset=utf-8' }), u = URL.createObjectURL(b), a = document.createElement('a');
-        a.href = u; a.download = name; a.style.display = 'none'; document.body.appendChild(a); a.click();
-        setTimeout(function () { a.remove(); URL.revokeObjectURL(u); }, 30000);
-    }
-    var toast = function (m, t) { try { showToast(m, t || 'info'); } catch (e) { } };
-    var L = function (t) { return '⁦' + t + '⁩'; };
-    var fmtT = function (s) { s = Math.max(0, Math.round(s)); var h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, r = s % 60; return L(h ? h + ':' + pad(m, 2) + ':' + pad(r, 2) : m + ':' + pad(r, 2)); };
-
-    // ---------- ڕووکار ----------
-    function setProg(pct, l1, l2) {
-        $('pgsProg').style.display = 'block'; $('pgsBar').style.width = Math.max(0, Math.min(100, pct)) + '%';
-        if (l1 != null) $('pgsSt1').textContent = '\u2067' + l1 + '\u2069';
-        if (l2 != null) $('pgsSt2').textContent = l2 ? '\u2067' + l2 + '\u2069' : '';
-    }
-    function stats() {
-        var tot = 0, low = 0, emp = 0;
-        S.res.forEach(function (r) { if (!r || r.del) return; tot++; if (!r.text) emp++; else if (r.conf < 78) low++; });
-        $('pgsSum').textContent = '⁧' + L(tot) + ' دێڕ • پێویست بە پشکنین: ' + L(low) + ' • بەتاڵ: ' + L(emp) + '⁩';
-    }
-    function visible() {
-        var f = $('pgsFilter').value, o = [];
-        S.res.forEach(function (r, i) { if (!r || r.del) return; if (f === 'all' || (f === 'empty' && !r.text) || (f === 'low' && (!r.text || r.conf < 78))) o.push(i); });
-        return o;
-    }
-    function drawList() {
-        var v = visible(), pages = Math.max(1, Math.ceil(v.length / PER)); if (S.page >= pages) S.page = pages - 1;
-        var box = $('pgsList'); box.innerHTML = '';
-        v.slice(S.page * PER, S.page * PER + PER).forEach(function (i) {
-            var r = S.res[i], c = document.createElement('div');
-            c.style.cssText = 'background:rgba(255,255,255,.06);border:1px solid ' + ((!r.text || r.conf < 78) ? 'rgba(245,158,11,.55)' : 'var(--border-color)') + ';border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:6px;';
-            var top = document.createElement('div'); top.style.cssText = 'display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--text-muted);direction:ltr;';
-            top.innerHTML = '<span>#' + (i + 1) + ' • ' + ts(r.start, '.', 1) + ' → ' + ts(r.end, '.', 1) + ' • ' + Math.round(r.conf) + '%</span>';
-            var del = document.createElement('button'); del.type = 'button'; del.className = 'btn btn-outline'; del.textContent = 'سڕینەوە'; del.style.cssText = 'width:auto;padding:3px 8px;font-size:11px;';
-            del.onclick = function () { r.del = true; stats(); drawList(); }; top.appendChild(del); c.appendChild(top);
-            if (r.blob) { var im = document.createElement('img'); im.style.cssText = 'max-width:100%;max-height:70px;object-fit:contain;background:#fff;border-radius:6px;align-self:center;'; im.src = r.url || (r.url = URL.createObjectURL(r.blob)); c.appendChild(im); }
-            var ta = document.createElement('textarea'); ta.value = r.text; ta.rows = Math.max(1, r.text.split('\n').length); ta.dir = 'auto'; ta.style.cssText = 'width:100%;background:#0b1220;color:#fff;border:1px solid var(--border-color);border-radius:8px;padding:6px;font-size:14px;resize:vertical;';
-            ta.oninput = function () { r.text = ta.value.replace(/\r/g, '').trim(); r.conf = 100; stats(); }; c.appendChild(ta);
-            box.appendChild(c);
-        });
-        if (!v.length) box.innerHTML = '<div style="text-align:center;font-size:12px;color:var(--text-muted);padding:12px;">هیچ دێڕێک نییە لەم فلتەرەدا</div>';
-        var pg = $('pgsPager'); pg.innerHTML = '';
-        if (pages > 1) {
-            var mkb = function (t, d) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn btn-outline'; b.textContent = t; b.style.cssText = 'width:auto;padding:5px 12px;font-size:12px;'; b.onclick = function () { S.page = Math.max(0, Math.min(pages - 1, S.page + d)); drawList(); $('pgsList').scrollTop = 0; }; return b; };
-            var lb = document.createElement('span'); lb.style.cssText = 'font-size:12px;align-self:center;direction:ltr;'; lb.textContent = (S.page + 1) + ' / ' + pages;
-            pg.appendChild(mkb('پێشوو', -1)); pg.appendChild(lb); pg.appendChild(mkb('دواتر', 1));
-        }
-    }
-    function showResults() { $('pgsRes').style.display = 'block'; stats(); S.page = 0; drawList(); }
-
-    // ---------- OCR ----------
-    var wake = null;
-    function lockOpts(b) { var o = $('pgsOpts'); o.style.opacity = b ? '.45' : ''; o.style.pointerEvents = b ? 'none' : ''; $('pgsStart').disabled = !!b; $('pgsCancel').style.visibility = b ? 'visible' : 'hidden'; }
-    async function runOcr() {
-        if (S.busy || !S.cues.length) return;
-        S.busy = true; S.cancel = false; S.res = []; $('pgsRes').style.display = 'none'; lockOpts(true);
-        var lang = $('pgsLang').value, dark = $('pgsDark').checked, fix = $('pgsFix').checked && lang === 'eng';
-        var wn = +$('pgsWorkers').value || Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 4) - 1, (navigator.deviceMemory && navigator.deviceMemory <= 3) ? 2 : 4));
-        S.lang = lang;
-        try { if (navigator.wakeLock) wake = await navigator.wakeLock.request('screen'); } catch (e) { }
-        var eng = window.kfPgs.engine, t0 = 0, N = S.cues.length, done = 0;
-        try {
-            setProg(0, 'ئامادەکردنی خوێندنەوە... (یەکەم جار چەند چرکەیەک دەخایەنێت)', '');
-            await eng.start(lang, wn, function (m) { setProg(0, m, ''); });
-            var cues = S.cues, next = 0, cache = new Map(), samples = [];
-            t0 = Date.now();
-            var toBlob = function (c) { return new Promise(function (ok) { try { c.toBlob(function (b) { ok(b); }, 'image/png'); } catch (e) { ok(null); } }); };
-            var tick = function () {
-                var now = Date.now(), el = (now - t0) / 1000; samples.push([now, done]);
-                while (samples.length > 2 && now - samples[0][0] > 10000) samples.shift();
-                var f = samples[0], rate = now > f[0] ? (done - f[1]) / ((now - f[0]) / 1000) : 0;
-                if (!(rate > 0)) rate = done / Math.max(0.1, el);
-                var eta = rate > 0 ? (N - done) / rate : 0;
-                setProg(done / N * 100, 'خوێندنەوە: ' + L(done) + ' / ' + L(N) + ' • ' + L(Math.floor(done / N * 100) + '%'), 'ڕابردوو ' + fmtT(el) + ' • ماوە ' + fmtT(eta) + ' • ' + L(rate.toFixed(1)) + ' دێڕ/چرکە');
-            };
-            var work = async function (wk) {
-                while (!S.cancel) {
-                    var i = next++; if (i >= N) break;
-                    var cue = cues[i], r = null;
-                    try { r = renderCue(cue, dark); } catch (e) { r = null; }
-                    if (!r) { S.res[i] = { start: cue.start, end: cue.end, text: '', conf: 0, an: 2, italic: false, blob: null }; }
-                    else {
-                        var c = cache.get(r.hash);
-                        if (!c) {
-                            var o = await eng.recognize(wk, r.canvas, r.single ? '7' : '6');
-                            c = { text: cleanText(o.text, fix), conf: o.conf, blob: await toBlob(r.raw) }; cache.set(r.hash, c);
-                        }
-                        S.res[i] = { start: cue.start, end: cue.end, text: c.text, conf: c.conf, an: r.an, italic: r.italic, blob: c.blob, meta: r.meta, W: cue.w, H: cue.h };
-                    }
-                    done++; if (done % 3 === 0 || done === N) tick();
-                    if (done % 25 === 0) await new Promise(function (ok) { setTimeout(ok, 0); });
-                }
-            };
-            tick();
-            await Promise.all(eng.workers.map(function (w) { return work(w); }));
-            if (S.cancel) { toast('خوێندنەوە هەڵوەشێنرایەوە', 'warning'); }
-            var m = [];
-            S.res.forEach(function (r) { if (!r) return; var p = m[m.length - 1]; if (p && r.text && p.text === r.text && r.start - p.end <= 0.1) {
-                    var a1 = anchor(p), a2 = anchor({ meta: r.meta, an: p.an, an0: p.an0 || p.an });
-                    if (Math.abs(a1[0] - a2[0]) <= 2 && Math.abs(a1[1] - a2[1]) <= 2) p.end = r.end; else { r.chain = true; r.an = p.an; r.an0 = p.an0 || p.an; m.push(r); }
-                } else m.push(r); });
-            S.res = m;
-            if (S.res.length) {
-                var tot = (Date.now() - t0) / 1000;
-                setProg(100, (S.cancel ? 'وەستێنرا' : 'تەواو بوو') + ' • ' + L(done) + ' دێڕ', 'کاتی ڕاستەقینە ' + fmtT(tot) + ' • خێرایی ناوەند ' + L((done / Math.max(0.1, tot)).toFixed(1)) + ' دێڕ/چرکە');
-                showResults(); if (!S.cancel) toast('خوێندنەوە تەواو بوو', 'success');
-            }
-        } catch (e) {
-            console.error(e);
-            toast(e && e.message === 'cdn' ? 'بۆ یەکەم جار ئینتەرنێت پێویستە بۆ دابەزاندنی OCR' : 'هەڵە لە خوێندنەوە: ' + (e && e.message || e), 'error');
-        } finally {
-            try { await eng.stop(); } catch (e) { }
-            try { if (wake) { wake.release(); wake = null; } } catch (e) { }
-            S.busy = false; lockOpts(false); $('pgsCancel').style.visibility = 'hidden';
-            if (!S.res.length) $('pgsProg').style.display = 'none';
-        }
-    }
-
-    // ---------- بارکردنی فایل ----------
-    var AMB2 = { id: 1, it: 1, no: 1, de: 1, es: 1, he: 1, is: 1, to: 1, in: 1, on: 1, or: 1, hi: 1, th: 1, ko: 1, nl: 1 };
-    function langFromName(name) {
-        var base = String(name || '').replace(/\.[^.]+$/, ''), toks = base.split(/[\s._\-\[\]()]+/).filter(Boolean), last = toks.length - 1;
-        for (var i = last; i >= 0; i--) {
-            var t = toks[i].toLowerCase();
-            if (t.length === 3 && ISO[t]) return ISO[t];
-            if (t.length === 2 && ISO[t] && (i === last || !AMB2[t])) return ISO[t];
-        }
-        return null;
-    }
-    function hint(code, from) {
-        var h = $('pgsLangHint'); if (!h) return;
-        if (code) { var nm = ''; LANGS.forEach(function (l) { if (l[0] === code) nm = l[1]; }); h.textContent = 'زمان خۆکار دیاری کرا: ' + '\u2066' + nm + '\u2069' + ' (' + from + ')'; }
-        else h.textContent = 'زمانەکە دیار نەکرا؛ تکایە خۆت هەڵیبژێرە.';
-    }
-    function pickLang(code) { var l = ISO[String(code || '').toLowerCase()]; if (l) { $('pgsLang').value = l; if ($('pgsLang').__lab) $('pgsLang').__lab(); } return l || null; }
-    function useSup(buf, base, lang, fname) {
-        var r = parseSup(buf);
-        if (!r.cues.length) { toast('هیچ ژێرنووسێکی PGS لەم فایلەدا نەدۆزرایەوە', 'error'); return false; }
-        S.cues = r.cues; S.w = r.w; S.h = r.h; S.base = base || 'subtitle'; S.res = [];
-        $('pgsRes').style.display = 'none'; $('pgsProg').style.display = 'none'; $('pgsOpts').style.display = 'block'; lockOpts(false);
-        var dl = lang && lang !== 'und' ? pickLang(lang) : null, from = 'لە تراکی MKV';
-        if (!dl) { dl = pickLang(langFromName(fname || base)); from = 'لە ناوی فایل'; }
-        hint(dl ? $('pgsLang').value : null, from);
-        $('pgsStart').textContent = 'دەستپێکردنی OCR (' + r.cues.length + ' ژێرنووس)';
-        toast(r.cues.length + ' ژێرنووسی PGS دۆزرایەوە', 'success');
-        return true;
-    }
-    function baseName(n) { return String(n || 'subtitle').replace(/\.[^.]+$/, '').replace(/[\\/:*?"<>|]+/g, '_') || 'subtitle'; }
-    function listTracks(auto) {
-        var box = $('pgsTracks'); box.innerHTML = ''; var tr = [];
-        try { tr = mkvParsedTracks.filter(function (t) { return mkvIsPgs(t); }); } catch (e) { }
-        if (!tr.length) { box.style.display = 'flex'; box.innerHTML = '<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:8px;">هیچ تراکێکی PGS لەم MKV دا نەدۆزرایەوە.</div>'; return; }
-        box.style.display = 'flex';
-        tr.forEach(function (t) {
-            var row = document.createElement('div'); row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:8px;background:rgba(255,255,255,.06);padding:8px 10px;border-radius:10px;border:1px solid var(--border-color);';
-            var nm = document.createElement('div'); nm.dir = 'auto'; nm.style.cssText = 'font-size:12px;font-weight:bold;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;'; nm.textContent = (t.name ? t.name + ' ' : 'PGS ') + '(' + (t.lang || 'und') + ') #' + t.trackNumber;
-            var b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.style.cssText = 'width:auto;padding:5px 10px;font-size:11.5px;'; b.textContent = 'هەڵبژاردن';
-            b.onclick = function () { fromTrack(t.trackNumber); }; row.appendChild(nm); row.appendChild(b); box.appendChild(row);
-        });
-        if (auto && tr.length === 1) fromTrack(tr[0].trackNumber);
-    }
-    async function fromTrack(tn) {
-        if (S.busy) return;
-        var t = null; try { t = mkvParsedTracks.find(function (x) { return x.trackNumber === tn; }); } catch (e) { }
-        if (!t) return;
-        S.busy = true; $('pgsOpts').style.display = 'none'; $('pgsRes').style.display = 'none';
-        window.__kfProg = function (p, txt) { setProg(p, txt || 'دەرهێنانی PGS لە MKV...'); };
-        try {
-            setProg(2, 'دەرهێنانی PGS لە MKV...');
-            var res = await extractAndOpenSubtitle(tn, false, true);
-            if (!res || !res.blob) { $('pgsProg').style.display = 'none'; $('pgsOpts').style.display = 'none'; return; }
-            var buf = await res.blob.arrayBuffer();
-            $('pgsProg').style.display = 'none';
-            useSup(buf, baseName(currentMkvFile && currentMkvFile.name) + '_[' + (t.lang || 'und') + ']', t.lang);
-        } catch (e) { console.error(e); toast('هەڵە: ' + (e && e.message || e), 'error'); $('pgsProg').style.display = 'none'; }
-        finally { window.__kfProg = null; S.busy = false; }
-    }
-    async function onFile(f) {
-        if (!f || S.busy) return;
-        $('pgsFileName').textContent = f.name; $('pgsFileBox').classList.add('has-file');
-        $('pgsTracks').style.display = 'none'; $('pgsOpts').style.display = 'none'; $('pgsRes').style.display = 'none'; $('pgsProg').style.display = 'none'; S.cues = []; S.res = [];
-        try {
-            var hd = new Uint8Array(await f.slice(0, 4).arrayBuffer()), isSup = hd[0] === 0x50 && hd[1] === 0x47, isMkv = hd[0] === 0x1A && hd[1] === 0x45 && hd[2] === 0xDF && hd[3] === 0xA3;
-            if (isSup || (!isMkv && /\.(sup|pgs)$/i.test(f.name))) { useSup(await f.arrayBuffer(), baseName(f.name), null, f.name); }
-            else {
-                S.busy = true; window.__kfProg = function (p, txt) { setProg(p, txt || 'پشکنینی MKV...'); };
-                try { await handleMkvFileSelect({ files: [f] }); } finally { window.__kfProg = null; S.busy = false; }
-                $('pgsProg').style.display = 'none'; listTracks(true);
-            }
-        } catch (e) { console.error(e); toast('نەتوانرا فایلەکە بخوێندرێتەوە: ' + (e && e.message || e), 'error'); }
-    }
-
-    // لیستی هەڵبژاردنی تایبەتی ماڵپەڕ (جێگەی لیستی وێبگەڕ)
-    function dress(sel) {
-        var b = document.createElement('button'); b.type = 'button'; b.className = 'kf-pgs-in kf-pgs-sel'; b.style.flex = sel.style.flex || ''; b.style.minWidth = sel.style.minWidth || '';
-        sel.style.display = 'none'; sel.parentNode.insertBefore(b, sel.nextSibling);
-        var sp = document.createElement('span'); sp.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;'; b.insertBefore(sp, null);
-        var lab = function () { var o = sel.options[sel.selectedIndex]; sp.textContent = o ? o.text : ''; };
-        sel.__lab = lab; lab();
-        b.onclick = function () {
-            var ov = document.createElement('div'); ov.className = 'kf-pgs-ov'; var sh = document.createElement('div'); sh.className = 'kf-pgs-sheet'; ov.appendChild(sh);
-            var close = function () { ov.remove(); };
-            Array.prototype.forEach.call(sel.options, function (o) {
-                var it = document.createElement('div'); it.className = 'kf-pgs-it' + (o.value === sel.value ? ' on' : '');
-                var t = document.createElement('span'); t.textContent = o.text; it.appendChild(t); if (o.value === sel.value) { var ck = document.createElement('span'); ck.textContent = '\u2713'; it.appendChild(ck); }
-                it.onclick = function () { sel.value = o.value; lab(); close(); sel.dispatchEvent(new Event('change')); };
-                sh.appendChild(it);
-            });
-            ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
-            document.body.appendChild(ov);
-            var cur = sh.querySelector('.on'); if (cur) cur.scrollIntoView({ block: 'center' });
-        };
-    }
-
-    // ---------- دروستکردنی UI ----------
-    function init() {
-        var m = $('pgs-modal'); if (!m || m.__kf) return; m.__kf = 1;
-        var st = document.createElement('style');
-        st.textContent = '.kf-pgs-in{background:#0b1220;color:#fff;border:1px solid var(--border-color);border-radius:8px;padding:7px;font-size:13px;width:100%;}.kf-pgs-ck{display:flex;align-items:center;gap:8px;font-size:12px;margin:5px 0;color:var(--text-main);line-height:1.5;}.kf-pgs-ck input{width:16px;height:16px;flex-shrink:0;}.kf-pgs-sel{display:flex;justify-content:space-between;align-items:center;text-align:start;cursor:pointer;gap:6px;unicode-bidi:plaintext;}.kf-pgs-sel::after{content:"\u25BE";opacity:.7;flex-shrink:0;}.kf-pgs-ov{position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;padding:16px;}.kf-pgs-sheet{width:min(92vw,380px);max-height:72vh;overflow-y:auto;background:#111827;border:1px solid rgba(255,255,255,.18);border-radius:16px;padding:6px;box-shadow:0 20px 50px rgba(0,0,0,.6);}.kf-pgs-it{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 14px;border-radius:10px;font-size:14px;cursor:pointer;color:#e5e7eb;unicode-bidi:plaintext;text-align:start;}.kf-pgs-it.on{background:rgba(255,255,255,.08);color:var(--primary);font-weight:bold;}';
-        document.head.appendChild(st);
-        $('pgsLang').innerHTML = LANGS.map(function (l) { return '<option value="' + l[0] + '">' + l[1] + '</option>'; }).join('');
-        ['pgsLang', 'pgsWorkers', 'pgsFilter'].forEach(function (id) { dress($(id)); });
-        $('pgsFileInput').addEventListener('change', function () { var f = this.files && this.files[0]; onFile(f); this.value = ''; });
-        $('pgsStart').onclick = runOcr;
-        $('pgsCancel').onclick = function () { S.cancel = true; $('pgsCancel').style.display = 'none'; };
-        $('pgsFilter').onchange = function () { S.page = 0; drawList(); };
-        m.querySelectorAll('[data-pgs-dl]').forEach(function (b) { b.onclick = function () { var f = b.getAttribute('data-pgs-dl'); if (!finalList().length) return toast('هیچ دێڕێک نییە بۆ دابەزاندن', 'warning'); save(build(f), S.base + '.' + f); toast('دابەزێنرا', 'success'); }; });
-        $('pgsAll').onclick = function () { if (!finalList().length) return toast('هیچ دێڕێک نییە بۆ دابەزاندن', 'warning'); ['srt', 'ass', 'vtt'].forEach(function (f, i) { setTimeout(function () { save(build(f), S.base + '.' + f); }, i * 400); }); };
-        $('pgsEdit').onclick = function () {
-            if (!finalList().length) return toast('هیچ دێڕێک نییە', 'warning');
-            try {
-                var content = build('srt');
-                m.style.display = 'none';
-                currentFileName = S.base + '.srt'; isAssFormat = false; isVttFormat = false;
-                originalData = parseSRTContent(content); censorAddedList = []; buildEditorUI([]);
-                toast('لە ئەدیتۆر کرایەوە', 'success');
-            } catch (e) { console.error(e); toast('نەتوانرا لە ئەدیتۆر بکرێتەوە', 'error'); }
-        };
-    }
-    window.kfPgs = { parseSup: parseSup, renderCue: renderCue, engine: Engine, build: build, state: S, cleanText: cleanText, fixEng: fixEng };
-    window.openPgsModal = function () { init(); $('pgs-modal').style.display = 'flex'; };
-    window.kfPgsFromMkv = async function (tn) { try { if (window.kfNav && kfNav.go) kfNav.go('pgs'); else window.openPgsModal(); } catch (e) { window.openPgsModal(); } init(); $('pgsFileName').textContent = (currentMkvFile && currentMkvFile.name) || ''; listTracks(false); fromTrack(tn); };
-    document.addEventListener('DOMContentLoaded', init);
-    if (document.readyState !== 'loading') init();
-})();
-</script>
 <script id="kf-shell-js">
 (function () {
     'use strict';
@@ -18280,7 +17647,6 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
         { k: 'shortcuts', fn: 'openShortcutsModal',   id: 'shortcuts-modal',      label: 'کورتکراوەکانی کیبۆرد' },
         { k: 'img',       fn: 'openImgUploaderModal', id: 'img-upload-modal',     label: 'گۆڕینی وێنە بۆ لینک' },
         { k: 'mkv',       fn: 'openMkvExtractorModal',id: 'mkv-extractor-modal',  label: 'دەرهێنەری فایل لە MKV' },
-        { k: 'pgs',       fn: 'openPgsModal',         id: 'pgs-modal',            label: 'PGS بۆ دەق (OCR)' },
         { k: 'servers',   fn: 'openServersModal',     id: 'kf-servers-modal',     label: 'کۆدی سێرڤەرەکان' },
         { k: 'history',   fn: 'openHistoryModal',     id: 'history-modal',        label: 'مێژووی کارەکان' }
     ];
@@ -18296,7 +17662,6 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
 
     // ئایکۆن و ناوی بەشەکان (بەستراوەتەوە بە کۆدەکەوە، پێویست بە مێنیوی کۆن نییە)
     var DATA = {"converter": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M20 7H4M16 3l4 4-4 4M4 17h16M8 21l-4-4 4-4\"/></svg>", "label": "گۆڕینی فایل"}, "rtl": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11\"/></svg>", "label": "چاککردنی RTL"}, "fix": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.2-.5-.5-2.2z\"/></svg>", "label": "چاککردنی فایل"}, "revrtl": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M7 20V4M7 20l-3-3M7 20l3-3M17 4v16M17 4l-3 3M17 4l3 3\"/></svg>", "label": "پێچەوانەکردنەوەی RTL"}, "merge": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"8\" y=\"8\" width=\"13\" height=\"13\" rx=\"2.5\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M4 16a2 2 0 0 1-2-2V4.5A2.5 2.5 0 0 1 4.5 2H14a2 2 0 0 1 2 2\"/></svg>", "label": "تێکەڵکردنی دوو فایل"}, "sdh": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"9\" y=\"2\" width=\"6\" height=\"13\" rx=\"3\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M19 10v1a7 7 0 0 1-14 0v-1M12 18v4M8.5 22h7\"/></svg>", "label": "پاککردنەوەی دەنگەکان (SDH)"}, "shortcuts": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M2 14h4M10 8h4M18 16h4\"/></svg>", "label": "کورتکراوەکانی کیبۆرد"}, "img": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"3\"/><circle stroke-width=\"1.85\" cx=\"9\" cy=\"9\" r=\"2\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21\"/></svg>", "label": "گۆڕینی وێنە بۆ لینک"}, "mkv": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"m16 13 5.2 3.5a.5.5 0 0 0 .8-.4V7.9a.5.5 0 0 0-.8-.4L16 11\"/><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"2\" y=\"6\" width=\"14\" height=\"12\" rx=\"2.5\"/></svg>", "label": "دەرهێنەری فایل لە MKV"}, "servers": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7\"/></svg>", "label": "کۆدی سێرڤەرەکان"}, "history": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><circle stroke-width=\"1.85\" cx=\"12\" cy=\"12\" r=\"9.25\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M12 7v5l3 2\"/></svg>", "label": "مێژووی کارەکان"}, "install": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M21 15v3.5A2.5 2.5 0 0 1 18.5 21h-13A2.5 2.5 0 0 1 3 18.5V15M7 10l5 5 5-5M12 15V3\"/></svg>", "label": "دابەزاندنی ئەپ"}};
-    DATA.pgs = {icon: '<svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-width="1.85" d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M8 9h8M12 9v7"/></svg>', label: 'PGS بۆ دەق (OCR)'};
     SECS.forEach(function (s) {
         var d = DATA[s.k];
         s.icon = d ? d.icon : '';
@@ -18343,7 +17708,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
     var center = document.querySelector('.kf-bar-center');
     if (wm && center) center.insertBefore(wm, center.firstChild);
 
-    var KEEP = { converter: 1, rtl: 1, revrtl: 1, fix: 1, merge: 1, sdh: 1, img: 1, mkv: 1, pgs: 1 }, visited = {};
+    var KEEP = { converter: 1, rtl: 1, revrtl: 1, fix: 1, merge: 1, sdh: 1, img: 1, mkv: 1 }, visited = {};
     var nav = window.kfNav = {
         secs: SECS,
         isHome: function () { return document.body.classList.contains('startup-bg'); },
@@ -19440,10 +18805,6 @@ var G=[
  feats:['خوێندنەوەی فایلی گەورە لەسەر مۆبایل','لیستی هەموو ژێرنووس و دەنگەکان بە زمان','ناوی تایبەت بۆ فایلی دەرچوو'],
  steps:[{h:'بەکارهێنان',rows:[[E('box','کرتە بکە بۆ کردنەوەی فایلەکان',1)],[E('el','خەریکی پشکنینە... 45%',2)],[E('txt','ناوی فایلی دەرچوو',3)],[E('btn','ژێرنووس 4',4),E('btn','دەنگ (Audio) 2',4)]],
   notes:['فایلی MKV یان WebM لە ئامێرەکەت هەڵبژێرە.','ڕێژەی پشکنین.','ناوی فایلە دەرهێنراوەکان (ئارەزوومەندانە).','دەستی لێ بدە بۆ کردنەوەی لیستەکە، پاشان دەست لە هەر ژێرنووس یان دەنگێک بدە تا دابەزێت.']}]},
-{k:'pgs',name:'PGS بۆ دەق (OCR)',intro:'ژێرنووسی وێنەیی Blu-ray (PGS) دەکات بە دەق و وەک SRT، ASS یان VTT دەیدات.',
- feats:['فایلی .sup یان ڕاستەوخۆ لە MKV','OCR بۆ ٢٣ زمان','پشکنین و دەستکاریکردنی دێڕە نایەقینەکان','کات و شوێنی سەرەوە دەپارێزرێت'],
- steps:[{h:'بەکارهێنان',rows:[[E('box','فایلی .sup یان .mkv هەڵبژێرە',1)],[E('el','زمانی ژێرنووس',2)],[E('btn','دەستپێکردنی OCR',3)],[E('btn','SRT',4),E('btn','ASS',4),E('btn','VTT',4)]],
-  notes:['ئەگەر MKV بوو، تراکی PGS هەڵبژێرە.','زمانی ڕاست هەڵبژێرە (لە MKV خۆکارە).','یەکەم جار ئینتەرنێت پێویستە؛ پاشان لەناو مۆبایلەکە دەمێنێتەوە.','دێڕە نایەقینەکان پێشان دەدرێن بۆ ڕاستکردنەوە؛ پاشان بە فۆرماتێک دایبەزێنە.']}]},
 {k:'servers',name:'کۆدی سێرڤەرەکان',intro:'لینکی سێرڤەرەکانی ئەڵقەکان دەکات بە کۆدێکی ڕێکخراو بۆ ماڵپەڕ.',
  feats:['ناسینەوەی ژمارەی ئەڵقە لە هەر شوێنێک','ناوی سێرڤەر خۆکار بە ئینگلیزی؛ Vidmoly و Google drive یەکەمن','ڕاستکردنەوەی لینک بۆ embed','ڕێکخستنەوەی کۆدی کۆن'],
  steps:[{h:'بەکارهێنان',rows:[[E('btn','Paste',1),E('btn','نموونە',2),E('btn','پاککردنەوە',3)],[E('txt','12\nhttps://vidmoly.org/embed-...',4)],[E('el','☑ embed',5),E('el','☑ ڕیزکردن',5),E('el','ئەڵقەی سەرەتا',6)],[E('txt','<کۆدی دەرچوو>',7)],[E('btn','کۆپیکردنی کۆد',8),E('btn','داگرتن (.html)',8)]],
@@ -21296,7 +20657,7 @@ var KFV = (function () {
         document.head.appendChild(cs);
         M = document.createElement('div'); M.id = 'kf-addline-modal'; M.className = 'custom-modal-overlay';
         M.innerHTML = '<div class="custom-modal-content" style="display:flex;flex-direction:column;overflow:hidden;text-align:start;padding:0;">'
-            + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;flex:none;"><h3 style="margin:0;color:var(--primary);font-size:15px;">زیادکردنی دێڕ</h3><span class="kf-qb" style="flex:1;text-align:center;font-size:11px;font-weight:700;color:var(--primary);direction:ltr;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></span><button type="button" class="btn btn-outline" onclick="kfSymbols()" title="سیمبوڵەکان" style="width:auto;padding:2px 10px;font-size:15px;line-height:1.4;">♪</button><div style="display:flex;align-items:center;gap:6px;margin-inline-start:auto;font-size:12px;"><span style="opacity:.8">زیادکراوەکان:</span><b id="kfalCnt" style="color:#f59e0b;font-size:14px;">0</b><button type="button" class="btn btn-outline" id="kfalSee" style="width:auto;padding:3px 10px;font-size:11px;">بینین</button></div><button type="button" class="btn btn-outline" id="kfalClose" style="width:auto;padding:4px 12px;font-size:12px;">داخستن</button></div>'
+            + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;flex:none;"><h3 style="margin:0;color:var(--primary);font-size:15px;">زیادکردنی دێڕ</h3><span class="kf-qb" style="flex:1;text-align:center;font-size:11px;font-weight:700;color:var(--primary);direction:ltr;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></span><div style="display:flex;align-items:center;gap:6px;margin-inline-start:auto;font-size:12px;"><span style="opacity:.8">زیادکراوەکان:</span><b id="kfalCnt" style="color:#f59e0b;font-size:14px;">0</b><button type="button" class="btn btn-outline" id="kfalSee" style="width:auto;padding:3px 10px;font-size:11px;">بینین</button></div><button type="button" class="btn btn-outline" id="kfalClose" style="width:auto;padding:4px 12px;font-size:12px;">داخستن</button></div>'
             + '<div id="kfalVc" style="flex:none;background:#000;"><div id="kfalBox" oncontextmenu="return false" style="position:relative;width:100%;height:40vh;background:#000;overflow:hidden;margin:0 auto;"><video id="kfalV" playsinline disablePictureInPicture disableRemotePlayback controlsList="nodownload noremoteplayback" oncontextmenu="return false" style="width:100%;height:100%;display:block;object-fit:contain;pointer-events:none;"></video><div id="kfalTxt"></div><div id="kfalBd" style="display:none;position:absolute;top:14px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);color:#fff;padding:5px 15px;border-radius:20px;font-size:12px;font-weight:bold;z-index:50;pointer-events:none;border:1px solid rgba(255,255,255,.25);backdrop-filter:blur(6px);align-items:center;gap:6px;direction:ltr;animation:censorPulse .8s ease-in-out infinite alternate;"></div><div id="kfalCp" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:56px;height:56px;border-radius:50%;background:rgba(0,0,0,.75);color:#fff;z-index:55;pointer-events:none;align-items:center;justify-content:center;border:1.5px solid rgba(255,255,255,.3);backdrop-filter:blur(4px);direction:ltr;line-height:0;"></div><div id="kfalRr" style="display:none;position:absolute;right:0;top:0;bottom:0;width:40%;background:radial-gradient(circle at center,rgba(255,255,255,.25) 0%,transparent 70%);z-index:30;pointer-events:none;align-items:center;justify-content:center;flex-direction:column;gap:4px;color:#fff;font-size:12px;font-weight:bold;direction:ltr;"><span style="line-height:0">'+SVGF+'</span><span>+10s</span></div><div id="kfalRl" style="display:none;position:absolute;left:0;top:0;bottom:0;width:40%;background:radial-gradient(circle at center,rgba(255,255,255,.25) 0%,transparent 70%);z-index:30;pointer-events:none;align-items:center;justify-content:center;flex-direction:column;gap:4px;color:#fff;font-size:12px;font-weight:bold;direction:ltr;"><span style="line-height:0">'+SVGB+'</span><span>-10s</span></div></div></div>'
             + '<div id="kfalVc2" style="flex:none;"><div style="padding:8px 12px 0;direction:ltr;"><input type="range" id="kfalSl" min="0" max="1000" value="0" step="0.5" style="width:100%;accent-color:var(--primary);height:6px;"></div>'
             + '<div style="display:flex;align-items:center;gap:6px;padding:6px 12px;direction:ltr;"><b id="kfalTime" style="color:var(--primary);font-size:12px;min-width:84px;">0:00:00.00</b><div id="kfalSteps" style="display:flex;gap:5px;flex:1;"></div></div></div>'
@@ -21983,7 +21344,7 @@ var KFV = (function () {
     if (ref) ref.insertAdjacentElement('afterend', b); else { var u = $('btn-undo'); if (u) u.parentNode.insertBefore(b, u); }
 })();
 
-// ================= نیشانەی کوالێتی ڤیدیۆ + سیمبوڵەکان (♪ ...) =================
+// ================= نیشانەی کوالێتی ڤیدیۆ =================
 (function () {
     'use strict';
     window.kfQB = function (M, V) {
@@ -21995,65 +21356,6 @@ var KFV = (function () {
         if (w >= 3800) q = '4K'; else if (w >= 2500 && h < 2160) q = '1440p'; else if (w >= 1900 && h < 1080) q = '1080p';
         b.textContent = q + ' · ' + w + '×' + h + from;
     };
-
-    var GROUPS = [
-        ['گۆرانی', ['♪', '♫', '♬', '♩', '♭', '♮', '♯', '🎵', '🎶', '🎤', '🎧', '🎼']],
-        ['ئاماژە', ['→', '←', '↑', '↓', '↔', '⇒', '⇐', '▶', '◀', '▲', '▼', '➜', '➤', '✓', '✗', '✔', '✘']],
-        ['هێما', ['♥', '♡', '★', '☆', '☺', '☻', '☀', '☁', '☂', '☎', '✉', '⚠', '⚡', '✦', '✧', '❤', '✿', '❀', '☠', '☮', '☯']],
-        ['ڕێزمان', ['«', '»', '“', '”', '‘', '’', '„', '…', '–', '—', '•', '·', '¿', '¡', '‹', '›', '§', '¶', '†', '‡', '‼', '⁉']],
-        ['ژمارە', ['±', '×', '÷', '≈', '≠', '≤', '≥', '∞', '°', '′', '″', '½', '¼', '¾', '²', '³', '‰', '√', 'π', 'Ω', 'µ']],
-        ['پارە و نیشان', ['$', '€', '£', '¥', '¢', '₹', '₺', '₩', '©', '®', '™', '№', '@', '#', '&', '%']],
-        ['ئاڕاستە', ['‏', '‎', '‌', '‍', '؜']]
-    ];
-    var NAMES = { '‏': 'RLM ڕاستەوچەپ', '‎': 'LRM چەپەوڕاست', '‌': 'ZWNJ نیوەبۆشایی', '‍': 'ZWJ پێکەوەلکاندن', '؜': 'ALM عەرەبی' };
-    var last = null, sheet = null, tab = 0, RK = 'kf_sym_recent';
-    function editable(e) { return e && ((e.tagName === 'TEXTAREA') || (e.tagName === 'INPUT' && /^(text|search|)$/i.test(e.type || ''))) && !e.readOnly && !e.disabled; }
-    document.addEventListener('focusin', function (e) { if (editable(e.target) && !(sheet && sheet.contains(e.target))) last = e.target; }, true);
-    function recent() { try { return JSON.parse(localStorage.getItem(RK) || '[]') || []; } catch (e) { return []; } }
-    function pushRecent(s) { try { var r = recent().filter(function (x) { return x !== s; }); r.unshift(s); localStorage.setItem(RK, JSON.stringify(r.slice(0, 16))); } catch (e) { } }
-    function insert(sym) {
-        var el = last;
-        if (el && document.body.contains(el) && editable(el)) {
-            var a = el.selectionStart == null ? el.value.length : el.selectionStart, b = el.selectionEnd == null ? a : el.selectionEnd;
-            try { el.focus({ preventScroll: true }); } catch (e) { try { el.focus(); } catch (x) { } }
-            try { el.setRangeText(sym, a, b, 'end'); } catch (e) { el.value = el.value.slice(0, a) + sym + el.value.slice(b); try { el.selectionStart = el.selectionEnd = a + sym.length; } catch (x) { } }
-            el.dispatchEvent(new Event('input', { bubbles: true }));
-        } else {
-            try { navigator.clipboard.writeText(sym); showToast('خانەی نووسین هەڵنەبژێردراوە؛ سیمبوڵەکە کۆپی کرا', 'info'); } catch (e) { showToast('یەکەم جار کرتە لە خانەی نووسین بکە', 'warning'); }
-        }
-        pushRecent(sym);
-    }
-    function draw() {
-        var g = sheet.querySelector('.kfsy-g'), tb = sheet.querySelector('.kfsy-t'); g.innerHTML = ''; tb.innerHTML = '';
-        var all = [['دوایین', recent()]].concat(GROUPS);
-        all.forEach(function (gr, i) {
-            var c = document.createElement('button'); c.type = 'button'; c.textContent = gr[0]; c.className = 'kfsy-c' + (i === tab ? ' on' : ''); c.onclick = function () { tab = i; draw(); }; tb.appendChild(c);
-        });
-        var items = all[tab][1];
-        if (!items.length) { g.innerHTML = '<div style="grid-column:1/-1;text-align:center;font-size:12px;color:var(--text-muted);padding:12px;">هێشتا هیچ سیمبوڵێکت بەکارنەهێناوە</div>'; return; }
-        items.forEach(function (s) {
-            var b = document.createElement('button'); b.type = 'button'; b.className = 'kfsy-b'; b.textContent = NAMES[s] ? 'U+' + s.charCodeAt(0).toString(16).toUpperCase() : s; if (NAMES[s]) { b.style.fontSize = '10px'; b.title = NAMES[s]; b.textContent = NAMES[s].split(' ')[0]; }
-            b.addEventListener('mousedown', function (e) { e.preventDefault(); }); b.onclick = function () { insert(s); };
-            g.appendChild(b);
-        });
-    }
-    window.kfSymbols = function () {
-        if (!sheet) {
-            var st = document.createElement('style');
-            st.textContent = '.kfsy{position:fixed;left:0;right:0;bottom:0;z-index:100001;background:#111827;border-top:1px solid rgba(255,255,255,.2);border-radius:16px 16px 0 0;padding:8px 10px 12px;box-shadow:0 -10px 30px rgba(0,0,0,.55);direction:rtl;}.kfsy-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:13px;color:var(--primary);font-weight:700;}.kfsy-t{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;}.kfsy-c{flex:none;padding:5px 12px;border-radius:999px;border:1px solid var(--border-color);background:transparent;color:var(--text-main);font-family:inherit;font-size:12px;cursor:pointer;}.kfsy-c.on{background:var(--primary);color:#0b1220;font-weight:700;}.kfsy-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:6px;max-height:34vh;overflow-y:auto;direction:ltr;}.kfsy-b{height:44px;border-radius:10px;border:1px solid var(--border-color);background:rgba(255,255,255,.07);color:#fff;font-size:20px;cursor:pointer;font-family:inherit;padding:0;}.kfsy-b:active{background:var(--primary);color:#0b1220;}';
-            document.head.appendChild(st);
-            sheet = document.createElement('div'); sheet.className = 'kfsy'; sheet.style.display = 'none';
-            sheet.innerHTML = '<div class="kfsy-h"><span>سیمبوڵەکان (کرتە لە خانەی نووسین بکە، پاشان سیمبوڵ هەڵبژێرە)</span><button type="button" class="btn btn-outline" style="width:auto;padding:3px 12px;font-size:12px;" id="kfsyX">داخستن</button></div><div class="kfsy-t"></div><div class="kfsy-g"></div>';
-            document.body.appendChild(sheet); sheet.querySelector('#kfsyX').onclick = function () { sheet.style.display = 'none'; };
-            sheet.addEventListener('mousedown', function (e) { if (e.target.tagName !== 'BUTTON') e.preventDefault(); });
-        }
-        if (sheet.style.display === 'none') { tab = recent().length ? 0 : 1; draw(); sheet.style.display = 'block'; } else sheet.style.display = 'none';
-    };
-    var ref = document.getElementById('kf-editstyle-btn');
-    if (ref && !document.getElementById('kf-sym-btn')) {
-        var b = document.createElement('button'); b.className = 'top-btn'; b.id = 'kf-sym-btn'; b.title = 'سیمبوڵەکان (♪)'; b.type = 'button'; b.setAttribute('onclick', 'kfSymbols()'); b.style.cssText = 'color:var(--primary);font-size:17px;line-height:1;'; b.textContent = '♪';
-        ref.insertAdjacentElement('afterend', b);
-    }
 })();
 </script>
 <style id="kf-cr-fullbleed">

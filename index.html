@@ -4263,8 +4263,8 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
         <h3 style="color:var(--primary); margin:0 0 6px 0; font-size:15px;">دابەزاندنی تۆرێنت</h3>
         <p style="font-size:11.5px; line-height:1.8; color:var(--text-muted); margin:0 0 10px 0;">
             لینکی مەگنێت دابنێ یان فایلی <b dir="ltr">.torrent</b> هەڵبژێرە. دابەزاندنەکە لەناو ماڵپەڕەکە خۆیدا دەکرێت و لیستەکەی لێرە دەبینیت.
-            <b>تێبینی:</b> وێبگەڕ تەنها دەتوانێت بە پیرەکانی <b dir="ltr">WebRTC</b> بەستراو ببێت، بۆیە ئەو تۆرێنتانەی هیچ پیرێکی وێب نین ڕەنگە دانەبەزن.
         </p>
+        <div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.45);color:#fcd34d;border-radius:10px;padding:8px 10px;font-size:11.5px;line-height:1.9;margin-bottom:10px;">⚠ <b>بزانە:</b> وێبگەڕ تەنها بە پیرەکانی <b dir="ltr">WebRTC</b> و تراکەری <b dir="ltr">wss://</b> دەبەستێتەوە. زۆربەی تۆرێنتە ئاساییەکان (لینکی تراکەری https/udp) لێرە <b>ناکەون</b>. ئەگەر لینکەکەت ئەم جۆرەی بوو، ئاگادارییەکی سووری/زەردت لەسەر کارتەکە نیشان دەدرێت.</div>
         <div style="display:flex; gap:6px; margin-bottom:6px;">
             <input id="kftMagnet" class="input-field" dir="ltr" style="flex:1; text-align:left; margin:0;" placeholder="magnet:?xt=urn:btih:..." autocomplete="off" spellcheck="false">
             <button type="button" class="btn" style="width:auto; padding:8px 14px; font-size:13px;" onclick="kftAddMagnet()">زیادکردن</button>
@@ -21446,12 +21446,24 @@ html:root body #code-review-panel{width:100vw!important;max-width:100vw!importan
     function toast(m, t) { try { showToast(m, t || 'info'); } catch (e) { } }
     function LTR(s) { return '⁦' + s + '⁩'; }
     function fmtB(n) { n = Number(n) || 0; var u = ['B', 'KB', 'MB', 'GB', 'TB'], i = 0; while (n >= 1024 && i < 4) { n /= 1024; i++; } return LTR((i ? n.toFixed(n >= 100 ? 0 : 1) : Math.round(n)) + ' ' + u[i]); }
-    function fmtS(n) { return fmtB(n) + '/s'; }
+    function fmtS(n) { return LTR(fmtB(n).replace(/[\u2066\u2069]/g, '') + '/s'); }
     function fmtT(ms) {
         if (!isFinite(ms) || ms <= 0) return '—'; var s = Math.round(ms / 1000);
         if (s < 60) return LTR(s + 's'); var m = Math.floor(s / 60); if (m < 60) return LTR(m + 'm ' + (s % 60) + 's');
         var h = Math.floor(m / 60); if (h < 48) return LTR(h + 'h ' + (m % 60) + 'm'); return LTR(Math.floor(h / 24) + 'd');
     }
+    function analyze(uri) {
+        var tr = [], m, re = /[?&]tr=([^&]+)/gi, out = { n: 0, ws: 0, other: 0 };
+        while ((m = re.exec(uri || ''))) { var u = ''; try { u = decodeURIComponent(m[1]); } catch (e) { u = m[1]; } out.n++; if (/^wss?:/i.test(u)) out.ws++; else out.other++; }
+        if (out.ws) return '';
+        var why = out.n ? 'تەنها تراکەری ئاسایی (HTTP/UDP) ی تێدایە' : 'هیچ تراکەرێکی تێدا نییە';
+        return '<b>ئەم تۆرێنتە ڕەنگە لە وێبگەڕدا کار نەکات.</b><br>' + why + '، و وێبگەڕ ناتوانێت پێیانەوە ببەستێتەوە (تەنها تراکەری <b dir="ltr">wss://</b> و پیری <b dir="ltr">WebRTC</b>). تەنها ئەگەر کەسێک لە ڕێگەی وێبەوە سیدی کردبێت دادەبەزێت.<br>باشتر: کلاینتی تۆرێنتی ئاسایی (qBittorrent) یان خزمەتگوزاری Debrid بەکاربهێنە.';
+    }
+    function warnBox(html, lvl) {
+        var c = lvl === 'err' ? ['rgba(239,68,68,.12)', 'rgba(239,68,68,.5)', '#fca5a5'] : ['rgba(245,158,11,.12)', 'rgba(245,158,11,.5)', '#fcd34d'];
+        return '<div style="background:' + c[0] + ';border:1px solid ' + c[1] + ';color:' + c[2] + ';border-radius:10px;padding:8px 10px;font-size:11.5px;line-height:1.9;text-align:start;">⚠ ' + html + '</div>';
+    }
+    function setWarn(c, html, lvl) { if (!html) { c.w.style.display = 'none'; c.w.innerHTML = ''; return; } c.w.style.display = ''; if (c.w._h !== html) { c.w.innerHTML = warnBox(html, lvl); c.w._h = html; } }
     function chip(x) { return '<span style="display:inline-block;margin-inline-end:12px;">' + x + '</span>'; }
     function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
     function load() {
@@ -21495,13 +21507,14 @@ html:root body #code-review-panel{width:100vw!important;max-width:100vw!importan
         d.innerHTML = '<div class="n" dir="auto" style="font-size:13px;font-weight:700;word-break:break-word;text-align:start;"></div>'
             + '<div style="height:7px;border-radius:6px;background:rgba(255,255,255,.1);overflow:hidden;"><div class="p" style="height:100%;width:0;background:var(--primary);transition:width .4s;"></div></div>'
             + '<div class="s" style="font-size:11.5px;color:var(--text-muted);line-height:1.8;"></div>'
+            + '<div class="w" style="display:none;"></div>'
             + '<div style="display:flex;gap:6px;flex-wrap:wrap;">'
             + '<button type="button" class="btn btn-outline kf-srv-mini bp">ڕاگرتن</button>'
             + '<button type="button" class="btn btn-outline kf-srv-mini bf">فایلەکان</button>'
             + '<button type="button" class="btn btn-outline kf-srv-mini bm">کۆپیی مەگنێت</button>'
             + '<button type="button" class="btn btn-outline kf-srv-mini bd" style="color:#ef4444 !important;border-color:rgba(239,68,68,.45) !important;">سڕینەوە</button></div>'
             + '<div class="fl" style="display:none;flex-direction:column;gap:5px;margin-top:4px;"></div>';
-        var c = { el: d, key: key, n: d.querySelector('.n'), p: d.querySelector('.p'), s: d.querySelector('.s'), fl: d.querySelector('.fl'), bp: d.querySelector('.bp'), filesBuilt: 0 };
+        var c = { w: d.querySelector('.w'), t0: Date.now(), stat: '', el: d, key: key, n: d.querySelector('.n'), p: d.querySelector('.p'), s: d.querySelector('.s'), fl: d.querySelector('.fl'), bp: d.querySelector('.bp'), filesBuilt: 0 };
         c.bf = d.querySelector('.bf');
         c.bf.onclick = function () { var o = c.fl.style.display !== 'none'; c.fl.style.display = o ? 'none' : 'flex'; if (!o) paintFiles(c); };
         d.querySelector('.bm').onclick = function () { var t = tor(key), u = t ? t.magnetURI : (find(key) || {}).u; if (!u) { toast('مەگنێت نییە', 'error'); return; } try { navigator.clipboard.writeText(u); toast('مەگنێت کۆپی کرا', 'success'); } catch (e) { toast(u, 'info'); } };
@@ -21557,9 +21570,15 @@ html:root body #code-review-panel{width:100vw!important;max-width:100vw!importan
         else {
             var done = pr >= 1;
             c.s.innerHTML = (done ? 'تەواو بوو ✓ · ' : LTR((pr * 100).toFixed(1) + '%') + ' · ') + fmtB(t.downloaded) + ' / ' + fmtB(t.length)
-                + '<br>' + chip('↓ ' + fmtS(t.downloadSpeed)) + chip('↑ ' + fmtS(t.uploadSpeed)) + chip('پیر: ' + LTR(t.numPeers)) + (done ? '' : chip('ماوە: ' + fmtT(t.timeRemaining)));
+                + '<br>' + chip(fmtS(t.downloadSpeed) + ' ↓') + chip(fmtS(t.uploadSpeed) + ' ↑') + chip('پیر: ' + LTR(t.numPeers)) + (done ? '' : chip('ماوە: ' + fmtT(t.timeRemaining)));
             c.bp.textContent = 'ڕاگرتن';
         }
+        var dyn = '', lvl = '', el = (Date.now() - c.t0) / 1000;
+        if (!t.paused && pr < 1) {
+            if (!t.length && el > 20) { dyn = c.stat ? '' : '<b>هێشتا هیچ زانیارییەک نەهاتووە (' + LTR(Math.round(el) + 's') + ').</b><br>پیر: ' + LTR(t.numPeers) + '. ڕەنگە لینکەکە هەڵە بێت، یان سیدەری وێب نەبێت. چەند خولەکێک چاوەڕێ بکە، ئەگەر نەهات ئەم تۆرێنتە لە وێبگەڕدا کار ناکات.'; lvl = 'warn'; }
+            else if (t.length && t.numPeers === 0 && !t.downloadSpeed && el > 20) { dyn = '<b>هیچ پیرێک نەماوە.</b> دابەزاندن وەستاوە تا سیدێکی وێب دەربکەوێت.'; lvl = 'warn'; }
+        }
+        setWarn(c, c.stat || dyn, lvl);
         if (t.infoHash) upsertSaved(t.infoHash, t.magnetURI, t.name);
         if (c.fl.style.display !== 'none') paintFiles(c);
     }
@@ -21569,7 +21588,7 @@ html:root body #code-review-panel{width:100vw!important;max-width:100vw!importan
         if (client) { dl = client.downloadSpeed; ul = client.uploadSpeed; }
         var n = Object.keys(cards).length; any = n > 0;
         $('kftEmpty').style.display = any ? 'none' : '';
-        $('kftTotal').innerHTML = any ? ('کۆی گشتی: ' + chip('↓ ' + fmtS(dl)) + chip('↑ ' + fmtS(ul)) + chip(LTR(n) + ' تۆرێنت')) : '';
+        $('kftTotal').innerHTML = any ? ('کۆی گشتی: ' + chip(fmtS(dl) + ' ↓') + chip(fmtS(ul) + ' ↑') + chip(LTR(n) + ' تۆرێنت')) : '';
     }
     function loop() {
         clearInterval(tmr);
@@ -21581,12 +21600,12 @@ html:root body #code-review-panel{width:100vw!important;max-width:100vw!importan
             if (h && tor(h)) { toast('ئەم تۆرێنتە پێشتر زیادکراوە', 'info'); return; }
             var opt = { announce: TRK };
             var t = cl.add(src, opt);
-            t.on('infoHash', function () { if (!cards[t.infoHash]) mkCard(t.infoHash); upsertSaved(t.infoHash, t.magnetURI, ''); tick(); });
+            t.on('infoHash', function () { if (!cards[t.infoHash]) mkCard(t.infoHash); cards[t.infoHash].stat = analyze(t.magnetURI); upsertSaved(t.infoHash, t.magnetURI, ''); tick(); });
             t.on('metadata', function () { upsertSaved(t.infoHash, t.magnetURI, t.name); tick(); });
             t.on('done', function () { toast('دابەزاندن تەواو بوو: ' + (t.name || ''), 'success'); tick(); });
             t.on('error', function (e) { toast('هەڵە: ' + (e && e.message ? e.message : e), 'error'); });
             t.on('warning', function () { });
-            if (t.infoHash) { if (!cards[t.infoHash]) mkCard(t.infoHash); upsertSaved(t.infoHash, t.magnetURI, nameHint || ''); }
+            if (t.infoHash) { if (!cards[t.infoHash]) mkCard(t.infoHash); cards[t.infoHash].stat = analyze(typeof src === 'string' ? src : t.magnetURI); upsertSaved(t.infoHash, t.magnetURI, nameHint || ''); }
             tick();
         }).catch(function () { toast('نەتوانرا کتێبخانەی تۆرێنت بار بکرێت؛ ئینتەرنێتەکەت بپشکنە و دووبارە هەوڵبدەرەوە', 'error'); });
     }
@@ -21594,7 +21613,7 @@ html:root body #code-review-panel{width:100vw!important;max-width:100vw!importan
         var i = $('kftMagnet'), v = (i.value || '').trim();
         if (!/^magnet:\?/i.test(v) && !/^[a-f0-9]{40}$/i.test(v)) { toast('لینکی مەگنێتی دروست دابنێ (magnet:?xt=urn:btih:...)', 'error'); return; }
         if (/^[a-f0-9]{40}$/i.test(v)) v = 'magnet:?xt=urn:btih:' + v;
-        i.value = ''; toast('زیادکرا؛ خەریکی دۆزینەوەی پیرەکانە...', 'info'); start(v);
+        i.value = ''; var an = analyze(v); toast(an ? 'زیادکرا، بەڵام ئەم تۆرێنتە ڕەنگە لە وێبگەڕدا کار نەکات (تراکەری وێبی نییە)؛ ڕوونکردنەوەکە لە کارتەکەدا بخوێنەرەوە' : 'زیادکرا؛ خەریکی دۆزینەوەی پیرەکانە...', an ? 'warning' : 'info'); start(v);
     };
     window.kftPaste = function () {
         if (navigator.clipboard && navigator.clipboard.readText) navigator.clipboard.readText().then(function (t) { $('kftMagnet').value = (t || '').trim(); }).catch(function () { toast('ڕێگەپێدانی کلیپبۆرد نەدرا؛ بە دەست دایبنێ', 'warning'); });
@@ -21625,7 +21644,7 @@ html:root body #code-review-panel{width:100vw!important;max-width:100vw!importan
         if (!window.__kftInit) {
             window.__kftInit = true; loadSaved();
             try { var l = JSON.parse(localStorage.getItem('kf_torrent_lim') || '[]'); $('kftDl').value = l[0] || ''; $('kftUl').value = l[1] || ''; } catch (e) { }
-            saved.forEach(function (s) { mkCard(s.h); });
+            saved.forEach(function (s) { var cc = mkCard(s.h); cc.stat = analyze(s.u); });
             $('kftMagnet').addEventListener('keydown', function (e) { if (e.key === 'Enter') kftAddMagnet(); });
             loop();
         }

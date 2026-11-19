@@ -4262,9 +4262,9 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
     <div class="custom-modal-content" style="max-width: 560px; padding: 14px; max-height: calc(var(--kf-vh, 1vh) * 94); overflow-y: auto; overflow-x: hidden; text-align: right;">
         <h3 style="color:var(--primary); margin:0 0 6px 0; font-size:15px;">دابەزاندنی تۆرێنت</h3>
         <p style="font-size:11.5px; line-height:1.8; color:var(--text-muted); margin:0 0 10px 0;">
-            لینکی مەگنێت دابنێ یان فایلی <b dir="ltr">.torrent</b> هەڵبژێرە. دابەزاندنەکە لەسەر سێرڤەرەکانی <b dir="ltr">Webtor.io</b> دەکرێت و هەموو تۆرێنتەکە وەک یەک فایلی <b dir="ltr">ZIP</b> دەدرێتە دەست.
+            لینکی مەگنێت دابنێ یان فایلی <b dir="ltr">.torrent</b> هەڵبژێرە. دوای زیادکردن، ماڵپەڕی <b dir="ltr">Webtor.io</b> دەکرێتەوە و لەوێ دەتوانیت فایلەکان دابەزێنیت (یەک فایل یان هەموو).
         </p>
-        <div style="background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.4);color:#93c5fd;border-radius:10px;padding:8px 10px;font-size:11.5px;line-height:1.9;margin-bottom:10px;">ℹ ئەمە خزمەتگوزارییەکی دەرەکییە (<b dir="ltr">Webtor.io</b>)؛ ڕەنگە سنووری قەبارە یان خێرایی هەبێت و لەسەر خۆیان دیاری دەکرێت. ئەگەر تۆرێنتەکە سیدی نەبوو، دانابەزێت.</div>
+        <div style="background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.4);color:#93c5fd;border-radius:10px;padding:8px 10px;font-size:11.5px;line-height:1.9;margin-bottom:10px;">ℹ مەگنێتەکە خۆکار کۆپی دەکرێت؛ ئەگەر <b dir="ltr">Webtor</b> تۆرێنتەکەی نیشان نەدا، لەوێ Paste بکە. ئەمە خزمەتگوزارییەکی دەرەکییە و سنوورەکانی لە لایەن خۆیانەوە دیاری دەکرێن.</div>
         <div style="display:flex; gap:6px; margin-bottom:6px;">
             <input id="kftMagnet" class="input-field" dir="ltr" style="flex:1; text-align:left; margin:0;" placeholder="magnet:?xt=urn:btih:..." autocomplete="off" spellcheck="false">
             <button type="button" class="btn" style="width:auto; padding:8px 14px; font-size:13px;" onclick="kftAddMagnet()">زیادکردن</button>
@@ -21460,12 +21460,8 @@ html:root body #code-review-panel{width:100vw!important;max-width:100vw!importan
 /* ================= دابەزاندنی تۆرێنت (Webtor.io — تەنها دابەزاندن، بێ پلەیەر) ================= */
 (function () {
     'use strict';
-    var SDK = [
-        'https://cdn.jsdelivr.net/npm/@webtor/embed-sdk-js@0.2.19/dist/index.min.js',
-        'https://cdn.jsdelivr.net/npm/@webtor/embed-sdk-js/dist/index.min.js'
-    ];
     var SK = 'kf_torrents_webtor';
-    var saved = [], cards = {}, sdkLoading = null, inited = false;
+    var saved = [], cards = {}, inited = false;
 
     function $(i) { return document.getElementById(i); }
     function toast(m, t) { try { showToast(m, t || 'info'); } catch (e) { } }
@@ -21594,45 +21590,6 @@ html:root body #code-review-panel{width:100vw!important;max-width:100vw!importan
         });
     }
 
-    // ---------- بارکردنی SDK ی Webtor ----------
-    function loadSdk() {
-        if (window.__kftSdk) return Promise.resolve();
-        if (sdkLoading) return sdkLoading;
-        sdkLoading = new Promise(function (res, rej) {
-            var i = 0;
-            (function next() {
-                if (i >= SDK.length) { sdkLoading = null; rej(new Error('load')); return; }
-                var s = document.createElement('script');
-                s.src = SDK[i++]; s.charset = 'utf-8'; s.async = true;
-                s.onload = function () { window.__kftSdk = 1; res(); };
-                s.onerror = function () { s.remove(); next(); };
-                document.head.appendChild(s);
-            })();
-        });
-        return sdkLoading;
-    }
-    function build(c) {
-        var s = find(c.key); if (!s) return;
-        c.bg.disabled = true; c.bg.textContent = 'تکایە چاوەڕێ بکە...';
-        loadSdk().then(function () {
-            window.webtor = window.webtor || [];
-            c.e.innerHTML = ''; c.e.style.display = 'block';
-            window.webtor.push({
-                id: c.e.id,
-                mode: 'download',
-                magnet: s.u,
-                width: '100%',
-                on: function (ev) {
-                    try { if (ev && window.webtor && ev.name === window.webtor.TORRENT_ERROR) toast('Webtor نەیتوانی ئەم تۆرێنتە بخوێنێتەوە', 'error'); } catch (e) { }
-                }
-            });
-            c.bg.disabled = false; c.bg.textContent = 'دووبارە ئامادەکردن';
-        }).catch(function () {
-            c.bg.disabled = false; c.bg.textContent = 'ئامادەکردنی دابەزاندن (ZIP)';
-            toast('نەتوانرا Webtor بار بکرێت؛ ئینتەرنێتەکەت بپشکنە و دووبارە هەوڵبدەرەوە', 'error');
-        });
-    }
-
     // ---------- کارت ----------
     function mkCard(s) {
         var d = document.createElement('div');
@@ -21641,16 +21598,15 @@ html:root body #code-review-panel{width:100vw!important;max-width:100vw!importan
         n.style.cssText = 'font-size:13px;font-weight:700;word-break:break-word;text-align:start;'; n.textContent = s.n || s.h;
         var h = document.createElement('div'); h.setAttribute('dir', 'ltr');
         h.style.cssText = 'font-size:11px;color:var(--text-muted);text-align:left;word-break:break-all;'; h.textContent = s.h;
-        var e = document.createElement('div'); e.id = 'kftE_' + s.h; e.style.cssText = 'display:none;width:100%;overflow:hidden;';
         var row = document.createElement('div'); row.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;';
         function mk(txt, extra) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn btn-outline kf-srv-mini'; b.textContent = txt; if (extra) b.style.cssText = extra; return b; }
-        var bg = mk('ئامادەکردنی دابەزاندن (ZIP)');
+        var bg = mk('کردنەوە لە Webtor (دابەزاندن)');
         var bm = mk('کۆپیی مەگنێت');
         var bd = mk('سڕینەوە', 'color:#ef4444 !important;border-color:rgba(239,68,68,.45) !important;');
         row.appendChild(bg); row.appendChild(bm); row.appendChild(bd);
-        d.appendChild(n); d.appendChild(h); d.appendChild(e); d.appendChild(row);
-        var c = { key: s.h, el: d, e: e, bg: bg };
-        bg.onclick = function () { build(c); };
+        d.appendChild(n); d.appendChild(h); d.appendChild(row);
+        var c = { key: s.h, el: d };
+        bg.onclick = function () { var x = find(s.h); if (x) openWebtor(x.u); };
         bm.onclick = function () {
             var x = find(s.h); if (!x) return;
             if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(x.u).then(function () { toast('مەگنێت کۆپی کرا', 'success'); }).catch(function () { window.prompt('مەگنێت:', x.u); });
@@ -21667,14 +21623,28 @@ html:root body #code-review-panel{width:100vw!important;max-width:100vw!importan
     }
     function tick() { var em = $('kftEmpty'); if (em) em.style.display = Object.keys(cards).length ? 'none' : ''; }
 
-    function addEntry(uri, nameHint, autoBuild) {
+    function openWebtor(uri) {
+        var u = uri;
+        if (u.length > 1800) {
+            var h = infoHashOf(u), dn = dnOf(u), trs = [], re = /[?&]tr=([^&]+)/gi, m;
+            while ((m = re.exec(u)) && trs.length < 5) trs.push(m[1]);
+            u = 'magnet:?xt=urn:btih:' + h + (dn ? '&dn=' + encodeURIComponent(dn) : '') + trs.map(function (t) { return '&tr=' + t; }).join('');
+        }
+        try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(u).catch(function () { }); } catch (e) { }
+        var url = 'https://webtor.io/show?&pwd=%2F&magnet=' + encodeURIComponent(u) + '&mode=default';
+        var w = null;
+        try { w = window.open(url, '_blank'); if (w) w.opener = null; } catch (e) { }
+        if (w) toast('Webtor کرایەوە. ئەگەر تۆرێنتەکەی نیشان نەدا، مەگنێتەکە کۆپی کراوە؛ لەوێ Paste بکە', 'success');
+        else toast('وێبگەڕ تابی نوێی ڕانەگرت؛ دوگمەی «کردنەوە لە Webtor» بپەستە', 'warning');
+    }
+    function addEntry(uri, nameHint, autoOpen) {
         var h = infoHashOf(uri);
         if (!h) { toast('مەگنێتەکە دروست نییە', 'error'); return; }
         if (find(h)) { toast('ئەم تۆرێنتە پێشتر زیادکراوە', 'info'); return; }
         var s = { h: h, u: uri, n: nameHint || dnOf(uri) || h };
         saved.push(s); persist();
         var c = mkCard(s); tick();
-        if (autoBuild) build(c);
+        if (autoOpen) openWebtor(uri);
     }
 
     window.kftAddMagnet = function () {

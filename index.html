@@ -21072,18 +21072,23 @@ var KFV = (function () {
     }
     // ---------- مێژووی دەستکاری (گەڕانەوە / دووبارە) ----------
     var hist = [], hi = -1, hT = 0;
-    function snap() { return JSON.stringify({ W: W, names: names, sn: sn }); }
+    var noReset = false;
+    function snap() { return JSON.stringify({ W: W, names: names, sn: sn, H: assHeaderLines }); }
     function hBtn() {
         var u = $('kfesUn'), r = $('kfesRe'), sv = $('kfesSave'), rv = $('kfesRev'); if (!u) return;
         var n = names.filter(dirty).length;
         u.disabled = hi <= 0; r.disabled = hi >= hist.length - 1; u.style.opacity = u.disabled ? .35 : 1; r.style.opacity = r.disabled ? .35 : 1;
         rv.disabled = !n; rv.style.opacity = n ? 1 : .35; sv.textContent = n ? 'پاشەکەوتکردن (' + n + ')' : 'پاشەکەوتکردن'; sv.style.opacity = n ? 1 : .6;
     }
-    function hReset() { clearTimeout(hT); hist = [snap()]; hi = 0; hBtn(); }
+    function hReset() { if (noReset) return; clearTimeout(hT); hist = [snap()]; hi = 0; hBtn(); }
     function hPush() { clearTimeout(hT); hT = 0; var x = snap(); if (x !== hist[hi]) { hist = hist.slice(0, hi + 1); hist.push(x); if (hist.length > 80) hist.shift(); hi = hist.length - 1; } hBtn(); }
     function hGo(d) {
         if (hT) hPush(); var n = hi + d; if (n < 0 || n >= hist.length) return; hi = n; var o = JSON.parse(hist[hi]);
-        W = o.W; names = o.names; sn = W[o.sn] ? o.sn : names[0]; refs.forEach(function (f) { f(); }); refreshInfo(); exSched(); clearTimeout(hT); hT = 0; hBtn();
+        var hdr = o.H && JSON.stringify(o.H) !== JSON.stringify(assHeaderLines);
+        if (hdr) { assHeaderLines = o.H; noReset = true; try { parseStyles(); } finally { noReset = false; } }
+        W = o.W; names = o.names; sn = W[o.sn] ? o.sn : names[0]; refs.forEach(function (f) { f(); }); refreshInfo();
+        if (hdr) { try { saveSession(); } catch (e) { } try { kfRefreshPreviewAfterBulkEdit(); } catch (e) { } showToast('پاشەکەوتکردنەکە پووچەڵ کرایەوە', 'success'); }
+        exSched(); clearTimeout(hT); hT = 0; hBtn();
     }
     function revertAll() {
         if (!names.some(dirty)) return; hPush();
@@ -21326,7 +21331,7 @@ var KFV = (function () {
     function save() {
         var ch = names.filter(dirty), fresh = names.filter(function (n) { return !O[n]; });
         if (!ch.length) { showToast('هیچ گۆڕانکارییەک نییە بۆ پاشەکەوتکردن', 'info'); return; }
-        undoStk.push((assHeaderLines || []).slice()); if (undoStk.length > 20) undoStk.shift();
+        hPush(); undoStk.push((assHeaderLines || []).slice()); if (undoStk.length > 20) undoStk.shift();
         assHeaderLines = assHeaderLines.map(function (l) {
             var n = styleName(l); if (n && W[n] && dirty(n)) { var lead = /^\s*/.exec(l)[0]; return lead + 'Style: ' + W[n].join(','); }
             return l;
@@ -21337,7 +21342,7 @@ var KFV = (function () {
             if (last >= 0) assHeaderLines.splice.apply(assHeaderLines, [last + 1, 0].concat(add)); else assHeaderLines = assHeaderLines.concat(add);
             fresh.forEach(function (n) { libSave(n); });
         }
-        var keep = sn; parseStyles(); sn = W[keep] ? keep : names[0]; refs.forEach(function (f) { f(); }); refreshInfo();
+        var keep = sn; noReset = true; try { parseStyles(); } finally { noReset = false; } sn = W[keep] ? keep : names[0]; refs.forEach(function (f) { f(); }); refreshInfo(); hPush();
         try { saveSession(); } catch (e) { }
         try { kfRefreshPreviewAfterBulkEdit(); } catch (e) { }
         closeArmed = false; exSched();

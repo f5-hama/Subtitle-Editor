@@ -4290,25 +4290,29 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
                         <select id="pgsWorkers" class="kf-pgs-in"><option value="0">خۆکار</option><option value="1">١ (کەمترین ڕام)</option><option value="2">٢</option><option value="3">٣</option><option value="4">٤ (خێراترین)</option></select>
                     </label>
                 </div>
-                <label class="kf-pgs-ck"><input type="checkbox" id="pgsFix" checked> چاککردنی هەڵە باوەکانی ئینگلیزی (<bdi dir="ltr">I / l / 0</bdi>)</label>
-                <label class="kf-pgs-ck"><input type="checkbox" id="pgsTop" checked> پاراستنی شوێنی سەرەوەی ژێرنووس (<bdi dir="ltr">{\an8}</bdi>)</label>
+                <div id="pgsLangHint" dir="rtl" style="font-size:11.5px; color:var(--primary); min-height:18px; margin:-2px 0 6px;"></div>
+                <label class="kf-pgs-ck"><input type="checkbox" id="pgsFix" checked> چاککردنی هەڵە باوەکانی ئینگلیزی</label>
+                <label class="kf-pgs-ck"><input type="checkbox" id="pgsTop" checked> پاراستنی شوێنی ژێرنووس (سەرەوە / ناوەڕاست / چەپ / ڕاست)</label>
+                <label class="kf-pgs-ck"><input type="checkbox" id="pgsPos" checked> ASS: شوێن، جوڵە، قەبارە و پانی ورد (بەپێی وێنەکە)</label>
+                <label class="kf-pgs-ck"><input type="checkbox" id="pgsItal" checked> پاراستنی شێوەی ئیتالیک (لار)</label>
                 <label class="kf-pgs-ck"><input type="checkbox" id="pgsDark"> نووسینی ژێرنووسەکە تاریکە (ڕەنگی ڕووناک نییە)</label>
                 <button type="button" class="btn" id="pgsStart" style="margin-top:8px;">دەستپێکردنی OCR</button>
             </div>
 
             <div id="pgsProg" style="display:none; margin-bottom:10px;">
-                <div style="height:8px; border-radius:6px; background:rgba(255,255,255,.1); overflow:hidden;"><div id="pgsBar" style="height:100%; width:0; background:var(--primary); transition:width .2s;"></div></div>
-                <div id="pgsStatus" dir="rtl" style="font-size:12px; margin-top:6px; line-height:1.8; color:var(--text-muted);"></div>
+                <div style="height:8px; border-radius:6px; background:rgba(255,255,255,.1); overflow:hidden;"><div id="pgsBar" style="height:100%; width:0; background:var(--primary);"></div></div>
+                <div id="pgsSt1" dir="rtl" style="font-size:12.5px; margin-top:8px; height:22px; line-height:22px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-variant-numeric:tabular-nums; color:var(--text-main);"></div>
+                <div id="pgsSt2" dir="rtl" style="font-size:12px; height:22px; line-height:22px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-variant-numeric:tabular-nums; color:var(--text-muted);"></div>
                 <button type="button" class="btn btn-outline" id="pgsCancel" style="margin-top:6px; padding:6px 10px; font-size:12px;">هەڵوەشاندنەوە</button>
             </div>
 
             <div id="pgsRes" style="display:none;">
                 <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap;">
-                    <select id="pgsFilter" class="kf-pgs-in" style="flex:1; min-width:140px;"><option value="all">هەموو دێڕەکان</option><option value="low" selected>تەنها نایەقینەکان</option><option value="empty">بەتاڵەکان</option></select>
+                    <select id="pgsFilter" class="kf-pgs-in" style="flex:1; min-width:140px;"><option value="all">هەموو دێڕەکان</option><option value="low" selected>پێویست بە پشکنین</option><option value="empty">بەتاڵەکان</option></select>
                     <label style="font-size:11.5px; color:var(--text-muted); display:flex; align-items:center; gap:6px;">کات (ms) <input type="number" id="pgsOffset" value="0" step="100" class="kf-pgs-in" style="width:84px; direction:ltr;"></label>
                 </div>
                 <div id="pgsSum" dir="rtl" style="font-size:12px; margin-bottom:8px; color:var(--text-muted);"></div>
-                <div id="pgsList" style="display:flex; flex-direction:column; gap:8px; max-height:46vh; overflow-y:auto; padding:2px;"></div>
+                <div id="pgsList" style="display:flex; flex-direction:column; gap:8px; height:46vh; overflow-y:auto; padding:2px;"></div>
                 <div id="pgsPager" style="display:flex; justify-content:center; gap:8px; margin:8px 0;"></div>
                 <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-top:6px;">
                     <button type="button" class="btn" data-pgs-dl="srt">SRT</button>
@@ -17734,7 +17738,12 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
                     var items = [];
                     pcs.objs.forEach(function (o) { var ob = objs.get(o.id); if (ob) items.push({ x: o.x, y: o.y, w: ob.w, h: ob.h, rle: ob.rle, crop: o.crop }); });
                     if (items.length) cur = { start: t, end: 0, w: pcs.w, h: pcs.h, items: items, pal: pal };
-                } else if (pal && cur && opq(pal) > opq(cur.pal)) cur.pal = pal;
+                } else {
+                    var arr = []; pcs.objs.forEach(function (o) { var ob = objs.get(o.id); if (ob) arr.push({ x: o.x, y: o.y, w: ob.w, h: ob.h, rle: ob.rle, crop: o.crop }); });
+                    var mv = arr.length === cur.items.length && arr.some(function (a, k) { return a.x !== cur.items[k].x || a.y !== cur.items[k].y; });
+                    if (mv) { var pp = pal || cur.pal; close(t); cur = { start: t, end: 0, w: pcs.w, h: pcs.h, items: arr, pal: pp }; }
+                    else if (pal && opq(pal) > opq(cur.pal)) cur.pal = pal;
+                }
             }
             pcs = null; hasOds = false;
         }
@@ -17791,6 +17800,40 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
         return out;
     }
 
+    // دێڕەکانی نووسین (باند): [سەرەوە، خوارەوە، چەپ، ڕاست]
+    function bandsOf(S, BW, x0, y0, w, h) {
+        var bands = [], st = -1, gap = 0, en = 0, y, x, bl = 1e9, br = -1, l0 = 1e9, r0 = -1;
+        for (y = 0; y < h; y++) {
+            var any = false, rb = (y + y0) * BW + x0;
+            for (x = 0; x < w; x++) if (S[rb + x] < 128) { any = true; if (x < l0) l0 = x; if (x > r0) r0 = x; }
+            if (any) { if (st < 0) { st = y; bl = 1e9; br = -1; } if (l0 < bl) bl = l0; if (r0 > br) br = r0; l0 = 1e9; r0 = -1; gap = 0; en = y; }
+            else if (st >= 0 && ++gap >= 6) { bands.push([st, en, bl, br]); st = -1; }
+        }
+        if (st >= 0) bands.push([st, en, bl, br]);
+        return bands;
+    }
+    // دۆزینەوەی ئیتالیک: لارکردنەوەیەک کە ستوونەکانی پیتەکان تیژتر دەکات
+    function slantOf(S, BW, x0, y0, w, h) {
+        if (h < 14 || w < 30) return false;
+        var bands = bandsOf(S, BW, x0, y0, w, h);
+        var SH = [0, 0.08, 0.14, 0.2, 0.26, 0.32, -0.1, -0.2], sc = new Float64Array(SH.length), off = Math.ceil(h * 0.4) + 4;
+        bands.forEach(function (bd) {
+            var mid = (bd[0] + bd[1]) / 2;
+            for (var k = 0; k < SH.length; k++) {
+                var cols = new Int32Array(w + 2 * off);
+                for (var yy = bd[0]; yy <= bd[1]; yy += 2) {
+                    var shift = Math.round(SH[k] * (yy - mid)), rb2 = (yy + y0) * BW + x0;
+                    for (var xx = 0; xx < w; xx++) if (S[rb2 + xx] < 128) cols[xx + shift + off]++;
+                }
+                var t = 0; for (var c = 0; c < cols.length; c++) t += cols[c] * cols[c];
+                sc[k] += t;
+            }
+        });
+        if (!sc[0]) return false;
+        var pos = Math.max(sc[1], sc[2], sc[3], sc[4], sc[5]) / sc[0], neg = Math.max(sc[6], sc[7]) / sc[0];
+        return pos >= 1.04 && pos > neg + 0.05;
+    }
+
     // ---------- ئامادەکردنی وێنە بۆ OCR: نووسینی ڕەش لەسەر پشتەکی سپی ----------
     function renderCue(cue, dark) {
         if (!cue.pal) return null;
@@ -17845,7 +17888,16 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
         oc.width = w * f2 + pad * 2; oc.height = h * f2 + pad * 2;
         var cx = oc.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, oc.width, oc.height);
         cx.imageSmoothingEnabled = true; cx.imageSmoothingQuality = 'high'; cx.drawImage(rawC, pad, pad, w * f2, h * f2);
-        return { canvas: oc, raw: rawC, hash: hash, top: (minY + y0 + h / 2) < (cue.h || 1080) / 2 };
+        var CW = cue.w || 1920, CH = cue.h || 1080, ax = (minX + x0 + w / 2) / CW, ay = (minY + y0 + h / 2) / CH;
+        var col = ax < 0.33 ? 0 : ax > 0.67 ? 2 : 1, row = ay < 0.33 ? 0 : ay < 0.5 ? 1 : 2;
+        var an = [[7, 8, 9], [4, 5, 6], [1, 2, 3]][row][col];
+        // یەک دێڕ یان چەند دێڕ (بۆ PSM ی OCR)
+        var rows = 0, gap = 0, maxGap = 0, started = false;
+        for (var yy2 = 0; yy2 < h; yy2++) { var any = false; for (var xx2 = 0; xx2 < w; xx2++) if (S[(yy2 + y0) * BW + xx2 + x0] < 128) { any = true; break; } if (any) { started = true; gap = 0; } else if (started) { gap++; if (gap > maxGap) maxGap = gap; } }
+        var single = h < 0.085 * CH && maxGap < 0.18 * h;
+        var ix0 = minX + x0, iy0 = minY + y0, bnd = bandsOf(S, BW, x0, y0, w, h).map(function (b) { return { h: b[1] - b[0] + 1, w: b[3] - b[2] + 1 }; });
+        var meta = { ix0: ix0, iy0: iy0, ix1: ix0 + w, iy1: iy0 + h, bands: bnd };
+        return { canvas: oc, raw: rawC, hash: hash, an: an, top: row === 0, italic: slantOf(S, BW, x0, y0, w, h), single: single, meta: meta };
     }
 
     // ---------- بزوێنی OCR (Tesseract.js) ----------
@@ -17860,14 +17912,19 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
             onStatus && onStatus('دابەزاندن و ئامادەکردنی OCR...');
             var mk = async function () {
                 var w = await window.Tesseract.createWorker(lang, 1, { logger: function () { } });
-                try { await w.setParameters({ tessedit_pageseg_mode: '6', preserve_interword_spaces: '1', user_defined_dpi: '300' }); } catch (e) { }
+                try { await w.setParameters({ tessedit_pageseg_mode: '6', preserve_interword_spaces: '1', user_defined_dpi: '300' }); w.__psm = '6'; } catch (e) { }
                 return w;
             };
             this.workers.push(await mk());
             if (n > 1) { var rest = await Promise.all(Array.from({ length: n - 1 }, mk)); this.workers = this.workers.concat(rest); }
             return this.workers.length;
         },
-        recognize: async function (w, canvas) { var r = await w.recognize(canvas); return { text: r.data.text || '', conf: r.data.confidence || 0 }; },
+        recognize: async function (w, canvas, psm) {
+            psm = psm || '6';
+            if (w.__psm !== psm) { try { await w.setParameters({ tessedit_pageseg_mode: psm }); } catch (e) { } w.__psm = psm; }
+            var r = await w.recognize(canvas, {}, { text: true }), cf = r && r.data && r.data.confidence;
+            return { text: (r && r.data && r.data.text) || '', conf: typeof cf === 'number' ? cf : 80 };
+        },
         stop: async function () { var ws = this.workers; this.workers = []; await Promise.all(ws.map(function (w) { return Promise.resolve(w.terminate && w.terminate()).catch(function () { }); })); }
     };
 
@@ -17897,27 +17954,72 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
     var S = { cues: [], res: [], w: 1920, h: 1080, base: 'subtitle', lang: 'eng', page: 0, cancel: false, busy: false, file: null, mkvTrack: null, lastMkvId: null };
     var PER = 40;
 
+    // خاڵی لەنگەر (بەپێی شوێنی \an) لەناو ڤیدیۆدا
+    function anchor(c) {
+        var mt = c.meta; if (!mt) return [0, 0];
+        var an = c.an0 || c.an || 2, col = (an - 1) % 3, row = Math.floor((an - 1) / 3);
+        return [Math.round(col === 0 ? mt.ix0 : col === 2 ? mt.ix1 : (mt.ix0 + mt.ix1) / 2), Math.round(row === 2 ? mt.iy0 : row === 0 ? mt.iy1 : (mt.iy0 + mt.iy1) / 2)];
+    }
+    var mctx = null;
+    function median(a) { a = a.slice().sort(function (x, y) { return x - y; }); return a[a.length >> 1]; }
+    // خەمڵاندنی قەبارە و پانی فۆنت لە بەرزی و پانی وێنەکەوە
+    function fontOf(c) {
+        var mt = c.meta, H = c.H || S.h || 1080; if (!mt || !mt.bands.length) return null;
+        var lines = c.t.split('\n'), bands = mt.bands, latin = /[A-Za-z]/.test(c.t), est;
+        if (latin && bands.length === lines.length) est = bands.map(function (b, i) { var l = lines[i], asc = /[A-Z0-9bdfhklt]/.test(l) ? 0.716 : 0.519, desc = /[gjpqy,;]/.test(l) ? 0.21 : 0; return b.h / (asc + desc); });
+        else est = bands.map(function (b) { return b.h / (latin ? 0.926 : 0.9); });
+        var fs = Math.round(Math.max(H / 60, Math.min(H / 6, median(est))));
+        var sx = 100;
+        try {
+            mctx = mctx || document.createElement('canvas').getContext('2d'); mctx.font = fs + 'px Arial, Helvetica, sans-serif';
+            if (bands.length === lines.length) { var rt = bands.map(function (b, i) { var wd = mctx.measureText(lines[i]).width; return wd > 0 ? b.w / wd : 1; }); sx = Math.round(Math.max(50, Math.min(200, median(rt) * 100))); }
+        } catch (e) { }
+        return { fs: fs, sx: Math.abs(sx - 100) > 6 ? sx : 100 };
+    }
     function finalList() {
-        var off = (parseFloat($('pgsOffset').value) || 0) / 1000, top = $('pgsTop').checked, out = [];
-        S.res.forEach(function (r) { if (!r || r.del || !r.text) return; out.push({ s: Math.max(0, r.start + off), e: Math.max(0, r.end + off), t: r.text, top: top && r.top }); });
+        var off = (parseFloat($('pgsOffset').value) || 0) / 1000, pos = $('pgsTop').checked, ital = $('pgsItal').checked, out = [];
+        S.res.forEach(function (r) { if (!r || r.del || !r.text) return; out.push({ s: Math.max(0, r.start + off), e: Math.max(0, r.end + off), t: r.text, an: pos ? (r.an || 2) : 2, an0: r.an || 2, it: ital && !!r.italic, meta: r.meta, H: r.H, W: r.W, chain: !!r.chain }); });
         out.sort(function (a, b) { return a.s - b.s; });
         for (var i = 0; i < out.length; i++) if (out[i].e <= out[i].s) out[i].e = out[i].s + 1;
         return out;
     }
     function build(fmt) {
-        var L = finalList(), o = [], i;
+        var L = finalList(), o = [];
+        if (fmt !== 'ass') L = L.filter(function (c, i) { if (c.chain && i > 0 && L[i - 1].t === c.t) { var p = L[i - 1]; p.e = Math.max(p.e, c.e); return false; } return true; });
+        var ital = function (t) { return t.split('\n').map(function (l) { return '<i>' + l + '</i>'; }).join('\n'); };
         if (fmt === 'srt') {
-            L.forEach(function (c, k) { o.push((k + 1) + '\n' + ts(c.s, ',', 1) + ' --> ' + ts(c.e, ',', 1) + '\n' + (c.top ? '{\\an8}' : '') + c.t + '\n'); });
+            L.forEach(function (c, k) { o.push((k + 1) + '\n' + ts(c.s, ',', 1) + ' --> ' + ts(c.e, ',', 1) + '\n' + (c.an !== 2 ? '{\\an' + c.an + '}' : '') + (c.it ? ital(c.t) : c.t) + '\n'); });
             return o.join('\n');
         }
         if (fmt === 'vtt') {
             o.push('WEBVTT\n');
-            L.forEach(function (c) { o.push(ts(c.s, '.', 1) + ' --> ' + ts(c.e, '.', 1) + (c.top ? ' line:10%' : '') + '\n' + c.t.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '\n'); });
+            L.forEach(function (c) {
+                var set = '', col = (c.an - 1) % 3, row = Math.floor((c.an - 1) / 3);
+                if (row === 2) set += ' line:10%'; else if (row === 1) set += ' line:50%';
+                if (col === 0) set += ' position:10% align:left'; else if (col === 2) set += ' position:90% align:right';
+                var t = c.t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+                o.push(ts(c.s, '.', 1) + ' --> ' + ts(c.e, '.', 1) + set + '\n' + (c.it ? ital(t) : t) + '\n');
+            });
             return o.join('\n');
         }
-        var H = S.h || 1080, W = S.w || 1920, fs = Math.round(H / 18);
+        var H = S.h || 1080, W = S.w || 1920, exact = $('pgsPos').checked;
+        var fonts = L.map(function (c) { return exact ? fontOf(c) : null; });
+        var cnt = {}, fs = Math.round(H / 18), bestN = 0;
+        fonts.forEach(function (f) { if (f) { cnt[f.fs] = (cnt[f.fs] || 0) + 1; if (cnt[f.fs] > bestN) { bestN = cnt[f.fs]; fs = f.fs; } } });
         var head = '[Script Info]\nTitle: ' + S.base + '\nScriptType: v4.00+\nWrapStyle: 0\nScaledBorderAndShadow: yes\nPlayResX: ' + W + '\nPlayResY: ' + H + '\n\n[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\nStyle: Default,Arial,' + fs + ',&H00FFFFFF,&H000000FF,&H00000000,&H64000000,0,0,0,0,100,100,0,0,1,2.5,1,2,60,60,' + Math.round(H * 0.05) + ',1\n\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n';
-        return head + L.map(function (c) { return 'Dialogue: 0,' + ts(c.s, '.', 0) + ',' + ts(c.e, '.', 0) + ',Default,,0,0,0,,' + (c.top ? '{\\an8}' : '') + c.t.replace(/\n/g, '\\N'); }).join('\n') + '\n';
+        return head + L.map(function (c, i) {
+            var tag = '', e = c.e, f = fonts[i];
+            if (exact && c.meta) {
+                var a = anchor(c), nx = L[i + 1];
+                tag += '\\an' + c.an0;
+                if (nx && nx.chain && nx.t === c.t && nx.s - c.e <= 0.15 && nx.s > c.s) { var b = anchor(nx); e = nx.s; tag += '\\move(' + a[0] + ',' + a[1] + ',' + b[0] + ',' + b[1] + ')'; }
+                else tag += '\\pos(' + a[0] + ',' + a[1] + ')';
+                if (f && Math.abs(f.fs - fs) / fs > 0.06) tag += '\\fs' + f.fs;
+                if (f && f.sx !== 100) tag += '\\fscx' + f.sx;
+            } else if (c.an !== 2) tag += '\\an' + c.an;
+            if (c.it) tag += '\\i1';
+            return 'Dialogue: 0,' + ts(c.s, '.', 0) + ',' + ts(e, '.', 0) + ',Default,,0,0,0,,' + (tag ? '{' + tag + '}' : '') + c.t.replace(/\n/g, '\\N');
+        }).join('\n') + '\n';
     }
     function save(text, name) {
         var b = new Blob(['﻿', text], { type: 'text/plain;charset=utf-8' }), u = URL.createObjectURL(b), a = document.createElement('a');
@@ -17926,14 +18028,18 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
     }
     var toast = function (m, t) { try { showToast(m, t || 'info'); } catch (e) { } };
     var L = function (t) { return '⁦' + t + '⁩'; };
-    var fmtT = function (s) { s = Math.max(0, Math.round(s)); var m = Math.floor(s / 60), r = s % 60; return L(m + ':' + pad(r, 2)); };
+    var fmtT = function (s) { s = Math.max(0, Math.round(s)); var h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, r = s % 60; return L(h ? h + ':' + pad(m, 2) + ':' + pad(r, 2) : m + ':' + pad(r, 2)); };
 
     // ---------- ڕووکار ----------
-    function setProg(pct, txt) { $('pgsProg').style.display = 'block'; $('pgsBar').style.width = Math.max(0, Math.min(100, pct)) + '%'; if (txt != null) $('pgsStatus').textContent = '⁧' + txt + '⁩'; }
+    function setProg(pct, l1, l2) {
+        $('pgsProg').style.display = 'block'; $('pgsBar').style.width = Math.max(0, Math.min(100, pct)) + '%';
+        if (l1 != null) $('pgsSt1').textContent = '\u2067' + l1 + '\u2069';
+        if (l2 != null) $('pgsSt2').textContent = l2 ? '\u2067' + l2 + '\u2069' : '';
+    }
     function stats() {
         var tot = 0, low = 0, emp = 0;
         S.res.forEach(function (r) { if (!r || r.del) return; tot++; if (!r.text) emp++; else if (r.conf < 78) low++; });
-        $('pgsSum').textContent = '⁧' + L(tot) + ' دێڕ • نایەقین: ' + L(low) + ' • بەتاڵ: ' + L(emp) + '⁩';
+        $('pgsSum').textContent = '⁧' + L(tot) + ' دێڕ • پێویست بە پشکنین: ' + L(low) + ' • بەتاڵ: ' + L(emp) + '⁩';
     }
     function visible() {
         var f = $('pgsFilter').value, o = [];
@@ -17967,33 +18073,42 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
 
     // ---------- OCR ----------
     var wake = null;
+    function lockOpts(b) { var o = $('pgsOpts'); o.style.opacity = b ? '.45' : ''; o.style.pointerEvents = b ? 'none' : ''; $('pgsStart').disabled = !!b; $('pgsCancel').style.visibility = b ? 'visible' : 'hidden'; }
     async function runOcr() {
         if (S.busy || !S.cues.length) return;
-        S.busy = true; S.cancel = false; S.res = []; $('pgsRes').style.display = 'none'; $('pgsOpts').style.display = 'none';
+        S.busy = true; S.cancel = false; S.res = []; $('pgsRes').style.display = 'none'; lockOpts(true);
         var lang = $('pgsLang').value, dark = $('pgsDark').checked, fix = $('pgsFix').checked && lang === 'eng';
         var wn = +$('pgsWorkers').value || Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 4) - 1, (navigator.deviceMemory && navigator.deviceMemory <= 3) ? 2 : 4));
         S.lang = lang;
         try { if (navigator.wakeLock) wake = await navigator.wakeLock.request('screen'); } catch (e) { }
-        var eng = window.kfPgs.engine;
+        var eng = window.kfPgs.engine, t0 = 0, N = S.cues.length, done = 0;
         try {
-            setProg(0, 'ئامادەکردنی OCR... (یەکەم جار چەند چرکەیەک دەخایەنێت)');
-            var started = await eng.start(lang, wn, function (m) { setProg(0, m); });
-            var cues = S.cues, next = 0, done = 0, t0 = Date.now(), cache = new Map(), N = cues.length;
+            setProg(0, 'ئامادەکردنی خوێندنەوە... (یەکەم جار چەند چرکەیەک دەخایەنێت)', '');
+            await eng.start(lang, wn, function (m) { setProg(0, m, ''); });
+            var cues = S.cues, next = 0, cache = new Map(), samples = [];
+            t0 = Date.now();
             var toBlob = function (c) { return new Promise(function (ok) { try { c.toBlob(function (b) { ok(b); }, 'image/png'); } catch (e) { ok(null); } }); };
-            var tick = function () { var el = (Date.now() - t0) / 1000, rate = done / Math.max(0.1, el), eta = rate > 0 ? (N - done) / rate : 0; setProg(done / N * 100, 'OCR: ' + L(done) + ' / ' + L(N) + ' • ماوە نزیکەی ' + fmtT(eta) + ' • ' + L(rate.toFixed(1)) + ' دێڕ/چرکە'); };
+            var tick = function () {
+                var now = Date.now(), el = (now - t0) / 1000; samples.push([now, done]);
+                while (samples.length > 2 && now - samples[0][0] > 10000) samples.shift();
+                var f = samples[0], rate = now > f[0] ? (done - f[1]) / ((now - f[0]) / 1000) : 0;
+                if (!(rate > 0)) rate = done / Math.max(0.1, el);
+                var eta = rate > 0 ? (N - done) / rate : 0;
+                setProg(done / N * 100, 'خوێندنەوە: ' + L(done) + ' / ' + L(N) + ' • ' + L(Math.floor(done / N * 100) + '%'), 'ڕابردوو ' + fmtT(el) + ' • ماوە ' + fmtT(eta) + ' • ' + L(rate.toFixed(1)) + ' دێڕ/چرکە');
+            };
             var work = async function (wk) {
                 while (!S.cancel) {
                     var i = next++; if (i >= N) break;
                     var cue = cues[i], r = null;
                     try { r = renderCue(cue, dark); } catch (e) { r = null; }
-                    if (!r) { S.res[i] = { start: cue.start, end: cue.end, text: '', conf: 0, top: false, blob: null }; }
+                    if (!r) { S.res[i] = { start: cue.start, end: cue.end, text: '', conf: 0, an: 2, italic: false, blob: null }; }
                     else {
                         var c = cache.get(r.hash);
                         if (!c) {
-                            var o = await eng.recognize(wk, r.canvas);
+                            var o = await eng.recognize(wk, r.canvas, r.single ? '7' : '6');
                             c = { text: cleanText(o.text, fix), conf: o.conf, blob: await toBlob(r.raw) }; cache.set(r.hash, c);
                         }
-                        S.res[i] = { start: cue.start, end: cue.end, text: c.text, conf: c.conf, top: r.top, blob: c.blob };
+                        S.res[i] = { start: cue.start, end: cue.end, text: c.text, conf: c.conf, an: r.an, italic: r.italic, blob: c.blob, meta: r.meta, W: cue.w, H: cue.h };
                     }
                     done++; if (done % 3 === 0 || done === N) tick();
                     if (done % 25 === 0) await new Promise(function (ok) { setTimeout(ok, 0); });
@@ -18001,31 +18116,54 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
             };
             tick();
             await Promise.all(eng.workers.map(function (w) { return work(w); }));
-            if (S.cancel) { toast('OCR هەڵوەشێنرایەوە', 'warning'); }
-            // یەکخستنی دێڕی هاوشێوەی بەدوایەکدا (فەید و ...)
+            if (S.cancel) { toast('خوێندنەوە هەڵوەشێنرایەوە', 'warning'); }
             var m = [];
-            S.res.forEach(function (r) { if (!r) return; var p = m[m.length - 1]; if (p && r.text && p.text === r.text && r.start - p.end <= 0.1) { p.end = r.end; } else m.push(r); });
+            S.res.forEach(function (r) { if (!r) return; var p = m[m.length - 1]; if (p && r.text && p.text === r.text && r.start - p.end <= 0.1) {
+                    var a1 = anchor(p), a2 = anchor({ meta: r.meta, an: p.an, an0: p.an0 || p.an });
+                    if (Math.abs(a1[0] - a2[0]) <= 2 && Math.abs(a1[1] - a2[1]) <= 2) p.end = r.end; else { r.chain = true; r.an = p.an; r.an0 = p.an0 || p.an; m.push(r); }
+                } else m.push(r); });
             S.res = m;
-            if (S.res.length) { setProg(100, 'تەواو بوو • ' + L(S.res.length) + ' دێڕ'); showResults(); if (!S.cancel) toast('OCR تەواو بوو', 'success'); }
+            if (S.res.length) {
+                var tot = (Date.now() - t0) / 1000;
+                setProg(100, (S.cancel ? 'وەستێنرا' : 'تەواو بوو') + ' • ' + L(done) + ' دێڕ', 'کاتی ڕاستەقینە ' + fmtT(tot) + ' • خێرایی ناوەند ' + L((done / Math.max(0.1, tot)).toFixed(1)) + ' دێڕ/چرکە');
+                showResults(); if (!S.cancel) toast('خوێندنەوە تەواو بوو', 'success');
+            }
         } catch (e) {
             console.error(e);
-            toast(e && e.message === 'cdn' ? 'بۆ یەکەم جار ئینتەرنێت پێویستە بۆ دابەزاندنی OCR' : 'هەڵە لە OCR: ' + (e && e.message || e), 'error');
+            toast(e && e.message === 'cdn' ? 'بۆ یەکەم جار ئینتەرنێت پێویستە بۆ دابەزاندنی OCR' : 'هەڵە لە خوێندنەوە: ' + (e && e.message || e), 'error');
         } finally {
             try { await eng.stop(); } catch (e) { }
             try { if (wake) { wake.release(); wake = null; } } catch (e) { }
-            S.busy = false; $('pgsCancel').style.display = ''; $('pgsOpts').style.display = 'block';
+            S.busy = false; lockOpts(false); $('pgsCancel').style.visibility = 'hidden';
             if (!S.res.length) $('pgsProg').style.display = 'none';
         }
     }
 
     // ---------- بارکردنی فایل ----------
-    function pickLang(code) { var l = ISO[String(code || '').toLowerCase()]; if (l) $('pgsLang').value = l; }
-    function useSup(buf, base, lang) {
+    var AMB2 = { id: 1, it: 1, no: 1, de: 1, es: 1, he: 1, is: 1, to: 1, in: 1, on: 1, or: 1, hi: 1, th: 1, ko: 1, nl: 1 };
+    function langFromName(name) {
+        var base = String(name || '').replace(/\.[^.]+$/, ''), toks = base.split(/[\s._\-\[\]()]+/).filter(Boolean), last = toks.length - 1;
+        for (var i = last; i >= 0; i--) {
+            var t = toks[i].toLowerCase();
+            if (t.length === 3 && ISO[t]) return ISO[t];
+            if (t.length === 2 && ISO[t] && (i === last || !AMB2[t])) return ISO[t];
+        }
+        return null;
+    }
+    function hint(code, from) {
+        var h = $('pgsLangHint'); if (!h) return;
+        if (code) { var nm = ''; LANGS.forEach(function (l) { if (l[0] === code) nm = l[1]; }); h.textContent = 'زمان خۆکار دیاری کرا: ' + '\u2066' + nm + '\u2069' + ' (' + from + ')'; }
+        else h.textContent = 'زمانەکە دیار نەکرا؛ تکایە خۆت هەڵیبژێرە.';
+    }
+    function pickLang(code) { var l = ISO[String(code || '').toLowerCase()]; if (l) { $('pgsLang').value = l; if ($('pgsLang').__lab) $('pgsLang').__lab(); } return l || null; }
+    function useSup(buf, base, lang, fname) {
         var r = parseSup(buf);
         if (!r.cues.length) { toast('هیچ ژێرنووسێکی PGS لەم فایلەدا نەدۆزرایەوە', 'error'); return false; }
         S.cues = r.cues; S.w = r.w; S.h = r.h; S.base = base || 'subtitle'; S.res = [];
-        $('pgsRes').style.display = 'none'; $('pgsProg').style.display = 'none'; $('pgsOpts').style.display = 'block';
-        if (lang) pickLang(lang);
+        $('pgsRes').style.display = 'none'; $('pgsProg').style.display = 'none'; $('pgsOpts').style.display = 'block'; lockOpts(false);
+        var dl = lang && lang !== 'und' ? pickLang(lang) : null, from = 'لە تراکی MKV';
+        if (!dl) { dl = pickLang(langFromName(fname || base)); from = 'لە ناوی فایل'; }
+        hint(dl ? $('pgsLang').value : null, from);
         $('pgsStart').textContent = 'دەستپێکردنی OCR (' + r.cues.length + ' ژێرنووس)';
         toast(r.cues.length + ' ژێرنووسی PGS دۆزرایەوە', 'success');
         return true;
@@ -18066,7 +18204,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
         $('pgsTracks').style.display = 'none'; $('pgsOpts').style.display = 'none'; $('pgsRes').style.display = 'none'; $('pgsProg').style.display = 'none'; S.cues = []; S.res = [];
         try {
             var hd = new Uint8Array(await f.slice(0, 4).arrayBuffer()), isSup = hd[0] === 0x50 && hd[1] === 0x47, isMkv = hd[0] === 0x1A && hd[1] === 0x45 && hd[2] === 0xDF && hd[3] === 0xA3;
-            if (isSup || (!isMkv && /\.(sup|pgs)$/i.test(f.name))) { useSup(await f.arrayBuffer(), baseName(f.name)); }
+            if (isSup || (!isMkv && /\.(sup|pgs)$/i.test(f.name))) { useSup(await f.arrayBuffer(), baseName(f.name), null, f.name); }
             else {
                 S.busy = true; window.__kfProg = function (p, txt) { setProg(p, txt || 'پشکنینی MKV...'); };
                 try { await handleMkvFileSelect({ files: [f] }); } finally { window.__kfProg = null; S.busy = false; }
@@ -18075,13 +18213,36 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
         } catch (e) { console.error(e); toast('نەتوانرا فایلەکە بخوێندرێتەوە: ' + (e && e.message || e), 'error'); }
     }
 
+    // لیستی هەڵبژاردنی تایبەتی ماڵپەڕ (جێگەی لیستی وێبگەڕ)
+    function dress(sel) {
+        var b = document.createElement('button'); b.type = 'button'; b.className = 'kf-pgs-in kf-pgs-sel'; b.style.flex = sel.style.flex || ''; b.style.minWidth = sel.style.minWidth || '';
+        sel.style.display = 'none'; sel.parentNode.insertBefore(b, sel.nextSibling);
+        var sp = document.createElement('span'); sp.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;'; b.insertBefore(sp, null);
+        var lab = function () { var o = sel.options[sel.selectedIndex]; sp.textContent = o ? o.text : ''; };
+        sel.__lab = lab; lab();
+        b.onclick = function () {
+            var ov = document.createElement('div'); ov.className = 'kf-pgs-ov'; var sh = document.createElement('div'); sh.className = 'kf-pgs-sheet'; ov.appendChild(sh);
+            var close = function () { ov.remove(); };
+            Array.prototype.forEach.call(sel.options, function (o) {
+                var it = document.createElement('div'); it.className = 'kf-pgs-it' + (o.value === sel.value ? ' on' : '');
+                var t = document.createElement('span'); t.textContent = o.text; it.appendChild(t); if (o.value === sel.value) { var ck = document.createElement('span'); ck.textContent = '\u2713'; it.appendChild(ck); }
+                it.onclick = function () { sel.value = o.value; lab(); close(); sel.dispatchEvent(new Event('change')); };
+                sh.appendChild(it);
+            });
+            ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+            document.body.appendChild(ov);
+            var cur = sh.querySelector('.on'); if (cur) cur.scrollIntoView({ block: 'center' });
+        };
+    }
+
     // ---------- دروستکردنی UI ----------
     function init() {
         var m = $('pgs-modal'); if (!m || m.__kf) return; m.__kf = 1;
         var st = document.createElement('style');
-        st.textContent = '.kf-pgs-in{background:#0b1220;color:#fff;border:1px solid var(--border-color);border-radius:8px;padding:7px;font-size:13px;width:100%;}.kf-pgs-ck{display:flex;align-items:center;gap:8px;font-size:12px;margin:5px 0;color:var(--text-main);line-height:1.5;}.kf-pgs-ck input{width:16px;height:16px;flex-shrink:0;}';
+        st.textContent = '.kf-pgs-in{background:#0b1220;color:#fff;border:1px solid var(--border-color);border-radius:8px;padding:7px;font-size:13px;width:100%;}.kf-pgs-ck{display:flex;align-items:center;gap:8px;font-size:12px;margin:5px 0;color:var(--text-main);line-height:1.5;}.kf-pgs-ck input{width:16px;height:16px;flex-shrink:0;}.kf-pgs-sel{display:flex;justify-content:space-between;align-items:center;text-align:start;cursor:pointer;gap:6px;unicode-bidi:plaintext;}.kf-pgs-sel::after{content:"\u25BE";opacity:.7;flex-shrink:0;}.kf-pgs-ov{position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;padding:16px;}.kf-pgs-sheet{width:min(92vw,380px);max-height:72vh;overflow-y:auto;background:#111827;border:1px solid rgba(255,255,255,.18);border-radius:16px;padding:6px;box-shadow:0 20px 50px rgba(0,0,0,.6);}.kf-pgs-it{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 14px;border-radius:10px;font-size:14px;cursor:pointer;color:#e5e7eb;unicode-bidi:plaintext;text-align:start;}.kf-pgs-it.on{background:rgba(255,255,255,.08);color:var(--primary);font-weight:bold;}';
         document.head.appendChild(st);
         $('pgsLang').innerHTML = LANGS.map(function (l) { return '<option value="' + l[0] + '">' + l[1] + '</option>'; }).join('');
+        ['pgsLang', 'pgsWorkers', 'pgsFilter'].forEach(function (id) { dress($(id)); });
         $('pgsFileInput').addEventListener('change', function () { var f = this.files && this.files[0]; onFile(f); this.value = ''; });
         $('pgsStart').onclick = runOcr;
         $('pgsCancel').onclick = function () { S.cancel = true; $('pgsCancel').style.display = 'none'; };
@@ -18105,7 +18266,6 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
     document.addEventListener('DOMContentLoaded', init);
     if (document.readyState !== 'loading') init();
 })();
-
 </script>
 <script id="kf-shell-js">
 (function () {
@@ -21129,14 +21289,14 @@ var KFV = (function () {
         lastIdx = idx; TX.value = ''; T0.value = formatTimeASS(e); T1.value = formatTimeASS(e + 3); custom = false; paintTxt(); count();
         INFO.style.display = 'flex'; INFO.firstChild.textContent = 'دێڕ لە ژێرنووسەکان زیاد کرا (#' + (idx + 1) + ')';
     }
-    function fit() { var vw = V.videoWidth, vh = V.videoHeight; if (!vw || !vh) return; BX.style.aspectRatio = vw + '/' + vh; BX.style.height = 'auto'; BX.style.maxHeight = '46vh'; BX.style.width = 'min(100%, calc(46vh * ' + (vw / vh) + '))'; paintTxt(); }
+    function fit() { try { kfQB(M, V); } catch (e) { } var vw = V.videoWidth, vh = V.videoHeight; if (!vw || !vh) return; BX.style.aspectRatio = vw + '/' + vh; BX.style.height = 'auto'; BX.style.maxHeight = '46vh'; BX.style.width = 'min(100%, calc(46vh * ' + (vw / vh) + '))'; paintTxt(); }
     function build() {
         var cs = document.createElement('style');
         cs.textContent = '#kf-addline-modal{padding:0!important;align-items:stretch!important;justify-content:stretch!important}#kf-addline-modal>.custom-modal-content{border:0!important;box-shadow:none!important;border-radius:0!important;max-width:none!important;width:100%!important;height:100%!important;max-height:none!important;margin:0!important}.kfal-p{display:flex;flex-direction:column;gap:8px;background:rgba(0,0,0,.28);padding:10px;border-radius:12px;border:1px solid var(--border-color)}.kfal-r{display:flex;gap:8px}.kfal-r>*{flex:1;min-width:0}.kfal-f{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--text-muted)}.kfal-f label{display:flex;justify-content:space-between;align-items:center}#kfalBox{touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}#kfalTxt{pointer-events:none;position:absolute;max-width:88%;text-align:center;line-height:1.25;border:1px dashed rgba(255,255,255,.55);border-radius:6px;cursor:grab;touch-action:none;white-space:pre-wrap}.kfal-exact #kfalTxt{color:transparent!important;-webkit-text-stroke:0!important;text-shadow:none!important;background:transparent!important;border-color:transparent!important}.kfal-exact.kfal-dragging #kfalTxt{border-color:rgba(255,255,255,.55)!important}';
         document.head.appendChild(cs);
         M = document.createElement('div'); M.id = 'kf-addline-modal'; M.className = 'custom-modal-overlay';
         M.innerHTML = '<div class="custom-modal-content" style="display:flex;flex-direction:column;overflow:hidden;text-align:start;padding:0;">'
-            + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;flex:none;"><h3 style="margin:0;color:var(--primary);font-size:15px;">زیادکردنی دێڕ</h3><div style="display:flex;align-items:center;gap:6px;margin-inline-start:auto;font-size:12px;"><span style="opacity:.8">زیادکراوەکان:</span><b id="kfalCnt" style="color:#f59e0b;font-size:14px;">0</b><button type="button" class="btn btn-outline" id="kfalSee" style="width:auto;padding:3px 10px;font-size:11px;">بینین</button></div><button type="button" class="btn btn-outline" id="kfalClose" style="width:auto;padding:4px 12px;font-size:12px;">داخستن</button></div>'
+            + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;flex:none;"><h3 style="margin:0;color:var(--primary);font-size:15px;">زیادکردنی دێڕ</h3><span class="kf-qb" style="flex:1;text-align:center;font-size:11px;font-weight:700;color:var(--primary);direction:ltr;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></span><button type="button" class="btn btn-outline" onclick="kfSymbols()" title="سیمبوڵەکان" style="width:auto;padding:2px 10px;font-size:15px;line-height:1.4;">♪</button><div style="display:flex;align-items:center;gap:6px;margin-inline-start:auto;font-size:12px;"><span style="opacity:.8">زیادکراوەکان:</span><b id="kfalCnt" style="color:#f59e0b;font-size:14px;">0</b><button type="button" class="btn btn-outline" id="kfalSee" style="width:auto;padding:3px 10px;font-size:11px;">بینین</button></div><button type="button" class="btn btn-outline" id="kfalClose" style="width:auto;padding:4px 12px;font-size:12px;">داخستن</button></div>'
             + '<div id="kfalVc" style="flex:none;background:#000;"><div id="kfalBox" oncontextmenu="return false" style="position:relative;width:100%;height:40vh;background:#000;overflow:hidden;margin:0 auto;"><video id="kfalV" playsinline disablePictureInPicture disableRemotePlayback controlsList="nodownload noremoteplayback" oncontextmenu="return false" style="width:100%;height:100%;display:block;object-fit:contain;pointer-events:none;"></video><div id="kfalTxt"></div><div id="kfalBd" style="display:none;position:absolute;top:14px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);color:#fff;padding:5px 15px;border-radius:20px;font-size:12px;font-weight:bold;z-index:50;pointer-events:none;border:1px solid rgba(255,255,255,.25);backdrop-filter:blur(6px);align-items:center;gap:6px;direction:ltr;animation:censorPulse .8s ease-in-out infinite alternate;"></div><div id="kfalCp" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:56px;height:56px;border-radius:50%;background:rgba(0,0,0,.75);color:#fff;z-index:55;pointer-events:none;align-items:center;justify-content:center;border:1.5px solid rgba(255,255,255,.3);backdrop-filter:blur(4px);direction:ltr;line-height:0;"></div><div id="kfalRr" style="display:none;position:absolute;right:0;top:0;bottom:0;width:40%;background:radial-gradient(circle at center,rgba(255,255,255,.25) 0%,transparent 70%);z-index:30;pointer-events:none;align-items:center;justify-content:center;flex-direction:column;gap:4px;color:#fff;font-size:12px;font-weight:bold;direction:ltr;"><span style="line-height:0">'+SVGF+'</span><span>+10s</span></div><div id="kfalRl" style="display:none;position:absolute;left:0;top:0;bottom:0;width:40%;background:radial-gradient(circle at center,rgba(255,255,255,.25) 0%,transparent 70%);z-index:30;pointer-events:none;align-items:center;justify-content:center;flex-direction:column;gap:4px;color:#fff;font-size:12px;font-weight:bold;direction:ltr;"><span style="line-height:0">'+SVGB+'</span><span>-10s</span></div></div></div>'
             + '<div id="kfalVc2" style="flex:none;"><div style="padding:8px 12px 0;direction:ltr;"><input type="range" id="kfalSl" min="0" max="1000" value="0" step="0.5" style="width:100%;accent-color:var(--primary);height:6px;"></div>'
             + '<div style="display:flex;align-items:center;gap:6px;padding:6px 12px;direction:ltr;"><b id="kfalTime" style="color:var(--primary);font-size:12px;min-width:84px;">0:00:00.00</b><div id="kfalSteps" style="display:flex;gap:5px;flex:1;"></div></div></div>'
@@ -21281,7 +21441,7 @@ var KFV = (function () {
     function loop() { if (!M || M.style.display !== 'flex') { raf = 0; return; } if (EX) { try { EX.setCurrentTime(V.paused, V.currentTime || 0, V.playbackRate || 1); } catch (e) { } } if (stopAt && V.currentTime >= stopAt) { V.pause(); stopAt = 0; } raf = requestAnimationFrame(loop); }
     function tick() { if (V.duration && !V._s) SL.value = V.currentTime / V.duration * 1000; $('kfetTime').textContent = formatTimeASS(V.currentTime || 0); }
     function step(d) { V.currentTime = Math.max(0, Math.min(V.duration || 1e9, (V.currentTime || 0) + d)); tick(); }
-    function fit() { var vw = V.videoWidth, vh = V.videoHeight; if (!vw || !vh) return; BX.style.aspectRatio = vw + '/' + vh; BX.style.height = 'auto'; BX.style.maxHeight = '40vh'; BX.style.width = 'min(100%, calc(40vh * ' + (vw / vh) + '))'; exSched(); }
+    function fit() { try { kfQB(M, V); } catch (e) { } var vw = V.videoWidth, vh = V.videoHeight; if (!vw || !vh) return; BX.style.aspectRatio = vw + '/' + vh; BX.style.height = 'auto'; BX.style.maxHeight = '40vh'; BX.style.width = 'min(100%, calc(40vh * ' + (vw / vh) + '))'; exSched(); }
     function load(n) {
         n = parseInt(n, 10); var tot = originalData.length;
         if (!(n >= 1 && n <= tot)) { showToast('ژمارەی دێڕ دروست نییە (١ تا ' + tot + ')', 'warning'); return; }
@@ -21311,7 +21471,7 @@ var KFV = (function () {
         document.head.appendChild(cs);
         M = document.createElement('div'); M.id = 'kf-edittime-modal'; M.className = 'custom-modal-overlay';
         M.innerHTML = '<div class="custom-modal-content" style="display:flex;flex-direction:column;overflow:hidden;text-align:start;padding:0;">'
-            + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;flex:none;"><h3 style="margin:0;color:var(--primary);font-size:15px;">دەستکاریکردنی کاتی دێڕ</h3><button type="button" class="btn btn-outline" id="kfetClose" style="width:auto;padding:4px 12px;font-size:12px;">داخستن</button></div>'
+            + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;flex:none;"><h3 style="margin:0;color:var(--primary);font-size:15px;">دەستکاریکردنی کاتی دێڕ</h3><span class="kf-qb" style="flex:1;text-align:center;font-size:11px;font-weight:700;color:var(--primary);direction:ltr;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></span><button type="button" class="btn btn-outline" id="kfetClose" style="width:auto;padding:4px 12px;font-size:12px;">داخستن</button></div>'
             + '<div id="kfetVc" style="flex:none;background:#000;"><div id="kfetBox" oncontextmenu="return false" style="position:relative;width:100%;height:40vh;background:#000;overflow:hidden;margin:0 auto;"><video id="kfetV" playsinline disablePictureInPicture disableRemotePlayback controlsList="nodownload noremoteplayback" style="width:100%;height:100%;display:block;object-fit:contain;pointer-events:none;"></video>'
             + '<div id="kfetBd" style="display:none;position:absolute;top:14px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);color:#fff;padding:5px 15px;border-radius:20px;font-size:12px;font-weight:bold;z-index:50;pointer-events:none;border:1px solid rgba(255,255,255,.25);backdrop-filter:blur(6px);align-items:center;gap:6px;direction:ltr;animation:censorPulse .8s ease-in-out infinite alternate;"></div>'
             + '<div id="kfetCp" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:56px;height:56px;border-radius:50%;background:rgba(0,0,0,.75);color:#fff;z-index:55;pointer-events:none;align-items:center;justify-content:center;border:1.5px solid rgba(255,255,255,.3);backdrop-filter:blur(4px);direction:ltr;line-height:0;"></div>'
@@ -21643,12 +21803,12 @@ var KFV = (function () {
         document.head.appendChild(cs);
         M = document.createElement('div'); M.id = 'kf-editstyle-modal'; M.className = 'custom-modal-overlay';
         M.innerHTML = '<div class="custom-modal-content" style="display:flex;flex-direction:column;overflow:hidden;text-align:start;padding:0;">'
-            + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;flex:none;"><h3 style="margin:0;color:var(--primary);font-size:15px;">دەستکاریکردنی ستایل</h3><button type="button" class="btn btn-outline" id="kfesClose" style="width:auto;padding:4px 12px;font-size:12px;">داخستن</button></div>'
+            + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;flex:none;"><h3 style="margin:0;color:var(--primary);font-size:15px;">دەستکاریکردنی ستایل</h3><span class="kf-qb" style="flex:1;text-align:center;font-size:11px;font-weight:700;color:var(--primary);direction:ltr;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></span><button type="button" class="btn btn-outline" id="kfesClose" style="width:auto;padding:4px 12px;font-size:12px;">داخستن</button></div>'
             + '<div id="kfesVc" style="flex:none;background:#000;"><div id="kfesBox" oncontextmenu="return false" style="position:relative;width:100%;height:36vh;background:#000;overflow:hidden;margin:0 auto;"><video id="kfesV" playsinline disablePictureInPicture disableRemotePlayback controlsList="nodownload noremoteplayback" style="width:100%;height:100%;display:block;object-fit:contain;pointer-events:none;"></video><div id="kfesTxt"></div></div></div>'
             + '<div id="kfesVc2" style="flex:none;"><div style="padding:8px 12px 0;direction:ltr;"><input type="range" id="kfesSl" min="0" max="1000" value="0" step="0.5" style="width:100%;accent-color:var(--primary);height:6px;"></div>'
             + '<div style="display:flex;align-items:center;gap:6px;padding:6px 12px;direction:ltr;"><b id="kfesTime" style="color:var(--primary);font-size:12px;min-width:84px;">0:00:00.00</b><div id="kfesSteps" style="display:flex;gap:5px;flex:1;"></div></div></div>'
             + '<div id="kfesBody" style="flex:1;overflow-y:auto;padding:4px 12px 22px;display:flex;flex-direction:column;gap:10px;">'
-            + '<div class="kfes-p"><div class="kfes-f"><label><span>ستایل <i id="kfesDot" style="display:none;color:#f59e0b;font-style:normal">● گۆڕدراوە</i></span><span id="kfesInfo" style="opacity:.85"></span></label><div id="kfesSel"></div></div>'
+            + '<div class="kfes-p"><div class="kfes-f"><label><span>ستایل <i id="kfesDot" style="display:none;color:#f59e0b;font-style:normal">● گۆڕدراوە</i></span><span id="kfesInfo" style="opacity:.85"></span></label><div id="kfesSel"></div><div style="display:flex;gap:6px;margin-top:6px;"><button type="button" class="btn btn-outline" id="kfesNew" style="flex:1;padding:8px;font-size:12.5px;">+ ستایلی نوێ / کتێبخانە</button></div></div>'
             + '<div class="kfes-f"><label><span>دێڕی نموونە (ستایلەکە لەسەر ئەم دێڕە دەبینرێت)</span></label><div style="display:flex;gap:6px;direction:ltr;"><button type="button" class="btn btn-outline" id="kfesPrev" style="width:auto;padding:6px 14px;">−</button><input id="kfesN" type="number" inputmode="numeric" min="1" class="input-field" placeholder="#" style="direction:ltr;text-align:center;flex:1;min-width:0;"><button type="button" class="btn btn-outline" id="kfesNext" style="width:auto;padding:6px 14px;">+</button><button type="button" class="btn btn-outline" id="kfesSame" style="width:auto;padding:6px 12px;font-size:11.5px;">دێڕی دواتر بەم ستایلە</button></div></div></div>'
             + '<div class="kfes-p" id="kfesG1"><h4>فۆنت و قەبارە</h4></div>'
             + '<div class="kfes-p" id="kfesG2"><h4>ڕەنگەکان</h4></div>'
@@ -21709,27 +21869,85 @@ var KFV = (function () {
         NI.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); go(NI.value); NI.blur(); } }); NI.addEventListener('change', function () { if (NI.value !== '') go(NI.value); });
         $('kfesPrev').onclick = function () { go(Math.max(1, (cur < 0 ? 1 : cur + 1) - 1)); }; $('kfesNext').onclick = function () { go(Math.min(originalData.length, (cur < 0 ? 0 : cur + 1) + 1)); };
         $('kfesSame').onclick = function () { var i = firstLine(sn, cur + 1); if (i < 0) { showToast('هیچ دێڕێک بەم ستایلە نییە', 'warning'); return; } loadLine(i); };
-        $('kfesReset').onclick = function () { W[sn] = O[sn].slice(); refs.forEach(function (f) { f(); }); changed(); };
-        $('kfesUndo').onclick = undo; $('kfesSave').onclick = save; $('kfesClose').onclick = close;
+        $('kfesReset').onclick = function () { if (!O[sn]) { showToast('ئەمە ستایلێکی نوێیە و هێشتا پاشەکەوت نەکراوە', 'info'); return; } W[sn] = O[sn].slice(); refs.forEach(function (f) { f(); }); changed(); };
+        $('kfesNew').onclick = openNew; $('kfesUndo').onclick = undo; $('kfesSave').onclick = save; $('kfesClose').onclick = close;
         window.addEventListener('resize', function () { if (M.style.display === 'flex') exSched(); });
     }
     function tick() { if (V.duration && !V._s) SL.value = V.currentTime / V.duration * 1000; $('kfesTime').textContent = formatTimeASS(V.currentTime || 0); }
     function step(d) { V.currentTime = Math.max(0, Math.min(V.duration || 1e9, (V.currentTime || 0) + d)); tick(); }
     function fit() {
+        try { kfQB(M, V); } catch (e) { }
         var R = res(), vw = V.videoWidth || R.resX, vh = V.videoHeight || R.resY;
         BX.style.aspectRatio = vw + '/' + vh; BX.style.height = 'auto'; BX.style.maxHeight = '36vh'; BX.style.width = 'min(100%, calc(36vh * ' + (vw / vh) + '))'; exSched();
+    }
+
+    // ---------- ستایلی نوێ + کتێبخانەی ستایلەکانی من ----------
+    var LIBK = 'kf_style_lib';
+    function libGet() { try { return JSON.parse(localStorage.getItem(LIBK) || '{}') || {}; } catch (e) { return {}; } }
+    function libPut(o) { try { localStorage.setItem(LIBK, JSON.stringify(o)); return true; } catch (e) { return false; } }
+    function libSave(n) {
+        if (!W[n]) return false; var o = libGet(), r = {};
+        keys.forEach(function (k, i) { if (k !== 'name') r[k] = W[n][i] == null ? '' : W[n][i]; });
+        o[n] = r; return libPut(o);
+    }
+    function cleanName(t) { return String(t || '').replace(/[,\r\n]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 40); }
+    function uniqueName(n) { var b = n || 'MyStyle', x = b, i = 2; while (W[x]) x = b + ' ' + (i++); return x; }
+    function blankVals(n) {
+        var R = res(), d = { fontname: 'Arial', fontsize: String(Math.round(R.resY / 22.5)), primarycolour: '&H00FFFFFF', secondarycolour: '&H000000FF', outlinecolour: '&H00000000', backcolour: '&H80000000', bold: '0', italic: '0', underline: '0', strikeout: '0', scalex: '100', scaley: '100', spacing: '0', angle: '0', borderstyle: '1', outline: '2', shadow: '1', alignment: '2', marginl: '10', marginr: '10', marginv: String(Math.round(R.resY / 22)), encoding: '1' };
+        return keys.map(function (k) { return k === 'name' ? n : (d[k] != null ? d[k] : '0'); });
+    }
+    function addStyle(name, vals) {
+        var n = uniqueName(cleanName(name)); vals = vals.slice(); var ni = idx('name'); if (ni >= 0) vals[ni] = n;
+        names.push(n); W[n] = vals; closeArmed = false; sn = ''; setStyle(n); showToast('ستایلی «' + n + '» زیادکرا؛ دەستکاری بکە و پاشان «پاشەکەوتکردن» بدە', 'success'); return n;
+    }
+    function openNew() {
+        var ov = document.createElement('div'); ov.style.cssText = 'position:fixed;inset:0;z-index:100002;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;padding:14px;';
+        var bx = document.createElement('div'); bx.style.cssText = 'width:min(94vw,420px);max-height:86vh;overflow-y:auto;background:#111827;border:1px solid rgba(255,255,255,.18);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px;text-align:start;direction:rtl;';
+        ov.appendChild(bx);
+        function shut() { ov.remove(); }
+        function paint() {
+            var lib = libGet(), ks = Object.keys(lib);
+            bx.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;"><b style="color:var(--primary);font-size:14px;">ستایلی نوێ</b><button type="button" class="btn btn-outline" id="kfnX" style="width:auto;padding:3px 12px;font-size:12px;">داخستن</button></div>'
+                + '<input id="kfnName" class="input-field" placeholder="ناوی ستایل" style="direction:ltr;text-align:left;">'
+                + '<div style="display:flex;gap:6px;"><button type="button" class="btn" id="kfnCopy" style="flex:1;padding:9px;font-size:12.5px;">کۆپی ستایلی ئێستا</button><button type="button" class="btn btn-outline" id="kfnBlank" style="flex:1;padding:9px;font-size:12.5px;">ستایلی خاوێن</button></div>'
+                + '<button type="button" class="btn btn-outline" id="kfnSaveCur" style="padding:9px;font-size:12.5px;">پاشەکەوتکردنی ستایلی ئێستا لە کتێبخانەی من</button>'
+                + '<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">ستایلەکانی من (' + ks.length + ')</div><div id="kfnLib" style="display:flex;flex-direction:column;gap:6px;"></div>';
+            var L = bx.querySelector('#kfnLib');
+            if (!ks.length) L.innerHTML = '<div style="font-size:11.5px;color:var(--text-muted);text-align:center;padding:8px;">هێشتا هیچ ستایلێک لە کتێبخانەدا نییە. هەر ستایلێکی نوێ کە پاشەکەوتی دەکەیت خۆکارانە دێتە ئێرە.</div>';
+            ks.forEach(function (k) {
+                var r = document.createElement('div'); r.style.cssText = 'display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.06);border:1px solid var(--border-color);border-radius:10px;padding:7px 9px;';
+                var nm = document.createElement('div'); nm.style.cssText = 'flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;direction:ltr;text-align:left;'; nm.textContent = k; r.appendChild(nm);
+                var a = document.createElement('button'); a.type = 'button'; a.className = 'btn'; a.style.cssText = 'width:auto;padding:4px 10px;font-size:11.5px;'; a.textContent = 'زیادکردن';
+                a.onclick = function () { var d = lib[k], base = W[sn] || W[names[0]]; shut(); addStyle(k, keys.map(function (kk, i) { return kk === 'name' ? k : (d[kk] != null ? d[kk] : (base[i] != null ? base[i] : '0')); })); };
+                var x = document.createElement('button'); x.type = 'button'; x.className = 'btn btn-outline'; x.style.cssText = 'width:auto;padding:4px 10px;font-size:11.5px;'; x.textContent = 'سڕینەوە';
+                x.onclick = function () { var o = libGet(); delete o[k]; libPut(o); paint(); };
+                r.appendChild(a); r.appendChild(x); L.appendChild(r);
+            });
+            bx.querySelector('#kfnX').onclick = shut;
+            bx.querySelector('#kfnCopy').onclick = function () { var nm = cleanName(bx.querySelector('#kfnName').value) || (sn + ' copy'); shut(); addStyle(nm, W[sn].slice()); };
+            bx.querySelector('#kfnBlank').onclick = function () { var nm = cleanName(bx.querySelector('#kfnName').value) || 'MyStyle'; shut(); addStyle(nm, blankVals(nm)); };
+            bx.querySelector('#kfnSaveCur').onclick = function () { if (libSave(sn)) { showToast('ستایلی «' + sn + '» لە کتێبخانە پاشەکەوت کرا', 'success'); paint(); } else showToast('نەتوانرا پاشەکەوت بکرێت', 'error'); };
+        }
+        ov.addEventListener('click', function (e) { if (e.target === ov) shut(); });
+        paint(); document.body.appendChild(ov);
     }
 
     // ---------- پاشەکەوتکردن ----------
     function styleName(l) { var m = /^\s*Style\s*:\s*([^,]*),/i.exec(String(l)); return m ? m[1].trim() : null; }
     function save() {
-        var ch = names.filter(dirty);
+        var ch = names.filter(dirty), fresh = names.filter(function (n) { return !O[n]; });
         if (!ch.length) { showToast('هیچ گۆڕانکارییەک نییە بۆ پاشەکەوتکردن', 'info'); return; }
         undoStk.push((assHeaderLines || []).slice()); if (undoStk.length > 20) undoStk.shift();
         assHeaderLines = assHeaderLines.map(function (l) {
             var n = styleName(l); if (n && W[n] && dirty(n)) { var lead = /^\s*/.exec(l)[0]; return lead + 'Style: ' + W[n].join(','); }
             return l;
         });
+        if (fresh.length) {
+            var last = -1; assHeaderLines.forEach(function (l, i) { if (styleName(l) !== null) last = i; });
+            var add = fresh.map(function (n) { return 'Style: ' + W[n].join(','); });
+            if (last >= 0) assHeaderLines.splice.apply(assHeaderLines, [last + 1, 0].concat(add)); else assHeaderLines = assHeaderLines.concat(add);
+            fresh.forEach(function (n) { libSave(n); });
+        }
         var keep = sn; parseStyles(); sn = W[keep] ? keep : names[0]; refs.forEach(function (f) { f(); }); refreshInfo();
         try { saveSession(); } catch (e) { }
         try { kfRefreshPreviewAfterBulkEdit(); } catch (e) { }
@@ -21763,6 +21981,79 @@ var KFV = (function () {
     var ref = $('kf-edittime-btn') || $('kf-addline-btn'), b = document.createElement('button'); b.className = 'top-btn'; b.id = 'kf-editstyle-btn'; b.title = 'دەستکاریکردنی ستایل'; b.setAttribute('onclick', 'kfOpenEditStyle()'); b.style.color = 'var(--primary)';
     b.innerHTML = '<svg class="icon" style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85"><path d="M17 7.6C16.4 5.9 14.6 4.8 12 4.8c-3 0-4.8 1.5-4.8 3.6 0 4.9 10.4 2.3 10.4 7.4 0 2.2-2.1 3.9-5.4 3.9-2.9 0-4.9-1.2-5.6-3.3"/></svg>';
     if (ref) ref.insertAdjacentElement('afterend', b); else { var u = $('btn-undo'); if (u) u.parentNode.insertBefore(b, u); }
+})();
+
+// ================= نیشانەی کوالێتی ڤیدیۆ + سیمبوڵەکان (♪ ...) =================
+(function () {
+    'use strict';
+    window.kfQB = function (M, V) {
+        var b = M && M.querySelector('.kf-qb'); if (!b) return;
+        var w = V && V.videoWidth, h = V && V.videoHeight, from = '';
+        if (!w || !h) { try { var r = getActiveScriptResolution(); w = r.resX; h = r.resY; from = ' (ASS)'; } catch (e) { w = 0; h = 0; } }
+        if (!w || !h) { b.textContent = ''; return; }
+        var m = Math.max(w, h * 16 / 9), hh = Math.min(h, w * 9 / 16 > h ? h : h), q = h >= 4320 ? '8K' : h >= 2160 ? '4K' : h >= 1440 ? '1440p' : h >= 1080 ? '1080p' : h >= 720 ? '720p' : h >= 480 ? '480p' : h + 'p';
+        if (w >= 3800) q = '4K'; else if (w >= 2500 && h < 2160) q = '1440p'; else if (w >= 1900 && h < 1080) q = '1080p';
+        b.textContent = q + ' · ' + w + '×' + h + from;
+    };
+
+    var GROUPS = [
+        ['گۆرانی', ['♪', '♫', '♬', '♩', '♭', '♮', '♯', '🎵', '🎶', '🎤', '🎧', '🎼']],
+        ['ئاماژە', ['→', '←', '↑', '↓', '↔', '⇒', '⇐', '▶', '◀', '▲', '▼', '➜', '➤', '✓', '✗', '✔', '✘']],
+        ['هێما', ['♥', '♡', '★', '☆', '☺', '☻', '☀', '☁', '☂', '☎', '✉', '⚠', '⚡', '✦', '✧', '❤', '✿', '❀', '☠', '☮', '☯']],
+        ['ڕێزمان', ['«', '»', '“', '”', '‘', '’', '„', '…', '–', '—', '•', '·', '¿', '¡', '‹', '›', '§', '¶', '†', '‡', '‼', '⁉']],
+        ['ژمارە', ['±', '×', '÷', '≈', '≠', '≤', '≥', '∞', '°', '′', '″', '½', '¼', '¾', '²', '³', '‰', '√', 'π', 'Ω', 'µ']],
+        ['پارە و نیشان', ['$', '€', '£', '¥', '¢', '₹', '₺', '₩', '©', '®', '™', '№', '@', '#', '&', '%']],
+        ['ئاڕاستە', ['‏', '‎', '‌', '‍', '؜']]
+    ];
+    var NAMES = { '‏': 'RLM ڕاستەوچەپ', '‎': 'LRM چەپەوڕاست', '‌': 'ZWNJ نیوەبۆشایی', '‍': 'ZWJ پێکەوەلکاندن', '؜': 'ALM عەرەبی' };
+    var last = null, sheet = null, tab = 0, RK = 'kf_sym_recent';
+    function editable(e) { return e && ((e.tagName === 'TEXTAREA') || (e.tagName === 'INPUT' && /^(text|search|)$/i.test(e.type || ''))) && !e.readOnly && !e.disabled; }
+    document.addEventListener('focusin', function (e) { if (editable(e.target) && !(sheet && sheet.contains(e.target))) last = e.target; }, true);
+    function recent() { try { return JSON.parse(localStorage.getItem(RK) || '[]') || []; } catch (e) { return []; } }
+    function pushRecent(s) { try { var r = recent().filter(function (x) { return x !== s; }); r.unshift(s); localStorage.setItem(RK, JSON.stringify(r.slice(0, 16))); } catch (e) { } }
+    function insert(sym) {
+        var el = last;
+        if (el && document.body.contains(el) && editable(el)) {
+            var a = el.selectionStart == null ? el.value.length : el.selectionStart, b = el.selectionEnd == null ? a : el.selectionEnd;
+            try { el.focus({ preventScroll: true }); } catch (e) { try { el.focus(); } catch (x) { } }
+            try { el.setRangeText(sym, a, b, 'end'); } catch (e) { el.value = el.value.slice(0, a) + sym + el.value.slice(b); try { el.selectionStart = el.selectionEnd = a + sym.length; } catch (x) { } }
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+        } else {
+            try { navigator.clipboard.writeText(sym); showToast('خانەی نووسین هەڵنەبژێردراوە؛ سیمبوڵەکە کۆپی کرا', 'info'); } catch (e) { showToast('یەکەم جار کرتە لە خانەی نووسین بکە', 'warning'); }
+        }
+        pushRecent(sym);
+    }
+    function draw() {
+        var g = sheet.querySelector('.kfsy-g'), tb = sheet.querySelector('.kfsy-t'); g.innerHTML = ''; tb.innerHTML = '';
+        var all = [['دوایین', recent()]].concat(GROUPS);
+        all.forEach(function (gr, i) {
+            var c = document.createElement('button'); c.type = 'button'; c.textContent = gr[0]; c.className = 'kfsy-c' + (i === tab ? ' on' : ''); c.onclick = function () { tab = i; draw(); }; tb.appendChild(c);
+        });
+        var items = all[tab][1];
+        if (!items.length) { g.innerHTML = '<div style="grid-column:1/-1;text-align:center;font-size:12px;color:var(--text-muted);padding:12px;">هێشتا هیچ سیمبوڵێکت بەکارنەهێناوە</div>'; return; }
+        items.forEach(function (s) {
+            var b = document.createElement('button'); b.type = 'button'; b.className = 'kfsy-b'; b.textContent = NAMES[s] ? 'U+' + s.charCodeAt(0).toString(16).toUpperCase() : s; if (NAMES[s]) { b.style.fontSize = '10px'; b.title = NAMES[s]; b.textContent = NAMES[s].split(' ')[0]; }
+            b.addEventListener('mousedown', function (e) { e.preventDefault(); }); b.onclick = function () { insert(s); };
+            g.appendChild(b);
+        });
+    }
+    window.kfSymbols = function () {
+        if (!sheet) {
+            var st = document.createElement('style');
+            st.textContent = '.kfsy{position:fixed;left:0;right:0;bottom:0;z-index:100001;background:#111827;border-top:1px solid rgba(255,255,255,.2);border-radius:16px 16px 0 0;padding:8px 10px 12px;box-shadow:0 -10px 30px rgba(0,0,0,.55);direction:rtl;}.kfsy-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:13px;color:var(--primary);font-weight:700;}.kfsy-t{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;}.kfsy-c{flex:none;padding:5px 12px;border-radius:999px;border:1px solid var(--border-color);background:transparent;color:var(--text-main);font-family:inherit;font-size:12px;cursor:pointer;}.kfsy-c.on{background:var(--primary);color:#0b1220;font-weight:700;}.kfsy-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:6px;max-height:34vh;overflow-y:auto;direction:ltr;}.kfsy-b{height:44px;border-radius:10px;border:1px solid var(--border-color);background:rgba(255,255,255,.07);color:#fff;font-size:20px;cursor:pointer;font-family:inherit;padding:0;}.kfsy-b:active{background:var(--primary);color:#0b1220;}';
+            document.head.appendChild(st);
+            sheet = document.createElement('div'); sheet.className = 'kfsy'; sheet.style.display = 'none';
+            sheet.innerHTML = '<div class="kfsy-h"><span>سیمبوڵەکان (کرتە لە خانەی نووسین بکە، پاشان سیمبوڵ هەڵبژێرە)</span><button type="button" class="btn btn-outline" style="width:auto;padding:3px 12px;font-size:12px;" id="kfsyX">داخستن</button></div><div class="kfsy-t"></div><div class="kfsy-g"></div>';
+            document.body.appendChild(sheet); sheet.querySelector('#kfsyX').onclick = function () { sheet.style.display = 'none'; };
+            sheet.addEventListener('mousedown', function (e) { if (e.target.tagName !== 'BUTTON') e.preventDefault(); });
+        }
+        if (sheet.style.display === 'none') { tab = recent().length ? 0 : 1; draw(); sheet.style.display = 'block'; } else sheet.style.display = 'none';
+    };
+    var ref = document.getElementById('kf-editstyle-btn');
+    if (ref && !document.getElementById('kf-sym-btn')) {
+        var b = document.createElement('button'); b.className = 'top-btn'; b.id = 'kf-sym-btn'; b.title = 'سیمبوڵەکان (♪)'; b.type = 'button'; b.setAttribute('onclick', 'kfSymbols()'); b.style.cssText = 'color:var(--primary);font-size:17px;line-height:1;'; b.textContent = '♪';
+        ref.insertAdjacentElement('afterend', b);
+    }
 })();
 </script>
 <style id="kf-cr-fullbleed">

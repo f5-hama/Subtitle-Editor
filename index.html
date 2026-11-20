@@ -2673,7 +2673,11 @@ function kfTogglePw(btn){
         try {
             let el = document.getElementById('mkvDiagLine');
             if (!el) { const pc = document.getElementById('mkvProgressContainer'); if (pc && pc.parentNode) { el = document.createElement('div'); el.id = 'mkvDiagLine'; el.style.cssText = 'margin:8px 4px;font-size:12px;line-height:1.9;opacity:.85;direction:rtl;text-align:right;word-break:break-word'; pc.parentNode.insertBefore(el, pc.nextSibling); } }
-            if (el) { el.innerHTML = ''; const d = document.createElement('div'); d.dir = 'rtl'; d.textContent = mkvRtl(l1); el.appendChild(d); }
+            if (el) { el.innerHTML = ''; const d = document.createElement('div'); d.dir = 'rtl'; d.textContent = mkvRtl(l1); el.appendChild(d);
+                const fsz = (currentMkvFile && currentMkvFile.size) || 0;
+                const d2 = document.createElement('div'); d2.dir = 'ltr'; d2.style.cssText = 'font-family:monospace;font-size:11px;opacity:.8;text-align:left;word-break:break-all;';
+                d2.textContent = 'TEST: file=' + (fsz / 1048576).toFixed(0) + 'MB read=' + mb.toFixed(0) + 'MB (' + (fsz ? (mb * 1048576 / fsz * 100).toFixed(0) : 0) + '%) reads=' + mkvIoStat.n + ' cue=' + mkvIoStat.cue + ' noRel=' + mkvIoStat.rn + ' whole=' + mkvIoStat.wh + ' sparse=' + mkvIoStat.sp + ' t=' + sec.toFixed(2) + 's calA=' + mkvIoA.toFixed(1) + 'ms calBW=' + (mkvIoBW / 1048.576).toFixed(0) + 'MB/s thr=' + Math.round(mkvIoThr / 1024) + 'KB';
+                el.appendChild(d2); }
         } catch (_) { }
         showToast(mkvRtl(l1), 'success');
     }

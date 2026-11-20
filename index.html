@@ -34,7 +34,7 @@ function createRendererFontLoader(urls, fetchFile = fetch) {
 .kf-time-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
 .kf-time-actions .btn { margin: 0; }
 .kf-time-note { font-size: 12px; color: var(--text-muted); line-height: 1.8; margin: 8px 0; text-align: center; }
-.kf-first-time { direction: ltr; text-align: center; font-size: 13px; color: var(--kf-ink, var(--primary)); margin: 8px 0; }
+.kf-first-time { direction: ltr; text-align: center; font-size: 13px; color: var(--primary); margin: 8px 0; }
 .kf-font-suggestions { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
 .kf-font-suggestions .btn { width: auto; margin: 0; padding: 5px 10px; font-size: 12px; }
 .kf-audit-target { outline: 2px solid var(--primary); outline-offset: -2px; }
@@ -43,7 +43,7 @@ function createRendererFontLoader(urls, fetchFile = fetch) {
 .kf-codec-help .btn { margin: 8px 0 0; }
 #kf-exact-drag { position: absolute; pointer-events: none; z-index: 4; }
 .kf-exact #vDraggableSubText .ass-blk { visibility: hidden; }
-.kf-exact #vDraggableSubText::after { content: '+'; position: absolute; top: -12px; left: -8px; color: var(--kf-ink, var(--primary)); font-size: 24px; }
+.kf-exact #vDraggableSubText::after { content: '+'; position: absolute; top: -12px; left: -8px; color: var(--primary); font-size: 24px; }
 html:root body #code-review-panel { position: static; width: 100%; margin: 10px 0 0; max-height: 42vh; box-sizing: border-box; grid-column: 1 / -1; }
 html:root body #searchBarPanel { position: fixed !important; left: 50% !important; right: auto !important; transform: translateX(-50%) !important; width: min(520px, calc(100% - 24px)) !important; box-sizing: border-box; }
 @media (min-width: 768px) {
@@ -60,8 +60,6 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
 </style>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#080a0d">
-    <script>try{if(localStorage.getItem('kf_theme')==='light'){document.documentElement.setAttribute('data-theme','light');var _tc=document.querySelector('meta[name="theme-color"]');if(_tc)_tc.setAttribute('content','#eef2f8');}}catch(e){}</script>
-    <style id="kf-light-critical">html[data-theme="light"]:root{background-color:#eef2f8 !important;background-image:none !important;color-scheme:light}html[data-theme="light"] #kf-bg{background-color:#eef2f8 !important;background-image:none !important}</style>
 
     <style id="kf-shell-critical">
     /* مێنیو و شریتی سەرەوە تا ئامادە نەبن نابینرێن (ڕێگری لە تروسکەی مێنیو لە کاتی کردنەوەی ماڵپەڕ) */
@@ -491,9 +489,9 @@ function deleteEmptySubtitleLines() {
             transform: translateY(-2px);
         }
         .file-box input[type="file"] { position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 2; }
-        .file-box .upload-icon { color: var(--kf-ink, var(--primary)) !important; margin-bottom: 6px; transition: transform 0.25s ease; }
+        .file-box .upload-icon { color: var(--primary) !important; margin-bottom: 6px; transition: transform 0.25s ease; }
         .file-box:hover .upload-icon { transform: scale(1.08); }
-        .file-box label { font-weight: bold; color: var(--kf-ink, var(--primary)) !important; display: block; margin-bottom: 4px !important; font-size: 13.5px; pointer-events: none; }
+        .file-box label { font-weight: bold; color: var(--primary) !important; display: block; margin-bottom: 4px !important; font-size: 13.5px; pointer-events: none; }
         .file-name-display { font-size: 12px; color: var(--text-muted) !important; font-weight: bold; pointer-events: none; word-break: break-all; }
         
         .clear-file-btn { position: absolute; top: 8px; right: 8px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10; transition: transform 0.2s; }
@@ -589,9 +587,9 @@ function deleteEmptySubtitleLines() {
             transform: translateY(-2px);
         }
         .file-box input[type="file"] { position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 2; }
-        .file-box .upload-icon { color: var(--kf-ink, var(--primary)); margin-bottom: 6px; transition: transform 0.25s ease; }
+        .file-box .upload-icon { color: var(--primary); margin-bottom: 6px; transition: transform 0.25s ease; }
         .file-box:hover .upload-icon { transform: scale(1.08); }
-        .file-box label { font-weight: bold; color: var(--kf-ink, var(--primary)); display: block; margin-bottom: 4px !important; font-size: 13.5px; pointer-events: none; }
+        .file-box label { font-weight: bold; color: var(--primary); display: block; margin-bottom: 4px !important; font-size: 13.5px; pointer-events: none; }
         .file-name-display { font-size: 12px; color: var(--text-muted); font-weight: bold; pointer-events: none; word-break: break-all; }
         
         .clear-file-btn { position: absolute; top: 8px; right: 8px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10; transition: transform 0.2s; }
@@ -617,8 +615,8 @@ function deleteEmptySubtitleLines() {
         }
         .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px var(--primary-glow) !important; }
         .btn:active { transform: scale(0.97); }
-        .btn-outline { background: rgba(255, 255, 255, 0.04) !important; color: var(--kf-ink, var(--primary)) !important; border: 1.5px solid var(--primary) !important; box-shadow: none !important; }
-        .btn-outline:hover, .btn-outline:active { background: var(--primary-glow) !important; color: var(--kf-ink, var(--primary)) !important; border-color: var(--primary) !important; }
+        .btn-outline { background: rgba(255, 255, 255, 0.04) !important; color: var(--primary) !important; border: 1.5px solid var(--primary) !important; box-shadow: none !important; }
+        .btn-outline:hover, .btn-outline:active { background: var(--primary-glow) !important; color: var(--primary) !important; border-color: var(--primary) !important; }
         
         .fmt-btn { background: #12171c; color: var(--text-main); border: 1.5px solid #232a31; padding: 8px 12px; flex: 1; border-radius: 10px; font-weight: bold; cursor: pointer; transition: all 0.2s; font-size: 13px; }
         .fmt-btn:active { transform: scale(0.96); }
@@ -673,7 +671,7 @@ function deleteEmptySubtitleLines() {
             flex-shrink: 0;
         }
         .top-btn:active, .back-btn:active { transform: scale(0.92); }
-        .top-btn.primary-tool { color: var(--kf-ink, var(--primary)); border-color: var(--primary); }
+        .top-btn.primary-tool { color: var(--primary); border-color: var(--primary); }
         .top-btn.danger-tool { color: var(--danger); border-color: var(--danger); }
         /* ===== دۆخی دیاریکردنی دێڕەکان ===== */
         .subtitle-card { position: relative !important; }
@@ -720,7 +718,7 @@ function deleteEmptySubtitleLines() {
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
         .subtitle-header { display: flex; justify-content: space-between; align-items: center; background: var(--bg-color); padding: 6px 10px; border-radius: 8px; margin-bottom: 10px; border-bottom: 1px dashed var(--border-color); }
-        .subtitle-line-num { font-size: 13px; font-weight: bold; color: var(--kf-ink, var(--primary)); direction: ltr; }
+        .subtitle-line-num { font-size: 13px; font-weight: bold; color: var(--primary); direction: ltr; }
         .subtitle-time { font-size: 12px; color: var(--text-muted); direction: ltr; }
         
         .subtitle-orig { 
@@ -757,7 +755,7 @@ function deleteEmptySubtitleLines() {
         
         
         
-        .play-sub-btn { background: var(--bg-color); border: 1px solid var(--primary); color: var(--kf-ink, var(--primary)); border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s; }
+        .play-sub-btn { background: var(--bg-color); border: 1px solid var(--primary); color: var(--primary); border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s; }
         .play-sub-btn:hover { transform: scale(1.1); }
         
         .delete-sub-btn { 
@@ -795,7 +793,7 @@ function deleteEmptySubtitleLines() {
 #editor-screen { 
     padding-bottom: 20px !important; 
 }
-        .btn-outline { background: rgba(255, 255, 255, 0.05) !important; color: var(--kf-ink, var(--primary)) !important; border: 1.5px solid var(--primary) !important; }
+        .btn-outline { background: rgba(255, 255, 255, 0.05) !important; color: var(--primary) !important; border: 1.5px solid var(--primary) !important; }
         
         body.keyboard-open .action-bar {
             transform: translateY(120%);
@@ -900,7 +898,7 @@ function deleteEmptySubtitleLines() {
             border: 1px solid var(--border-color); margin: 0 auto;
         }
         .v-nudge-btn {
-            position: absolute; background: transparent; border: none; color: var(--kf-ink, var(--primary));
+            position: absolute; background: transparent; border: none; color: var(--primary);
             width: 30px; height: 30px; padding: 0; cursor: pointer; border-radius: 50%;
             display: flex; align-items: center; justify-content: center; transition: all .12s ease;
         }
@@ -921,7 +919,7 @@ function deleteEmptySubtitleLines() {
             font-size: 10px; padding: 5px 2px; border-radius: 8px; cursor: pointer; transition: all .15s ease;
         }
         .v-align-btn svg { width: 20px; height: 20px; color: #e2e8f0; }
-        .v-align-btn:active { background: rgba(142, 182, 155, 0.18); border-color: var(--primary); color: var(--kf-ink, var(--primary)); }
+        .v-align-btn:active { background: rgba(142, 182, 155, 0.18); border-color: var(--primary); color: var(--primary); }
 
         
         .custom-modal-actions { 
@@ -975,7 +973,7 @@ function deleteEmptySubtitleLines() {
     pointer-events: auto !important;
 }
         .custom-select-item { padding: 6px 10px; font-size: 12px; cursor: pointer; color: var(--text-main); text-align: center; font-weight: bold; border-radius: 6px; transition: background 0.15s; }
-        .custom-select-item:hover { background: var(--bg-color); color: var(--kf-ink, var(--primary)); }
+        .custom-select-item:hover { background: var(--bg-color); color: var(--primary); }
 
         
 
@@ -1036,7 +1034,7 @@ html.kf-wide .action-bar .btn-outline { width: auto; min-width: 170px; padding: 
 .style-sub-btn {
     background: var(--bg-color);
     border: 1px solid var(--primary);
-    color: var(--kf-ink, var(--primary));
+    color: var(--primary);
     border-radius: 50%;
     width: 24px;
     height: 24px;
@@ -1074,7 +1072,7 @@ html.kf-wide .action-bar .btn-outline { width: auto; min-width: 170px; padding: 
 .pos-btn.active {
     border-color: var(--primary);
     background: var(--primary-glow);
-    color: var(--kf-ink, var(--primary));
+    color: var(--primary);
 }
 
 /* پالتەی ڕەنگە مۆدێرن و تایبەتەکانی ژێرنووس */
@@ -1232,7 +1230,7 @@ html.kf-wide .action-bar .btn-outline { width: auto; min-width: 170px; padding: 
     transition: transform 0.15s, color 0.15s;
 }
 .c-ctrl-btn:hover {
-    color: var(--kf-ink, var(--primary));
+    color: var(--primary);
     transform: scale(1.15);
 }
 .c-time-display {
@@ -1300,7 +1298,7 @@ html.kf-wide .action-bar .btn-outline { width: auto; min-width: 170px; padding: 
 }
 .v-target-btn.active {
     border-color: var(--primary);
-    color: var(--kf-ink, var(--primary));
+    color: var(--primary);
     background: rgba(142, 182, 155, 0.16);
 }
 
@@ -1435,7 +1433,7 @@ html.kf-wide .action-bar .btn-outline { width: auto; min-width: 170px; padding: 
 .tech-toggle-btn.active {
     border-color: var(--primary);
     background: var(--primary-glow);
-    color: var(--kf-ink, var(--primary));
+    color: var(--primary);
 }
 .tech-input {
     width: 65px;
@@ -1545,7 +1543,7 @@ html:root body .kf-logo-mini {
 }
 html:root body .kf-logo-mini span,
 html:root body .kf-logo-mini b { font-weight: 400; }
-html:root body .kf-logo-mini b { color: var(--kf-ink, var(--primary)); transition: color .4s ease; text-shadow: 0 0 12px var(--primary-glow); }
+html:root body .kf-logo-mini b { color: var(--primary); transition: color .4s ease; text-shadow: 0 0 12px var(--primary-glow); }
 
 /* ٤. نامەکان (toast): ناوی فایلی زۆر درێژ دەشکێت بۆ چەند دێڕ و لە شاشە دەرناچێت */
 html:root body #toast-container {
@@ -1664,7 +1662,7 @@ if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY") {
 }
 #kf-prof-sheet.in .kf-ps-card { transform: none; }
 .kf-ps-grip { width: 38px; height: 4px; border-radius: 4px; background: rgba(255,255,255,.2); margin: -10px auto 0; }
-.kf-ps-title { font-size: 17px; font-weight: 800; color: var(--kf-ink, var(--primary, #8EB69B)); text-align: center; }
+.kf-ps-title { font-size: 17px; font-weight: 800; color: var(--primary, #8EB69B); text-align: center; }
 .kf-ps-photo { display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .kf-ps-photo .kf-av { width: 96px; height: 96px; font-size: 38px; }
 .kf-ps-photo-actions { display: flex; gap: 8px; align-items: center; }
@@ -1683,7 +1681,7 @@ if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY") {
 .kf-ps-field input:focus { border-color: var(--primary, #8EB69B); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary, #8EB69B) 22%, transparent); }
 .kf-ps-note { font-size: 11.5px; color: #7c8aa3; line-height: 1.8; text-align: center; margin: -4px 0 0; }
 .kf-ps-msg { min-height: 18px; font-size: 12.5px; font-weight: 700; text-align: center; color: #fca5a5; }
-.kf-ps-msg.ok { color: var(--kf-ink, var(--primary, #8EB69B)); }
+.kf-ps-msg.ok { color: var(--primary, #8EB69B); }
 .kf-ps-btns { display: flex; gap: 10px; }
 .kf-ps-btn { flex: 1; padding: 13px 10px; border-radius: 14px; font: inherit; font-size: 15px; font-weight: 800; cursor: pointer; border: 1.5px solid transparent; transition: filter .2s, background .2s; }
 .kf-ps-btn.primary { background: var(--primary, #8EB69B); color: #0b101c; }
@@ -1722,7 +1720,7 @@ html.kf-wide .kf-ps-grip { display: none; }
 #techFontName, #mergeFontInput { appearance: none; -webkit-appearance: none; }
 .kf-tuner { display: none; width: 100%; max-width: 100%; box-sizing: border-box; flex: 0 0 auto; margin: 6px 0 8px; padding: 8px 10px; border-radius: 10px; background: rgba(0,0,0,.28); border: 1px solid var(--border-color); direction: rtl; }
 .kf-tuner.open { display: block; }
-.kf-tuner .kft-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 11px; font-weight: 700; color: var(--kf-ink, var(--primary)); }
+.kf-tuner .kft-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 11px; font-weight: 700; color: var(--primary); }
 .kf-tuner .kft-title { flex: 1; }
 .kf-tuner .kft-sw { width: 18px; height: 18px; border-radius: 5px; border: 1px solid rgba(255,255,255,.35); }
 .kf-tuner .kft-hex { direction: ltr; font-size: 10.5px; font-weight: 700; color: var(--text-muted); }
@@ -1764,7 +1762,7 @@ html:root body #toast-container .toast.kf-t.kf-in { animation: kfTIn .5s cubic-b
 .kfp-ov { position: fixed; inset: 0; z-index: 100000; display: none; align-items: center; justify-content: center; padding: 16px; box-sizing: border-box; background: rgba(0,0,0,.6); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
 .kfp-ov.open { display: flex; }
 .kfp-sheet { width: min(330px, 100%); box-sizing: border-box; padding: 14px; border-radius: 20px; background: rgba(22,28,42,.98); border: 1px solid rgba(255,255,255,.12); box-shadow: 0 18px 50px rgba(0,0,0,.6); direction: rtl; color: #eef2f7; }
-.kfp-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; font-size: 13px; font-weight: 800; color: var(--kf-ink, var(--primary)); }
+.kfp-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; font-size: 13px; font-weight: 800; color: var(--primary); }
 .kfp-x { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border-color); background: transparent; color: inherit; display: grid; place-items: center; cursor: pointer; padding: 0; }
 .kfp-x svg { width: 14px; height: 14px; }
 .kfp-wheelwrap { position: relative; width: 240px; height: 240px; max-width: 100%; margin: 0 auto 12px; touch-action: none; }
@@ -1786,7 +1784,7 @@ html:root body #toast-container .toast.kf-t.kf-in { animation: kfTIn .5s cubic-b
 .kfp-foot .btn { flex: 1; width: auto; margin: 0; }
 
 /* ---------- باکگراوندەکان (٥ شێواز): هەموو لە چارەکی سەرەوە دیارن و بەرەبەرە لەناو دەچن ---------- */
-.kf-web { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; contain: strict; color: var(--kf-ink, var(--primary, #F5C542)); }
+.kf-web { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; contain: strict; color: var(--primary, #F5C542); }
 .kf-web > * { display: none; }
 html:not([data-kf-bg]) .kf-web .kfb-net, html[data-kf-bg="net"] .kf-web .kfb-net,
 html[data-kf-bg="aurora"] .kf-web .kfb-aurora, html[data-kf-bg="hex"] .kf-web .kfb-hex,
@@ -1834,12 +1832,12 @@ html[data-kf-bg="wave"] .kf-web .kfb-wave, html[data-kf-bg="stars"] .kf-web .kfb
 .kf-bgpick-row { display: flex; gap: 7px; }
 .kf-bgtile { flex: 1 1 0; min-width: 0; padding: 3px; border: 2px solid transparent; border-radius: 12px; background: transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; color: var(--text-muted); font-family: inherit; transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; -webkit-tap-highlight-color: transparent; }
 .kf-bgtile:active { transform: scale(.94); }
-.kf-bgprev { position: relative; display: block; width: 100%; aspect-ratio: 1 / 1.08; border-radius: 9px; overflow: hidden; background: #0a0e17; border: 1px solid rgba(255,255,255,.09); color: var(--kf-ink, var(--primary)); }
+.kf-bgprev { position: relative; display: block; width: 100%; aspect-ratio: 1 / 1.08; border-radius: 9px; overflow: hidden; background: #0a0e17; border: 1px solid rgba(255,255,255,.09); color: var(--primary); }
 .kf-bgprev svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; filter: drop-shadow(0 0 0 currentColor) drop-shadow(0 0 0 currentColor); }
 .kf-bgprev-aurora { background: radial-gradient(75% 60% at 14% 0%, var(--primary-glow, rgba(245,197,66,.35)), transparent 76%), radial-gradient(60% 50% at 92% 4%, var(--primary-glow, rgba(245,197,66,.35)), transparent 74%), #0a0e17; background-repeat: no-repeat; }
 .kf-bgname { font-size: 10.5px; font-weight: 700; line-height: 1.2; }
 .kf-bgtile.active { border-color: var(--primary); box-shadow: 0 0 10px var(--primary-glow, rgba(245,197,66,.35)); }
-.kf-bgtile.active .kf-bgname { color: var(--kf-ink, var(--primary)); }
+.kf-bgtile.active .kf-bgname { color: var(--primary); }
 
 /* ---------- ئاگادارکردنەوەی ڤیدیۆی نەخوێنراو + پەنجەرەی چارەسەر ---------- */
 .kfv-banner { position: absolute; left: 8px; right: 8px; top: 8px; z-index: 40; display: flex; align-items: center; gap: 9px; padding: 9px 10px; border-radius: 14px; background: rgba(20, 26, 38, .97); border: 1px solid rgba(251, 191, 36, .5); box-shadow: 0 8px 22px rgba(0, 0, 0, .5); direction: rtl; color: #fde68a; font-size: 12px; line-height: 1.5; }
@@ -1853,7 +1851,7 @@ html[data-kf-bg="wave"] .kf-web .kfb-wave, html[data-kf-bg="stars"] .kf-web .kfb
 .kfv-ov { position: fixed; inset: 0; z-index: 100000; display: none; align-items: center; justify-content: center; padding: 14px; box-sizing: border-box; background: rgba(0, 0, 0, .64); }
 .kfv-ov.open { display: flex; }
 .kfv-sheet { width: min(430px, 100%); max-height: 90vh; overflow-y: auto; overscroll-behavior: contain; box-sizing: border-box; padding: 14px; border-radius: 20px; background: rgba(22, 28, 42, .98); border: 1px solid rgba(255, 255, 255, .12); box-shadow: 0 18px 50px rgba(0, 0, 0, .6); direction: rtl; color: #eef2f7; font-size: 12.5px; line-height: 1.75; }
-.kfv-sheet h3 { margin: 0 0 6px; font-size: 14px; color: var(--kf-ink, var(--primary)); }
+.kfv-sheet h3 { margin: 0 0 6px; font-size: 14px; color: var(--primary); }
 .kfv-sheet p { margin: 6px 0; }
 .kfv-info { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; padding: 9px 11px; margin: 8px 0; border-radius: 12px; background: rgba(0, 0, 0, .26); border: 1px solid var(--border-color); font-size: 12px; }
 .kfv-info span { color: var(--text-muted); }
@@ -1919,7 +1917,7 @@ html[data-kf-bg="wave"] .kf-web .kfb-wave, html[data-kf-bg="stars"] .kf-web .kfb
   display: flex; gap: .55em; white-space: nowrap; margin-right: -.2em;
 }
 .auth-loader-logo .w { display: inline-flex; }
-.auth-loader-logo .w.f { color: var(--kf-ink, var(--primary)); text-shadow: 0 0 18px var(--primary-glow); }
+.auth-loader-logo .w.f { color: var(--primary); text-shadow: 0 0 18px var(--primary-glow); }
 .auth-loader-logo .l {
   display: inline-block; opacity: 0; transform: translateY(10px); filter: blur(6px);
   animation: kfLetter .6s cubic-bezier(.2,.7,.2,1) forwards; animation-delay: calc(1.15s + var(--i) * .07s);
@@ -1967,7 +1965,7 @@ html[data-kf-bg="wave"] .kf-web .kfb-wave, html[data-kf-bg="stars"] .kf-web .kfb
 .auth-logo .kf-mark { width: 54px; height: 62px; margin: 0 auto 14px; display: block; }
 .auth-logo .kf-mark .tier, .auth-logo .kf-mark .trunk { animation: none; stroke-dashoffset: 0; fill: var(--primary-glow); }
 .auth-logo .kf-mark .trunk { fill: none; }
-.auth-logo b { color: var(--kf-ink, var(--primary)); font-weight: 400; text-shadow: 0 0 18px var(--primary-glow); }
+.auth-logo b { color: var(--primary); font-weight: 400; text-shadow: 0 0 18px var(--primary-glow); }
 .auth-logo small {
   display: block; font-family: 'IBMPlexSansArabic', Tahoma, sans-serif; font-size: 13px; letter-spacing: 0;
   color: var(--text-muted); margin-top: 8px; direction: rtl;
@@ -1999,7 +1997,7 @@ html[data-kf-bg="wave"] .kf-web .kfb-wave, html[data-kf-bg="stars"] .kf-web .kfb
   position: absolute; top: 50%; right: 15px; transform: translateY(-50%); width: 19px; height: 19px;
   color: #64748b; pointer-events: none; transition: color .2s;
 }
-.auth-field:focus-within > .ic { color: var(--kf-ink, var(--primary)); }
+.auth-field:focus-within > .ic { color: var(--primary); }
 .auth-form input {
   width: 100%; box-sizing: border-box; padding: 14px 46px 14px 16px; border-radius: 15px;
   border: 1.5px solid rgba(255,255,255,.09); background: rgba(6,8,11,.75) !important; color: #f1f5f9 !important;
@@ -2015,7 +2013,7 @@ html[data-kf-bg="wave"] .kf-web .kfb-wave, html[data-kf-bg="stars"] .kf-web .kfb
   background: transparent; color: #64748b; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center;
   transition: color .2s, background .2s;
 }
-.auth-eye:hover { color: var(--kf-ink, var(--primary)); background: rgba(255,255,255,.05); }
+.auth-eye:hover { color: var(--primary); background: rgba(255,255,255,.05); }
 .auth-eye svg { width: 19px; height: 19px; }
 .auth-eye .off { display: none; }
 .auth-eye.on .off { display: block; }
@@ -2038,7 +2036,7 @@ html[data-kf-bg="wave"] .kf-web .kfb-wave, html[data-kf-bg="stars"] .kf-web .kfb
 .auth-msg.ok:not(:empty) { background: rgba(16,185,129,.09); border-color: rgba(16,185,129,.28); }
 .auth-msg.ok { color: var(--success); }
 .auth-links { text-align: center; margin-top: 16px; font-size: 13.5px; line-height: 1.7; }
-.auth-links a { color: var(--kf-ink, var(--primary)); cursor: pointer; text-decoration: none; font-weight: bold; }
+.auth-links a { color: var(--primary); cursor: pointer; text-decoration: none; font-weight: bold; }
 .auth-links a:hover { text-decoration: underline; text-underline-offset: 4px; }
 .auth-links span { display: block; color: #64748b; font-size: 12px; margin-top: 2px; }
 .auth-divider { display: flex; align-items: center; gap: 12px; margin: 18px 0 14px; color: var(--text-muted); font-size: 12.5px; }
@@ -2081,7 +2079,7 @@ html[data-kf-bg="wave"] .kf-web .kfb-wave, html[data-kf-bg="stars"] .kf-web .kfb
 .owner-head { position: relative; text-align: center; margin-bottom: 18px; }
 .owner-crest {
   width: 54px; height: 54px; margin: 0 auto 12px; border-radius: 18px; display: flex; align-items: center; justify-content: center;
-  color: var(--kf-ink, var(--primary)); background: linear-gradient(145deg, var(--primary-glow), rgba(255,255,255,.03));
+  color: var(--primary); background: linear-gradient(145deg, var(--primary-glow), rgba(255,255,255,.03));
   border: 1px solid var(--primary); box-shadow: 0 0 26px var(--primary-glow);
 }
 .owner-crest svg { width: 27px; height: 27px; }
@@ -2124,7 +2122,7 @@ html[data-kf-bg="wave"] .kf-web .kfb-wave, html[data-kf-bg="stars"] .kf-web .kfb
 .user-avatar {
   flex: 0 0 40px; width: 40px; height: 40px; border-radius: 14px; display: flex; align-items: center; justify-content: center;
   font-family: system-ui, sans-serif; font-weight: 700; font-size: 16px; text-transform: uppercase;
-  color: var(--kf-ink, var(--primary)); background: var(--primary-glow); border: 1px solid rgba(255,255,255,.08);
+  color: var(--primary); background: var(--primary-glow); border: 1px solid rgba(255,255,255,.08);
 }
 .user-row.is-pending .user-avatar { color: #fbbf24; background: rgba(251,191,36,.12); }
 .user-row.is-rejected .user-avatar { color: #f87171; background: rgba(239,68,68,.12); }
@@ -2139,7 +2137,7 @@ html[data-kf-bg="wave"] .kf-web .kfb-wave, html[data-kf-bg="stars"] .kf-web .kfb
 .st-pill.status-rejected { color: #f87171; background: rgba(239,68,68,.12); }
 @keyframes kfPulse { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
 .user-row .owner-badge {
-  display: inline-flex; align-items: center; gap: 4px; background: var(--primary-glow); color: var(--kf-ink, var(--primary));
+  display: inline-flex; align-items: center; gap: 4px; background: var(--primary-glow); color: var(--primary);
   border: 1px solid var(--primary); border-radius: 99px; padding: 1px 8px; font-size: 11px; font-weight: bold;
 }
 .user-actions { display: flex; gap: 6px; flex-shrink: 0; }
@@ -2353,7 +2351,6 @@ function kfTogglePw(btn){
             </button>
             <div class="kf-bar-center"><div id="welcome-msg">بەخێربێیت!</div><span id="kf-sec-title"></span></div>
             <nav id="kf-tabs" aria-label="بەشەکان"></nav>
-            <button type="button" class="kf-tt kf-tt-bar" data-kf-theme-toggle role="switch" aria-checked="false" aria-label="گۆڕینی دۆخی ڕۆژ و شەو" title="ڕۆژ / شەو"><span class="kf-tt-track"><span class="kf-tt-sky"></span><span class="kf-tt-stars"><i></i><i></i><i></i><i></i></span><span class="kf-tt-clouds"><i></i><i></i></span></span><span class="kf-tt-knob"><i></i><i></i><i></i></span></button>
             <div class="kf-bar-logo" dir="ltr">KURD <b>FOREST</b></div>
         </header>
         <div id="kf-scrim" onclick="kfNav.closeDrawer()"></div>
@@ -2370,11 +2367,6 @@ function kfTogglePw(btn){
                 </button>
             </div>
             <nav id="kf-drawer-list"></nav>
-            <div class="kf-theme-row" data-kf-theme-toggle role="switch" tabindex="0" aria-checked="false" aria-label="گۆڕینی دۆخی ڕۆژ و شەو">
-                <span class="kf-tl kf-tl-night"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><span>دۆخی شەو</span></span>
-                <span class="kf-tl kf-tl-day"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span>دۆخی ڕۆژ</span></span>
-                <span class="kf-tt" aria-hidden="true"><span class="kf-tt-track"><span class="kf-tt-sky"></span><span class="kf-tt-stars"><i></i><i></i><i></i><i></i></span><span class="kf-tt-clouds"><i></i><i></i></span></span><span class="kf-tt-knob"><i></i><i></i><i></i></span></span>
-            </div>
         </aside>
     </div>
 
@@ -2439,27 +2431,27 @@ function kfTogglePw(btn){
     <!-- مۆداڵی گۆڕینی وێنە بۆ لینک بە هەموو زمانەکان -->
     <div id="img-upload-modal" class="custom-modal-overlay">
         <div class="custom-modal-content">
-            <h3 class="custom-modal-title" style="margin: 0 0 8px 0; color: var(--kf-ink, var(--primary)); font-size: 16px;" data-i18n="imgModalTitle">گۆڕینی وێنە بۆ لینک</h3>
+            <h3 class="custom-modal-title" style="margin: 0 0 8px 0; color: var(--primary); font-size: 16px;" data-i18n="imgModalTitle">گۆڕینی وێنە بۆ لینک</h3>
             
             <div style="background: rgba(142, 182, 155, 0.08); border: 1px dashed var(--border-color); border-radius: 12px; padding: 10px; margin-bottom: 12px; text-align: start;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                    <label style="font-size: 11.5px; font-weight: bold; color: var(--kf-ink, var(--primary));" data-i18n="imgApiKeyLbl">کلیلی API (تەنها یەکجار دایبنێ):</label>
-                    <a href="https://api.imgbb.com/" target="_blank" style="font-size: 11px; color: var(--kf-ink, var(--primary)); font-weight: bold; text-decoration: underline;" data-i18n="imgGetApiLink">وەرگرتنی کلیل لە کوێیە؟</a>
+                    <label style="font-size: 11.5px; font-weight: bold; color: var(--primary);" data-i18n="imgApiKeyLbl">کلیلی API (تەنها یەکجار دایبنێ):</label>
+                    <a href="https://api.imgbb.com/" target="_blank" style="font-size: 11px; color: var(--primary); font-weight: bold; text-decoration: underline;" data-i18n="imgGetApiLink">وەرگرتنی کلیل لە کوێیە؟</a>
                 </div>
                 <input type="text" id="imgbbApiKeyInput" oninput="saveImgbbKey(this)" placeholder="API Key..." class="input-field" style="padding: 8px; font-size: 11.5px; direction: ltr; text-align: left;">
             </div>
 
             <div class="file-box" style="margin-bottom: 12px; padding: 14px;">
                 <div class="upload-icon"><svg style="width:26px;height:26px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect stroke-width="1.85" stroke-linejoin="round" x="3" y="3" width="18" height="18" rx="3"/><circle stroke-width="1.85" cx="9" cy="9" r="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg></div>
-                <label style="color:var(--kf-ink, var(--primary)); font-weight:bold; font-size:13px;" data-i18n="imgSelectLbl">کرتە بکە و وێنەکە هەڵبژێرە</label>
+                <label style="color:var(--primary); font-weight:bold; font-size:13px;" data-i18n="imgSelectLbl">کرتە بکە و وێنەکە هەڵبژێرە</label>
                 <div class="file-name-display" id="imgNameDisplay" data-i18n="imgNoFile">هیچ وێنەیەک دیاری نەکراوە</div>
                 <input type="file" id="imageFileInput" accept="image/*" onchange="uploadDirectImage(this)">
             </div>
 
-            <div id="imgUploadLoader" style="display: none; color: var(--kf-ink, var(--primary)); font-size: 13px; font-weight: bold; margin: 8px 0;">خەریکی بارکردنی وێنەکەیە، تکایە کەمێک بوەستە...</div>
+            <div id="imgUploadLoader" style="display: none; color: var(--primary); font-size: 13px; font-weight: bold; margin: 8px 0;">خەریکی بارکردنی وێنەکەیە، تکایە کەمێک بوەستە...</div>
 
             <div id="imgResultBox" style="display: none; margin-top: 10px; text-align: start;">
-                <label style="font-size: 12px; font-weight: bold; color: var(--kf-ink, var(--primary)); display: block; margin-bottom: 4px;" data-i18n="imgDirectLinkLbl">لینکی ڕاستەوخۆی وێنەکە:</label>
+                <label style="font-size: 12px; font-weight: bold; color: var(--primary); display: block; margin-bottom: 4px;" data-i18n="imgDirectLinkLbl">لینکی ڕاستەوخۆی وێنەکە:</label>
                 <input type="text" id="generatedImgUrl" readonly class="input-field" style="margin-bottom: 8px; font-size: 12px; direction: ltr; text-align: left;">
                 <button class="btn" onclick="copyDirectImgLink()">
                     <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect stroke-width="1.85" stroke-linejoin="round" x="8" y="2" width="8" height="4" rx="1.2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M16 4h1.5A2.5 2.5 0 0 1 20 6.5v3M8 4H6.5A2.5 2.5 0 0 0 4 6.5v13A2.5 2.5 0 0 0 6.5 22h11a2.5 2.5 0 0 0 2.5-2.5V19M21 14H11M14 11l-3 3 3 3"/></svg>
@@ -2492,7 +2484,7 @@ function kfTogglePw(btn){
 <!-- مۆداڵی پێشکەوتووی دەرهێنانی ژێرنووس و دەنگ لە MKV (Fast Stream Engine) -->
     <div id="mkv-extractor-modal" class="custom-modal-overlay">
         <div class="custom-modal-content" style="max-width: 500px; text-align: start;">
-            <h3 class="custom-modal-title" style="text-align: center; margin: 0 0 6px 0; color: var(--kf-ink, var(--primary)); font-size: 16px;">دەرهێنانی ژێرنووس و دەنگ لە MKV</h3>
+            <h3 class="custom-modal-title" style="text-align: center; margin: 0 0 6px 0; color: var(--primary); font-size: 16px;">دەرهێنانی ژێرنووس و دەنگ لە MKV</h3>
             <p style="font-size: 11px; color: var(--text-muted); text-align: center; margin: 0 0 10px 0; line-height: 1.6;">
                 فایلی MKV یان WebM هەڵبژێرە؛ بە خێراییەکی زۆر و بەبێ ئینتەرنێت دەردەهێنرێن.
             </p>
@@ -2520,7 +2512,7 @@ function kfTogglePw(btn){
 
             <!-- خانەی دەستکاریکردنی ناوی فایلەکە پێش داگرتن -->
             <div id="mkvTitleRow" style="display: none; margin-bottom: 10px; background: rgba(255,255,255,0.04); border: 1px solid var(--border-color); border-radius: 10px; padding: 8px 10px;">
-                <label style="font-size: 11px; font-weight: bold; color: var(--kf-ink, var(--primary)); display:block; margin-bottom: 4px;">ناوی فایلی دەرچوو:</label>
+                <label style="font-size: 11px; font-weight: bold; color: var(--primary); display:block; margin-bottom: 4px;">ناوی فایلی دەرچوو:</label>
                 <input type="text" id="mkvCustomTitleInput" class="input-field" style="padding: 6px 8px; font-size: 12px; direction: ltr; text-align: left;" placeholder="ناوی فیلمەکە...">
             </div>
 
@@ -2904,7 +2896,7 @@ function kfTogglePw(btn){
         const file = input.files[0];
         const myId = ++mkvScanId;
         currentMkvFile = file;
-        mkvIoThr = 0;
+        mkvIoThr = 0; mkvIoP = null; mkvIoPF = null;
         mkvParsedTracks = [];
         mkvDetectedTitle = '';
 
@@ -3001,12 +2993,14 @@ function kfTogglePw(btn){
         mkvDetectedTitle = title;
 
         setMkvProgress(100, 'پشکنین تەواو بوو!');
+        // پێوانەی خێرایی خوێندنەوە لە پشتەوە دەکرێت، تا کاتی دەرهێنان چاوەڕێی نەکەین
+        try { const _cf = currentMkvFile; setTimeout(() => { try { if (_cf && myId === mkvScanId) mkvCalibrateIo(_cf).catch(() => {}); } catch (e) {} }, 0); } catch (e) {}
         setTimeout(() => {
             if (myId !== mkvScanId) return;
             const prog = document.getElementById('mkvProgressContainer');
             if (prog) prog.style.display = 'none';
             renderMkvTracksUI(tracks);
-        }, 120);
+        }, 0);
     }
 
     // ---------- بزوێنەری فوق-خێرا بە بازی دەستبەجێ بەسەر فەریمەکانی ڤیدیۆدا ----------
@@ -3073,7 +3067,13 @@ function kfTogglePw(btn){
     // ئەگەر بلۆکەکان بچووکن، خوێندنەوەی گەورە (٨ مێگابایت) خێراترە؛ ئەگەر بلۆکەکان گەورەن، بازدان بەسەریانا خێراترە.
     // سنووری نێوانیان لەسەر ئامێرەکە خۆی دەپێورێت (کاتی هەر خوێندنەوەیەک بەرامبەر خێرایی خوێندنەوەی گەورە).
     let mkvIoThr = 0, mkvIoA = 1, mkvIoBW = 400000;   // mkvIoA: کاتی هەر خوێندنەوەیەک (ms)، mkvIoBW: خێرایی خوێندنەوەی گەورە (بایت/ms)
-    async function mkvCalibrateIo(file) {
+    let mkvIoP = null, mkvIoPF = null;
+    function mkvCalibrateIo(file) {
+        if (mkvIoThr) return Promise.resolve(mkvIoThr);
+        if (!mkvIoP || mkvIoPF !== file) { mkvIoPF = file; mkvIoP = mkvCalibrateIo0(file); }
+        return mkvIoP;
+    }
+    async function mkvCalibrateIo0(file) {
         if (mkvIoThr) return mkvIoThr;
         let thr = 512 * 1024;
         try {
@@ -4194,7 +4194,7 @@ function kfTogglePw(btn){
                                 ${title}
                             </div>
                             <div style="font-size:10px; color:var(--text-muted); margin-top:3px;">
-                                <span style="color:var(--kf-ink, var(--primary)); font-weight:bold;">${codecName}</span> · <span>${chan}</span> · <span>تراک #${t.trackNumber}</span>${(audios.length > 1 && t === kfDefAudio) ? ' · <span style="display:inline-flex; align-items:center; gap:4px; vertical-align:middle; padding:1px 8px; border-radius:999px; background:rgba(34,197,94,.15); color:#4ade80; border:1px solid rgba(74,222,128,.45); font-weight:bold;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>دەنگی سەرەکی</span>' : ''}
+                                <span style="color:var(--primary); font-weight:bold;">${codecName}</span> · <span>${chan}</span> · <span>تراک #${t.trackNumber}</span>${(audios.length > 1 && t === kfDefAudio) ? ' · <span style="display:inline-flex; align-items:center; gap:4px; vertical-align:middle; padding:1px 8px; border-radius:999px; background:rgba(34,197,94,.15); color:#4ade80; border:1px solid rgba(74,222,128,.45); font-weight:bold;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>دەنگی سەرەکی</span>' : ''}
                             </div>
                         </div>
                         <div style="flex-shrink:0;">
@@ -4245,7 +4245,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
 </style>
 <div id="kf-servers-modal" class="custom-modal-overlay">
     <div class="custom-modal-content" style="max-width: 520px; padding: 14px; max-height: calc(var(--kf-vh, 1vh) * 94); overflow-y: auto; overflow-x: hidden; text-align: right;">
-        <h3 style="color:var(--kf-ink, var(--primary)); margin:0 0 6px 0; font-size:15px;">کۆدی سێرڤەرەکان</h3>
+        <h3 style="color:var(--primary); margin:0 0 6px 0; font-size:15px;">کۆدی سێرڤەرەکان</h3>
         <p style="font-size:11.5px; line-height:1.75; color:var(--text-muted); margin:0 0 10px 0;">
             لینکی سێرڤەرەکان و <b>تەنها ژمارەی ئەڵقە</b> لێرە دابنێ، بە هەر شێوازێک: ژمارە پێش لینکەکان یان دوایان یان لەسەر هەمان دێڕ.
             ناوی سێرڤەرەکان خۆکار بە ئینگلیزی دەنووسرێن، Vidmoly و Google drive هەمیشە یەکەمن، و ئەگەر کۆدی کۆنیشت دابنێ ڕێکی دەخاتەوە.
@@ -4390,19 +4390,19 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
     <!-- مۆداڵی تێکەڵکردنی دوو فایل بە بەڕێوەبەری سڕینەوەی ستایل و دیالۆگەکان -->
     <div id="merge-modal" class="custom-modal-overlay">
         <div class="custom-modal-content" style="max-width: 440px; text-align:start;">
-            <h3 style="color:var(--kf-ink, var(--primary)); text-align:center; font-size:15px; margin-top:0;">تێکەڵکردنی دوو فایل و بەڕێوەبردنی ستایلەکان</h3>
+            <h3 style="color:var(--primary); text-align:center; font-size:15px; margin-top:0;">تێکەڵکردنی دوو فایل و بەڕێوەبردنی ستایلەکان</h3>
             
             <div class="file-box" style="margin-bottom:8px; padding:10px;">
                 <label style="font-size:12px;">١. فایلی سەرەکی (بنچینە):</label>
                 <input type="file" id="mergeBaseFile" accept=".ass" onchange="handleMergeBaseFileSelect(this)">
-                <div id="mergeBaseFileName" style="display:none; font-size:11px; font-weight:bold; color:var(--kf-ink, var(--primary)); margin-top:6px; word-break:break-all;"></div>
-                <div id="mergeBaseTotalLines" style="display:none; font-size:11px; font-weight:bold; color:var(--kf-ink, var(--primary)); background:rgba(142,182,155,0.12); border:1px solid rgba(142,182,155,0.25); padding:3px 8px; border-radius:6px; margin-top:6px;"></div>
+                <div id="mergeBaseFileName" style="display:none; font-size:11px; font-weight:bold; color:var(--primary); margin-top:6px; word-break:break-all;"></div>
+                <div id="mergeBaseTotalLines" style="display:none; font-size:11px; font-weight:bold; color:var(--primary); background:rgba(142,182,155,0.12); border:1px solid rgba(142,182,155,0.25); padding:3px 8px; border-radius:6px; margin-top:6px;"></div>
             </div>
 
             <!-- بەشی نیشاندانی ستایلەکانی فایلی سەرەکی بۆ سڕینەوە لەگەڵ دیالۆگەکانیان -->
             <div id="mergeStylesContainer" style="display:none; margin-bottom:10px; background:rgba(0,0,0,0.3); padding:8px; border-radius:10px; border:1px solid var(--border-color);">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:6px;">
-                    <span style="font-size:11px; font-weight:bold; color:var(--kf-ink, var(--primary));">ستایلەکانی فایلی سەرەکی:</span>
+                    <span style="font-size:11px; font-weight:bold; color:var(--primary);">ستایلەکانی فایلی سەرەکی:</span>
                     <button type="button" class="btn btn-outline" style="padding:3px 8px; font-size:10.5px; width:auto; color:#ef4444; border-color:rgba(239,68,68,0.4); display:flex; align-items:center; gap:4px;" onclick="deleteEmptyMergeStyles()">
                         <svg style="width:12px;height:12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M3 6h18M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6M5.5 6l.9 13.1A2 2 0 0 0 8.4 21h7.2a2 2 0 0 0 2-1.9L18.5 6M10 11v5.5M14 11v5.5"/></svg>
                         <span>سڕینەوەی ستایلە بەتاڵەکان</span>
@@ -4417,7 +4417,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
                     <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border-bottom:1px solid var(--border-color); gap:8px; flex-shrink:0;">
                         <button type="button" class="btn btn-outline" style="width:auto; padding:3px 10px; font-size:11px; margin:0;" onclick="closeMergeStyleViewer()">داخستن</button>
                         <div style="text-align:end; overflow:hidden;">
-                            <span id="mergeStyleViewerTitle" style="font-size:12px; font-weight:bold; color:var(--kf-ink, var(--primary)); direction:ltr; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></span>
+                            <span id="mergeStyleViewerTitle" style="font-size:12px; font-weight:bold; color:var(--primary); direction:ltr; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></span>
                             <span id="mergeStyleViewerCount" style="font-size:10px; color:var(--text-muted);"></span>
                         </div>
                     </div>
@@ -4428,13 +4428,13 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
             <div class="file-box" style="margin-bottom:8px; padding:10px;">
                 <label style="font-size:12px;">٢. فایلی دووەم (کە دەق و ستایلەکەی دەگوازرێتەوە):</label>
                 <input type="file" id="mergeSourceFile" accept=".ass" onchange="handleMergeSourceFileSelect(this)">
-                <div id="mergeSourceFileName" style="display:none; font-size:11px; font-weight:bold; color:var(--kf-ink, var(--primary)); margin-top:6px; word-break:break-all;"></div>
+                <div id="mergeSourceFileName" style="display:none; font-size:11px; font-weight:bold; color:var(--primary); margin-top:6px; word-break:break-all;"></div>
             </div>
 
             <div id="mergeSourceEditor" class="merge-source-editor">
                 <div class="merge-source-editor-head">
                     <span id="mergeSourceEditorCount" style="font-size:10.5px; color:var(--text-muted);"></span>
-                    <span style="font-size:11px; font-weight:bold; color:var(--kf-ink, var(--primary));">دەستکاریکردنی ڕستەکانی فایلی دووەم</span>
+                    <span style="font-size:11px; font-weight:bold; color:var(--primary);">دەستکاریکردنی ڕستەکانی فایلی دووەم</span>
                 </div>
                 <div id="mergeSourceEditorList" class="merge-source-editor-list"></div>
             </div>
@@ -4442,7 +4442,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
             <!-- ======= بەشی بەڕێوەبردنی فۆنتەکان و دیاریکردنیان بۆ ستایل و دێڕەکان ======= -->
             <div id="mergeFontAssignContainer" style="display:none; margin-bottom:10px; background:rgba(0,0,0,0.3); padding:8px; border-radius:10px; border:1px solid var(--border-color);">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:6px;">
-                    <span style="font-size:11px; font-weight:bold; color:var(--kf-ink, var(--primary));">فۆنتەکان و دیاریکردنیان بۆ ستایل / دێڕەکان:</span>
+                    <span style="font-size:11px; font-weight:bold; color:var(--primary);">فۆنتەکان و دیاریکردنیان بۆ ستایل / دێڕەکان:</span>
                     <button type="button" class="btn btn-outline" style="padding:3px 8px; font-size:10.5px; width:auto; color:#ef4444; border-color:rgba(239,68,68,0.4);" onclick="clearAllMergeFonts()">سڕینەوەی هەموو فۆنتەکان</button>
                 </div>
 
@@ -4458,7 +4458,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
 
             <!-- ======= بەشی زیادکردنی لۆگۆی KURD FOREST (ئارەزوومەندانە) ======= -->
             <div style="margin-bottom:10px; background:rgba(0,0,0,0.3); padding:9px; border-radius:10px; border:1px solid var(--border-color);">
-                <label style="display:flex; align-items:center; gap:7px; cursor:pointer; font-size:12px; font-weight:bold; color:var(--kf-ink, var(--primary));">
+                <label style="display:flex; align-items:center; gap:7px; cursor:pointer; font-size:12px; font-weight:bold; color:var(--primary);">
                     <input type="checkbox" id="logoEnable" onchange="toggleLogoOptions()" style="width:15px; height:15px; accent-color:var(--primary);">
                     <span>زیادکردنی لۆگۆی KURD FOREST (ئارەزوومەندانە)</span>
                 </label>
@@ -4585,12 +4585,12 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
             </div>
 
             <div style="margin-bottom: 12px; text-align: start;">
-                <label style="font-weight: bold; font-size: 13px; color: var(--kf-ink, var(--primary)); display: block; margin-bottom: 5px;" data-i18n="batchTimeLbl">پێشخستن/دواخستنی کات (بە چرکە):</label>
+                <label style="font-weight: bold; font-size: 13px; color: var(--primary); display: block; margin-bottom: 5px;" data-i18n="batchTimeLbl">پێشخستن/دواخستنی کات (بە چرکە):</label>
                 <input type="number" id="batchTimeShift" step="0.01" class="input-field" placeholder="0.00" dir="ltr" style="padding: 9px; text-align: center;">
             </div>
 
             <div style="margin-bottom: 12px; text-align: start;">
-                <label style="font-weight: bold; font-size: 13px; color: var(--kf-ink, var(--primary)); display: block; margin-bottom: 5px;" data-i18n="tagOptionLbl">پاککردنەوەی تاگەکانی شێواز و فۆرمات:</label>
+                <label style="font-weight: bold; font-size: 13px; color: var(--primary); display: block; margin-bottom: 5px;" data-i18n="tagOptionLbl">پاککردنەوەی تاگەکانی شێواز و فۆرمات:</label>
                 <div style="display: flex; gap: 8px;">
                     <button type="button" class="fmt-btn active" id="btn-tag-keep" onclick="setTagOption('keep')" data-i18n="tagKeep">وەک خۆی</button>
                     <button type="button" class="fmt-btn" id="btn-tag-clean" onclick="setTagOption('clean')" data-i18n="tagClean">پاککردنەوە</button>
@@ -4599,7 +4599,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
             </div>
 
             <div style="margin-bottom: 14px; text-align: start;">
-                <label style="font-weight: bold; font-size: 13px; color: var(--kf-ink, var(--primary)); display: block; margin-bottom: 5px;" data-i18n="batchFmtLbl">فۆرماتی دەرچوون:</label>
+                <label style="font-weight: bold; font-size: 13px; color: var(--primary); display: block; margin-bottom: 5px;" data-i18n="batchFmtLbl">فۆرماتی دەرچوون:</label>
                 <div style="display: flex; gap: 8px;">
                     <button type="button" class="fmt-btn active" id="btn-fmt-srt" onclick="setConverterFormat('srt')">SRT</button>
                     <button type="button" class="fmt-btn" id="btn-fmt-ass" onclick="setConverterFormat('ass')">ASS</button>
@@ -4621,7 +4621,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
             <div id="progress-container"><div id="progress-bar"></div></div>
             <div class="top-nav">
                 <button class="back-btn" onclick="confirmGoBack()"><svg class="icon" style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M20 12H4M10 18l-6-6 6-6"/></svg><span style="margin: 0 4px;">گەڕانەوە</span></button>
-                <h3 style="margin:0; font-size:13.5px; color:var(--kf-ink, var(--primary)); text-align:center; flex-grow:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">دەستکاریکردنی ژێرنووس</h3>
+                <h3 style="margin:0; font-size:13.5px; color:var(--primary); text-align:center; flex-grow:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">دەستکاریکردنی ژێرنووس</h3>
                 <div class="kf-logo-mini" dir="ltr" role="img" aria-label="Kurd Forest"><span>KURD</span><b>FOREST</b></div>
             </div>
             
@@ -4633,7 +4633,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
                 <button class="top-btn" onclick="redo()" id="btn-redo" title="چوونەپێش">
                     <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="m15 14 5-5-5-5M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg>
                 </button>
-                <button class="top-btn" onclick="fixAllFspZero()" id="btn-fix-fsp" title="نەهێشتنی پچڕانی پیتەکان (fsp 0)" style="color: var(--kf-ink, var(--primary));">
+                <button class="top-btn" onclick="fixAllFspZero()" id="btn-fix-fsp" title="نەهێشتنی پچڕانی پیتەکان (fsp 0)" style="color: var(--primary);">
     <svg class="icon" style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M3 6h18M6.5 12h11M9.5 18h5"/>
     </svg>
@@ -4674,8 +4674,8 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
 
         <div class="floating-search-bar" id="searchBarPanel">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <span style="font-size: 13.5px; font-weight: bold; color: var(--kf-ink, var(--primary));" data-i18n="searchLbl">گەڕان و گۆڕین</span>
-                <span id="searchMatchInfo" style="font-size: 11.5px; font-weight: bold; color: var(--kf-ink, var(--primary)); background: rgba(142,182,155,0.14); border: 1px solid rgba(142,182,155,0.3); padding: 2px 8px; border-radius: 20px; direction: ltr; display: none; margin-inline-start: auto; margin-inline-end: 8px;"></span>
+                <span style="font-size: 13.5px; font-weight: bold; color: var(--primary);" data-i18n="searchLbl">گەڕان و گۆڕین</span>
+                <span id="searchMatchInfo" style="font-size: 11.5px; font-weight: bold; color: var(--primary); background: rgba(142,182,155,0.14); border: 1px solid rgba(142,182,155,0.3); padding: 2px 8px; border-radius: 20px; direction: ltr; display: none; margin-inline-start: auto; margin-inline-end: 8px;"></span>
                 <button class="close-search-btn" onclick="toggleSearchBar()"><svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M18 6 6 18M6 6l12 12"/></svg></button>
             </div>
             <div class="search-row">
@@ -4816,7 +4816,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
             
             <!-- هەڵبژاردنی ستایل بە شێوازی تایبەتی ماڵپەڕ وەک PGS -->
             <div style="margin-bottom: 12px; text-align: start;">
-                <label style="font-weight: bold; font-size: 12px; color: var(--kf-ink, var(--primary)); display: block; margin-bottom: 4px;">ستایلی دیاریکراو بۆ کۆپیکردن:</label>
+                <label style="font-weight: bold; font-size: 12px; color: var(--primary); display: block; margin-bottom: 4px;">ستایلی دیاریکراو بۆ کۆپیکردن:</label>
                 <div class="custom-select-wrapper" style="width: 100%; position: relative;">
                     <button type="button" class="custom-select-btn" id="aiStyleSelectBtn" style="width: 100%; justify-content: space-between; padding: 9px 12px; border-radius: 10px; font-size: 13px;" onclick="toggleAiStyleMenu(this)">
                         <span id="aiCurrentStyleText">— هەموو دێڕەکان —</span>
@@ -4845,11 +4845,11 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
     <!-- مۆداڵی تەکنیک و ستایل بە دیزاینی تەواو هاوسەنگ بۆ مۆبایل -->
     <div id="sub-style-modal" class="custom-modal-overlay">
         <div class="custom-modal-content" style="max-width: 390px; width: 100%; max-height: calc(var(--kf-vh, 1vh) * 90); overflow-y: auto; overflow-x: hidden; padding: 14px; box-sizing: border-box;">
-            <h3 style="margin: 0 0 10px 0; color: var(--kf-ink, var(--primary)); font-size: 15px;">تەکنیک و دیزاینی دێڕی <span id="styleModalLineNum">#</span></h3>
+            <h3 style="margin: 0 0 10px 0; color: var(--primary); font-size: 15px;">تەکنیک و دیزاینی دێڕی <span id="styleModalLineNum">#</span></h3>
             
             <!-- ١. شوێنی دێڕ لەسەر شاشە -->
             <div style="margin-bottom: 10px;">
-                <label style="font-size: 11.5px; font-weight: bold; color: var(--kf-ink, var(--primary));">شوێنی دێڕ لەسەر شاشە:</label>
+                <label style="font-size: 11.5px; font-weight: bold; color: var(--primary);">شوێنی دێڕ لەسەر شاشە:</label>
                 <div class="pos-grid">
                     <button type="button" class="pos-btn" onclick="selectAlignment('7')">سەرەوە چەپ</button>
                     <button type="button" class="pos-btn" onclick="selectAlignment('8')">سەرەوە ناوەڕاست</button>
@@ -4883,7 +4883,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
             <!-- ٢. Fade In و Fade Out -->
             <div style="margin-bottom: 10px; background: rgba(142, 182, 155, 0.08); border-radius: 10px; padding: 8px 10px; border: 1px solid var(--border-color); text-align: start;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                    <label style="font-size: 11.5px; font-weight: bold; color: var(--kf-ink, var(--primary));">تەکنیکی کاڵبوونەوە (Fade In / Out):</label>
+                    <label style="font-size: 11.5px; font-weight: bold; color: var(--primary);">تەکنیکی کاڵبوونەوە (Fade In / Out):</label>
                     <input type="checkbox" id="chkEnableFade" style="cursor:pointer;" onchange="toggleFadeInputs(this.checked)">
                 </div>
                 <div id="fadeInputsBox" style="display: flex; gap: 8px; justify-content: space-between; align-items: center; opacity: 0.5;">
@@ -4902,7 +4902,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
 
             <!-- ٢.١ ناوی فۆنتی دێڕەکە -->
             <div style="margin-bottom: 10px; background: rgba(142, 182, 155, 0.08); border-radius: 10px; padding: 8px 10px; border: 1px solid var(--border-color); text-align: start;">
-                <label style="font-size: 11.5px; font-weight: bold; color: var(--kf-ink, var(--primary)); display:block; margin-bottom:5px;">فۆنتی ئەم دێڕە (بەتاڵ = وەک خۆی):</label>
+                <label style="font-size: 11.5px; font-weight: bold; color: var(--primary); display:block; margin-bottom:5px;">فۆنتی ئەم دێڕە (بەتاڵ = وەک خۆی):</label>
                 <div style="display:flex; gap:6px; align-items:center;">
                     <input type="text" id="techFontName" list="techFontNameList" class="tech-input" style="flex:1; min-width:0; direction:ltr; text-align:left;" placeholder="ناوی فۆنتی بارکراو ...">
                     <button type="button" class="tech-toggle-btn" style="flex:none; padding:5px 8px;" onclick="clearTechFontName()">وەک خۆی</button>
@@ -4987,7 +4987,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
             <!-- ٥. پیشاندانی دەقەکە -->
             <div style="margin-bottom: 10px; text-align: start;">
                 <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom: 4px;">
-                    <label style="font-size: 11px; font-weight: bold; color: var(--kf-ink, var(--primary));">دەقی دێڕەکە (دەتوانیت وشەیەک دیاری بکەیت):</label>
+                    <label style="font-size: 11px; font-weight: bold; color: var(--primary);">دەقی دێڕەکە (دەتوانیت وشەیەک دیاری بکەیت):</label>
                     <button type="button" onclick="clearLineStyles()" title="سڕینەوەی هەموو ستایلەکانی ئەم دێڕە" style="flex-shrink:0; display:flex; align-items:center; gap:4px; font-size:10.5px; font-weight:bold; padding:4px 8px; border-radius:8px; cursor:pointer; background: rgba(239, 68, 68, 0.08); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.4);">
                         <span>سڕینەوەی ستایل</span>
                     </button>
@@ -5031,7 +5031,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
             <!-- بۆکسی تێبینی: ڕاستەوخۆ دەچێتە خواری ڕستەکە بە \N -->
             <div style="margin-bottom: 10px; background: rgba(142, 182, 155, 0.08); border-radius: 10px; padding: 8px 10px; border: 1px solid var(--border-color); text-align: start;">
                 <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom: 5px;">
-                    <label style="font-size: 11px; font-weight: bold; color: var(--kf-ink, var(--primary));">تێبینی (دەچێتە خواری ڕستەکە لە فایلەکە):</label>
+                    <label style="font-size: 11px; font-weight: bold; color: var(--primary);">تێبینی (دەچێتە خواری ڕستەکە لە فایلەکە):</label>
                     <div style="display:flex; gap:6px; flex-shrink:0;"><button type="button" onclick="clearNoteStyles()" title="سڕینەوەی ستایلی تێبینی" style="flex-shrink:0; font-size:10.5px; font-weight:bold; padding:3px 8px; border-radius:8px; cursor:pointer; background: rgba(239, 68, 68, 0.08); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.4);">سڕینەوەی ستایل</button><button type="button" onclick="clearNoteBox()" style="flex-shrink:0; font-size:10.5px; font-weight:bold; padding:3px 8px; border-radius:8px; cursor:pointer; background: rgba(239, 68, 68, 0.08); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.4);">سڕینەوەی تێبینی</button></div>
                 </div>
 
@@ -5068,7 +5068,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
             <!-- ٦. پالتەی سەرەکی ڕەنگەکان -->
             <div style="margin-bottom: 10px; background: rgba(142, 182, 155, 0.08); border-radius: 10px; padding: 8px 10px; border: 1px solid var(--border-color);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                    <label style="font-size: 11px; font-weight: bold; color: var(--kf-ink, var(--primary));">ڕەنگی نووسین:</label>
+                    <label style="font-size: 11px; font-weight: bold; color: var(--primary);">ڕەنگی نووسین:</label>
                     <span id="selectedColorCodeText" style="font-size: 10.5px; color: var(--text-muted); direction: ltr; font-weight: bold;">وەک خۆی</span>
                 </div>
 
@@ -5137,13 +5137,13 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
 <!-- بەڕێوەبەری فۆنتەکان -->
 <div id="kf-fonts-modal" class="custom-modal-overlay">
     <div class="custom-modal-content" style="max-width: 420px; padding: 14px; max-height: calc(var(--kf-vh, 1vh) * 92); overflow-y: auto; overflow-x: hidden; text-align: right;">
-        <h3 style="color:var(--kf-ink, var(--primary)); margin:0 0 6px 0; font-size:15px;">فۆنتەکانی ژێرنووس</h3>
+        <h3 style="color:var(--primary); margin:0 0 6px 0; font-size:15px;">فۆنتەکانی ژێرنووس</h3>
         <p style="font-size:11.5px; line-height:1.7; color:var(--text-muted); margin:0 0 10px 0;">
             بۆ ئەوەی پێشبینین و شوێنی دەق <b>ڕێک وەک پلەیەر و هارد سەب</b> بێت، فایلی فۆنتەکانی ناو ئەم ژێرنووسە (TTF / OTF) لێرە زیاد بکە.
             فۆنتەکان لەسەر ئامێرەکەت پاشەکەوت دەکرێن و جارێکی تر پێویست بە زیادکردن ناکات.
         </p>
         <div style="border:1px solid rgba(139,92,246,0.35); border-radius:10px; padding:10px; margin:0 0 12px 0; background:rgba(139,92,246,0.06);">
-            <div style="font-size:12px; font-weight:bold; color:var(--kf-ink, var(--primary)); margin-bottom:5px;">ڕەندەری libass (وەک هاردسەبی ڕاستەقینە):</div>
+            <div style="font-size:12px; font-weight:bold; color:var(--primary); margin-bottom:5px;">ڕەندەری libass (وەک هاردسەبی ڕاستەقینە):</div>
             <p style="font-size:11px; line-height:1.6; color:var(--text-muted); margin:0 0 8px 0;">
                 ئەم بژاردەیە پێشبینینەکە دەگۆڕێت بۆ کتێبخانەی <b>libass</b>ی ڕاستەقینە (هەمان کتێبخانەیەی FFmpeg و زۆربەی پلەیەرەکان بەکاریدەهێنن)، تاوەکو وێنەکێشان، سووڕانەوە، و شوێنی دەق ڕێک وەک ئەنجامی کۆتایی (هاردسەب) دەربکەون. پێویستی بە ئینتەرنێت هەیە جاری یەکەم بۆ داگرتنی کتێبخانەکە؛ ئەگەر شکستی هێنا، خۆکار دەگەڕێتەوە بۆ پێشبینینی ئاسایی.
             </p>
@@ -5153,14 +5153,14 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
             </button>
             <div id="kfLibassBtnStatus" style="font-size:10.5px; color:var(--text-muted); margin-top:6px; text-align:center; min-height:14px;"></div>
         </div>
-        <div style="font-size:12px; font-weight:bold; color:var(--kf-ink, var(--primary)); margin-bottom:5px;">فۆنتەکانی ناو فایلەکە:</div>
+        <div style="font-size:12px; font-weight:bold; color:var(--primary); margin-bottom:5px;">فۆنتەکانی ناو فایلەکە:</div>
         <div id="kfFontsUsed"></div>
         <button type="button" class="btn" style="width:100%; margin:8px 0 10px 0; font-size:12.5px; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="document.getElementById('kfFontFilePick').click()">
     <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M12 5v14M5 12h14"/></svg>
     <span>زیادکردنی فایلی فۆنت</span>
 </button>
         <input type="file" id="kfFontFilePick" multiple style="display:none" onchange="kfOnFontFilesPicked(this)">
-        <div style="font-size:12px; font-weight:bold; color:var(--kf-ink, var(--primary)); margin-bottom:5px;">فۆنتە زیادکراوەکان:</div>
+        <div style="font-size:12px; font-weight:bold; color:var(--primary); margin-bottom:5px;">فۆنتە زیادکراوەکان:</div>
         <div id="kfFontsLoaded"></div>
         <div class="custom-modal-actions" style="margin-top:10px;">
             <button class="btn btn-outline" onclick="closeFontsModal()">داخستن</button>
@@ -5171,12 +5171,12 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
 <!-- پەنجەرەی دیاریکردنی شوێن بە مەگنەتیک و هێڵی ڕێنمایی ناوەڕاست -->
 <div id="grid40-modal" class="custom-modal-overlay">
     <div class="custom-modal-content" style="max-width: 440px; padding: 14px; max-height: calc(var(--kf-vh, 1vh) * 92); overflow-y: auto; overflow-x: hidden;">
-        <h3 style="color:var(--kf-ink, var(--primary)); margin:0 0 8px 0; font-size:14px;">شوێنی دەقەکە بە دەست لەسەر شاشە ڕابکێشە:</h3>
+        <h3 style="color:var(--primary); margin:0 0 8px 0; font-size:14px;">شوێنی دەقەکە بە دەست لەسەر شاشە ڕابکێشە:</h3>
         
         <!-- بەشی قەبارە و نیشاندانی شوێن و سووڕانەوە -->
         <div style="background: rgba(142, 182, 155, 0.08); border: 1px solid var(--border-color); padding: 8px 10px; border-radius: 8px; margin-bottom: 8px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <div id="vDragCoordDisplay" style="font-size: 11px; font-weight: bold; color: var(--kf-ink, var(--primary)); direction: ltr;">X: 0, Y: 0</div>
+                <div id="vDragCoordDisplay" style="font-size: 11px; font-weight: bold; color: var(--primary); direction: ltr;">X: 0, Y: 0</div>
                 <button type="button" class="btn btn-outline" style="padding: 3px 8px; font-size: 10px; width: auto;" onclick="resetDragTransforms()">گەڕاندنەوە (Reset)</button>
             </div>
             
@@ -5337,10 +5337,10 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
 </style>
 <div id="move-modal" class="custom-modal-overlay">
     <div class="custom-modal-content" style="max-width: 440px; padding: 14px; max-height: calc(var(--kf-vh, 1vh) * 92); overflow-y: auto; overflow-x: hidden;">
-        <h3 style="color:var(--kf-ink, var(--primary)); margin:0 0 8px 0; font-size:14px;">جوڵاندنی دەق لەسەر ڤیدیۆ:</h3>
+        <h3 style="color:var(--primary); margin:0 0 8px 0; font-size:14px;">جوڵاندنی دەق لەسەر ڤیدیۆ:</h3>
         <div style="font-size:10.5px; color:var(--text-muted); margin-bottom:8px; line-height:1.6;">دەقی <b style="color:#ffffff;">سپی</b> شوێنی سەرەکییە و دەقی <b style="color:#22c55e;">سەوز</b> ئەو شوێنەیە کە دەقەکە بۆی دەڕوات. ڕایانبکێشە، یان یەکێکیان هەڵبژێرە و لەسەر شاشە بدە.</div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; background: rgba(142,182,155,0.08); border:1px solid var(--border-color); padding:6px 10px; border-radius:8px;">
-            <div id="mvCoordDisplay" style="font-size:11px; font-weight:bold; color:var(--kf-ink, var(--primary)); direction:ltr;"></div>
+            <div id="mvCoordDisplay" style="font-size:11px; font-weight:bold; color:var(--primary); direction:ltr;"></div>
             <button type="button" class="btn btn-outline" style="padding:3px 8px; font-size:10px; width:auto; margin:0;" onclick="mvReset()">گەڕاندنەوە (Reset)</button>
         </div>
 
@@ -5412,7 +5412,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
                 <label>دەستپێک (ms) <input type="number" id="mvT1" class="tech-input" min="0" step="50" oninput="mvNumInput()"></label>
                 <label>کۆتایی (ms) <input type="number" id="mvT2" class="tech-input" min="0" step="50" oninput="mvNumInput()"></label>
             </div>
-            <div id="mvCode" style="font-size:10.5px; direction:ltr; text-align:left; margin-top:6px; color:var(--kf-ink, var(--primary)); word-break:break-all;"></div>
+            <div id="mvCode" style="font-size:10.5px; direction:ltr; text-align:left; margin-top:6px; color:var(--primary); word-break:break-all;"></div>
         </div>
 
         <div class="custom-modal-actions" style="margin-top:10px;">
@@ -5423,7 +5423,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
 </div>
     <div id="video-color-picker-modal" class="custom-modal-overlay" style="z-index: 3500 !important;">
         <div class="custom-modal-content" style="max-width: 420px;">
-            <h3 style="margin: 0 0 8px 0; color: var(--kf-ink, var(--primary)); font-size: 15px;">هەڵگرتنی ڕەنگ لەسەر ڤیدیۆ</h3>
+            <h3 style="margin: 0 0 8px 0; color: var(--primary); font-size: 15px;">هەڵگرتنی ڕەنگ لەسەر ڤیدیۆ</h3>
 
             <!-- ١. شاشەی جێگیری سەرەوە بۆ پیشاندانی زوومی ٢ هێندە و ڕەنگەکە -->
             <div class="v-zoom-header-bar">
@@ -5432,13 +5432,13 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
                 </div>
                 <div style="text-align: start;">
                     <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 2px;">ڕەنگی خاڵەکە:</div>
-                    <div id="vSampledColorHexText" style="font-size: 16px; font-weight: bold; color: var(--kf-ink, var(--primary)); direction: ltr;">#FFFFFF</div>
+                    <div id="vSampledColorHexText" style="font-size: 16px; font-weight: bold; color: var(--primary); direction: ltr;">#FFFFFF</div>
                     <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 4px;">قەبارەی ئاسایی (1x)</div>
                 </div>
             </div>
 
             <div style="text-align: start; margin: 10px 0 6px 0;">
-                <label style="font-size: 11px; font-weight: bold; color: var(--kf-ink, var(--primary)); display:block; margin-bottom: 5px;">ڕەنگەکە بۆ کوێ دابنرێت؟</label>
+                <label style="font-size: 11px; font-weight: bold; color: var(--primary); display:block; margin-bottom: 5px;">ڕەنگەکە بۆ کوێ دابنرێت؟</label>
                 <div class="v-target-row">
                     <button type="button" class="v-target-btn active" id="vTargetText" onclick="setVideoPickTarget('text', this)">ڕەنگی نووسین</button>
                     <button type="button" class="v-target-btn" id="vTargetOutline" onclick="setVideoPickTarget('outline', this)">Outline</button>
@@ -5465,7 +5465,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
 <div id="censor-modal" class="custom-modal-overlay">
     <div class="custom-modal-content" style="max-width: 460px; width: 100%; max-height: calc(var(--kf-vh, 1vh) * 94); overflow-y: auto; text-align: start; padding: 14px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <h3 style="margin:0; color:var(--kf-ink, var(--primary)); font-size:15px;">ئامرازی سانسۆرکردنی ڤیدیۆ</h3>
+            <h3 style="margin:0; color:var(--primary); font-size:15px;">ئامرازی سانسۆرکردنی ڤیدیۆ</h3>
             <button type="button" class="btn btn-outline" style="width:auto; padding:3px 8px; font-size:11px;" onclick="closeCensorModal()">داخستن</button>
         </div>
 
@@ -5516,7 +5516,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
         <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:8px; background:rgba(0,0,0,0.3); padding:8px; border-radius:10px; border:1px solid var(--border-color);">
             <div style="display:flex; justify-content:space-between; align-items:center; font-size:11.5px;">
                 <span style="color:var(--text-muted);">کاتی ئێستا:</span>
-                <span id="censorTimeText" style="font-weight:bold; color:var(--kf-ink, var(--primary)); direction:ltr;">0:00:00.00</span>
+                <span id="censorTimeText" style="font-weight:bold; color:var(--primary); direction:ltr;">0:00:00.00</span>
             </div>
 
             <div style="display:flex; gap:4px; justify-content:center; align-items:center; direction:ltr;">
@@ -5532,7 +5532,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:8px;">
             <div style="background:rgba(142,182,155,0.08); padding:6px 8px; border-radius:8px; border:1px solid var(--border-color);">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                    <span style="font-size:11px; font-weight:bold; color:var(--kf-ink, var(--primary));">دەستپێک:</span>
+                    <span style="font-size:11px; font-weight:bold; color:var(--primary);">دەستپێک:</span>
                     <button type="button" class="btn btn-outline" style="width:auto; padding:2px 6px; font-size:9.5px;" onclick="setCensorStartTime()">کاتی ئێستا</button>
                 </div>
                 <input type="text" id="censorStartTime" value="0:00:00.00" class="input-field" style="padding:4px; font-size:11.5px; direction:ltr; text-align:center;">
@@ -5540,7 +5540,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
 
             <div style="background:rgba(142,182,155,0.08); padding:6px 8px; border-radius:8px; border:1px solid var(--border-color);">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                    <span style="font-size:11px; font-weight:bold; color:var(--kf-ink, var(--primary));">کۆتایی:</span>
+                    <span style="font-size:11px; font-weight:bold; color:var(--primary);">کۆتایی:</span>
                     <div style="display:flex; gap:3px;">
                         <button type="button" class="btn btn-outline" style="width:auto; padding:2px 5px; font-size:9.5px;" onclick="setCensorEndTime()">کاتی ئێستا</button>
                     </div>
@@ -5552,7 +5552,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
         <!-- شێوازی سانسۆر و پالتەی ڕەنگەکان -->
         <div style="margin-bottom:10px; background:rgba(142,182,155,0.08); padding:8px 10px; border-radius:8px; border:1px solid var(--border-color);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                <span style="font-size:11px; font-weight:bold; color:var(--kf-ink, var(--primary));">شێوازی داپۆشین:</span>
+                <span style="font-size:11px; font-weight:bold; color:var(--primary);">شێوازی داپۆشین:</span>
                 <button type="button" class="btn btn-outline" style="width:auto; padding:1px 6px; font-size:9.5px;" onclick="resetCensorBoxPosition()">ناوەڕاستکردنی سندووق</button>
             </div>
             
@@ -12179,7 +12179,7 @@ function renderMergeStylesList() {
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; background: rgba(255, 255, 255, 0.05); padding: 5px 8px; border-radius: 8px; margin-bottom: 5px; border: 1px solid rgba(255, 255, 255, 0.06); box-sizing: border-box; width: 100%;">
                     
                     <!-- دوگمەی سەیری ڕستەکان (تەنها بینین) -->
-                    <button type="button" class="btn btn-outline merge-style-eye-btn" style="color:var(--kf-ink, var(--primary));border-color:rgba(142,182,155,.4);" aria-label="سەیرکردنی ڕستەکانی ستایل" onclick="viewMergeStyleLines('${encodeURIComponent(name)}')">
+                    <button type="button" class="btn btn-outline merge-style-eye-btn" style="color:var(--primary);border-color:rgba(142,182,155,.4);" aria-label="سەیرکردنی ڕستەکانی ستایل" onclick="viewMergeStyleLines('${encodeURIComponent(name)}')">
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                             <circle stroke-width="1.85" cx="12" cy="12" r="3"/>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M2.1 12.3a1 1 0 0 1 0-.7C3.6 7.8 7.4 5 12 5s8.4 2.8 9.9 6.7a1 1 0 0 1 0 .7C20.4 16.2 16.6 19 12 19s-8.4-2.8-9.9-6.7z"/>
@@ -12195,7 +12195,7 @@ function renderMergeStylesList() {
                     </button>
 
                     <!-- ژمارەی دێڕەکان -->
-                    <span style="flex-shrink: 0; font-size: 10px; font-weight: bold; color: var(--kf-ink, var(--primary)); background: rgba(142, 182, 155, 0.12); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(142, 182, 155, 0.25); white-space: nowrap;">
+                    <span style="flex-shrink: 0; font-size: 10px; font-weight: bold; color: var(--primary); background: rgba(142, 182, 155, 0.12); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(142, 182, 155, 0.25); white-space: nowrap;">
                         ${count} دێڕ
                     </span>
 
@@ -12293,19 +12293,19 @@ function viewMergeStyleLines(encodedName) {
             // ڕەنگدانەوەی تاگە ناوەکییەکان بۆ ئەوەی بەدیار بکەون
             // هەر دێڕێک بە جیا ئاڕاستەی خۆی وەردەگرێت (dir=auto) — ئینگلیزی LTR، کوردی RTL
             const lineHtml = (ln) => esc(ln).replace(/(\{[^}]*\})/g,
-                '<span style="color:var(--kf-ink, var(--primary)); font-size:10px; background:rgba(142,182,155,0.08); border-radius:4px; padding:0 3px;">$1</span>');
+                '<span style="color:var(--primary); font-size:10px; background:rgba(142,182,155,0.08); border-radius:4px; padding:0 3px;">$1</span>');
             let shown = String(r.text || '').split(/\\N|\r?\n/i).map(ln =>
                 '<div dir="auto" style="unicode-bidi:plaintext; text-align:start;">' + (lineHtml(ln) || '&nbsp;') + '</div>').join('');
             const tags = detectTags(r.text);
             const badges = tags.length ? '<div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:5px;">' + tags.map(t =>
-                `<span style="font-size:9px; font-weight:bold; color:var(--kf-ink, var(--primary)); background:rgba(142,182,155,0.12); border:1px solid rgba(142,182,155,0.3); padding:1px 6px; border-radius:10px;">${esc(t)}</span>`
+                `<span style="font-size:9px; font-weight:bold; color:var(--primary); background:rgba(142,182,155,0.12); border:1px solid rgba(142,182,155,0.3); padding:1px 6px; border-radius:10px;">${esc(t)}</span>`
             ).join('') + '</div>' : '';
             const commentMark = r.comment ? '<span style="font-size:9px; color:var(--text-muted); border:1px solid var(--border-color); padding:0 5px; border-radius:8px;">کۆمێنت</span>' : '';
             return `
                 <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07); border-radius:10px; padding:8px 10px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:4px;">
                         <div style="display:flex; align-items:center; gap:6px;">
-                            <span style="font-size:10px; font-weight:bold; color:var(--kf-ink, var(--primary)); background:rgba(142,182,155,0.14); border:1px solid rgba(142,182,155,0.25); padding:1px 6px; border-radius:6px; direction:ltr; display:inline-block;">#${r.lineNum}</span>
+                            <span style="font-size:10px; font-weight:bold; color:var(--primary); background:rgba(142,182,155,0.14); border:1px solid rgba(142,182,155,0.25); padding:1px 6px; border-radius:6px; direction:ltr; display:inline-block;">#${r.lineNum}</span>
                             ${commentMark}
                         </div>
                         <span style="font-size:9.5px; color:var(--text-muted); direction:ltr; white-space:nowrap;">${esc(r.start)} → ${esc(r.end)}</span>
@@ -12700,16 +12700,16 @@ function renderMergeFonts() {
             </div>
 
             <div style="display:${f.open ? 'block' : 'none'}; padding:0 8px 8px 8px;">
-                <div style="font-size:10.5px; font-weight:bold; color:var(--kf-ink, var(--primary)); margin:4px 0;">ستایلەکان بۆ ئەم فۆنتە:</div>
+                <div style="font-size:10.5px; font-weight:bold; color:var(--primary); margin:4px 0;">ستایلەکان بۆ ئەم فۆنتە:</div>
                 <div style="max-height:110px; overflow-y:auto;">${styleChips}</div>
 
-                <div style="font-size:10.5px; font-weight:bold; color:var(--kf-ink, var(--primary)); margin:8px 0 4px;">فۆنتەکانی ناو دێڕەکان (\\fn):</div>
+                <div style="font-size:10.5px; font-weight:bold; color:var(--primary); margin:8px 0 4px;">فۆنتەکانی ناو دێڕەکان (\\fn):</div>
                 <label style="display:flex; align-items:center; gap:6px; font-size:10.5px; color:var(--text-main); margin-bottom:5px;">
                     <input type="checkbox" ${f.allInline ? 'checked' : ''} onchange="toggleAllInline(${f.id})"> بۆ هەموو فۆنتەکانی ناو دێڕەکان بەکاربێت
                 </label>
                 <div style="max-height:110px; overflow-y:auto; ${f.allInline ? 'opacity:0.4; pointer-events:none;' : ''}">${inlineChips}</div>
 
-                <div style="font-size:10.5px; font-weight:bold; color:var(--kf-ink, var(--primary)); margin:8px 0 4px;">گونجاندنی قەبارە:</div>
+                <div style="font-size:10.5px; font-weight:bold; color:var(--primary); margin:8px 0 4px;">گونجاندنی قەبارە:</div>
                 <label style="display:flex; align-items:center; gap:6px; font-size:10.5px; margin-bottom:4px;">
                     <input type="radio" name="mfmode_${f.id}" ${f.useAuto ? 'checked' : ''} onchange="setMergeFontMode(${f.id}, true)">
                     خۆکار (بەپێی قەبارەی سروشتی فۆنتەکە) ${known ? '' : '<span style="color:#f59e0b;">— فۆنتەکە لەم ئامێرەدا نییە</span>'}
@@ -12726,7 +12726,7 @@ function renderMergeFonts() {
                 </label>
                 ${f.fileName ? `
                 <div style="display:flex; align-items:center; gap:6px; margin-top:5px; background:rgba(142,182,155,0.12); border:1px solid rgba(142,182,155,0.35); border-radius:6px; padding:4px 7px;">
-                    <span style="font-size:13px; color:var(--kf-ink, var(--primary));">${SVG_ICONS.check}</span>
+                    <span style="font-size:13px; color:var(--primary);">${SVG_ICONS.check}</span>
                     <span style="flex:1; font-size:10.5px; color:var(--text-main); direction:ltr; text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(f.fileName)}</span>
                     <span onclick="clearMergeFontFile(${f.id})" style="cursor:pointer; font-size:10px; color:#ef4444;">سڕینەوە</span>
                 </div>
@@ -15144,16 +15144,16 @@ function kfSrvUpdate() {
     // پوختەی هەر ئەڵقەیەک (هێمای دەستکاری بە SVG)
     if (!r.episodes.length) { sum.innerHTML = ''; sum.style.display = 'none'; }
     else {
-        var svgEdit = '<svg style="width:11px;height:11px;vertical-align:-1px;color:var(--kf-ink, var(--primary));display:inline-block;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M21.2 6.8a2.8 2.8 0 0 0-4-4L3.8 16.2a2 2 0 0 0-.5.8l-1.3 4.4a.5.5 0 0 0 .6.6l4.4-1.3a2 2 0 0 0 .8-.5zM15 5l4 4"/></svg>';
+        var svgEdit = '<svg style="width:11px;height:11px;vertical-align:-1px;color:var(--primary);display:inline-block;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85" d="M21.2 6.8a2.8 2.8 0 0 0-4-4L3.8 16.2a2 2 0 0 0-.5.8l-1.3 4.4a.5.5 0 0 0 .6.6l4.4-1.3a2 2 0 0 0 .8-.5zM15 5l4 4"/></svg>';
         sum.style.display = 'block';
         sum.innerHTML = r.episodes.map(function (e) {
             var names = e.items.map(function (it) {
-                var mark = it.note ? ' <span title="' + kfEsc(KF_SRV_NOTES[it.note] || '') + '" style="color:var(--kf-ink, var(--primary));cursor:help;">' + svgEdit + '</span>' : '';
+                var mark = it.note ? ' <span title="' + kfEsc(KF_SRV_NOTES[it.note] || '') + '" style="color:var(--primary);cursor:help;">' + svgEdit + '</span>' : '';
                 var auto = it.auto ? ' <span title="ژمارەکە خۆکار دانرا" style="color:#f59e0b;cursor:help;">A</span>' : '';
                 return '<span style="white-space:nowrap;">' + kfEsc(it.server) + mark + auto + '</span>';
             }).join(' <span style="opacity:.4;">·</span> ');
             return '<div style="display:flex;gap:8px;align-items:baseline;padding:3px 0;border-bottom:1px solid var(--border-color);font-size:11.5px;">' +
-                '<b style="min-width:34px;color:var(--kf-ink, var(--primary));direction:ltr;">' + kfEsc(e.ep) + '</b><span style="direction:ltr;text-align:left;flex:1;">' + names + '</span></div>';
+                '<b style="min-width:34px;color:var(--primary);direction:ltr;">' + kfEsc(e.ep) + '</b><span style="direction:ltr;text-align:left;flex:1;">' + names + '</span></div>';
         }).join('');
     }
     kfSrvSave();
@@ -16979,7 +16979,7 @@ html:root body .btn-outline {
 html:root body .btn-outline:hover,
 html:root body .btn-outline:active {
     background: var(--gl-fill-2) !important;
-    color: var(--kf-ink, var(--primary)) !important;
+    color: var(--primary) !important;
     border-color: var(--primary) !important;
 }
 html:root body .btn-outline[style*="ef4444"] { color: #fca5a5 !important; border-color: rgba(239, 68, 68, 0.5) !important; }
@@ -17010,7 +17010,7 @@ html:root body .clear-file-btn {
 }
 html:root body .top-btn.primary-tool,
 html:root body .play-sub-btn,
-html:root body .style-sub-btn { color: var(--kf-ink, var(--primary)); }
+html:root body .style-sub-btn { color: var(--primary); }
 html:root body .top-btn.danger-tool,
 html:root body .search-btn.danger,
 html:root body .delete-sub-btn,
@@ -17058,7 +17058,7 @@ html:root body .top-nav { border-bottom: 1px solid var(--gl-border-soft) !import
 
 html:root body .custom-select-item:hover {
     background: var(--gl-fill-2) !important;
-    color: var(--kf-ink, var(--primary));
+    color: var(--primary);
 }
 
 /* ===== ڕەنگەکان ===== */
@@ -17236,7 +17236,7 @@ body.startup-bg #kf-shell { display: block; }
     width: 42px; height: 42px; flex-shrink: 0;
     display: inline-flex; align-items: center; justify-content: center;
     border-radius: 12px; cursor: pointer; padding: 0;
-    color: var(--kf-ink, var(--primary));
+    color: var(--primary);
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.14);
 }
@@ -17246,12 +17246,12 @@ body.startup-bg #kf-shell { display: block; }
     flex: 1; min-width: 0; text-align: center;
     display: flex; align-items: center; justify-content: center;
 }
-#kf-sec-title { display: none; font-size: 15px; font-weight: bold; color: var(--kf-ink, var(--primary)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#kf-sec-title { display: none; font-size: 15px; font-weight: bold; color: var(--primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 html.kf-in-section #kf-sec-title { display: block; }
 html.kf-in-section .kf-bar-center #welcome-msg { display: none !important; }
 .kf-bar-center #welcome-msg {
     position: static !important; left: auto !important; right: auto !important;
-    pointer-events: none; font-size: 15px; font-weight: bold; color: var(--kf-ink, var(--primary));
+    pointer-events: none; font-size: 15px; font-weight: bold; color: var(--primary);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 html:root body .kf-bar-logo {
@@ -17260,7 +17260,7 @@ html:root body .kf-bar-logo {
     font-weight: 400; font-size: 10.5px; line-height: 1; letter-spacing: .2em;
     color: var(--text-main, #e2e8f0); user-select: none; -webkit-user-select: none;
 }
-html:root body .kf-bar-logo b { font-weight: 400; color: var(--kf-ink, var(--primary)); text-shadow: 0 0 16px var(--primary-glow); transition: color .4s ease; }
+html:root body .kf-bar-logo b { font-weight: 400; color: var(--primary); text-shadow: 0 0 16px var(--primary-glow); transition: color .4s ease; }
 #kf-tabs { display: none; }
 
 /* ---------- دوگمەی بەشەکان (هەم مێنیو هەم تابەکان) ---------- */
@@ -17278,7 +17278,7 @@ html:root body .kf-bar-logo b { font-weight: 400; color: var(--kf-ink, var(--pri
     border-color: color-mix(in srgb, var(--primary) 70%, transparent);
     box-shadow: 0 0 14px var(--primary-glow);
 }
-.kf-item.active .icon { color: var(--kf-ink, var(--primary)); }
+.kf-item.active .icon { color: var(--primary); }
 
 /* ---------- مێنیوی سڵایدی (مۆبایل) ---------- */
 #kf-scrim {
@@ -17541,7 +17541,7 @@ html:root body #kf-sec-title,
 html:root body .kf-bar-center #welcome-msg {
     flex: 0 0 auto; margin-inline: auto; overflow: visible; text-overflow: clip; max-width: none; padding-inline: 6px;
 }
-.kf-drawer-title { font-size: 17px; font-weight: 800; color: var(--kf-ink, var(--primary)); letter-spacing: 0; }
+.kf-drawer-title { font-size: 17px; font-weight: 800; color: var(--primary); letter-spacing: 0; }
 
 /* ---------- دووگمەی ڕاکێشانی دێڕەکان: تۆزێک نزیک لە دێڕەکان ---------- */
 html:root body.editor-bg #fast-scrub-track { right: 6px !important; width: 14px; }
@@ -18630,7 +18630,7 @@ function bindScreen() {
 
 <style id="kf-rtl-btn-css">
 #btn-rtl-toggle{opacity:.45;color:var(--text-muted,#94a3b8);transition:all .2s}
-#btn-rtl-toggle.kf-rtl-on{opacity:1;color:var(--kf-ink, var(--primary));border-color:var(--primary);background:color-mix(in srgb,var(--primary) 18%,transparent);box-shadow:0 0 12px var(--primary-glow,rgba(0,0,0,0))}
+#btn-rtl-toggle.kf-rtl-on{opacity:1;color:var(--primary);border-color:var(--primary);background:color-mix(in srgb,var(--primary) 18%,transparent);box-shadow:0 0 12px var(--primary-glow,rgba(0,0,0,0))}
 html.kf-wide:root body.editor-bg #preview-video, html.kf-wide:root body .custom-player-container video { height: calc(var(--kf-dvh, 1dvh) * 60) !important; max-height: calc(var(--kf-dvh, 1dvh) * 60) !important; min-height: 320px !important; width: 100% !important; object-fit: contain !important; background: #000; }
 html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-container { margin-top: 16px !important; }
 </style>
@@ -20319,7 +20319,7 @@ var KFV = (function () {
         function close() { m.classList.remove('show'); b.classList.remove('open'); }
         b.onclick = function (e) {
             e.stopPropagation(); var open = !m.classList.contains('show'); closeMenus();
-            if (!open) return; m.innerHTML = getOpts().map(function (o) { return '<div class="custom-select-item" data-v="' + esc(o[0]) + '"' + (String(o[0]) === String(cur) ? ' style="color:var(--kf-ink, var(--primary))"' : '') + '>' + esc(o[1]) + '</div>'; }).join('');
+            if (!open) return; m.innerHTML = getOpts().map(function (o) { return '<div class="custom-select-item" data-v="' + esc(o[0]) + '"' + (String(o[0]) === String(cur) ? ' style="color:var(--primary)"' : '') + '>' + esc(o[1]) + '</div>'; }).join('');
             var r = b.getBoundingClientRect(), below = innerHeight - r.bottom - 12, above = r.top - 12, up = below < 220 && above > below, room = Math.max(120, up ? above : below);
             m.style.left = r.left + 'px'; m.style.width = r.width + 'px'; m.style.maxHeight = Math.min(room, innerHeight * 0.5) + 'px';
             if (up) { m.style.top = 'auto'; m.style.bottom = (innerHeight - r.top + 5) + 'px'; } else { m.style.bottom = 'auto'; m.style.top = (r.bottom + 5) + 'px'; }
@@ -20413,10 +20413,10 @@ var KFV = (function () {
         document.head.appendChild(cs);
         M = document.createElement('div'); M.id = 'kf-addline-modal'; M.className = 'custom-modal-overlay';
         M.innerHTML = '<div class="custom-modal-content" style="display:flex;flex-direction:column;overflow:hidden;text-align:start;padding:0;">'
-            + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;flex:none;"><h3 style="margin:0;color:var(--kf-ink, var(--primary));font-size:15px;">زیادکردنی دێڕ</h3><span class="kf-qb" style="flex:1;text-align:center;font-size:11px;font-weight:700;color:var(--kf-ink, var(--primary));direction:ltr;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></span><div style="display:flex;align-items:center;gap:6px;margin-inline-start:auto;font-size:12px;"><span style="opacity:.8">زیادکراوەکان:</span><b id="kfalCnt" style="color:#f59e0b;font-size:14px;">0</b><button type="button" class="btn btn-outline" id="kfalSee" style="width:auto;padding:3px 10px;font-size:11px;">بینین</button></div><button type="button" class="btn btn-outline" id="kfalClose" style="width:auto;padding:4px 12px;font-size:12px;">داخستن</button></div>'
+            + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;flex:none;"><h3 style="margin:0;color:var(--primary);font-size:15px;">زیادکردنی دێڕ</h3><span class="kf-qb" style="flex:1;text-align:center;font-size:11px;font-weight:700;color:var(--primary);direction:ltr;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></span><div style="display:flex;align-items:center;gap:6px;margin-inline-start:auto;font-size:12px;"><span style="opacity:.8">زیادکراوەکان:</span><b id="kfalCnt" style="color:#f59e0b;font-size:14px;">0</b><button type="button" class="btn btn-outline" id="kfalSee" style="width:auto;padding:3px 10px;font-size:11px;">بینین</button></div><button type="button" class="btn btn-outline" id="kfalClose" style="width:auto;padding:4px 12px;font-size:12px;">داخستن</button></div>'
             + '<div id="kfalVc" style="flex:none;background:#000;"><div id="kfalBox" oncontextmenu="return false" style="position:relative;width:100%;height:40vh;background:#000;overflow:hidden;margin:0 auto;"><video id="kfalV" playsinline disablePictureInPicture disableRemotePlayback controlsList="nodownload noremoteplayback" oncontextmenu="return false" style="width:100%;height:100%;display:block;object-fit:contain;pointer-events:none;"></video><div id="kfalTxt"></div><div id="kfalBd" style="display:none;position:absolute;top:14px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);color:#fff;padding:5px 15px;border-radius:20px;font-size:12px;font-weight:bold;z-index:50;pointer-events:none;border:1px solid rgba(255,255,255,.25);backdrop-filter:blur(6px);align-items:center;gap:6px;direction:ltr;animation:censorPulse .8s ease-in-out infinite alternate;"></div><div id="kfalCp" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:56px;height:56px;border-radius:50%;background:rgba(0,0,0,.75);color:#fff;z-index:55;pointer-events:none;align-items:center;justify-content:center;border:1.5px solid rgba(255,255,255,.3);backdrop-filter:blur(4px);direction:ltr;line-height:0;"></div><div id="kfalRr" style="display:none;position:absolute;right:0;top:0;bottom:0;width:40%;background:radial-gradient(circle at center,rgba(255,255,255,.25) 0%,transparent 70%);z-index:30;pointer-events:none;align-items:center;justify-content:center;flex-direction:column;gap:4px;color:#fff;font-size:12px;font-weight:bold;direction:ltr;"><span style="line-height:0">'+SVGF+'</span><span>+10s</span></div><div id="kfalRl" style="display:none;position:absolute;left:0;top:0;bottom:0;width:40%;background:radial-gradient(circle at center,rgba(255,255,255,.25) 0%,transparent 70%);z-index:30;pointer-events:none;align-items:center;justify-content:center;flex-direction:column;gap:4px;color:#fff;font-size:12px;font-weight:bold;direction:ltr;"><span style="line-height:0">'+SVGB+'</span><span>-10s</span></div></div></div>'
             + '<div id="kfalVc2" style="flex:none;"><div style="padding:8px 12px 0;direction:ltr;"><input type="range" id="kfalSl" min="0" max="1000" value="0" step="0.5" style="width:100%;accent-color:var(--primary);height:6px;"></div>'
-            + '<div style="display:flex;align-items:center;gap:6px;padding:6px 12px;direction:ltr;"><b id="kfalTime" style="color:var(--kf-ink, var(--primary));font-size:12px;min-width:84px;">0:00:00.00</b><div id="kfalSteps" style="display:flex;gap:5px;flex:1;"></div></div></div>'
+            + '<div style="display:flex;align-items:center;gap:6px;padding:6px 12px;direction:ltr;"><b id="kfalTime" style="color:var(--primary);font-size:12px;min-width:84px;">0:00:00.00</b><div id="kfalSteps" style="display:flex;gap:5px;flex:1;"></div></div></div>'
             + '<div id="kfalBody" style="flex:1;overflow-y:auto;padding:4px 12px 18px;display:flex;flex-direction:column;gap:8px;"><div class="kfal-p">'
             + '<div class="kfal-r"><div class="kfal-f"><label>دەستپێک <button type="button" class="btn btn-outline kfal-now" data-t="0" style="width:auto;padding:1px 8px;font-size:10px">ئێستا</button></label><input id="kfalT0" class="input-field" value="0:00:00.00" style="direction:ltr;text-align:center"></div><div class="kfal-f"><label>کۆتایی <button type="button" class="btn btn-outline kfal-now" data-t="1" style="width:auto;padding:1px 8px;font-size:10px">ئێستا</button></label><input id="kfalT1" class="input-field" value="0:00:03.00" style="direction:ltr;text-align:center"></div></div>'
             + '<textarea id="kfalTX" class="input-field" rows="2" placeholder="دەقی دێڕەکە لێرە بنووسە..." style="width:100%;resize:vertical"></textarea>'
@@ -20564,7 +20564,7 @@ var KFV = (function () {
         if (!(n >= 1 && n <= tot)) { showToast('ژمارەی دێڕ دروست نییە (١ تا ' + tot + ')', 'warning'); return; }
         cur = n - 1; var it = originalData[cur], texts = []; try { texts = getCurrentState(); } catch (e) { }
         NI.value = n; T0.value = formatTimeASS(it.startSec); T1.value = formatTimeASS(it.endSec);
-        var stl = (it.assMeta && it.assMeta.style) || ''; PV.innerHTML = (stl ? '<div style="font-size:10.5px;color:var(--kf-ink, var(--primary));margin-bottom:3px;direction:ltr;text-align:left;">' + esc(stl) + '</div>' : '') + esc(texts[cur] != null ? texts[cur] : (it.text || ''));
+        var stl = (it.assMeta && it.assMeta.style) || ''; PV.innerHTML = (stl ? '<div style="font-size:10.5px;color:var(--primary);margin-bottom:3px;direction:ltr;text-align:left;">' + esc(stl) + '</div>' : '') + esc(texts[cur] != null ? texts[cur] : (it.text || ''));
         INFO.style.display = 'none'; stopAt = 0;
         if ($('kfetVc').style.display !== 'none') { V.currentTime = Math.max(0, it.startSec); tick(); }
         exSched();
@@ -20588,14 +20588,14 @@ var KFV = (function () {
         document.head.appendChild(cs);
         M = document.createElement('div'); M.id = 'kf-edittime-modal'; M.className = 'custom-modal-overlay';
         M.innerHTML = '<div class="custom-modal-content" style="display:flex;flex-direction:column;overflow:hidden;text-align:start;padding:0;">'
-            + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;flex:none;"><h3 style="margin:0;color:var(--kf-ink, var(--primary));font-size:15px;">دەستکاریکردنی کاتی دێڕ</h3><span class="kf-qb" style="flex:1;text-align:center;font-size:11px;font-weight:700;color:var(--kf-ink, var(--primary));direction:ltr;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></span><button type="button" class="btn btn-outline" id="kfetClose" style="width:auto;padding:4px 12px;font-size:12px;">داخستن</button></div>'
+            + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;flex:none;"><h3 style="margin:0;color:var(--primary);font-size:15px;">دەستکاریکردنی کاتی دێڕ</h3><span class="kf-qb" style="flex:1;text-align:center;font-size:11px;font-weight:700;color:var(--primary);direction:ltr;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></span><button type="button" class="btn btn-outline" id="kfetClose" style="width:auto;padding:4px 12px;font-size:12px;">داخستن</button></div>'
             + '<div id="kfetVc" style="flex:none;background:#000;"><div id="kfetBox" oncontextmenu="return false" style="position:relative;width:100%;height:40vh;background:#000;overflow:hidden;margin:0 auto;"><video id="kfetV" playsinline disablePictureInPicture disableRemotePlayback controlsList="nodownload noremoteplayback" style="width:100%;height:100%;display:block;object-fit:contain;pointer-events:none;"></video>'
             + '<div id="kfetBd" style="display:none;position:absolute;top:14px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);color:#fff;padding:5px 15px;border-radius:20px;font-size:12px;font-weight:bold;z-index:50;pointer-events:none;border:1px solid rgba(255,255,255,.25);backdrop-filter:blur(6px);align-items:center;gap:6px;direction:ltr;animation:censorPulse .8s ease-in-out infinite alternate;"></div>'
             + '<div id="kfetCp" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:56px;height:56px;border-radius:50%;background:rgba(0,0,0,.75);color:#fff;z-index:55;pointer-events:none;align-items:center;justify-content:center;border:1.5px solid rgba(255,255,255,.3);backdrop-filter:blur(4px);direction:ltr;line-height:0;"></div>'
             + '<div id="kfetRr" style="display:none;position:absolute;right:0;top:0;bottom:0;width:40%;background:radial-gradient(circle at center,rgba(255,255,255,.25) 0%,transparent 70%);z-index:30;pointer-events:none;align-items:center;justify-content:center;flex-direction:column;gap:4px;color:#fff;font-size:12px;font-weight:bold;direction:ltr;"><span style="line-height:0">' + SVGF + '</span><span>+10s</span></div>'
             + '<div id="kfetRl" style="display:none;position:absolute;left:0;top:0;bottom:0;width:40%;background:radial-gradient(circle at center,rgba(255,255,255,.25) 0%,transparent 70%);z-index:30;pointer-events:none;align-items:center;justify-content:center;flex-direction:column;gap:4px;color:#fff;font-size:12px;font-weight:bold;direction:ltr;"><span style="line-height:0">' + SVGB + '</span><span>-10s</span></div></div></div>'
             + '<div id="kfetVc2" style="flex:none;"><div style="padding:8px 12px 0;direction:ltr;"><input type="range" id="kfetSl" min="0" max="1000" value="0" step="0.5" style="width:100%;accent-color:var(--primary);height:6px;"></div>'
-            + '<div style="display:flex;align-items:center;gap:6px;padding:6px 12px;direction:ltr;"><b id="kfetTime" style="color:var(--kf-ink, var(--primary));font-size:12px;min-width:84px;">0:00:00.00</b><div id="kfetSteps" style="display:flex;gap:5px;flex:1;"></div></div></div>'
+            + '<div style="display:flex;align-items:center;gap:6px;padding:6px 12px;direction:ltr;"><b id="kfetTime" style="color:var(--primary);font-size:12px;min-width:84px;">0:00:00.00</b><div id="kfetSteps" style="display:flex;gap:5px;flex:1;"></div></div></div>'
             + '<div style="flex:1;overflow-y:auto;padding:4px 12px 18px;display:flex;flex-direction:column;gap:8px;"><div class="kfet-p">'
             + '<div class="kfet-f"><label>ژمارەی دێڕ <span id="kfetCnt" style="opacity:.8"></span></label><div style="display:flex;gap:6px;direction:ltr;"><button type="button" class="btn btn-outline" id="kfetPrev" style="width:auto;padding:6px 14px;">−</button><input id="kfetN" type="number" inputmode="numeric" min="1" class="input-field" placeholder="#" style="direction:ltr;text-align:center;flex:1;min-width:0;"><button type="button" class="btn btn-outline" id="kfetNext" style="width:auto;padding:6px 14px;">+</button><button type="button" class="btn" id="kfetLoad" style="width:auto;padding:6px 14px;font-size:12px;">هێنان</button></div></div>'
             + '<div id="kfetPV" style="max-height:92px;overflow-y:auto;background:rgba(0,0,0,.35);border:1px solid var(--border-color);border-radius:10px;padding:8px 10px;font-size:13px;line-height:1.6;white-space:pre-wrap;min-height:38px;">دێڕەکە لێرە پیشان دەدرێت</div>'
@@ -20933,7 +20933,7 @@ var KFV = (function () {
     function build() {
         var cs = document.createElement('style');
         cs.textContent = '#kf-editstyle-modal{padding:0!important;align-items:stretch!important;justify-content:stretch!important}#kf-editstyle-modal>.custom-modal-content{border:0!important;box-shadow:none!important;border-radius:0!important;max-width:none!important;width:100%!important;height:100%!important;max-height:none!important;margin:0!important}'
-            + '.kfes-p{display:flex;flex-direction:column;gap:10px;background:rgba(0,0,0,.28);padding:10px;border-radius:12px;border:1px solid var(--border-color)}.kfes-p>h4{margin:0;font-size:12.5px;color:var(--kf-ink, var(--primary))}.kfes-r{display:flex;gap:8px;flex-wrap:wrap}.kfes-r>*{flex:1;min-width:0}'
+            + '.kfes-p{display:flex;flex-direction:column;gap:10px;background:rgba(0,0,0,.28);padding:10px;border-radius:12px;border:1px solid var(--border-color)}.kfes-p>h4{margin:0;font-size:12.5px;color:var(--primary)}.kfes-r{display:flex;gap:8px;flex-wrap:wrap}.kfes-r>*{flex:1;min-width:0}'
             + '.kfes-f{display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--text-muted)}.kfes-f label{display:flex;justify-content:space-between;align-items:center;gap:6px}.kfes-nr{display:flex;gap:8px;align-items:center;direction:ltr}.kfes-nr input[type=range]{flex:1;min-width:0;accent-color:var(--primary);height:6px}.kfes-nr input[type=number]{width:74px;flex:none;text-align:center;padding:6px 4px}'
             + '.kfes-cr{display:flex;gap:8px;align-items:center;direction:ltr}.kfes-cr input[type=range]{flex:1;min-width:0;accent-color:var(--primary);height:6px}.kfes-cp{width:46px;height:34px;padding:0;border:1px solid var(--border-color);border-radius:8px;background:none;flex:none}.kfes-op{width:38px;text-align:right;font-size:11px;flex:none}'
             + '.kfes-b{flex:1;min-width:0;padding:9px 0;font-size:12.5px;font-weight:700;font-family:inherit;border-radius:10px;border:1px solid var(--border-color);background:var(--bg-color);color:var(--text-main);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}.kfes-b.on{background:var(--primary);color:#fff;border-color:var(--primary)}'
@@ -20946,10 +20946,10 @@ var KFV = (function () {
         document.head.appendChild(cs);
         M = document.createElement('div'); M.id = 'kf-editstyle-modal'; M.className = 'custom-modal-overlay';
         M.innerHTML = '<div class="custom-modal-content" style="display:flex;flex-direction:column;overflow:hidden;text-align:start;padding:0;">'
-            + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;flex:none;"><h3 style="margin:0;color:var(--kf-ink, var(--primary));font-size:15px;">دەستکاریکردنی ستایل</h3><span class="kf-qb" style="flex:1;text-align:center;font-size:11px;font-weight:700;color:var(--kf-ink, var(--primary));direction:ltr;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></span><button type="button" class="btn btn-outline" id="kfesClose" style="width:auto;padding:4px 12px;font-size:12px;">داخستن</button></div>'
+            + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;flex:none;"><h3 style="margin:0;color:var(--primary);font-size:15px;">دەستکاریکردنی ستایل</h3><span class="kf-qb" style="flex:1;text-align:center;font-size:11px;font-weight:700;color:var(--primary);direction:ltr;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></span><button type="button" class="btn btn-outline" id="kfesClose" style="width:auto;padding:4px 12px;font-size:12px;">داخستن</button></div>'
             + '<div id="kfesVc" style="flex:none;background:#000;"><div id="kfesBox" oncontextmenu="return false" style="position:relative;width:100%;height:36vh;background:#000;overflow:hidden;margin:0 auto;"><video id="kfesV" playsinline disablePictureInPicture disableRemotePlayback controlsList="nodownload noremoteplayback" style="width:100%;height:100%;display:block;object-fit:contain;pointer-events:none;"></video><div id="kfesTxt"></div></div></div>'
             + '<div id="kfesVc2" style="flex:none;"><div style="padding:8px 12px 0;direction:ltr;"><input type="range" id="kfesSl" min="0" max="1000" value="0" step="0.5" style="width:100%;accent-color:var(--primary);height:6px;"></div>'
-            + '<div style="display:flex;align-items:center;gap:6px;padding:6px 12px;direction:ltr;"><b id="kfesTime" style="color:var(--kf-ink, var(--primary));font-size:12px;min-width:84px;">0:00:00.00</b><div id="kfesSteps" style="display:flex;gap:5px;flex:1;"></div></div></div>'
+            + '<div style="display:flex;align-items:center;gap:6px;padding:6px 12px;direction:ltr;"><b id="kfesTime" style="color:var(--primary);font-size:12px;min-width:84px;">0:00:00.00</b><div id="kfesSteps" style="display:flex;gap:5px;flex:1;"></div></div></div>'
             + '<div id="kfesBody" style="flex:1;overflow-y:auto;padding:4px 12px 22px;display:flex;flex-direction:column;gap:10px;">'
             + '<div class="kfes-p"><div class="kfes-f"><label><span>ستایل <i id="kfesDot" style="display:none;color:#f59e0b;font-style:normal">● گۆڕدراوە</i></span><span id="kfesInfo" style="opacity:.85"></span></label><div id="kfesSel"></div><div style="display:flex;gap:6px;margin-top:6px;"><button type="button" class="btn btn-outline" id="kfesNew" style="flex:1;padding:8px;font-size:12.5px;">+ ستایلی نوێ / کتێبخانە</button></div></div>'
             + '<div class="kfes-f"><label><span>دێڕی نموونە (ستایلەکە لەسەر ئەم دێڕە دەبینرێت)</span></label><div style="display:flex;gap:6px;direction:ltr;"><button type="button" class="btn btn-outline" id="kfesPrev" style="width:auto;padding:6px 14px;">−</button><input id="kfesN" type="number" inputmode="numeric" min="1" class="input-field" placeholder="#" style="direction:ltr;text-align:center;flex:1;min-width:0;"><button type="button" class="btn btn-outline" id="kfesNext" style="width:auto;padding:6px 14px;">+</button><button type="button" class="btn btn-outline" id="kfesSame" style="width:auto;padding:6px 12px;font-size:11.5px;">دێڕی دواتر بەم ستایلە</button></div></div></div>'
@@ -21055,7 +21055,7 @@ var KFV = (function () {
         function shut() { ov.remove(); }
         function paint() {
             var lib = libGet(), ks = Object.keys(lib);
-            bx.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;"><b style="color:var(--kf-ink, var(--primary));font-size:14px;">ستایلی نوێ</b><button type="button" class="btn btn-outline" id="kfnX" style="width:auto;padding:3px 12px;font-size:12px;">داخستن</button></div>'
+            bx.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;"><b style="color:var(--primary);font-size:14px;">ستایلی نوێ</b><button type="button" class="btn btn-outline" id="kfnX" style="width:auto;padding:3px 12px;font-size:12px;">داخستن</button></div>'
                 + '<input id="kfnName" class="input-field" placeholder="ناوی ستایل" style="direction:ltr;text-align:left;">'
                 + '<div style="display:flex;gap:6px;"><button type="button" class="btn" id="kfnCopy" style="flex:1;padding:9px;font-size:12.5px;">کۆپی ستایلی ئێستا</button><button type="button" class="btn btn-outline" id="kfnBlank" style="flex:1;padding:9px;font-size:12.5px;">ستایلی خاوێن</button></div>'
                 + '<button type="button" class="btn btn-outline" id="kfnSaveCur" style="padding:9px;font-size:12.5px;">پاشەکەوتکردنی ستایلی ئێستا لە کتێبخانەی من</button>'
@@ -21150,265 +21150,5 @@ var KFV = (function () {
 <style id="kf-cr-fullbleed">
 html:root body #code-review-panel{width:100vw!important;max-width:100vw!important;margin:10px calc(50% - 50vw) 0!important;box-sizing:border-box!important;border-radius:0!important;border-left:0!important;border-right:0!important;padding-left:16px!important;padding-right:16px!important}
 </style>
-<style id="kf-theme-toggle-css">
-/* ===== دووگمەی ڕۆژ / شەو ===== */
-.kf-tt { --kf-tt-w: 64px; --kf-tt-h: 32px; --kf-tt-k: 24px;
-  position: relative; flex-shrink: 0; width: var(--kf-tt-w); height: var(--kf-tt-h); padding: 0; margin: 0; border: 0; background: none; cursor: pointer; direction: ltr; -webkit-tap-highlight-color: transparent; outline: none; border-radius: 999px; }
-.kf-tt:focus-visible { box-shadow: 0 0 0 3px var(--primary-glow, rgba(142,182,155,.4)); }
-.kf-tt-track { position: absolute; inset: 0; border-radius: 999px; overflow: hidden; display: block;
-  background: linear-gradient(180deg, #0b1226 0%, #1b2748 100%);
-  box-shadow: inset 0 2px 6px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.14);
-  transition: background .6s cubic-bezier(.4,0,.2,1), box-shadow .6s; }
-.kf-tt-sky { position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(180deg, #5cc2ff 0%, #b9e6ff 100%); opacity: 0; transition: opacity .6s cubic-bezier(.4,0,.2,1); }
-.kf-tt-stars, .kf-tt-clouds { position: absolute; inset: 0; display: block; transition: transform .6s cubic-bezier(.4,0,.2,1), opacity .5s; pointer-events: none; }
-.kf-tt-stars i { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: #fff; box-shadow: 0 0 4px rgba(255,255,255,.9); animation: kfTtTw 2.4s ease-in-out infinite alternate; }
-.kf-tt-stars i:nth-child(1) { left: 10px; top: 8px; }
-.kf-tt-stars i:nth-child(2) { left: 22px; top: 19px; width: 2px; height: 2px; animation-delay: .6s; }
-.kf-tt-stars i:nth-child(3) { left: 30px; top: 9px; width: 2px; height: 2px; animation-delay: 1.1s; }
-.kf-tt-stars i:nth-child(4) { left: 16px; top: 14px; width: 2px; height: 2px; animation-delay: 1.6s; }
-@keyframes kfTtTw { from { opacity: .35; } to { opacity: 1; } }
-.kf-tt-clouds { transform: translateY(150%); opacity: 0; }
-.kf-tt-clouds i { position: absolute; height: 9px; border-radius: 999px; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
-.kf-tt-clouds i:nth-child(1) { right: 8px; bottom: 6px; width: 20px; }
-.kf-tt-clouds i:nth-child(2) { right: 22px; bottom: 13px; width: 15px; opacity: .85; }
-.kf-tt-knob { position: absolute; top: calc((var(--kf-tt-h) - var(--kf-tt-k)) / 2); left: calc(var(--kf-tt-w) - var(--kf-tt-k) - (var(--kf-tt-h) - var(--kf-tt-k)) / 2);
-  width: var(--kf-tt-k); height: var(--kf-tt-k); border-radius: 50%; display: block; overflow: hidden;
-  background: #e8edf5; box-shadow: 0 2px 6px rgba(0,0,0,.45), inset -3px -3px 5px rgba(100,116,139,.35);
-  transition: left .6s cubic-bezier(.68,-.35,.27,1.35), background .5s, box-shadow .5s, transform .6s cubic-bezier(.68,-.35,.27,1.35); transform: rotate(0deg); }
-.kf-tt-knob i { position: absolute; border-radius: 50%; background: rgba(100,116,139,.45); transition: opacity .4s, transform .5s; }
-.kf-tt-knob i:nth-child(1) { width: 7px; height: 7px; left: 4px; top: 5px; }
-.kf-tt-knob i:nth-child(2) { width: 5px; height: 5px; right: 4px; top: 11px; }
-.kf-tt-knob i:nth-child(3) { width: 4px; height: 4px; left: 9px; bottom: 3px; }
-html[data-theme="light"] .kf-tt-track { background: transparent; box-shadow: inset 0 2px 5px rgba(15,23,42,.18), 0 0 0 1px rgba(15,23,42,.16); }
-html[data-theme="light"] .kf-tt-sky { opacity: 1; }
-html[data-theme="light"] .kf-tt-stars { transform: translateY(-150%); opacity: 0; }
-html[data-theme="light"] .kf-tt-clouds { transform: translateY(0); opacity: 1; }
-html[data-theme="light"] .kf-tt-knob { left: calc((var(--kf-tt-h) - var(--kf-tt-k)) / 2); transform: rotate(360deg);
-  background: radial-gradient(circle at 35% 32%, #fff6b0 0%, #fbbf24 55%, #f59e0b 100%); box-shadow: 0 0 0 3px rgba(251,191,36,.28), 0 0 14px rgba(251,191,36,.75); }
-html[data-theme="light"] .kf-tt-knob i { opacity: 0; transform: scale(.3); }
-/* ڕیزی دووگمەکە لە مێنیوی موبایل */
-.kf-theme-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: calc(100% - 20px); margin: 6px 10px calc(10px + env(safe-area-inset-bottom, 0px)); padding: 10px 14px; border-radius: 14px; border: 1px solid var(--border-color, rgba(255,255,255,.14)); background: rgba(255,255,255,.05); color: var(--text-main, #f1f5f9); cursor: pointer; font: inherit; font-size: 14px; font-weight: bold; text-align: start; flex-shrink: 0; -webkit-tap-highlight-color: transparent; }
-.kf-theme-row:active { transform: scale(.985); }
-.kf-theme-row .kf-tl { display: flex; align-items: center; gap: 10px; }
-.kf-theme-row .kf-tl svg { width: 20px; height: 20px; flex-shrink: 0; }
-.kf-theme-row .kf-tl-day { display: none; }
-html[data-theme="light"] .kf-theme-row .kf-tl-day { display: flex; }
-html[data-theme="light"] .kf-theme-row .kf-tl-night { display: none; }
-/* دووگمەی بچووک لە شریتی سەرەوە (کۆمپیوتەر / شاشەی گەورە) */
-#kf-bar .kf-tt-bar { display: none; --kf-tt-w: 54px; --kf-tt-h: 28px; --kf-tt-k: 20px; margin: 0 10px; align-self: center; }
-html.kf-wide #kf-bar .kf-tt-bar { display: block; }
-/* گۆڕینی نەرمی ڕەنگ بۆ وێبگەڕەکانی بێ View Transitions */
-html.kf-theme-anim, html.kf-theme-anim *, html.kf-theme-anim *::before, html.kf-theme-anim *::after { transition: background-color .5s ease, color .5s ease, border-color .5s ease, box-shadow .5s ease, fill .5s ease, stroke .5s ease !important; }
-::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
-::view-transition-old(root) { z-index: 1; }
-::view-transition-new(root) { z-index: 2; }
-@media (prefers-reduced-motion: reduce) { .kf-tt-track, .kf-tt-knob, .kf-tt-stars, .kf-tt-clouds, .kf-tt-sky { transition-duration: .01s !important; } .kf-tt-stars i { animation: none; } }
-</style>
-
-<script id="kf-theme-js">
-(function () {
-  'use strict';
-  var KEY = 'kf_theme', root = document.documentElement;
-  function cur() { return root.getAttribute('data-theme') === 'light' ? 'light' : 'dark'; }
-  function aria(t) {
-    var els = document.querySelectorAll('[data-kf-theme-toggle]');
-    for (var i = 0; i < els.length; i++) els[i].setAttribute('aria-checked', t === 'light' ? 'true' : 'false');
-  }
-  function paint(t) {
-    if (t === 'light') root.setAttribute('data-theme', 'light'); else root.removeAttribute('data-theme');
-    try { localStorage.setItem(KEY, t); } catch (e) { }
-    var m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', t === 'light' ? '#eef2f8' : '#080a0d');
-    aria(t);
-    try { window.dispatchEvent(new CustomEvent('kf-theme', { detail: t })); } catch (e) { }
-  }
-  function set(t, origin) {
-    if (t !== 'light') t = 'dark';
-    if (t === cur()) return;
-    var reduce = false; try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { }
-    if (!reduce && origin && typeof document.startViewTransition === 'function') {
-      var x = origin.x, y = origin.y, r = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
-      var vt;
-      try { vt = document.startViewTransition(function () { paint(t); }); } catch (e) { paint(t); return; }
-      vt.ready.then(function () {
-        root.animate(
-          { clipPath: ['circle(0px at ' + x + 'px ' + y + 'px)', 'circle(' + r + 'px at ' + x + 'px ' + y + 'px)'] },
-          { duration: 720, easing: 'cubic-bezier(.4,0,.2,1)', pseudoElement: '::view-transition-new(root)' }
-        );
-      }).catch(function () { });
-      return;
-    }
-    if (!reduce) { root.classList.add('kf-theme-anim'); setTimeout(function () { root.classList.remove('kf-theme-anim'); }, 700); }
-    paint(t);
-  }
-  function toggle(el) {
-    var k = el.querySelector('.kf-tt-knob') || el, b = k.getBoundingClientRect();
-    set(cur() === 'light' ? 'dark' : 'light', { x: b.left + b.width / 2, y: b.top + b.height / 2 });
-  }
-  window.kfTheme = { get: cur, set: set, toggle: function () { var el = document.querySelector('[data-kf-theme-toggle]'); if (el) toggle(el); else set(cur() === 'light' ? 'dark' : 'light'); } };
-  document.addEventListener('click', function (e) {
-    var b = e.target && e.target.closest ? e.target.closest('[data-kf-theme-toggle]') : null;
-    if (b) { e.preventDefault(); toggle(b); }
-  });
-  document.addEventListener('keydown', function (e) {
-    if (e.key !== 'Enter' && e.key !== ' ') return;
-    var b = e.target && e.target.closest ? e.target.closest('[data-kf-theme-toggle]') : null;
-    if (b && b.tagName !== 'BUTTON') { e.preventDefault(); toggle(b); }
-  });
-  aria(cur());
-})();
-</script>
-
-<!--KF-LIGHT-START--><style id="kf-light-css">
-/* ===================== دۆخی ڕۆژ (Light) ===================== */
-html[data-theme="light"] {
-  color-scheme: light;
-  --bg-color: rgba(255,255,255,.55);
-  --card-bg: rgba(255,255,255,.78);
-  --card-border: rgba(15,23,42,.12);
-  --border-color: rgba(15,23,42,.14);
-  --text-main: #0f172a;
-  --text-muted: #475569;
-  --shadow-sm: 0 2px 10px rgba(15,23,42,.10);
-  --shadow-md: 0 8px 28px rgba(15,23,42,.14);
-  --shadow-lg: 0 16px 44px rgba(15,23,42,.20);
-  --gl-fill: rgba(255,255,255,.66);
-  --gl-fill-2: rgba(255,255,255,.86);
-  --gl-fill-dark: rgba(255,255,255,.72);
-  --gl-panel: rgba(255,255,255,.86);
-  --gl-menu: rgba(255,255,255,.97);
-  --gl-border: rgba(15,23,42,.14);
-  --gl-border-soft: rgba(15,23,42,.09);
-  --gl-hi: inset 0 1px 0 rgba(255,255,255,.95);
-  --gl-shadow: 0 10px 30px rgba(15,23,42,.14);
-  --gl-shadow-lg: 0 18px 50px rgba(15,23,42,.22);
-  --kf-fixed-surface: oklch(0.96 0.01 260);
-  --kf-fixed-ink: oklch(0.22 0.02 260);
-}
-html[data-theme="light"]:root {
-  background-color: #eef2f8 !important;
-  background-image:
-    radial-gradient(520px circle at 12% 10%, color-mix(in srgb, var(--primary) 26%, transparent), transparent 70%),
-    radial-gradient(480px circle at 92% 28%, rgba(99,102,241,.16), transparent 70%),
-    radial-gradient(560px circle at 60% 82%, rgba(56,189,248,.18), transparent 70%) !important;
-}
-html[data-theme="light"] #kf-bg { background-color: #eef2f8; background-image: radial-gradient(circle 48vmax at 100% 0%, color-mix(in srgb, var(--primary) 22%, transparent) 0%, transparent 100%), radial-gradient(circle 42vmax at 0% 100%, color-mix(in srgb, var(--primary) 16%, transparent) 0%, transparent 100%); }
-html[data-theme="light"] .kf-web { opacity: .55; }
-html[data-theme="light"] { --kf-ink: color-mix(in srgb, var(--primary) 56%, #0b1220); }
-
-/* ---------- شریت و مێنیو ---------- */
-html[data-theme="light"] #kf-bar { background: rgba(255,255,255,.86); border-bottom-color: rgba(15,23,42,.10); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
-html[data-theme="light"] .kf-bar-btn { background: rgba(15,23,42,.05); border-color: rgba(15,23,42,.14); }
-html[data-theme="light"] .kf-item { color: #1e293b; }
-html[data-theme="light"] .kf-item:hover { background: rgba(15,23,42,.06); }
-html[data-theme="light"] .kf-item.active { color: #0f172a; background: color-mix(in srgb, var(--primary) 20%, #fff); border-color: color-mix(in srgb, var(--primary) 65%, #fff); box-shadow: 0 0 12px var(--primary-glow); }
-html[data-theme="light"] #kf-scrim { background: rgba(15,23,42,.38); }
-html[data-theme="light"] #kf-drawer { background: linear-gradient(170deg, #ffffff 0%, #eef2f8 100%); border-left-color: rgba(15,23,42,.12); box-shadow: -18px 0 50px rgba(15,23,42,.22); }
-html[data-theme="light"] .kf-drawer-head { border-bottom-color: rgba(15,23,42,.10); }
-html[data-theme="light"] #kf-drawer-list .kf-sep { background: rgba(15,23,42,.12); }
-html[data-theme="light"] html.kf-wide #kf-tabs .kf-sep, html.kf-wide[data-theme="light"] #kf-tabs .kf-sep { background: rgba(15,23,42,.18); }
-html[data-theme="light"] .kf-theme-row { background: rgba(15,23,42,.04); border-color: rgba(15,23,42,.14); }
-html[data-theme="light"] .kf-theme-row .kf-tl-day svg { color: #d97706; }
-
-/* ---------- ڕووبەرە شووشەییەکان ---------- */
-html[data-theme="light"]:root body .custom-modal-overlay { background: rgba(15,23,42,.42) !important; }
-html[data-theme="light"]:root body #subtitles-container { background: rgba(255,255,255,.5) !important; scrollbar-color: rgba(15,23,42,.3) transparent; }
-html[data-theme="light"]:root body .subtitle-card { background: rgba(255,255,255,.92) !important; border-color: rgba(15,23,42,.10) !important; box-shadow: 0 4px 14px rgba(15,23,42,.10), var(--gl-hi) !important; }
-html[data-theme="light"]:root body .subtitle-card.active-sub { background: color-mix(in srgb, var(--primary) 14%, #fff) !important; border-color: var(--primary) !important; }
-html[data-theme="light"]:root body .subtitle-card.highlight-restored, html[data-theme="light"]:root body .subtitle-card.search-hit { background: color-mix(in srgb, var(--primary) 22%, #fff) !important; }
-html[data-theme="light"]:root body .subtitle-header { background: rgba(15,23,42,.05) !important; border-bottom-color: rgba(15,23,42,.08) !important; }
-html[data-theme="light"]:root body .subtitle-orig { background: rgba(15,23,42,.04) !important; }
-html[data-theme="light"]:root body .subtitle-kurd textarea { background: #fff !important; border-color: rgba(15,23,42,.16) !important; color: #0f172a; }
-html[data-theme="light"]:root body .input-field,
-html[data-theme="light"]:root body .floating-search-bar input,
-html[data-theme="light"]:root body .tech-input,
-html[data-theme="light"]:root body .kf-srv-ta,
-html[data-theme="light"]:root body .subtitle-orig,
-html[data-theme="light"]:root body .merge-source-line textarea,
-html[data-theme="light"]:root body .merge-source-editor,
-html[data-theme="light"]:root body .merge-source-line { background: rgba(255,255,255,.9) !important; border-color: rgba(15,23,42,.14) !important; box-shadow: inset 0 1px 3px rgba(15,23,42,.08) !important; color: var(--text-main); }
-html[data-theme="light"]:root body .subtitle-orig { background: rgba(15,23,42,.04) !important; }
-html[data-theme="light"]:root body .input-field:focus,
-html[data-theme="light"]:root body .subtitle-kurd textarea:focus,
-html[data-theme="light"]:root body .floating-search-bar input:focus,
-html[data-theme="light"]:root body .tech-input:focus,
-html[data-theme="light"]:root body .kf-srv-ta:focus,
-html[data-theme="light"]:root body .merge-source-line textarea:focus { background: #fff !important; box-shadow: inset 0 1px 3px rgba(15,23,42,.08), 0 0 0 3px var(--primary-glow) !important; }
-html[data-theme="light"]:root body .file-box { background: rgba(255,255,255,.7) !important; border-color: rgba(15,23,42,.25) !important; }
-html[data-theme="light"]:root body .file-box:hover, html[data-theme="light"]:root body .file-box.has-file { background: color-mix(in srgb, var(--primary) 16%, #fff) !important; border-color: var(--primary) !important; }
-
-/* ---------- دوگمەکان ---------- */
-html[data-theme="light"]:root body .btn:not(.btn-outline) { background: linear-gradient(135deg, color-mix(in srgb, var(--primary) 68%, #0b1220), color-mix(in srgb, var(--primary-hover) 62%, #0b1220)) !important; color: #fff !important; border-color: color-mix(in srgb, var(--primary) 55%, #0b1220) !important; box-shadow: 0 6px 16px color-mix(in srgb, var(--primary) 32%, transparent) !important; text-shadow: 0 1px 2px rgba(0,0,0,.35); }
-html[data-theme="light"]:root body .btn:not(.btn-outline):hover { background: linear-gradient(135deg, color-mix(in srgb, var(--primary) 78%, #0b1220), color-mix(in srgb, var(--primary-hover) 72%, #0b1220)) !important; }
-html[data-theme="light"]:root body .btn-outline { background: rgba(255,255,255,.75) !important; color: var(--text-main) !important; border-color: rgba(15,23,42,.18) !important; box-shadow: none !important; }
-html[data-theme="light"]:root body .btn-outline:hover, html[data-theme="light"]:root body .btn-outline:active { background: color-mix(in srgb, var(--primary) 14%, #fff) !important; }
-html[data-theme="light"]:root body .btn-outline[style*="ef4444"] { color: #dc2626 !important; border-color: rgba(220,38,38,.5) !important; }
-html[data-theme="light"]:root body .top-btn.danger-tool,
-html[data-theme="light"]:root body .search-btn.danger,
-html[data-theme="light"]:root body .delete-sub-btn,
-html[data-theme="light"]:root body .clear-file-btn { color: #dc2626; border-color: rgba(220,38,38,.45) !important; }
-html[data-theme="light"]:root body .fmt-btn.active, html[data-theme="light"]:root body .tech-toggle-btn.active, html[data-theme="light"]:root body .pos-btn.active, html[data-theme="light"]:root body .v-target-btn.active, html[data-theme="light"]:root body .v-step-chip.active, html[data-theme="light"]:root body .rtl-mode-opt.active, html[data-theme="light"]:root body .logo-style-opt:has(input:checked), html[data-theme="light"]:root body .custom-select-btn.open { color: #0f172a !important; }
-html[data-theme="light"]:root body .v-nudge-btn:active, html[data-theme="light"]:root body .v-align-btn svg { color: #334155; }
-html[data-theme="light"]:root body .theme-mini-box, html[data-theme="light"]:root body .palette-btn { border-color: rgba(15,23,42,.25); }
-html[data-theme="light"]:root body .theme-mini-box.active, html[data-theme="light"]:root body .palette-btn.active { border-color: #0f172a !important; }
-html[data-theme="light"]:root body #progress-container { background: rgba(15,23,42,.12) !important; }
-html[data-theme="light"]:root body #merge-modal .custom-modal-content { background: rgba(255,255,255,.97) !important; }
-
-/* ---------- خانەکانی نووسین ---------- */
-html[data-theme="light"] input, html[data-theme="light"] textarea, html[data-theme="light"] select { color: var(--text-main); }
-html[data-theme="light"] ::placeholder { color: #64748b; opacity: 1; }
-
-/* ---------- شاشەی چوونەژوورەوە و پانێڵی ئۆنەر: هەمیشە تاریک دەمێننەوە ---------- */
-html[data-theme="light"] #auth-screen, html[data-theme="light"] #auth-loading, html[data-theme="light"] #owner-panel, html[data-theme="light"] #kf-auth-toasts {
-  color-scheme: dark; --text-main: #f1f5f9; --text-muted: #94a3b8; --border-color: #20262e; --card-border: rgba(255,255,255,.08);
-  --kf-ink: var(--primary); --shadow-sm: 0 2px 8px rgba(0,0,0,.6); --shadow-md: 0 8px 30px rgba(0,0,0,.7); --shadow-lg: 0 16px 45px rgba(0,0,0,.85);
-  --gl-fill: rgba(255,255,255,.12); --gl-fill-2: rgba(255,255,255,.18); --gl-fill-dark: rgba(8,12,20,.45); --gl-panel: rgba(24,31,46,.8); --gl-menu: rgba(28,36,53,.93); --gl-border: rgba(255,255,255,.15); --gl-border-soft: rgba(255,255,255,.09); --gl-hi: inset 0 1px 0 rgba(255,255,255,.2);
-}
-html[data-theme="light"] #auth-screen input, html[data-theme="light"] #owner-panel input { color: #f1f5f9; }
-html[data-theme="light"] #auth-screen ::placeholder, html[data-theme="light"] #owner-panel ::placeholder { color: #94a3b8; }
-
-/* ---------- پەنجەرە تەواوشاشەکانی ئێدیتەر ---------- */
-html[data-theme="light"]:root body #move-modal,
-html[data-theme="light"]:root body #grid40-modal,
-html[data-theme="light"]:root body #sub-style-modal,
-html[data-theme="light"]:root body #kf-fonts-modal,
-html[data-theme="light"]:root body #censor-modal,
-html[data-theme="light"]:root body #video-color-picker-modal,
-html[data-theme="light"]:root body #ai-modal {
-  background: radial-gradient(circle 48vmax at 100% 0%, color-mix(in srgb, var(--primary) 22%, transparent) 0%, transparent 100%), radial-gradient(circle 42vmax at 0% 100%, color-mix(in srgb, var(--primary) 16%, transparent) 0%, transparent 100%), #eef2f8 !important;
-}
-
-/* ---------- پڕۆفایل ---------- */
-html[data-theme="light"] .kf-prof-name { color: #0f172a; }
-html[data-theme="light"] .kf-prof-mail { color: #475569; }
-html[data-theme="light"] #kf-drawer .kf-drawer-head.kf-prof-head { border-bottom-color: rgba(15,23,42,.10); }
-html[data-theme="light"] #kf-drawer .kf-prof:active { background: rgba(15,23,42,.06); }
-html[data-theme="light"] .kf-av { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--primary), 0 0 18px var(--primary-glow); }
-html[data-theme="light"].kf-wide .kf-prof-bar .kf-av { box-shadow: 0 0 0 1.5px #fff, 0 0 0 3px var(--primary); }
-html[data-theme="light"].kf-wide .kf-prof-bar { background: rgba(15,23,42,.05); border-color: rgba(15,23,42,.14); }
-html[data-theme="light"].kf-wide .kf-prof-bar:hover { background: rgba(15,23,42,.09); }
-html[data-theme="light"].kf-wide .kf-prof-bar .kf-pencil { color: #475569; }
-html[data-theme="light"] .kf-ps-back { background: rgba(15,23,42,.45); }
-html[data-theme="light"] .kf-ps-card { background: linear-gradient(170deg, #ffffff 0%, #eef2f8 100%); border-color: rgba(15,23,42,.12); box-shadow: 0 -20px 60px rgba(15,23,42,.25); }
-html[data-theme="light"].kf-wide .kf-ps-card { box-shadow: 0 30px 80px rgba(15,23,42,.28); }
-html[data-theme="light"] .kf-ps-grip { background: rgba(15,23,42,.2); }
-html[data-theme="light"] .kf-ps-link { color: #1e293b; border-color: rgba(15,23,42,.18); }
-html[data-theme="light"] .kf-ps-link:hover { background: rgba(15,23,42,.06); }
-html[data-theme="light"] .kf-ps-link.danger { color: #b91c1c; border-color: rgba(185,28,28,.35); }
-html[data-theme="light"] .kf-ps-field label { color: #475569; }
-html[data-theme="light"] .kf-ps-field input { background: #fff; color: #0f172a; border-color: rgba(15,23,42,.18); }
-html[data-theme="light"] .kf-ps-note { color: #64748b; }
-html[data-theme="light"] .kf-ps-msg { color: #b91c1c; }
-html[data-theme="light"] .kf-ps-btn.ghost { color: #1e293b; border-color: rgba(15,23,42,.2); }
-
-/* ---------- ڕەنگە ڕاستەوخۆکانی ناو نووسراوەکان (تەنها لە ڕووکاری ئەپ، نەک لەسەر ڤیدیۆ) ---------- */
-html[data-theme="light"] :where(.custom-modal-content, #setup-screen, #kf-shell, .subtitle-card, .header-tools-container, .action-bar, #code-review-panel) :is([style*="color:#ef4444"], [style*="color: #ef4444"]) { color: #dc2626 !important; }
-html[data-theme="light"] :where(.custom-modal-content, #setup-screen, #kf-shell, .subtitle-card, .header-tools-container, .action-bar, #code-review-panel) :is([style*="color:#f59e0b"], [style*="color: #f59e0b"], [style*="color:#fbbf24"], [style*="color: #fbbf24"], [style*="color:#fde68a"], [style*="color: #fde68a"], [style*="color:#f5b301"]) { color: #b45309 !important; }
-html[data-theme="light"] :where(.custom-modal-content, #setup-screen, #kf-shell, .subtitle-card, .header-tools-container, .action-bar, #code-review-panel) :is([style*="color:#22c55e"], [style*="color: #22c55e"], [style*="color:#4ade80"], [style*="color: #4ade80"]) { color: #15803d !important; }
-html[data-theme="light"] :where(.custom-modal-content, #setup-screen, #kf-shell, .subtitle-card, .header-tools-container, .action-bar, #code-review-panel) :is([style*="color:#fca5a5"], [style*="color: #fca5a5"], [style*="color:#f87171"], [style*="color: #f87171"]) { color: #b91c1c !important; }
-html[data-theme="light"] :where(.custom-modal-content, #setup-screen, #kf-shell, .header-tools-container, .action-bar, #code-review-panel) :is([style*="color:#e2e8f0"], [style*="color: #e2e8f0"], [style*="color:#f1f5f9"], [style*="color: #f1f5f9"], [style*="color:#cbd5e1"], [style*="color: #cbd5e1"], [style*="color:#e8edf3"]) { color: #1e293b !important; }
-html[data-theme="light"] :where(.custom-modal-content, #setup-screen) [style*="color:#aaa"] { color: #475569 !important; }
-html[data-theme="light"] #move-modal b { background: #0f172a; padding: 1px 7px; border-radius: 6px; }
-
-</style><!--KF-LIGHT-END-->
 </body>
 </html>

@@ -2673,37 +2673,7 @@ function kfTogglePw(btn){
         try {
             let el = document.getElementById('mkvDiagLine');
             if (!el) { const pc = document.getElementById('mkvProgressContainer'); if (pc && pc.parentNode) { el = document.createElement('div'); el.id = 'mkvDiagLine'; el.style.cssText = 'margin:8px 4px;font-size:12px;line-height:1.9;opacity:.85;direction:rtl;text-align:right;word-break:break-word'; pc.parentNode.insertBefore(el, pc.nextSibling); } }
-            if (el) { el.innerHTML = ''; const d = document.createElement('div'); d.dir = 'rtl'; d.textContent = mkvRtl(l1); el.appendChild(d);
-                const fsz = (currentMkvFile && currentMkvFile.size) || 0;
-                const d2 = document.createElement('div'); d2.dir = 'ltr'; d2.style.cssText = 'font-family:monospace;font-size:11px;opacity:.8;text-align:left;word-break:break-all;';
-                d2.textContent = 'TEST: file=' + (fsz / 1048576).toFixed(0) + 'MB read=' + mb.toFixed(0) + 'MB (' + (fsz ? (mb * 1048576 / fsz * 100).toFixed(0) : 0) + '%) reads=' + mkvIoStat.n + ' cue=' + mkvIoStat.cue + ' noRel=' + mkvIoStat.rn + ' whole=' + mkvIoStat.wh + ' sparse=' + mkvIoStat.sp + ' t=' + sec.toFixed(2) + 's calA=' + mkvIoA.toFixed(1) + 'ms calBW=' + (mkvIoBW / 1048.576).toFixed(0) + 'MB/s thr=' + Math.round(mkvIoThr / 1024) + 'KB';
-                el.appendChild(d2);
-                // پێوانەی تاقیکردنەوە (دوای تەواوبوون، کاتی دەرهێنان ناگۆڕێت)
-                const d3 = document.createElement('div'); d3.dir = 'ltr'; d3.style.cssText = d2.style.cssText; d3.textContent = 'BENCH: ...'; el.appendChild(d3);
-                const f = currentMkvFile;
-                if (f && f.size > 64 * 1048576) (async () => {
-                    const out = [];
-                    const show = (x) => { out.push(x); d3.textContent = 'BENCH3: ' + out.join(' '); };
-                    const rd = (p, n) => f.slice(p, p + n).arrayBuffer();
-                    const pos = (i, k) => Math.floor(f.size * (0.03 + 0.9 * ((i * 0.6180339887 + k) % 1)));
-                    const T = async (name, fn) => {
-                        const t = performance.now();
-                        try { await Promise.race([fn(), new Promise((_, rj) => setTimeout(() => rj(new Error('timeout')), 8000))]); show(name + '=' + (performance.now() - t).toFixed(0) + 'ms'); }
-                        catch (e) { show(name + '=ERR(' + (e && e.message) + ')'); }
-                    };
-                    const comp = (n, k) => () => new Blob(Array.from({ length: n }, (_, i) => f.slice(pos(i, k), pos(i, k) + 4096))).arrayBuffer();
-                    show('start');
-                    await T('seq3', async () => { for (let i = 0; i < 3; i++) await rd(pos(i, 0.11), 4096); });
-                    await T('comp16', comp(16, 0.71));
-                    await T('comp64', comp(64, 0.73));
-                    await T('comp128', comp(128, 0.83));
-                    await T('comp650', comp(650, 0.29));
-                    await T('comp650b', comp(650, 0.29));
-                    await T('par64', () => Promise.all(Array.from({ length: 64 }, (_, i) => rd(pos(i, 0.37), 4096))));
-                    await T('big16MB', () => rd(Math.floor(f.size * 0.3), 16 * 1048576));
-                    show('done');
-                })();
-            }
+            if (el) { el.innerHTML = ''; const d = document.createElement('div'); d.dir = 'rtl'; d.textContent = mkvRtl(l1); el.appendChild(d); }
         } catch (_) { }
         showToast(mkvRtl(l1), 'success');
     }

@@ -18026,6 +18026,10 @@ if (shift) {
     const text = await file.text(); if (seq !== previewSequence) return;
     firstTime = firstDialogueSeconds(text); update();
   });
+  // لابردنی فایل بە دوگمەی × ڕووداوی change ناکات؛ بۆیە کاتی دێڕی یەکەم و کۆی پێشخستن/دواخستن لێرە دەسڕدرێنەوە
+  document.addEventListener('click', e => {
+    if (e.target.closest && e.target.closest('#boxBatch .clear-file-btn')) { previewSequence++; firstTime = null; total = 0; update(); }
+  }, true);
 }
 
 // Font name suggestions: ONLY fonts the user loaded in the Fonts section (FontStore).

@@ -2677,7 +2677,25 @@ function kfTogglePw(btn){
                 const fsz = (currentMkvFile && currentMkvFile.size) || 0;
                 const d2 = document.createElement('div'); d2.dir = 'ltr'; d2.style.cssText = 'font-family:monospace;font-size:11px;opacity:.8;text-align:left;word-break:break-all;';
                 d2.textContent = 'TEST: file=' + (fsz / 1048576).toFixed(0) + 'MB read=' + mb.toFixed(0) + 'MB (' + (fsz ? (mb * 1048576 / fsz * 100).toFixed(0) : 0) + '%) reads=' + mkvIoStat.n + ' cue=' + mkvIoStat.cue + ' noRel=' + mkvIoStat.rn + ' whole=' + mkvIoStat.wh + ' sparse=' + mkvIoStat.sp + ' t=' + sec.toFixed(2) + 's calA=' + mkvIoA.toFixed(1) + 'ms calBW=' + (mkvIoBW / 1048.576).toFixed(0) + 'MB/s thr=' + Math.round(mkvIoThr / 1024) + 'KB';
-                el.appendChild(d2); }
+                el.appendChild(d2);
+                // پێوانەی تاقیکردنەوە (دوای تەواوبوون، کاتی دەرهێنان ناگۆڕێت)
+                const d3 = document.createElement('div'); d3.dir = 'ltr'; d3.style.cssText = d2.style.cssText; d3.textContent = 'BENCH: ...'; el.appendChild(d3);
+                const f = currentMkvFile;
+                if (f && f.size > 64 * 1048576) (async () => {
+                    const T = async (fn) => { const t = performance.now(); await fn(); return (performance.now() - t).toFixed(0); };
+                    const rd = (p, n) => f.slice(p, p + n).arrayBuffer();
+                    const pos = (i, k) => Math.floor(f.size * (0.03 + 0.9 * ((i * 0.6180339887 + k) % 1)));
+                    try {
+                        const seq = await T(async () => { for (let i = 0; i < 3; i++) await rd(pos(i, 0.11), 4096); });
+                        const p16 = await T(() => Promise.all(Array.from({ length: 16 }, (_, i) => rd(pos(i, 0.23), 4096))));
+                        const p64 = await T(() => Promise.all(Array.from({ length: 64 }, (_, i) => rd(pos(i, 0.37), 4096))));
+                        const p128 = await T(() => Promise.all(Array.from({ length: 128 }, (_, i) => rd(pos(i, 0.51), 4096))));
+                        const b16 = await T(() => rd(Math.floor(f.size * 0.3), 16 * 1048576));
+                        const b4x = await T(() => Promise.all(Array.from({ length: 4 }, (_, i) => rd(Math.floor(f.size * (0.1 + 0.2 * i)), 4 * 1048576))));
+                        d3.textContent = 'BENCH: seq3=' + seq + 'ms par16=' + p16 + 'ms par64=' + p64 + 'ms par128=' + p128 + 'ms big16MB=' + b16 + 'ms par4x4MB=' + b4x + 'ms';
+                    } catch (e) { d3.textContent = 'BENCH: err ' + e; }
+                })();
+            }
         } catch (_) { }
         showToast(mkvRtl(l1), 'success');
     }

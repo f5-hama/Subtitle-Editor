@@ -4557,9 +4557,9 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
         <div class="custom-modal-content">
             <h3 class="custom-modal-title">گەڕان بۆ فیلم و زنجیرە</h3>
             <p style="font-size:12.5px; color:var(--text-muted); margin-bottom:12px; line-height:1.8;">ناوی فیلم یان زنجیرە بنووسە (بە ئینگلیزی باشترە). لە زانیارییەکانی TMDB دەخوێنرێتەوە کە ئایا ڕووداوی نەشیاو (ماچ، ڕووتی، سێکس) تێدایە و ئاستەکەی چەندە.</p>
-            <div style="display:flex; gap:8px; margin-bottom:12px;">
-                <input type="text" id="tmdbQ" class="input-field" placeholder="Search movie or series..." style="flex:1; direction:ltr; text-align:left; margin:0;" autocomplete="off">
-                <button class="btn" id="tmdbGo" style="flex:0 0 auto; padding:0 18px;">گەڕان</button>
+            <div style="display:flex; gap:8px; margin-bottom:12px; align-items:stretch;">
+                <input type="text" id="tmdbQ" class="input-field" placeholder="Search movie or series..." style="flex:1 1 0; min-width:0; width:auto; direction:ltr; text-align:left; margin:0;" autocomplete="off">
+                <button class="btn" id="tmdbGo" style="flex:0 0 auto; width:auto; min-width:84px; padding:0 18px; margin:0;">گەڕان</button>
             </div>
             <div id="tmdbList"></div>
             <div id="tmdbView" style="display:none;"></div>
@@ -17745,17 +17745,22 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
         var q = $('tmdbQ').value.trim(), L = $('tmdbList'); $('tmdbView').style.display = 'none';
         if (!q) { L.style.display = ''; note(L, 'ناوێک بنووسە.'); return; }
         var my = ++seq; L.style.display = ''; note(L, 'دەگەڕێت...');
-        api('/search/multi?include_adult=true&language=en-US&query=' + encodeURIComponent(q)).then(function (r) {
+        var qq = encodeURIComponent(q), reqs = [];
+        ['movie', 'tv'].forEach(function (t) { [1, 2].forEach(function (pg) { reqs.push(api('/search/' + t + '?include_adult=true&language=en-US&page=' + pg + '&query=' + qq).then(function (r) { return (r.results || []).map(function (x) { x.media_type = t; return x; }); }).catch(function (e) { if (pg === 1) throw e; return []; })); }); });
+        Promise.all(reqs).then(function (all) {
             if (my !== seq) return;
-            var res = (r.results || []).filter(function (x) { return x.media_type === 'movie' || x.media_type === 'tv'; });
+            var seen = {}, res = [];
+            all.forEach(function (a) { a.forEach(function (x) { var k = x.media_type + x.id; if (!seen[k]) { seen[k] = 1; res.push(x); } }); });
+            var ql = q.toLowerCase();
+            res.sort(function (a, b) { var ea = ((a.title || a.name || '').toLowerCase() === ql) ? 1 : 0, eb = ((b.title || b.name || '').toLowerCase() === ql) ? 1 : 0; return (eb - ea) || ((b.popularity || 0) - (a.popularity || 0)); });
             if (!res.length) { note(L, 'هیچ ئەنجامێک نەدۆزرایەوە.'); return; }
             L.innerHTML = '';
-            res.slice(0, 20).forEach(function (x) {
+            res.slice(0, 40).forEach(function (x) {
                 var title = x.title || x.name || '', yr = (x.release_date || x.first_air_date || '').slice(0, 4);
                 var b = document.createElement('button'); b.type = 'button';
                 b.style.cssText = 'display:flex; gap:10px; width:100%; text-align:start; align-items:center; padding:8px; margin-bottom:6px; border:1px solid var(--border, rgba(128,128,128,.25)); border-radius:12px; background:transparent; color:inherit; cursor:pointer; font-family:inherit;';
                 b.innerHTML = (x.poster_path ? '<img src="' + IMG + 'w92' + x.poster_path + '" alt="" loading="lazy" style="width:46px; height:68px; object-fit:cover; border-radius:6px; flex:0 0 46px;">' : '<div style="width:46px; height:68px; border-radius:6px; background:rgba(128,128,128,.2); flex:0 0 46px;"></div>')
-                    + '<div style="min-width:0;"><div dir="ltr" style="font-weight:bold; font-size:14px; text-align:left;">' + esc(title) + '</div><div style="font-size:12px; color:var(--text-muted); margin-top:3px;">' + (x.media_type === 'tv' ? 'زنجیرە' : 'فیلم') + (yr ? ' • <bdi dir="ltr">' + yr + '</bdi>' : '') + '</div></div>';
+                    + '<div style="min-width:0; flex:1;"><div dir="ltr" style="font-weight:bold; font-size:14px; text-align:left;">' + esc(title) + '</div><div style="font-size:12px; color:var(--text-muted); margin-top:3px;">' + (x.media_type === 'tv' ? 'زنجیرە' : 'فیلم') + (yr ? ' • <bdi dir="ltr">' + yr + '</bdi>' : '') + (x.adult ? ' • 18+' : '') + '</div></div>';
                 b.onclick = function () { open(x.media_type, x.id); };
                 L.appendChild(b);
             });
@@ -17787,6 +17792,8 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
             if (type === 'movie' && d.runtime) h += ' • <bdi dir="ltr">' + d.runtime + '</bdi> خولەک';
             if (type === 'tv') h += ' • <bdi dir="ltr">' + (d.number_of_seasons || 0) + '</bdi> وەرز';
             h += '</div></div></div>';
+            var gn = (d.genres || []).map(function (g) { return g.name; }).join(', ');
+            if (gn) h += '<div dir="ltr" style="font-size:12px; color:var(--text-muted); margin-top:8px; text-align:left;">' + esc(gn) + '</div>';
             if (d.overview) h += '<p dir="ltr" style="font-size:12.5px; line-height:1.7; text-align:left; margin:10px 0 0; color:var(--text-muted);">' + esc(d.overview) + '</p>';
             h += rate(a, { cert: cert, adult: !!d.adult }) + NOTE;
             if (type === 'tv') {
@@ -21166,11 +21173,11 @@ var KFV = (function () {
             + '.kfes-al{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;direction:ltr;max-width:190px}.kfes-al .kfes-b{padding:11px 0;font-size:12px}'
             + '#kfesVp{direction:ltr;flex:1;min-height:0;width:100%;max-width:100%;min-width:0;align-self:stretch;overflow:hidden;position:relative}#kfesInd{align-self:stretch}.kfes-chips{min-width:0;max-width:100%}#kfesLh{min-width:0}#kfesTrack{display:flex;width:200%;height:100%;direction:ltr;will-change:transform}.kfes-pg{width:50%;flex:none;height:100%;position:relative;overflow:hidden}'
             + '#kfesInd{flex:none;display:flex;align-items:center;justify-content:center;gap:10px;padding:0 12px 5px;pointer-events:none;font-size:11px;font-weight:700;color:var(--primary);user-select:none;-webkit-user-select:none}#kfesIb{position:relative;width:46px;height:4px;border-radius:4px;background:rgba(128,128,128,.3);direction:rtl}#kfesIp{position:absolute;top:0;right:0;width:50%;height:100%;border-radius:4px;background:var(--primary)}'
-            + '#kfesLines{height:100%;overflow-y:auto;padding:0 12px 22px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}#kfesLh{position:sticky;top:0;z-index:5;background:rgba(10,15,25,.97);padding:6px 0 8px;display:flex;flex-direction:column;gap:8px}'
+            + '#kfesLines{height:100%;overflow-y:auto;padding:0 22px 22px 12px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}#kfesLh{position:sticky;top:0;z-index:5;background:rgba(10,15,25,.97);padding:6px 0 8px;display:flex;flex-direction:column;gap:8px}'
             + '.kfes-chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}.kfes-chips::-webkit-scrollbar{display:none}.kfes-chip{flex:none;padding:6px 12px;font-size:12px;font-weight:700;font-family:inherit;border-radius:999px;border:1px solid var(--border-color);background:var(--bg-color);color:var(--text-main);cursor:pointer;white-space:nowrap}.kfes-chip.on{background:var(--primary);color:#fff;border-color:var(--primary)}'
-            + '.kfes-lact{display:flex;gap:6px;align-items:center}.kfes-lk{display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;flex:none}.kfes-lk input{width:17px;height:17px;accent-color:var(--primary);margin:0}'
+            + '.kfes-lact{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.kfes-lk{display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;flex:none}.kfes-lk input{width:17px;height:17px;accent-color:var(--primary);margin:0}'
             + '.kfes-ln{display:flex;flex-direction:column;gap:6px;padding:9px 10px;margin-top:7px;border-radius:12px;border:1px solid var(--border-color);background:rgba(0,0,0,.28);cursor:pointer}.kfes-ln.on{border-color:var(--primary);box-shadow:0 0 0 1px var(--primary) inset}.kfes-lh{display:flex;justify-content:space-between;align-items:center;gap:8px}.kfes-lm{font-size:10.5px;color:var(--text-muted);direction:ltr}'
-            + '.kfes-lt{font-size:13px;line-height:1.55;max-height:3.2em;overflow:hidden;word-break:break-word}.kfes-ls{padding:7px 8px;font-size:12.5px;font-family:inherit;border-radius:10px;border:1px solid var(--border-color);background:var(--bg-color);color:var(--text-main);min-width:0;width:100%}#kfesLe{padding:26px 10px;text-align:center;font-size:12.5px;line-height:1.8;color:var(--text-muted);display:none}'
+            + '.kfes-lt{font-size:13px;line-height:1.55;max-height:3.2em;overflow:hidden;word-break:break-word}.kfes-lsb{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 12px;font-size:13px;font-family:inherit;border-radius:10px;border:1px solid var(--border-color);background:var(--bg-color);color:var(--text-main);min-width:0;width:100%;cursor:pointer;direction:ltr}.kfes-lsb span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.kfes-lsb svg{flex:none;opacity:.7}.kfes-lmenu{position:absolute;z-index:60;overflow-y:auto;background:#171d2b;border:1px solid var(--border-color);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.6);padding:4px}.kfes-lmi{padding:11px 12px;font-size:13.5px;border-radius:8px;cursor:pointer;word-break:break-word}.kfes-lmi.on{color:var(--primary);font-weight:700;background:rgba(255,255,255,.06)}.kfes-lmi:active{background:rgba(255,255,255,.12)}#kfesLe{padding:26px 10px;text-align:center;font-size:12.5px;line-height:1.8;color:var(--text-muted);display:none}'
             + '#kfesBox{touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}#kfesTxt{pointer-events:none;position:absolute;text-align:center;line-height:1.25;white-space:pre-wrap}.kfes-exact #kfesTxt{visibility:hidden}';
         document.head.appendChild(cs);
         var PD = (getComputedStyle(document.body).direction || 'rtl');
@@ -21357,7 +21364,7 @@ var KFV = (function () {
         var it = originalData[i], s = lnStyleOf(it), t = '';
         try { t = formatTimeASS(it.startSec); } catch (e) { }
         return '<div class="kfes-ln' + (i === cur ? ' on' : '') + '" data-i="' + i + '"><div class="kfes-lh"><label class="kfes-lk"><input type="checkbox" class="kfes-ck"' + (lnSel[i] ? ' checked' : '') + '><b>#' + (i + 1) + '</b></label><span class="kfes-lm">' + t + '</span></div>'
-            + '<div class="kfes-lt" dir="auto">' + lnEsc(lnText(it)) + '</div><select class="kfes-ls" data-i="' + i + '">' + lnOpts(s) + '</select></div>';
+            + '<div class="kfes-lt" dir="auto">' + lnEsc(lnText(it)) + '</div><button type="button" class="kfes-lsb" data-i="' + i + '" data-v="' + lnEsc(s) + '"><span dir="ltr">' + lnEsc(s) + '</span><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button></div>';
     }
     function lnMore() {
         if (!LNL || lnShown >= lnIdx.length) return;
@@ -21383,7 +21390,7 @@ var KFV = (function () {
         var ch = '<button type="button" class="kfes-chip' + (lnAll ? ' on' : '') + '" data-all="1">هەموو (' + originalData.length + ')</button>';
         names.forEach(function (n) { ch += '<button type="button" class="kfes-chip' + (!lnAll && n === sn ? ' on' : '') + '" data-n="' + lnEsc(n) + '"><bdi dir="ltr">' + lnEsc(n) + '</bdi> (' + usage(n) + ')</button>'; });
         $('kfesChips').innerHTML = ch;
-        var bt = $('kfesBT'), cv = bt.value; bt.innerHTML = lnOpts(names.indexOf(cv) >= 0 ? cv : (names.filter(function (n) { return n !== sn; })[0] || sn));
+        var bt = $('kfesBT'), cv = bt.getAttribute('data-v'), nv = names.indexOf(cv) >= 0 ? cv : (names.filter(function (n) { return n !== sn; })[0] || sn); bt.setAttribute('data-v', nv); bt.firstChild.textContent = nv;
         if (!same) lnSel = {};
         lnIdx = []; originalData.forEach(function (it, i) { if (lnAll || lnStyleOf(it) === sn) lnIdx.push(i); });
         LNL.innerHTML = ''; lnShown = 0; lnMore();
@@ -21429,11 +21436,29 @@ var KFV = (function () {
         lnAfter(); showToast('دوایین گواستنەوە پووچەڵ کرایەوە (' + rec.length + ' دێڕ)', 'success');
     }
     function lnShow() { if (!lnSeen) { lnSeen = true; lnRender(true); } else lnRender(); }
+    var LM = null;
+    function lnMenuClose() { if (LM && LM.parentNode) LM.parentNode.removeChild(LM); LM = null; }
+    function lnMenu(btn, cur, onPick) {
+        var was = LM && LM._b === btn; lnMenuClose(); if (was) return;
+        var m = document.createElement('div'); m._b = btn; m.className = 'kfes-lmenu';
+        names.forEach(function (n) {
+            var r = document.createElement('div'); r.className = 'kfes-lmi' + (n === cur ? ' on' : ''); r.dir = 'ltr'; r.textContent = n;
+            r.onclick = function (e) { e.stopPropagation(); lnMenuClose(); onPick(n); }; m.appendChild(r);
+        });
+        M.firstChild.appendChild(m); LM = m;
+        var rc = btn.getBoundingClientRect(), mr = M.firstChild.getBoundingClientRect(), vh = mr.height, h = Math.min(m.scrollHeight, vh * 0.42);
+        var below = vh - (rc.bottom - mr.top) - 8, top;
+        if (below >= Math.min(h, 180) || below >= (rc.top - mr.top)) { top = rc.bottom - mr.top + 4; m.style.maxHeight = Math.max(120, Math.min(h, below)) + 'px'; }
+        else { var mh = Math.min(h, rc.top - mr.top - 8); m.style.maxHeight = mh + 'px'; top = rc.top - mr.top - mh - 4; }
+        m.style.top = top + 'px'; var w = Math.max(rc.width, 160); m.style.width = Math.min(w, mr.width - 16) + 'px';
+        m.style.left = Math.max(8, Math.min(rc.left - mr.left, mr.width - Math.min(w, mr.width - 16) - 8)) + 'px';
+    }
+    document.addEventListener('click', function () { lnMenuClose(); }, true);
     function lnInit() {
         LN = $('kfesLines'); LNH = $('kfesLh'); LNL = $('kfesLl');
         LNH.innerHTML = '<div id="kfesChips" class="kfes-chips" data-noswipe="1"></div>'
-            + '<div class="kfes-lact"><label class="kfes-lk"><input type="checkbox" id="kfesLall"><span id="kfesLa">هەڵبژاردنی هەموو</span></label>'
-            + '<select id="kfesBT" class="kfes-ls" style="flex:1;min-width:0;"></select><button type="button" class="btn" id="kfesLmv" style="flex:none;width:auto;padding:7px 12px;font-size:12px;">گواستنەوە بۆ ئەم ستایلە</button>'
+            + '<div class="kfes-lact"><label class="kfes-lk"><input type="checkbox" id="kfesLall"><span id="kfesLa">هەڵبژاردنی هەموو</span></label></div><div class="kfes-lact">'
+            + '<button type="button" id="kfesBT" class="kfes-lsb" data-v="" style="flex:1 1 120px;min-width:0;"><span dir="ltr"></span><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button><button type="button" class="btn" id="kfesLmv" style="flex:1 1 auto;width:auto;padding:8px 12px;font-size:12px;">گواستنەوە بۆ ئەم ستایلە</button>'
             + '<button type="button" class="btn btn-outline" id="kfesLu" title="پووچەڵکردنەوەی دوایین گواستنەوە" style="flex:none;width:auto;padding:7px 12px;font-size:14px;">↶</button></div>';
         $('kfesLe').textContent = 'هیچ دێڕێک بەم ستایلە نییە. لە «هەموو» دێڕەکان ببینە و بیانگوازەرەوە بۆ ئەم ستایلە.';
         $('kfesChips').addEventListener('click', function (e) {
@@ -21447,15 +21472,18 @@ var KFV = (function () {
         });
         $('kfesLmv').onclick = function () {
             var l = []; for (var k in lnSel) if (lnSel[k]) l.push(+k); l.sort(function (a, b) { return a - b; });
-            if (l.length) lnMove(l, $('kfesBT').value);
+            if (l.length) lnMove(l, $('kfesBT').getAttribute('data-v'));
         };
         $('kfesLu').onclick = lnUndo;
+        $('kfesBT').onclick = function (e) { e.stopPropagation(); var b = this; lnMenu(b, b.getAttribute('data-v'), function (v) { b.setAttribute('data-v', v); b.firstChild.textContent = v; }); };
+        LN.addEventListener('scroll', lnMenuClose, { passive: true });
         LNL.addEventListener('change', function (e) {
             var t = e.target;
             if (t.classList.contains('kfes-ck')) { var i = +t.closest('.kfes-ln').getAttribute('data-i'); if (t.checked) lnSel[i] = true; else delete lnSel[i]; lnBar(); }
-            else if (t.classList.contains('kfes-ls')) lnMove([+t.getAttribute('data-i')], t.value);
         });
         LNL.addEventListener('click', function (e) {
+            var sb = e.target.closest ? e.target.closest('.kfes-lsb') : null;
+            if (sb) { e.stopPropagation(); var ri = +sb.getAttribute('data-i'); lnMenu(sb, sb.getAttribute('data-v'), function (v) { lnMove([ri], v); }); return; }
             if (e.target.closest && e.target.closest('select,label,input')) return;
             var r = e.target.closest ? e.target.closest('.kfes-ln') : null; if (r) loadLine(+r.getAttribute('data-i'));
         });

@@ -4552,23 +4552,6 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
         </div>
     </div>
 
-    <!-- مۆداڵی گەڕان بۆ فیلم و زنجیرە (TMDB) -->
-    <div id="tmdb-modal" class="custom-modal-overlay">
-        <div class="custom-modal-content">
-            <h3 class="custom-modal-title">گەڕان بۆ فیلم و زنجیرە</h3>
-            <p style="font-size:12.5px; color:var(--text-muted); margin-bottom:12px; line-height:1.8;">ناوی فیلم یان زنجیرە بنووسە (بە ئینگلیزی باشترە). لە زانیارییەکانی TMDB دەخوێنرێتەوە کە ئایا ڕووداوی نەشیاو (ماچ، ڕووتی، سێکس) تێدایە و ئاستەکەی چەندە.</p>
-            <div style="display:flex; gap:8px; margin-bottom:12px; align-items:stretch;">
-                <input type="text" id="tmdbQ" class="input-field" placeholder="Search movie or series..." style="flex:1 1 0; min-width:0; width:auto; direction:ltr; text-align:left; margin:0;" autocomplete="off">
-                <button class="btn" id="tmdbGo" style="flex:0 0 auto; width:auto; min-width:84px; padding:0 18px; margin:0;">گەڕان</button>
-            </div>
-            <div id="tmdbList"></div>
-            <div id="tmdbView" style="display:none;"></div>
-            <div class="custom-modal-actions">
-                <button class="btn btn-outline" onclick="document.getElementById('tmdb-modal').style.display='none'">داخستن</button>
-            </div>
-        </div>
-    </div>
-
     <!-- مۆداڵی پێچەوانەکردنەوەی RTL (وەک Subtitle Edit: Reverse RTL start/end) -->
     <div id="rev-rtl-modal" class="custom-modal-overlay">
         <div class="custom-modal-content">
@@ -17352,7 +17335,6 @@ html:root body.startup-bg #converter-modal,
 html:root body.startup-bg #rtl-fix-modal,
 html:root body.startup-bg #rev-rtl-modal,
 html:root body.startup-bg #fix-modal,
-html:root body.startup-bg #tmdb-modal,
 html:root body.startup-bg #merge-modal,
 html:root body.startup-bg #sdh-modal,
 html:root body.startup-bg #shortcuts-modal,
@@ -17366,7 +17348,6 @@ html:root body.startup-bg #converter-modal > .custom-modal-content,
 html:root body.startup-bg #rtl-fix-modal > .custom-modal-content,
 html:root body.startup-bg #rev-rtl-modal > .custom-modal-content,
 html:root body.startup-bg #fix-modal > .custom-modal-content,
-html:root body.startup-bg #tmdb-modal > .custom-modal-content,
 html:root body.startup-bg #merge-modal > .custom-modal-content,
 html:root body.startup-bg #sdh-modal > .custom-modal-content,
 html:root body.startup-bg #shortcuts-modal > .custom-modal-content,
@@ -17380,7 +17361,6 @@ html:root body.startup-bg #converter-modal,
 html:root body.startup-bg #rtl-fix-modal,
 html:root body.startup-bg #rev-rtl-modal,
 html:root body.startup-bg #fix-modal,
-html:root body.startup-bg #tmdb-modal,
 html:root body.startup-bg #merge-modal,
 html:root body.startup-bg #sdh-modal,
 html:root body.startup-bg #shortcuts-modal,
@@ -17398,7 +17378,6 @@ html:root body.startup-bg #converter-modal > .custom-modal-content,
 html:root body.startup-bg #rtl-fix-modal > .custom-modal-content,
 html:root body.startup-bg #rev-rtl-modal > .custom-modal-content,
 html:root body.startup-bg #fix-modal > .custom-modal-content,
-html:root body.startup-bg #tmdb-modal > .custom-modal-content,
 html:root body.startup-bg #merge-modal > .custom-modal-content,
 html:root body.startup-bg #sdh-modal > .custom-modal-content,
 html:root body.startup-bg #shortcuts-modal > .custom-modal-content,
@@ -17429,7 +17408,6 @@ html.kf-wide #kf-drawer { display: none !important; }html.kf-wide .kf-bar-center
 html.kf-wide:root body.startup-bg #rtl-fix-modal > .custom-modal-content,
 html.kf-wide:root body.startup-bg #rev-rtl-modal > .custom-modal-content,
 html.kf-wide:root body.startup-bg #fix-modal > .custom-modal-content,
-html.kf-wide:root body.startup-bg #tmdb-modal > .custom-modal-content,
 html.kf-wide:root body.startup-bg #merge-modal > .custom-modal-content,
 html.kf-wide:root body.startup-bg #sdh-modal > .custom-modal-content,
 html.kf-wide:root body.startup-bg #shortcuts-modal > .custom-modal-content,
@@ -17656,196 +17634,6 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
 </style>
 
 
-<script id="kf-tmdb-js">
-(function () {
-    'use strict';
-    var TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI2Yzc1ZDdkYzUyYzM0YmEzOTgxZjk1MWNhMzgzNDNmNCIsIm5iZiI6MTc4ODU3NzEwNi4yOTIsInN1YiI6IjZhOWI4NTUyYmIyM2ZhNjFiNGVjZWM5NiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.qbLyIhYNZgjR_Yq3_N-C-qGDCfNzU2IUegyqZgUotJ0';
-    var API = 'https://api.themoviedb.org/3', IMG = 'https://image.tmdb.org/t/p/';
-    var $ = function (id) { return document.getElementById(id); };
-    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-    function api(path) {
-        return fetch(API + path, { headers: { accept: 'application/json', Authorization: 'Bearer ' + TOKEN } }).then(function (r) {
-            if (!r.ok) throw new Error(r.status === 401 ? 'کلیلی TMDB دروست نییە (401)' : 'هەڵەی TMDB (' + r.status + ')');
-            return r.json();
-        });
-    }
-    function note(host, msg, err) { host.innerHTML = '<div style="padding:12px; font-size:13px; line-height:1.8; text-align:center; color:' + (err ? 'var(--danger,#e5484d)' : 'var(--text-muted)') + ';">' + esc(msg) + '</div>'; }
-    function netErr(e) { return (e && /TMDB/.test(e.message)) ? e.message : 'پەیوەندی بە TMDB ـەوە نەکرا؛ ئینتەرنێتەکەت بپشکنە.'; }
-
-    // ---------- خەمڵاندنی ئاستی ناوەڕۆکی نەشیاو ----------
-    var CERT = {
-        'G': 0, 'PG': 1, 'PG-13': 2, 'R': 3, 'NC-17': 5,
-        'TV-Y': 0, 'TV-Y7': 0, 'TV-G': 0, 'TV-PG': 1, 'TV-14': 2, 'TV-MA': 3,
-        'U': 0, '12': 2, '12A': 2, '15': 3, '18': 4, 'R18': 5, '0': 0, '6': 0, '16': 3
-    };
-    var KW_STRONG = /(explicit sex|sex scene|full frontal|nudity|topless|softcore|erotic|pornograph|orgy|threesome|hardcore|sexual content|lovemaking|love scene|bed scene)/i;
-    var KW_MED = /(^sex$|sexual|sexuality|prostitut|stripper|striptease|one-night stand|lingerie|seduction|lust|incest|nude|naked|brothel)/i;
-    var KW_MILD = /(kiss|affair|adultery|infidelity|romance|first love|flirt)/i;
-    var LEVELS = [
-        ['هیچ ناوەڕۆکێکی نەشیاو دیار نییە', '#2e9d5b'],
-        ['کەم (ماچ / ڕۆمانسی)', '#8bbf2f'],
-        ['مام ناوەند', '#e0a800'],
-        ['زۆر (دیمەنی سێکسی / ڕووتی)', '#e8710a'],
-        ['زۆر توند', '#d93025'],
-        ['ئیرۆتیک / تەنها بۆ گەورەکان', '#a50e0e']
-    ];
-    function pickCert(list) { // list: [{c, d, cc}]
-        var order = ['US', 'GB', 'DE'];
-        for (var i = 0; i < order.length; i++) {
-            for (var j = 0; j < list.length; j++) if (list[j].cc === order[i] && list[j].c) return list[j];
-        }
-        for (var k = 0; k < list.length; k++) if (list[k].c && CERT[list[k].c] !== undefined) return list[k];
-        return null;
-    }
-    function assess(cert, descs, kws, adult) {
-        var base = cert && CERT[cert.c] !== undefined ? CERT[cert.c] : null;
-        var dSex = descs.filter(function (x) { return /sex|nud/i.test(x); });
-        var strong = [], med = [], mild = [];
-        kws.forEach(function (k) { if (KW_STRONG.test(k)) strong.push(k); else if (KW_MED.test(k)) med.push(k); else if (KW_MILD.test(k)) mild.push(k); });
-        if (adult) return { level: 5, base: base, dSex: dSex, strong: strong, med: med, mild: mild, known: true };
-        var known = base !== null || kws.length > 0 || descs.length > 0;
-        var L = base === null ? 0 : base;
-        if (dSex.length) L += (L >= 2 ? 1 : 0.5);
-        if (strong.length) L += 1; else if (med.length) L += 0.5; else if (mild.length && L < 1) L = 1;
-        L = Math.max(0, Math.min(base === 5 ? 5 : 4, Math.round(L)));
-        return { level: L, base: base, dSex: dSex, strong: strong, med: med, mild: mild, known: known };
-    }
-    var EP_STRONG = /(\bsex(ual|ually)?\b|nude|naked|strip(per|s|ping)?\b|erotic|orgy|prostitut|make[s]? love|sleeps? with|bed together|one-night)/i;
-    var EP_MILD = /(kiss|affair|seduc|romance|romantic|flirt|lover|date\b|crush)/i;
-    function epLevel(ep) {
-        var t = (ep.name || '') + ' ' + (ep.overview || '');
-        if (EP_STRONG.test(t)) return 2;
-        if (EP_MILD.test(t)) return 1;
-        return 0;
-    }
-    function bar(level) {
-        var h = '<div style="display:flex; gap:4px; direction:ltr; margin:8px 0 6px;">';
-        for (var i = 1; i <= 5; i++) h += '<span style="flex:1; height:9px; border-radius:5px; background:' + (i <= level ? LEVELS[level][1] : 'rgba(128,128,128,.25)') + ';"></span>';
-        return h + '</div>';
-    }
-    function rate(a, extra) {
-        var L = LEVELS[a.level], h = '<div style="border:1px solid var(--border, rgba(128,128,128,.25)); border-radius:12px; padding:12px; margin:10px 0;">';
-        if (!a.known) return h + '<div style="font-size:13px; line-height:1.8;">TMDB زانیاری پێویستی نییە بۆ ئەم ناونیشانە، بۆیە ناتوانرێت ئاستەکەی بخەمڵێنرێت.</div></div>';
-        h += '<div style="font-weight:bold; font-size:14px; color:' + L[1] + ';">' + esc(L[0]) + '</div>' + bar(a.level);
-        h += '<div style="font-size:12px; color:var(--text-muted); line-height:1.9;">';
-        if (extra.cert) h += 'تەمەنی گونجاو: <bdi dir="ltr" style="font-weight:bold; color:var(--text-main);">' + esc(extra.cert.c) + '</bdi> (' + esc(extra.cert.cc) + ')<br>';
-        else h += 'پۆلێنی تەمەن لە TMDB نییە.<br>';
-        if (extra.adult) h += 'TMDB وەک ناوەڕۆکی گەورەکان (Adult) نیشانی کردووە.<br>';
-        if (a.dSex.length) h += 'ڕوونکەرەوە: <bdi dir="ltr">' + esc(a.dSex.join(', ')) + '</bdi><br>';
-        var kw = a.strong.concat(a.med, a.mild);
-        if (kw.length) h += 'وشە پەیوەندیدارەکان: <bdi dir="ltr">' + esc(kw.slice(0, 12).join(', ')) + '</bdi><br>';
-        h += '</div></div>';
-        return h;
-    }
-    var NOTE = '<div style="font-size:11.5px; color:var(--text-muted); line-height:1.8; margin-top:6px;">ئەمە خەمڵاندنێکە لە پۆلێنی تەمەن و ڕوونکەرەوە و وشە پەیوەندیدارەکانی TMDB. TMDB <b>کاتی ورد</b>ی دیمەنەکان (لە چ خولەکێکدایە) نادات، بۆیە ئەو زانیارییە لێرە نییە.</div>';
-
-    // ---------- گەڕان ----------
-    var seq = 0;
-    function search() {
-        var q = $('tmdbQ').value.trim(), L = $('tmdbList'); $('tmdbView').style.display = 'none';
-        if (!q) { L.style.display = ''; note(L, 'ناوێک بنووسە.'); return; }
-        var my = ++seq; L.style.display = ''; note(L, 'دەگەڕێت...');
-        var qq = encodeURIComponent(q), reqs = [];
-        ['movie', 'tv'].forEach(function (t) { [1, 2].forEach(function (pg) { reqs.push(api('/search/' + t + '?include_adult=true&language=en-US&page=' + pg + '&query=' + qq).then(function (r) { return (r.results || []).map(function (x) { x.media_type = t; return x; }); }).catch(function (e) { if (pg === 1) throw e; return []; })); }); });
-        Promise.all(reqs).then(function (all) {
-            if (my !== seq) return;
-            var seen = {}, res = [];
-            all.forEach(function (a) { a.forEach(function (x) { var k = x.media_type + x.id; if (!seen[k]) { seen[k] = 1; res.push(x); } }); });
-            var ql = q.toLowerCase();
-            res.sort(function (a, b) { var ea = ((a.title || a.name || '').toLowerCase() === ql) ? 1 : 0, eb = ((b.title || b.name || '').toLowerCase() === ql) ? 1 : 0; return (eb - ea) || ((b.popularity || 0) - (a.popularity || 0)); });
-            if (!res.length) { note(L, 'هیچ ئەنجامێک نەدۆزرایەوە.'); return; }
-            L.innerHTML = '';
-            res.slice(0, 40).forEach(function (x) {
-                var title = x.title || x.name || '', yr = (x.release_date || x.first_air_date || '').slice(0, 4);
-                var b = document.createElement('button'); b.type = 'button';
-                b.style.cssText = 'display:flex; gap:10px; width:100%; text-align:start; align-items:center; padding:8px; margin-bottom:6px; border:1px solid var(--border, rgba(128,128,128,.25)); border-radius:12px; background:transparent; color:inherit; cursor:pointer; font-family:inherit;';
-                b.innerHTML = (x.poster_path ? '<img src="' + IMG + 'w92' + x.poster_path + '" alt="" loading="lazy" style="width:46px; height:68px; object-fit:cover; border-radius:6px; flex:0 0 46px;">' : '<div style="width:46px; height:68px; border-radius:6px; background:rgba(128,128,128,.2); flex:0 0 46px;"></div>')
-                    + '<div style="min-width:0; flex:1;"><div dir="ltr" style="font-weight:bold; font-size:14px; text-align:left;">' + esc(title) + '</div><div style="font-size:12px; color:var(--text-muted); margin-top:3px;">' + (x.media_type === 'tv' ? 'زنجیرە' : 'فیلم') + (yr ? ' • <bdi dir="ltr">' + yr + '</bdi>' : '') + (x.adult ? ' • 18+' : '') + '</div></div>';
-                b.onclick = function () { open(x.media_type, x.id); };
-                L.appendChild(b);
-            });
-        }).catch(function (e) { if (my === seq) note(L, netErr(e), true); });
-    }
-
-    // ---------- وردەکاری ----------
-    function open(type, id) {
-        var V = $('tmdbView'), L = $('tmdbList'); L.style.display = 'none'; V.style.display = ''; note(V, 'دەخوێنرێتەوە...');
-        var ap = type === 'tv' ? 'content_ratings,keywords' : 'release_dates,keywords';
-        api('/' + type + '/' + id + '?language=en-US&append_to_response=' + ap).then(function (d) {
-            var title = d.title || d.name || '', yr = (d.release_date || d.first_air_date || '').slice(0, 4);
-            var list = [], descs = [];
-            if (type === 'movie') {
-                ((d.release_dates || {}).results || []).forEach(function (c) {
-                    (c.release_dates || []).forEach(function (r) { if (r.certification) list.push({ cc: c.iso_3166_1, c: r.certification.trim(), d: r.descriptors || [] }); });
-                });
-            } else {
-                ((d.content_ratings || {}).results || []).forEach(function (c) { if (c.rating) list.push({ cc: c.iso_3166_1, c: c.rating.trim(), d: c.descriptors || [] }); });
-            }
-            var cert = pickCert(list);
-            if (cert) list.forEach(function (x) { if (x.cc === cert.cc) (x.d || []).forEach(function (t) { if (descs.indexOf(t) < 0) descs.push(t); }); });
-            var kwArr = type === 'movie' ? ((d.keywords || {}).keywords || []) : ((d.keywords || {}).results || []);
-            var kws = kwArr.map(function (k) { return k.name; });
-            var a = assess(cert, descs, kws, !!d.adult);
-            var h = '<button type="button" id="tmdbBack" class="btn btn-outline" style="margin-bottom:10px; padding:6px 14px; font-size:13px;">← گەڕانەوە بۆ ئەنجامەکان</button>';
-            h += '<div style="display:flex; gap:12px; align-items:flex-start;">' + (d.poster_path ? '<img src="' + IMG + 'w154' + d.poster_path + '" alt="" style="width:86px; border-radius:8px; flex:0 0 86px;">' : '')
-                + '<div style="min-width:0;"><div dir="ltr" style="font-weight:bold; font-size:16px; text-align:left;">' + esc(title) + '</div><div style="font-size:12.5px; color:var(--text-muted); margin-top:4px; line-height:1.8;">' + (type === 'tv' ? 'زنجیرە' : 'فیلم') + (yr ? ' • <bdi dir="ltr">' + yr + '</bdi>' : '');
-            if (type === 'movie' && d.runtime) h += ' • <bdi dir="ltr">' + d.runtime + '</bdi> خولەک';
-            if (type === 'tv') h += ' • <bdi dir="ltr">' + (d.number_of_seasons || 0) + '</bdi> وەرز';
-            h += '</div></div></div>';
-            var gn = (d.genres || []).map(function (g) { return g.name; }).join(', ');
-            if (gn) h += '<div dir="ltr" style="font-size:12px; color:var(--text-muted); margin-top:8px; text-align:left;">' + esc(gn) + '</div>';
-            if (d.overview) h += '<p dir="ltr" style="font-size:12.5px; line-height:1.7; text-align:left; margin:10px 0 0; color:var(--text-muted);">' + esc(d.overview) + '</p>';
-            h += rate(a, { cert: cert, adult: !!d.adult }) + NOTE;
-            if (type === 'tv') {
-                var ss = (d.seasons || []).filter(function (s) { return s.season_number > 0 || (d.seasons || []).length === 1; });
-                if (ss.length) {
-                    h += '<div style="margin-top:14px; font-weight:bold; font-size:13.5px;">وەرزەکان</div><div id="tmdbSeasons" style="display:flex; flex-wrap:wrap; gap:6px; margin:8px 0;">';
-                    ss.forEach(function (s) { h += '<button type="button" class="btn btn-outline" data-s="' + s.season_number + '" style="padding:6px 14px; font-size:13px;"><bdi dir="ltr">' + s.season_number + '</bdi></button>'; });
-                    h += '</div><div id="tmdbEps"></div>';
-                }
-            }
-            V.innerHTML = h;
-            $('tmdbBack').onclick = function () { V.style.display = 'none'; $('tmdbList').style.display = ''; };
-            if (type === 'tv') {
-                var sb = $('tmdbSeasons');
-                if (sb) sb.addEventListener('click', function (e) {
-                    var t = e.target.closest ? e.target.closest('button[data-s]') : null; if (!t) return;
-                    [].forEach.call(sb.children, function (c) { c.classList.add('btn-outline'); }); t.classList.remove('btn-outline');
-                    season(id, t.getAttribute('data-s'), a);
-                });
-            }
-        }).catch(function (e) { note(V, netErr(e), true); });
-    }
-
-    function season(id, n, a) {
-        var E = $('tmdbEps'); note(E, 'دەخوێنرێتەوە...');
-        api('/tv/' + id + '/season/' + n + '?language=en-US').then(function (s) {
-            var eps = s.episodes || [];
-            if (!eps.length) { note(E, 'ئەم وەرزە هیچ ئەڵقەیەکی تۆمارکراوی نییە.'); return; }
-            var sev = LEVELS[a.level];
-            var h = '<div style="font-size:12.5px; line-height:1.8; margin:4px 0 8px;">ئاستی گشتی زنجیرەکە: <b style="color:' + sev[1] + ';">' + esc(sev[0]) + '</b></div>';
-            eps.forEach(function (ep) {
-                var lv = epLevel(ep), tag = lv === 2 ? ['نیشانەی ناوەڕۆکی نەشیاو لە پوخته', '#e8710a'] : lv === 1 ? ['نیشانەی ماچ / ڕۆمانسی لە پوخته', '#e0a800'] : ['نیشانەیەک لە پوختەدا نییە', '#2e9d5b'];
-                h += '<details style="border:1px solid var(--border, rgba(128,128,128,.25)); border-radius:10px; padding:8px 10px; margin-bottom:6px;"><summary style="cursor:pointer; font-size:13px; line-height:1.7;"><bdi dir="ltr" style="font-weight:bold;">' + ep.episode_number + '. ' + esc(ep.name) + '</bdi>'
-                    + (ep.runtime ? ' <span style="color:var(--text-muted); font-size:11.5px;">(<bdi dir="ltr">' + ep.runtime + '</bdi> خولەک)</span>' : '')
-                    + '<div style="font-size:11.5px; color:' + tag[1] + '; margin-top:2px;">' + tag[0] + '</div></summary>'
-                    + '<p dir="ltr" style="font-size:12.5px; line-height:1.7; text-align:left; margin:8px 0 0; color:var(--text-muted);">' + esc(ep.overview || '—') + '</p></details>';
-            });
-            h += '<div style="font-size:11.5px; color:var(--text-muted); line-height:1.8; margin-top:6px;">نیشانەی هەر ئەڵقەیەک تەنها لە پوختەی ئەڵقەکەوە دەخوێنرێتەوە؛ نەبوونی نیشانە دڵنیایی نادات کە دیمەنی نەشیاو نییە. TMDB کات و خولەکی دیمەنەکان نادات.</div>';
-            E.innerHTML = h;
-        }).catch(function (e) { note(E, netErr(e), true); });
-    }
-
-    window.openTmdbModal = function () {
-        $('tmdb-modal').style.display = 'flex';
-        var q = $('tmdbQ'); if (q) setTimeout(function () { try { q.focus(); } catch (e) { } }, 50);
-    };
-    $('tmdbGo').addEventListener('click', search);
-    $('tmdbQ').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); search(); } });
-    window.__kfTmdb = { assess: assess, pickCert: pickCert, epLevel: epLevel };
-})();
-</script>
-
 <script id="kf-shell-js">
 (function () {
     'use strict';
@@ -17859,7 +17647,6 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
         { k: 'shortcuts', fn: 'openShortcutsModal',   id: 'shortcuts-modal',      label: 'کورتکراوەکانی کیبۆرد' },
         { k: 'img',       fn: 'openImgUploaderModal', id: 'img-upload-modal',     label: 'گۆڕینی وێنە بۆ لینک' },
         { k: 'mkv',       fn: 'openMkvExtractorModal',id: 'mkv-extractor-modal',  label: 'دەرهێنەری فایل لە MKV' },
-        { k: 'tmdb',      fn: 'openTmdbModal',        id: 'tmdb-modal',           label: 'گەڕان بۆ فیلم و زنجیرە', icon: '<svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7" stroke-width="1.85"/><path stroke-width="1.85" d="m20 20-3.5-3.5"/></svg>' },
         { k: 'servers',   fn: 'openServersModal',     id: 'kf-servers-modal',     label: 'کۆدی سێرڤەرەکان' },
         { k: 'history',   fn: 'openHistoryModal',     id: 'history-modal',        label: 'مێژووی کارەکان' }
     ];
@@ -17877,7 +17664,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
     var DATA = {"converter": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M20 7H4M16 3l4 4-4 4M4 17h16M8 21l-4-4 4-4\"/></svg>", "label": "گۆڕینی فایل"}, "rtl": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11\"/></svg>", "label": "چاککردنی RTL"}, "fix": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.2-.5-.5-2.2z\"/></svg>", "label": "چاککردنی فایل"}, "revrtl": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M7 20V4M7 20l-3-3M7 20l3-3M17 4v16M17 4l-3 3M17 4l3 3\"/></svg>", "label": "پێچەوانەکردنەوەی RTL"}, "merge": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"8\" y=\"8\" width=\"13\" height=\"13\" rx=\"2.5\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M4 16a2 2 0 0 1-2-2V4.5A2.5 2.5 0 0 1 4.5 2H14a2 2 0 0 1 2 2\"/></svg>", "label": "تێکەڵکردنی دوو فایل"}, "sdh": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"9\" y=\"2\" width=\"6\" height=\"13\" rx=\"3\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M19 10v1a7 7 0 0 1-14 0v-1M12 18v4M8.5 22h7\"/></svg>", "label": "پاککردنەوەی دەنگەکان (SDH)"}, "shortcuts": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M2 14h4M10 8h4M18 16h4\"/></svg>", "label": "کورتکراوەکانی کیبۆرد"}, "img": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"3\"/><circle stroke-width=\"1.85\" cx=\"9\" cy=\"9\" r=\"2\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21\"/></svg>", "label": "گۆڕینی وێنە بۆ لینک"}, "mkv": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"m16 13 5.2 3.5a.5.5 0 0 0 .8-.4V7.9a.5.5 0 0 0-.8-.4L16 11\"/><rect stroke-width=\"1.85\" stroke-linejoin=\"round\" x=\"2\" y=\"6\" width=\"14\" height=\"12\" rx=\"2.5\"/></svg>", "label": "دەرهێنەری فایل لە MKV"}, "servers": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7\"/></svg>", "label": "کۆدی سێرڤەرەکان"}, "history": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><circle stroke-width=\"1.85\" cx=\"12\" cy=\"12\" r=\"9.25\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M12 7v5l3 2\"/></svg>", "label": "مێژووی کارەکان"}, "install": {"icon": "<svg class=\"icon\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.85\" d=\"M21 15v3.5A2.5 2.5 0 0 1 18.5 21h-13A2.5 2.5 0 0 1 3 18.5V15M7 10l5 5 5-5M12 15V3\"/></svg>", "label": "دابەزاندنی ئەپ"}};
     SECS.forEach(function (s) {
         var d = DATA[s.k];
-        s.icon = d ? d.icon : (s.icon || '');
+        s.icon = d ? d.icon : '';
         if (d && d.label) s.label = d.label;
     });
     var INSTALL = null;
@@ -17924,7 +17711,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
     var center = document.querySelector('.kf-bar-center');
     if (wm && center) center.insertBefore(wm, center.firstChild);
 
-    var KEEP = { tmdb: 1, converter: 1, rtl: 1, revrtl: 1, fix: 1, merge: 1, sdh: 1, img: 1, mkv: 1 }, visited = {};
+    var KEEP = { converter: 1, rtl: 1, revrtl: 1, fix: 1, merge: 1, sdh: 1, img: 1, mkv: 1 }, visited = {};
     var nav = window.kfNav = {
         secs: SECS,
         isHome: function () { return document.body.classList.contains('startup-bg'); },

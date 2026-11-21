@@ -4943,6 +4943,7 @@ html.kf-wide:root body.editor-bg #editor-screen[style*="block"] > #video-contain
                     <div style="display:flex; align-items:center; gap:4px; font-size:11px;">
                         <span>شاراوەیی %:</span>
                         <input type="number" id="techAlphaVal" placeholder="0" min="0" max="100" step="5" class="tech-input" style="width:50px;" title="\alpha (٠ = ئاسایی، ١٠٠ = نادیار)">
+                        <button type="button" class="tech-toggle-btn" id="btnAlphaMode" onclick="kfToggleAlphaMode()" title="کلیک بکە بۆ گۆڕینی جۆری شاراوەیی" style="font-size:10px; padding:3px 7px;">هەموو</button>
                     </div>
                     <div style="display:flex; align-items:center; gap:4px; font-size:11px;">
                         <span>نەرمکردنی لێوار:</span>
@@ -15847,7 +15848,14 @@ function kfEl(id) { return document.getElementById(id); }
         B.be = { had: be.had, val: be.had ? kfNumStr(be.n) : (st ? '0' : '') };
         var at = AssTags.first(text, 'alpha'), pct = 0;
         if (at) { var m = /([0-9a-fA-F]{1,2})&?\s*$/.exec(String(at.arg).replace(/&H/i, '')); if (m) pct = Math.round(parseInt(m[1], 16) * 100 / 255); }
-        B.alpha = { had: !!at, val: at ? String(pct) : (st ? '0' : '') };
+        var amode = 'all';
+        if (!at) {
+            function pc2(t) { var m2 = /([0-9a-fA-F]{1,2})&?\s*$/.exec(String(t.arg).replace(/&H/i, '')); return m2 ? Math.round(parseInt(m2[1], 16) * 100 / 255) : 0; }
+            var a1 = AssTags.first(text, '1a'), a3 = AssTags.first(text, '3a'), a4 = AssTags.first(text, '4a');
+            if (a1) { at = a1; pct = pc2(a1); amode = 'text'; }
+            else if (a3 && a4 && !/\\bord0\.1(?![\d])/.test(text)) { at = a4; pct = pc2(a4); amode = 'stroke'; }
+        }
+        B.alpha = { had: !!at, val: at ? String(pct) : (st ? '0' : '') }; B.alphaMode = amode;
         var ut = AssTags.first(text, 'u'), sk = AssTags.first(text, 's');
         B.under = { had: !!ut, val: ut ? ut.arg.trim() === '1' : !!(st && st.underline) };
         B.strike = { had: !!sk, val: sk ? sk.arg.trim() === '1' : !!(st && st.strikeout) };
@@ -15857,10 +15865,17 @@ function kfEl(id) { return document.getElementById(id); }
 
 // تێبینی: پان/بەرزی/سووڕان/لاری (fscx/fscy/frz/fax) لێرە نین چونکە هی مۆداڵی «شوێنی دەقەکە» ـن
 // (گرتن و ڕاکێشان) و لەوێ دەستکاری دەکرێن، تا دووبارە نەبنەوە لە دوو شوێندا.
+window.__kfAlphaMode = 'all';
+function kfSyncAlphaBtn() { var b = document.getElementById('btnAlphaMode'); if (!b) return; var m = window.__kfAlphaMode; b.textContent = m === 'text' ? 'نووسین' : m === 'stroke' ? 'شادۆ و ستڕۆک' : 'هەموو'; b.classList.toggle('active', m !== 'all'); }
+function kfToggleAlphaMode() {
+    var m = window.__kfAlphaMode || 'all'; window.__kfAlphaMode = m === 'all' ? 'text' : m === 'text' ? 'stroke' : 'all'; kfSyncAlphaBtn();
+    showToast(window.__kfAlphaMode === 'text' ? 'شاراوەیی: تەنها خودی نووسینەکە' : window.__kfAlphaMode === 'stroke' ? 'شاراوەیی: تەنها شادۆ و ستڕۆک' : 'شاراوەیی: هەموو (نووسین، ستڕۆک و شادۆ)', 'info');
+}
 function kfFillMoreControls() {
     var B = window.__styleModalBase; if (!B) return;
     var set = function (id, v) { var e = kfEl(id); if (e) e.value = v; };
     set('techSpacingVal', B.sp.val); set('techBeVal', B.be.val); set('techAlphaVal', B.alpha.val);
+    window.__kfAlphaMode = B.alphaMode || 'all'; kfSyncAlphaBtn();
     var u = kfEl('btnTechUnder'), s = kfEl('btnTechStrike');
     if (u) u.classList.toggle('active', !!B.under.val);
     if (s) s.classList.toggle('active', !!B.strike.val);
@@ -15878,10 +15893,17 @@ function kfMoreApply(clean) {
     });
 
     var pc = val('techAlphaVal'), ab = baseOf('alpha');
-    if (pc !== ab.val) {
+    var amode = window.__kfAlphaMode || 'all', amode0 = (B && B.alphaMode) || 'all';
+    if (pc !== ab.val || amode !== amode0) {
         clean = clean.replace(/\\alpha&H[0-9A-Fa-f]{1,2}&?/gi, '');
+        if (amode0 === 'text') clean = clean.replace(/\\1a&H[0-9A-Fa-f]{1,2}&?/gi, '');
+        if (amode0 === 'stroke' || amode === 'stroke') clean = clean.replace(/\\[34]a&H[0-9A-Fa-f]{1,2}&?/gi, '');
+        if (amode === 'text') clean = clean.replace(/\\1a&H[0-9A-Fa-f]{1,2}&?/gi, '');
         var p = parseFloat(pc);
-        if (isFinite(p) && p > 0) { var hx = Math.max(0, Math.min(255, Math.round(p * 255 / 100))).toString(16).toUpperCase(); if (hx.length < 2) hx = '0' + hx; tags += '\\alpha&H' + hx + '&'; }
+        if (isFinite(p) && p > 0) {
+            var hx = Math.max(0, Math.min(255, Math.round(p * 255 / 100))).toString(16).toUpperCase(); if (hx.length < 2) hx = '0' + hx;
+            tags += amode === 'text' ? '\\1a&H' + hx + '&' : amode === 'stroke' ? '\\3a&H' + hx + '&\\4a&H' + hx + '&' : '\\alpha&H' + hx + '&';
+        }
     }
 
     [['under', 'btnTechUnder', 'u', /\\u[01]/gi], ['strike', 'btnTechStrike', 's', /\\s[01](?![\d.])/gi]].forEach(function (d) {
@@ -20965,7 +20987,7 @@ var KFV = (function () {
             + '.kfes-chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}.kfes-chips::-webkit-scrollbar{display:none}.kfes-chip{flex:none;padding:6px 12px;font-size:12px;font-weight:700;font-family:inherit;border-radius:999px;border:1px solid var(--border-color);background:var(--bg-color);color:var(--text-main);cursor:pointer;white-space:nowrap}.kfes-chip.on{background:var(--primary);color:#fff;border-color:var(--primary)}'
             + '.kfes-lact{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.kfes-lk{display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;flex:none}.kfes-lk input{width:17px;height:17px;accent-color:var(--primary);margin:0}'
             + '.kfes-ln{display:flex;flex-direction:column;gap:6px;padding:9px 10px;margin-top:7px;border-radius:12px;border:1px solid var(--border-color);background:rgba(0,0,0,.28);cursor:pointer}.kfes-ln.on{border-color:var(--primary);box-shadow:0 0 0 1px var(--primary) inset}.kfes-lh{display:flex;justify-content:space-between;align-items:center;gap:8px}.kfes-lm{font-size:10.5px;color:var(--text-muted);direction:ltr}'
-            + '.kfes-lt{font-size:13px;line-height:1.55;max-height:3.2em;overflow:hidden;word-break:break-word}.kfes-lsb{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 12px;font-size:13px;font-family:inherit;border-radius:10px;border:1px solid var(--border-color);background:var(--bg-color);color:var(--text-main);min-width:0;width:100%;cursor:pointer;direction:ltr}.kfes-lsb span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.kfes-lsb svg{flex:none;opacity:.7}.kfes-lsb svg{transition:transform .22s cubic-bezier(.4,0,.2,1)}.kfes-lsb.open svg{transform:rotate(180deg);opacity:1}.kfes-lsb.open{border-color:var(--primary)}#kfesTop{flex:none;overflow:hidden;transition:height .34s cubic-bezier(.22,.8,.28,1),opacity .28s ease}#kfesTop.kfes-h{height:0!important;opacity:0;pointer-events:none}.kfes-lov{position:absolute;left:0;top:0;right:0;bottom:0;z-index:59;background:transparent;touch-action:none}.kfes-lmenu{opacity:0;transform:translateY(-8px) scale(.97);transition:opacity .2s cubic-bezier(.4,0,.2,1),transform .2s cubic-bezier(.4,0,.2,1);transform-origin:top center;position:absolute;z-index:60;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;background:#171d2b;border:1px solid var(--border-color);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.6);padding:4px}.kfes-lmenu.show{opacity:1;transform:none}.kfes-lmi{padding:11px 12px;font-size:13.5px;border-radius:8px;cursor:pointer;word-break:break-word}.kfes-lmi.on{color:var(--primary);font-weight:700;background:rgba(255,255,255,.06)}.kfes-lmi:active{background:rgba(255,255,255,.12)}#kfesLe{padding:26px 10px;text-align:center;font-size:12.5px;line-height:1.8;color:var(--text-muted);display:none}'
+            + '.kfes-lt{font-size:13px;line-height:1.55;max-height:3.2em;overflow:hidden;word-break:break-word}.kfes-lsb{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 12px;font-size:13px;font-family:inherit;border-radius:10px;border:1px solid var(--border-color);background:var(--bg-color);color:var(--text-main);min-width:0;width:100%;cursor:pointer;direction:ltr}.kfes-lsb span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.kfes-lsb svg{flex:none;opacity:.7}.kfes-lsb svg{transition:transform .22s cubic-bezier(.4,0,.2,1)}.kfes-lsb.open svg{transform:rotate(180deg);opacity:1}.kfes-lsb.open{border-color:var(--primary)}#kfesTop{flex:none;overflow:hidden;transition:height .34s cubic-bezier(.22,.8,.28,1),opacity .28s ease}#kfesTop.kfes-h{height:0!important;opacity:0;pointer-events:none}.kfes-chip{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}.kfes-cmo{position:absolute;inset:0;z-index:119;background:rgba(0,0,0,.28);animation:kfcmo .2s ease}@keyframes kfcmo{from{opacity:0}to{opacity:1}}.kfes-cm{position:absolute;z-index:120;min-width:190px;max-width:min(86vw,300px);box-sizing:border-box;background:#171d2b;border:1px solid var(--border-color);border-radius:14px;padding:8px;box-shadow:0 14px 40px rgba(0,0,0,.6);display:flex;flex-direction:column;gap:6px;opacity:0;transform:translateY(-6px) scale(.95);transition:opacity .2s cubic-bezier(.4,0,.2,1),transform .2s cubic-bezier(.4,0,.2,1);transform-origin:top center;direction:rtl}.kfes-cm.show{opacity:1;transform:none}.kfes-cmt{font-size:12px;color:var(--text-muted);padding:2px 6px 4px;border-bottom:1px solid var(--border-color);margin-bottom:2px}.kfes-cmt bdi{color:var(--text-main);font-weight:700}.kfes-cmb{display:flex;align-items:center;gap:9px;width:100%;padding:11px 10px;border:0;border-radius:10px;background:rgba(255,255,255,.06);color:var(--text-main);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;text-align:start}.kfes-cmb:active{background:rgba(255,255,255,.14)}.kfes-cmb.kfes-cmd{color:#ff6b6b}.kfes-cmi{width:100%;box-sizing:border-box;text-align:left}.kfes-cmr{display:flex;gap:6px}.kfes-cmr .btn{flex:1;padding:9px 6px;font-size:12.5px}.kfes-lov{position:absolute;left:0;top:0;right:0;bottom:0;z-index:59;background:transparent;touch-action:none}.kfes-lmenu{opacity:0;transform:translateY(-8px) scale(.97);transition:opacity .2s cubic-bezier(.4,0,.2,1),transform .2s cubic-bezier(.4,0,.2,1);transform-origin:top center;position:absolute;z-index:60;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;background:#171d2b;border:1px solid var(--border-color);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.6);padding:4px}.kfes-lmenu.show{opacity:1;transform:none}.kfes-lmi{padding:11px 12px;font-size:13.5px;border-radius:8px;cursor:pointer;word-break:break-word}.kfes-lmi.on{color:var(--primary);font-weight:700;background:rgba(255,255,255,.06)}.kfes-lmi:active{background:rgba(255,255,255,.12)}#kfesLe{padding:26px 10px;text-align:center;font-size:12.5px;line-height:1.8;color:var(--text-muted);display:none}'
             + '#kfesBox{touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}#kfesTxt{pointer-events:none;position:absolute;text-align:center;line-height:1.25;white-space:pre-wrap}.kfes-exact #kfesTxt{visibility:hidden}';
         document.head.appendChild(cs);
         var PD = (getComputedStyle(document.body).direction || 'rtl');
@@ -21222,8 +21244,130 @@ var KFV = (function () {
     }
     function lnUndo() {
         var rec = mvStack.pop(); if (!rec) return;
+        if (rec.op) { opUndo(rec); return; }
         rec.forEach(function (r) { var it = originalData[r.i]; if (!it) return; if (it.assMeta) it.assMeta.style = r.st; it.assPrefix = r.pf; });
         lnAfter(); showToast('دوایین گواستنەوە پووچەڵ کرایەوە (' + rec.length + ' دێڕ)', 'success');
+    }
+    // ---------- مینیوی ڕاگرتنی چیپی ستایل: گۆڕینی ناو / سڕینەوە (لەگەڵ دێڕەکانی) + گەڕانەوە ----------
+    function opNote(rec) { return rec; }
+    function opBegin(n) { return { op: n, S: getCurrentSnapshot(), H: (assHeaderLines || []).slice(), W: JSON.parse(JSON.stringify(W)), names: names.slice(), sn: sn }; }
+    function rebuildKeep(map) {
+        var keep = [];
+        names.forEach(function (n) { var nn = map.hasOwnProperty(n) ? map[n] : n; if (nn === null) return; if (!O[n] || dirty(n)) keep.push([nn, W[n].slice()]); });
+        noReset = true; try { parseStyles(); } finally { noReset = false; } lastH = JSON.stringify(assHeaderLines);
+        keep.forEach(function (k) { var v = k[1], ni = idx('name'); if (ni >= 0) v[ni] = k[0]; if (!W[k[0]]) names.push(k[0]); W[k[0]] = v; });
+    }
+    function opFinish(msg) {
+        try { hReset(); } catch (e) { }
+        lnVer++; lnSel = {};
+        if (!W[sn]) sn = names[0];
+        refs.forEach(function (f) { f(); });
+        if (cur < 0 || !originalData[cur] || lnStyleOf(originalData[cur]) !== sn) loadLine(firstLine(sn, 0)); else { refreshInfo(); exSched(); }
+        lnRender(true);
+        try { saveSession(); } catch (e) { }
+        try { kfRefreshPreviewAfterBulkEdit(); } catch (e) { }
+        try { if (typeof updateUndoRedoButtons === 'function') updateUndoRedoButtons(); } catch (e) { }
+        if (msg) showToast(msg, 'success');
+    }
+    function stRename(from, to) {
+        to = cleanName(to);
+        if (!to || to === from) return false;
+        if (W[to]) { showToast('ستایلێک بەم ناوە هەیە', 'warning'); return false; }
+        var rec = opBegin('ren'); rec.msg = 'ناوی ستایل گەڕێندرایەوە بۆ «' + from + '»';
+        assHeaderLines = (assHeaderLines || []).map(function (l) { return styleName(l) === from ? String(l).replace(/^(\s*Style\s*:\s*)[^,]*/i, function (m, a) { return a + to; }) : l; });
+        var c = 0;
+        originalData.forEach(function (it) {
+            if (lnStyleOf(it) !== from) return; c++;
+            if (!it.assMeta) it.assMeta = {}; it.assMeta.style = to;
+            if (it.assPrefix) { var p = it.assPrefix.split(','); if (p.length > 3) { p[3] = to; it.assPrefix = p.join(','); } }
+        });
+        var m = {}; m[from] = to; rebuildKeep(m); if (sn === from) sn = to;
+        mvStack.push(rec); if (mvStack.length > 12) mvStack.shift();
+        lnCommitNow(); opFinish('ناوی ستایل گۆڕدرا بۆ «' + to + '» (' + c + ' دێڕ)');
+        return true;
+    }
+    function stDelete(n) {
+        if (names.length <= 1) { showToast('ناتوانرێت دوا ستایل بسڕدرێتەوە', 'warning'); return false; }
+        var rec = opBegin('del'); rec.msg = 'ستایلی «' + n + '» گەڕێندرایەوە';
+        var del = []; originalData.forEach(function (it, i) { if (lnStyleOf(it) === n) del.push(i); });
+        assHeaderLines = (assHeaderLines || []).filter(function (l) { return styleName(l) !== n; });
+        if (del.length) {
+            var texts = getCurrentState();
+            del.slice().reverse().forEach(function (i) { originalData.splice(i, 1); texts.splice(i, 1); if (typeof subtitleNotes !== 'undefined' && subtitleNotes.length) subtitleNotes.splice(i, 1); });
+            try { buildEditorUI(texts, false); } catch (e) { }
+        }
+        var m = {}; m[n] = null; rebuildKeep(m);
+        if (!W[sn]) sn = names[0]; cur = -1;
+        mvStack.push(rec); if (mvStack.length > 12) mvStack.shift();
+        lnCommitNow(); opFinish('ستایلی «' + n + '» سڕایەوە' + (del.length ? ' لەگەڵ ' + del.length + ' دێڕ' : '') + ' — بۆ گەڕاندنەوە دوگمەی ↶ دابگرە');
+        return true;
+    }
+    function lnCommitNow() {
+        clearTimeout(lnT);
+        try { historyStack.push(getCurrentSnapshot()); if (historyStack.length > 40) historyStack.shift(); redoStack = []; } catch (e) { }
+    }
+    function opUndo(rec) {
+        try { restoreSnapshot(rec.S); } catch (e) { }
+        assHeaderLines = rec.H.slice();
+        noReset = true; try { parseStyles(); } finally { noReset = false; } lastH = JSON.stringify(assHeaderLines);
+        W = JSON.parse(JSON.stringify(rec.W)); names = rec.names.slice(); sn = W[rec.sn] ? rec.sn : names[0]; cur = -1;
+        lnCommitNow(); opFinish(rec.msg);
+    }
+    var cmEl = null, cmOv = null, lpT = 0, lpFired = false, lpX = 0, lpY = 0;
+    function cmClose(now) {
+        var e = cmEl, o = cmOv; cmEl = cmOv = null; if (o) o.remove();
+        if (e) { e.classList.remove('show'); if (now) e.remove(); else setTimeout(function () { e.remove(); }, 220); }
+    }
+    function cmOpen(chip) {
+        var n = chip.getAttribute('data-n'); if (!n || !W[n]) return;
+        cmClose(true); lnMenuClose(true);
+        var u = usage(n);
+        cmOv = document.createElement('div'); cmOv.className = 'kfes-cmo'; M.appendChild(cmOv);
+        cmEl = document.createElement('div'); cmEl.className = 'kfes-cm'; M.appendChild(cmEl);
+        function base() {
+            cmEl.innerHTML = '<div class="kfes-cmt"><bdi dir="ltr">' + lnEsc(n) + '</bdi> <span>(' + u + ' دێڕ)</span></div>'
+                + '<button type="button" class="kfes-cmb" data-a="ren"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span>گۆڕینی ناو</span></button>'
+                + '<button type="button" class="kfes-cmb kfes-cmd" data-a="del"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6M5.5 6l.9 13.1A2 2 0 0 0 8.4 21h7.2a2 2 0 0 0 1.9-1.9L18.5 6M10 11v5.5M14 11v5.5"/></svg><span>سڕینەوە' + (u ? ' لەگەڵ دێڕەکان' : '') + '</span></button>';
+        }
+        base();
+        var r = chip.getBoundingClientRect(), mr = M.getBoundingClientRect();
+        function place() {
+            var w = cmEl.offsetWidth, h = cmEl.offsetHeight, x = r.left + r.width / 2 - w / 2, y = r.bottom + 8;
+            x = Math.max(8, Math.min(mr.right - w - 8, x)); if (y + h > mr.bottom - 8) y = Math.max(8, r.top - h - 8);
+            cmEl.style.left = (x - mr.left) + 'px'; cmEl.style.top = (y - mr.top) + 'px';
+        }
+        place(); requestAnimationFrame(function () { if (cmEl) cmEl.classList.add('show'); });
+        var cmT0 = Date.now();
+        cmOv.addEventListener('click', function () { if (Date.now() - cmT0 > 450) cmClose(); });
+        cmOv.addEventListener('touchstart', function (e) { e.preventDefault(); if (Date.now() - cmT0 > 450) cmClose(); }, { passive: false });
+        cmEl.addEventListener('click', function (e) {
+            var b = e.target.closest ? e.target.closest('.kfes-cmb,.kfes-cmok,.kfes-cmx') : null; if (!b) return; e.stopPropagation();
+            if (b.classList.contains('kfes-cmx')) { base(); place(); return; }
+            var a = b.getAttribute('data-a');
+            if (a === 'del') { cmClose(); stDelete(n); return; }
+            if (a === 'ren') {
+                cmEl.innerHTML = '<div class="kfes-cmt">ناوی نوێ</div><input type="text" class="kfes-cmi input-field" dir="ltr" maxlength="40"><div class="kfes-cmr"><button type="button" class="kfes-cmok btn" data-a="ok">باشە</button><button type="button" class="kfes-cmx btn btn-outline">پاشگەزبوونەوە</button></div>';
+                var inp = cmEl.querySelector('.kfes-cmi'); inp.value = n; place();
+                setTimeout(function () { try { inp.focus(); inp.select(); } catch (x) { } }, 60);
+                inp.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); var v = inp.value; if (stRename(n, v)) cmClose(); } else if (ev.key === 'Escape') cmClose(); });
+                return;
+            }
+            if (a === 'ok') { var v = cmEl.querySelector('.kfes-cmi').value; if (stRename(n, v)) cmClose(); }
+        });
+    }
+    function chipPress() {
+        var C = $('kfesChips'); if (!C) return;
+        function cancel() { clearTimeout(lpT); lpT = 0; }
+        C.addEventListener('pointerdown', function (e) {
+            var b = e.target.closest ? e.target.closest('.kfes-chip') : null; if (!b || b.getAttribute('data-all')) return;
+            if (e.pointerType === 'mouse' && e.button !== 0) return;
+            cancel(); lpFired = false; lpX = e.clientX; lpY = e.clientY;
+            lpT = setTimeout(function () { lpT = 0; lpFired = true; try { if (navigator.vibrate) navigator.vibrate(12); } catch (x) { } cmOpen(b); }, 480);
+        });
+        C.addEventListener('pointermove', function (e) { if (lpT && (Math.abs(e.clientX - lpX) > 9 || Math.abs(e.clientY - lpY) > 9)) cancel(); });
+        ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (t) { C.addEventListener(t, cancel); });
+        C.addEventListener('contextmenu', function (e) { var b = e.target.closest ? e.target.closest('.kfes-chip') : null; if (!b) return; e.preventDefault(); if (!b.getAttribute('data-all') && !cmEl) { cancel(); lpFired = true; cmOpen(b); } });
+        C.addEventListener('click', function (e) { if (lpFired) { e.stopImmediatePropagation(); e.preventDefault(); lpFired = false; } }, true);
     }
     function lnShow() { if (!lnSeen) { lnSeen = true; lnRender(true); } else lnRender(); }
     // ---------- شاردنەوەی ڤیدیۆ و کۆنترۆڵەکان کاتێک لیستی دێڕەکان بۆ خوارەوە دەبەین، گەڕانەوەی نەرم کاتێک بۆ سەرەوە دەبەین ----------
@@ -21279,6 +21423,7 @@ var KFV = (function () {
             if (b.getAttribute('data-all')) { lnAll = true; lnRender(true); return; }
             lnAll = false; var n = b.getAttribute('data-n'); if (n === sn) lnRender(true); else setStyle(n);
         });
+        chipPress();
         $('kfesLall').addEventListener('change', function () {
             lnSel = {}; if (this.checked) lnIdx.forEach(function (i) { lnSel[i] = true; });
             LNL.querySelectorAll('.kfes-ck').forEach(function (c) { c.checked = this.checked; }, this); lnBar();
